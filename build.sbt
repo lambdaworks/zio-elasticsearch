@@ -22,14 +22,18 @@ addCommandAlias("prepare", "fix; fmt")
 lazy val root =
   project
     .in(file("."))
-    .aggregate(lib, example)
+    .aggregate(library, example)
 
-lazy val lib =
+lazy val library =
   project
-    .in(file("modules/lib"))
+    .in(file("modules/library"))
     .settings(stdSettings("zio-elasticsearch"))
 
 lazy val example =
   project
     .in(file("modules/example"))
     .settings(stdSettings("example"))
+    .dependsOn(library)
+    .settings(
+      publish / skip := true
+    )
