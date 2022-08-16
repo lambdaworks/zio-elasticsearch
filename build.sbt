@@ -7,6 +7,7 @@ inThisBuild(
     homepage     := Some(url("https://github.com/lambdaworks/zio-elasticsearch/")),
     licenses     := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     organization := "io.lambdaworks",
+    organizationName := "LambdaWorks",
     startYear    := Some(2022)
   )
 )
