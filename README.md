@@ -1,1 +1,1 @@
-# zio-elasticsearch
+# ZIO Elasticsearch
