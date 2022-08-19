@@ -1,0 +1,61 @@
+name: CI
+
+env:
+  JDK_JAVA_OPTIONS: -XX:+PrintCommandLineFlags # JDK_JAVA_OPTIONS is _the_ env. variable to use for modern Java
+  JVM_OPTS: -XX:+PrintCommandLineFlags # for Java 8 only (sadly, it is not modern enough for JDK_JAVA_OPTIONS)
+
+on:
+  pull_request:
+  push:
+    branches: ['main']
+
+jobs:
+  lint:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v3.0.2
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v3.1.1
+        with:
+          distribution: temurin
+          java-version: 17
+          check-latest: true
+      - name: Cache Scala dependencies
+        uses: coursier/cache-action@v6
+      - name: Check code formatting
+        run: ./sbt check
+
+  test:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['8', '11', '17']
+        scala: ['2.12.16', '2.13.8']
+    steps:
+      - name: Checkout current branch
+        uses: actions/checkout@v3.0.2
+        with:
+          fetch-depth: 0
+      - name: Setup Java
+        uses: actions/setup-java@v3.1.1
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+          check-latest: true
+      - name: Cache Scala dependencies
+        uses: coursier/cache-action@v6
+      - name: Run tests
+        run: ./sbt ++${{ matrix.scala }}! test
+
+  ci:
+    runs-on: ubuntu-20.04
+    needs: [lint, test]
+    steps:
+      - name: Aggregate outcomes
+        run: echo "build succeeded"
