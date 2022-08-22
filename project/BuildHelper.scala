@@ -12,7 +12,7 @@ object BuildHelper {
       name                     := s"$prjName",
       crossScalaVersions       := List(Scala212, Scala213),
       ThisBuild / scalaVersion := Scala213,
-      scalacOptions            := stdOptions,
+      scalacOptions            := stdOptions ++ extraOptions,
       semanticdbEnabled        := true,
       semanticdbOptions += "-P:semanticdb:synthetics:on",
       semanticdbVersion                                          := scalafixSemanticdb.revision,
@@ -22,6 +22,9 @@ object BuildHelper {
       incOptions ~= (_.withLogRecompileOnMacro(false)),
       autoAPIMappings := true
     )
+
+  private val extraOptions =
+    List("-Ywarn-unused")
 
   private val stdOptions =
     List("-deprecation", "-encoding", "UTF-8", "-feature", "-unchecked", "-Xfatal-warnings")
