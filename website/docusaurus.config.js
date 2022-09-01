@@ -25,7 +25,7 @@ const config = {
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
-            'https://github.com/lambdaworks/zio-elasticsearch/edit/main/website/',
+            ({ docPath }) => `https://github.com/lambdaworks/zio-elasticsearch/edit/main/docs/${docPath}`
         },
         blog: false,
         theme: {
@@ -98,7 +98,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
-	    additionalLanguages: ['java', 'scala']
+	additionalLanguages: ['java', 'scala']
       }
     })
 };
