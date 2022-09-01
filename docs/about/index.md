@@ -1,6 +1,6 @@
 ---
 id: about_index
-title: "About"
+title: "About ZIO Elasticsearch"
 ---
 
 TODO
