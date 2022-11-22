@@ -1,3 +1,3 @@
 package zio.elasticsearch
 
-private [elasticsearch] final case class DocumentId(value: String) extends AnyVal
+private[elasticsearch] final case class DocumentId(value: String) extends AnyVal
