@@ -6,7 +6,6 @@ import zio.schema.Schema
 
 sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
-
 }
 
 object ElasticRequest {
