@@ -30,7 +30,9 @@ lazy val library =
     .settings(stdSettings("zio-elasticsearch"))
     .settings(
       libraryDependencies ++= List(
-        "dev.zio" %% "zio-schema" % "0.3.1"
+        "dev.zio" %% "zio-json"        % "0.3.0",
+        "dev.zio" %% "zio-schema"      % "0.3.1",
+        "dev.zio" %% "zio-schema-json" % "0.3.1"
       )
     )
 
