@@ -28,6 +28,11 @@ lazy val library =
   project
     .in(file("modules/library"))
     .settings(stdSettings("zio-elasticsearch"))
+    .settings(
+      libraryDependencies ++= List(
+        "dev.zio" %% "zio-schema" % "0.3.1"
+      )
+    )
 
 lazy val example =
   project
