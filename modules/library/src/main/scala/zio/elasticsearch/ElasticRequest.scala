@@ -3,7 +3,6 @@ package zio.elasticsearch
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
 import zio.schema.Schema
-import zio.schema.codec.JsonCodec._
 
 sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
