@@ -65,5 +65,4 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
       extends ElasticRequest[B]
-
 }
