@@ -1,11 +1,7 @@
 package zio.elasticsearch
 
-<<<<<<< HEAD
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
-=======
-import zio.elasticsearch.ElasticRequest.DocumentGettingError.{DocumentNotFound, JsonDecoderError}
->>>>>>> 9e9aaf4 (Refactor ElasticRequest)
 import zio.schema.Schema
 
 sealed trait ElasticRequest[+A] { self =>
@@ -19,21 +15,12 @@ object ElasticRequest {
       extends ElasticRequest[B]
 
   def getById[A: Schema](
-<<<<<<< HEAD
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
   ): ElasticRequest[Either[DocumentRetrievingError, A]] =
     GetById(index, id, routing).map {
       case Some(document) => document.decode.left.map(err => DecoderError(err.message))
-=======
-    index: Index,
-    id: DocumentId,
-    routing: Option[Routing] = None
-  ): ElasticRequest[Either[DocumentGettingError, A]] =
-    GetById(index, id, routing).map {
-      case Some(document) => document.decode.fold(_ => Left(JsonDecoderError), Right(_))
->>>>>>> 9e9aaf4 (Refactor ElasticRequest)
       case None           => Left(DocumentNotFound)
     }
 
@@ -49,7 +36,7 @@ object ElasticRequest {
 
     case object DocumentNotFound extends DocumentGettingError
 
-    case object JsonDecoderError extends DocumentGettingError
+    case class JsonDecoderError(errorMsg: String) extends DocumentGettingError
 
   }
 
