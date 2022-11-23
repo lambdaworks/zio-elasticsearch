@@ -12,8 +12,8 @@ object ElasticRequest {
   private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
       extends ElasticRequest[B]
 
-  def getById[A: Schema](index: String, id: DocumentId, routing: Option[Routing] = None): ElasticRequest[Option[A]] =
-    GetById(Index(index), id, routing).map {
+  def getById[A: Schema](index: Index, id: DocumentId, routing: Option[Routing] = None): ElasticRequest[Option[A]] =
+    GetById(index, id, routing).map {
       case Some(document) => document.decode.toOption
       case None           => None
     }
