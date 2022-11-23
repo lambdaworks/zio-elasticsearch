@@ -63,6 +63,20 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-  private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
-      extends ElasticRequest[B]
+  private[elasticsearch] final case class PutItem(
+    index: IndexName,
+    id: DocumentId,
+    document: Document,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit]
+
+  sealed abstract class DocumentGettingError
+
+  object DocumentGettingError {
+
+    case object DocumentNotFound extends DocumentGettingError
+
+    case class JsonDecoderError(errorMsg: String) extends DocumentGettingError
+
+  }
 }
