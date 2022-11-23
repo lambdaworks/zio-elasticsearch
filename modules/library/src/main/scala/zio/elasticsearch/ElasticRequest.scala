@@ -14,7 +14,7 @@ object ElasticRequest {
       extends ElasticRequest[B]
 
   def getById[A: Schema](
-    index: Index,
+    index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
   ): ElasticRequest[Either[DocumentGettingError, A]] =
@@ -24,7 +24,7 @@ object ElasticRequest {
     }
 
   private[elasticsearch] final case class GetById(
-    index: Index,
+    index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
