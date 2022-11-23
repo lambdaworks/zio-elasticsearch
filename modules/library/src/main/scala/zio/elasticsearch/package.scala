@@ -1,7 +1,11 @@
 package zio
 
-import zio.json.ast.Json
+import zio.schema.Schema
+import zio.schema.codec.DecodeError
+import zio.schema.codec.JsonCodec.JsonDecoder
 
 package object elasticsearch {
-  type Document = Json
+  private[elasticsearch] final case class Document(json: String) {
+    def decode[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, json)
+  }
 }
