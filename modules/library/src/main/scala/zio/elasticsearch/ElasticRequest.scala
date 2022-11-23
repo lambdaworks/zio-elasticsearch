@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticRequest.DocumentGettingError.{DocumentNotFound, JsonDecoderError}
 import zio.schema.Schema
 
 sealed trait ElasticRequest[+A] { self =>
@@ -12,10 +13,14 @@ object ElasticRequest {
   private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
       extends ElasticRequest[B]
 
-  def getById[A: Schema](index: Index, id: DocumentId, routing: Option[Routing] = None): ElasticRequest[Option[A]] =
+  def getById[A: Schema](
+    index: Index,
+    id: DocumentId,
+    routing: Option[Routing] = None
+  ): ElasticRequest[Either[DocumentGettingError, A]] =
     GetById(index, id, routing).map {
-      case Some(document) => document.decode.toOption
-      case None           => None
+      case Some(document) => document.decode.fold(_ => Left(JsonDecoderError), Right(_))
+      case None           => Left(DocumentNotFound)
     }
 
   private[elasticsearch] final case class GetById(
@@ -23,5 +28,15 @@ object ElasticRequest {
     id: DocumentId,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
+
+  sealed abstract class DocumentGettingError
+
+  object DocumentGettingError {
+
+    case object DocumentNotFound extends DocumentGettingError
+
+    case object JsonDecoderError extends DocumentGettingError
+
+  }
 
 }
