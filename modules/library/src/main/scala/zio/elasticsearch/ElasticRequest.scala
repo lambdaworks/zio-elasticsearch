@@ -19,7 +19,7 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ): ElasticRequest[Either[DocumentGettingError, A]] =
     GetById(index, id, routing).map {
-      case Some(document) => document.decode.fold(err => Left(JsonDecoderError(err.message)), Right(_))
+      case Some(document) => document.decode.left.map(err => JsonDecoderError(err.message))
       case None           => Left(DocumentNotFound)
     }
 
