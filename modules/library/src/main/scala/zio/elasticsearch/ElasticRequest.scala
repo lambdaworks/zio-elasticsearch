@@ -3,6 +3,7 @@ package zio.elasticsearch
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
 import zio.schema.Schema
+import zio.schema.codec.JsonCodec
 
 sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
@@ -24,10 +25,25 @@ object ElasticRequest {
       case None           => Left(DocumentNotFound)
     }
 
+  def put[A](
+    index: IndexName,
+    id: DocumentId,
+    a: A,
+    routing: Option[Routing] = None
+  )(implicit schema: Schema[A]): ElasticRequest[Unit] =
+    Put(index, id, Document(JsonCodec.jsonEncoder(schema).encodeJson(a, None).toString), routing)
+
   private[elasticsearch] final case class GetById(
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
+
+  private[elasticsearch] final case class Put(
+    index: IndexName,
+    id: DocumentId,
+    document: Document,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit]
 
 }
