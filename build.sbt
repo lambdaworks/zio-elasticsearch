@@ -40,12 +40,12 @@ lazy val example =
 
 lazy val docs =
   project
-    .in(file("modules/zio-elasticsearch-docs"))
+    .in(file("modules/docs"))
     .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
     .dependsOn(library)
     .settings(
       publish / skip := true,
-      moduleName     := "zio-elasticsearch-docs",
+      moduleName     := "docs",
       scalacOptions -= "-Yno-imports",
       scalacOptions -= "-Xfatal-warnings",
       ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(library),
