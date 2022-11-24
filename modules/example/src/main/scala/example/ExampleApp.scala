@@ -1,6 +1,5 @@
 package example
 
-import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.{DocumentId, ElasticExecutor, ElasticRequest, IndexName}
 import zio.schema._
@@ -21,5 +20,5 @@ object ExampleApp extends ZIOAppDefault {
           .getById[ExampleDocument](IndexName("kibana_sample_data_ecommerce"), DocumentId("NjvbqIQB22WMP-4s5SrH"))
       res <- es.execute(req)
       _   <- Console.printLine(res)
-    } yield ()).provide(ElasticExecutor.layer, HttpClientZioBackend.layer())
+    } yield ()).provide(ElasticExecutor.live)
 }

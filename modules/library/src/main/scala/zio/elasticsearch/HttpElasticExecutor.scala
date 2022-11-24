@@ -1,9 +1,8 @@
 package zio.elasticsearch
 
 import sttp.client3._
-import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.elasticsearch.ElasticRequest.{GetById, Map}
-import zio.{Task, ZIO, ZLayer}
+import zio.{Task, ZIO}
 
 import scala.annotation.tailrec
 
@@ -36,14 +35,7 @@ private[elasticsearch] final class HttpElasticExecutor private (client: SttpBack
 
 }
 
-object HttpElasticExecutor {
-  def create(httpClient: HttpClientZioBackend): HttpElasticExecutor = new HttpElasticExecutor(httpClient)
-
-  lazy val layer: ZLayer[HttpClientZioBackend, Throwable, ElasticExecutor] = ZLayer.scoped {
-    for {
-      httpClient <- ZIO.service[HttpClientZioBackend]
-      executor    = create(httpClient)
-      _          <- ZIO.succeed("Starting executor...")
-    } yield executor
-  }
+private[elasticsearch] object HttpElasticExecutor {
+  def create(client: SttpBackend[Task, Any]) =
+    new HttpElasticExecutor(client)
 }

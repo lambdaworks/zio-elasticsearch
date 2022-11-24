@@ -8,6 +8,6 @@ trait ElasticExecutor {
 }
 
 object ElasticExecutor {
-  lazy val layer: ZLayer[Any with HttpClientZioBackend, Throwable, ElasticExecutor] =
-    HttpClientZioBackend.layer >>> HttpElasticExecutor.layer
+  lazy val live: ZLayer[Any, Throwable, ElasticExecutor] =
+    HttpClientZioBackend.layer() >>> ZLayer.fromFunction(HttpElasticExecutor.create(_))
 }
