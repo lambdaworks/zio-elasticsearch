@@ -30,9 +30,10 @@ lazy val library =
     .settings(stdSettings("zio-elasticsearch"))
     .settings(
       libraryDependencies ++= List(
-        "dev.zio" %% "zio-json"        % "0.3.0",
-        "dev.zio" %% "zio-schema"      % "0.3.1",
-        "dev.zio" %% "zio-schema-json" % "0.3.1"
+        "dev.zio"                       %% "zio-json"            % "0.3.0",
+        "dev.zio"                       %% "zio-schema"          % "0.3.1",
+        "dev.zio"                       %% "zio-schema-json"     % "0.3.1",
+        "com.softwaremill.sttp.client3" %% "armeria-backend-zio" % "3.8.3"
       )
     )
 
@@ -40,6 +41,11 @@ lazy val example =
   project
     .in(file("modules/example"))
     .settings(stdSettings("example"))
+    .settings(
+      libraryDependencies ++= List(
+        "dev.zio" %% "zio" % "2.0.4"
+      )
+    )
     .dependsOn(library)
     .settings(
       publish / skip := true
