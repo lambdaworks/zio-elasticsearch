@@ -6,8 +6,10 @@ import zio.{Task, ZIO}
 
 import scala.annotation.tailrec
 
-private[elasticsearch] final class HttpElasticExecutor private (client: SttpBackend[Task, Any])
+private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
+
+  private val baseUrl: String = s"http://${config.host}:${config.port}"
 
   // TODO: ElasticConfig(url, port)
   // FIXME: execute: Task[A]
@@ -26,8 +28,9 @@ private[elasticsearch] final class HttpElasticExecutor private (client: SttpBack
     }
 
   private def executeGetById(getById: GetById) = {
+    println(baseUrl)
     val request = basicRequest.get(
-      uri"http://localhost:9200/${getById.index.name}/_doc/${getById.id.value}"
+      uri"$baseUrl/${getById.index.name}/_doc/${getById.id.value}"
     )
     println(request.send(client))
     ZIO.succeed(Document("""{"id": "lambdaworks", "count": 42}"""))
@@ -36,6 +39,6 @@ private[elasticsearch] final class HttpElasticExecutor private (client: SttpBack
 }
 
 private[elasticsearch] object HttpElasticExecutor {
-  def create(client: SttpBackend[Task, Any]) =
-    new HttpElasticExecutor(client)
+  def create(config: ElasticConfig, client: SttpBackend[Task, Any]) =
+    new HttpElasticExecutor(config, client)
 }
