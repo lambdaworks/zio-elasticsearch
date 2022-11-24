@@ -63,13 +63,6 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-  private[elasticsearch] final case class Put(
-    index: IndexName,
-    id: DocumentId,
-    document: Document,
-    routing: Option[Routing] = None
-  ) extends ElasticRequest[Unit]
-
   sealed abstract class DocumentGettingError
 
   object DocumentGettingError {
