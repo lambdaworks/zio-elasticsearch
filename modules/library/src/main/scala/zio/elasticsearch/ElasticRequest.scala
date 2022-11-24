@@ -63,7 +63,7 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-  private[elasticsearch] final case class PutItem(
+  private[elasticsearch] final case class Put(
     index: IndexName,
     id: DocumentId,
     document: Document,
