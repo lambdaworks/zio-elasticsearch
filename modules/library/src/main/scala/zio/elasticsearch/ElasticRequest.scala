@@ -24,13 +24,13 @@ object ElasticRequest {
       case None           => Left(DocumentNotFound)
     }
 
-  def put[A](
+  def put[A: Schema](
     index: IndexName,
     id: DocumentId,
     doc: A,
     routing: Option[Routing] = None
-  )(implicit schema: Schema[A]): ElasticRequest[Unit] =
-    Put(index, id, Document.apply(doc), routing)
+  ): ElasticRequest[Unit] =
+    Put(index, id, Document(doc), routing)
 
   private[elasticsearch] final case class GetById(
     index: IndexName,
