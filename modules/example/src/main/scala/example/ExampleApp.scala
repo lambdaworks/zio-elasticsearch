@@ -12,7 +12,14 @@ object ExampleApp extends ZIOAppDefault {
       req =
         ElasticRequest
           .getById[ExampleDocument](IndexName("kibana_sample_data_ecommerce"), DocumentId("NjvbqIQB22WMP-4s5SrH"))
+      /*req2 = ElasticRequest.put[ExampleDocument](
+               IndexName("kibana_sample_data_ecommerce"),
+               DocumentId("NjvbqIQB22WMP-4s5SrH"),
+               ExampleDocument("String", 10)
+             )*/
       res <- es.execute(req)
-      _   <- Console.printLine(res)
+//      res2 <- es.execute(req2)
+      _ <- Console.printLine(res)
+//      _ <- Console.printLine(res2)
     } yield ()).provide(ElasticExecutor.local)
 }

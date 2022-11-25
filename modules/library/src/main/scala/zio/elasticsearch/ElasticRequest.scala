@@ -61,7 +61,7 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[Document]]
+  ) extends ElasticRequest[Option[Document]] {}
 
   sealed abstract class DocumentGettingError
 
