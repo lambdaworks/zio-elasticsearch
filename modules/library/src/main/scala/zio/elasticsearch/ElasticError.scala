@@ -6,9 +6,9 @@ object ElasticError {
 
   object DocumentGettingError {
 
-    case object DocumentNotFound extends DocumentGettingError
+    final case object DocumentNotFound extends DocumentGettingError
 
-    case class JsonDecoderError(errorMsg: String) extends DocumentGettingError
+    final case class JsonDecoderError(message: String) extends DocumentGettingError
 
   }
 }

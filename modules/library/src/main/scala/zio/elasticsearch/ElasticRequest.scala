@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticError._
 import zio.elasticsearch.ElasticError.DocumentGettingError._
+import zio.elasticsearch.ElasticError._
 import zio.schema.Schema
 
 sealed trait ElasticRequest[+A] { self =>
