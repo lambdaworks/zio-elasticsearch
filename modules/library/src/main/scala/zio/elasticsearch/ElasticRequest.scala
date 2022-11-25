@@ -30,7 +30,7 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    Put(index, id, Document(doc), routing)
+    Put(index, id, Document.from(doc), routing)
 
   private[elasticsearch] final case class GetById(
     index: IndexName,

@@ -9,7 +9,7 @@ private[elasticsearch] final case class Document(json: String) {
 }
 
 private[elasticsearch] object Document {
-  def apply[A](doc: A)(implicit schema: Schema[A]): Document = Document(
+  def from[A](doc: A)(implicit schema: Schema[A]): Document = Document(
     JsonCodec.jsonEncoder(schema).encodeJson(a = doc, indent = None).toString
   )
 }
