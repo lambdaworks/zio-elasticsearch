@@ -1,6 +1,7 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticRequest.DocumentGettingError.{DocumentNotFound, JsonDecoderError}
+import zio.elasticsearch.ElasticError._
+import zio.elasticsearch.ElasticError.DocumentGettingError._
 import zio.schema.Schema
 
 sealed trait ElasticRequest[+A] { self =>
@@ -28,15 +29,5 @@ object ElasticRequest {
     id: DocumentId,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
-
-  sealed abstract class DocumentGettingError
-
-  object DocumentGettingError {
-
-    case object DocumentNotFound extends DocumentGettingError
-
-    case class JsonDecoderError(errorMsg: String) extends DocumentGettingError
-
-  }
 
 }
