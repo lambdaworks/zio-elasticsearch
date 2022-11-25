@@ -6,9 +6,8 @@ import zio.schema.Schema
 
 sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
-}
 
-sealed trait Constructor[+A] extends ElasticRequest[A]
+}
 
 object ElasticRequest {
 
@@ -63,15 +62,8 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
-  ) extends Constructor[Option[Document]]
+  ) extends ElasticRequest[Option[Document]]
 
-  sealed abstract class DocumentGettingError
-
-  object DocumentGettingError {
-
-    case object DocumentNotFound extends DocumentGettingError
-
-    case class JsonDecoderError(errorMsg: String) extends DocumentGettingError
-
-  }
+  private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
+      extends ElasticRequest[B]
 }

@@ -1,25 +1,20 @@
 package example
 
 import zio._
-import zio.elasticsearch.{DocumentId, ElasticExecutor, ElasticRequest, IndexName}
+import zio.elasticsearch.{DocumentId, ElasticExecutor, ElasticRequest, IndexName, Routing}
 
 object ExampleApp extends ZIOAppDefault {
 
-  override def run: Task[Unit] =
+  override def run: Task[Unit] = {
+    val index   = IndexName("examples")
+    val docId   = DocumentId("test-document-1")
+    val routing = Some(Routing("10"))
+
     (for {
-      _  <- Console.printLine("Welcome to an example app...")
-      es <- ZIO.service[ElasticExecutor]
-      req =
-        ElasticRequest
-          .getById[ExampleDocument](IndexName("kibana_sample_data_ecommerce"), DocumentId("NjvbqIQB22WMP-4s5SrH"))
-      /*req2 = ElasticRequest.put[ExampleDocument](
-               IndexName("kibana_sample_data_ecommerce"),
-               DocumentId("NjvbqIQB22WMP-4s5SrH"),
-               ExampleDocument("String", 10)
-             )*/
-      res <- es.execute(req)
-//      res2 <- es.execute(req2)
-      _ <- Console.printLine(res)
-//      _ <- Console.printLine(res2)
+      _   <- Console.printLine("Welcome to an example app...")
+      _   <- Console.printLine(s"Looking for the document '$docId' in '$index' index...'")
+      res <- ElasticRequest.getById[ExampleDocument](index, docId, routing).execute
+      _   <- Console.printLine(res)
     } yield ()).provide(ElasticExecutor.local)
+  }
 }

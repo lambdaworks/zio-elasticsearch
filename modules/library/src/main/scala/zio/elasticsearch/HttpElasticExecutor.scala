@@ -1,22 +1,15 @@
 package zio.elasticsearch
 
 import sttp.client3._
-import zio.elasticsearch.ElasticRequest.{GetById, Map, Put}
+import sttp.model.Uri
+import zio.elasticsearch.ElasticRequest.{Constructor, GetById, Map, Put}
 import zio.json.DecoderOps
 import zio.{Task, ZIO}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
 
-  private val baseUrl: String = s"http://${config.host}:${config.port}"
-
-  // TODO: ElasticConfig(url, port)
-  // FIXME: execute: Task[A]
-  // TODO: Use URL instead of String
-  // TODO: Change zio-http with sttp
-  // TODO: Add .execute on Request (check DynamoDB)
-
-  // TODO: Parse from elastic search JSON
+  private val uri = Uri(config.host, config.port)
 
   override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
@@ -45,49 +38,41 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
    * */
 
   private def executePut(put: Put): Task[Unit] = {
-    val request = basicRequest
-      .post(
-        uri"$baseUrl/${put.index}/_doc/"
-      )
-      .body(putBody)
-      .contentType("application/json")
-
-    request.send(client).flatMap { a =>
-      println(a.statusText)
-      a.body match {
-        case Left(value) =>
-          println(value)
-          ZIO.succeed(())
-
-        case Right(value) =>
-          println(value)
-          ZIO.succeed(())
-      }
-    }
+//    val request = basicRequest
+//      .post(
+//        uri"$baseUrl/${put.index}/_doc/"
+//      )
+//      .body(putBody)
+//      .contentType("application/json")
+//
+//    request.send(client).flatMap { a =>
+//      println(a.statusText)
+//      a.body match {
+//        case Left(value) =>
+//          println(value)
+//          ZIO.succeed(())
+//
+//        case Right(value) =>
+//          println(value)
+//          ZIO.succeed(())
+//      }
+//    }
+    println(put)
+    ZIO.unit
   }
 
   private def executeGetById(getById: GetById): Task[Option[Document]] = {
-    val request = basicRequest.get(
-      uri"$baseUrl/${getById.index}/_doc/${getById.id}"
-    )
-    request
-      .send(client)
-      .flatMap { response =>
-        response.body match {
-          case Left(err) =>
-            println(err)
-            ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
-          case Right(body) =>
-            body.fromJson[ElasticResponseClass] match {
-              case Left(err) =>
-                println(err)
-                ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
-              case Right(elasticResponseClass) =>
-                println(elasticResponseClass._source)
-                ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
-            }
+    val u =
+      uri.withPath(getById.index.name, "_doc", getById.id.value).withParam("routing", getById.routing.map(_.value))
+    basicRequest.get(u).send(client).map {
+      case Response(Right(body), _, _, _, _, _) =>
+        body.fromJson[ElasticResponse] match {
+          case Right(res) if res.found => Some(Document(res.source.toJson))
+          case _                       => None
         }
-      }
+
+      case Response(Left(_), _, _, _, _, _) => None
+    }
   }
 
 }
