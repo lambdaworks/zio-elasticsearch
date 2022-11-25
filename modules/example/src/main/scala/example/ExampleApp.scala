@@ -7,7 +7,7 @@ object ExampleApp extends ZIOAppDefault {
 
   override def run: Task[Unit] = {
     val index   = IndexName("examples")
-    val docId   = DocumentId("test-document-1")
+    val docId   = DocumentId("test-document-2")
     val routing = Some(Routing("10"))
 
     (for {
