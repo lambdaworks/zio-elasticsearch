@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import sttp.client3._
 import zio.elasticsearch.ElasticRequest.{GetById, Map, Put}
+import zio.json.DecoderOps
 import zio.{Task, ZIO}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
@@ -71,17 +72,22 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     )
     request
       .send(client)
-      .flatMap { a =>
-        a.body match {
-          case Left(value) =>
-            println(value)
+      .flatMap { response =>
+        response.body match {
+          case Left(err) =>
+            println(err)
             ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
-          case Right(value) =>
-            println(value)
-            ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
+          case Right(body) =>
+            body.fromJson[ElasticResponseClass] match {
+              case Left(err) =>
+                println(err)
+                ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
+              case Right(elasticResponseClass) =>
+                println(elasticResponseClass._source)
+                ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
+            }
         }
       }
-
   }
 
 }
