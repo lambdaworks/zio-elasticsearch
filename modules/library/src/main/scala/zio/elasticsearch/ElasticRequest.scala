@@ -8,6 +8,8 @@ sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
 }
 
+sealed trait Constructor[+A] extends ElasticRequest[A]
+
 object ElasticRequest {
 
   def create[A: Schema](
@@ -61,7 +63,7 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[Document]] {}
+  ) extends Constructor[Option[Document]]
 
   sealed abstract class DocumentGettingError
 

@@ -5,7 +5,7 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.{Task, ZIO, ZLayer}
 
 trait ElasticExecutor {
-  def execute[A](request: ElasticRequest[A]): Task[Document]
+  def execute[A](request: ElasticRequest[A]): Task[A]
 }
 
 object ElasticExecutor {

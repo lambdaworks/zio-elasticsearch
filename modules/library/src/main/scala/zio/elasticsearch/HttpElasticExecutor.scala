@@ -4,8 +4,6 @@ import sttp.client3._
 import zio.elasticsearch.ElasticRequest.{GetById, Map, Put}
 import zio.{Task, ZIO}
 
-import scala.annotation.tailrec
-
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
 
@@ -19,13 +17,16 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   // TODO: Parse from elastic search JSON
 
-  @tailrec
-  override def execute[A](request: ElasticRequest[A]): Task[Document] =
+  override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case r: GetById      => executeGetById(r)
-      case r: Put          => executePut(r)
-      case map @ Map(_, _) => execute(map.request) // .map(d => map.mapper)
-      case _               => ZIO.fail(new RuntimeException("Not implemented yet."))
+      case c: Constructor[_] => executeConstructor(c)
+      case map @ Map(_, _)   => execute(map.request).map(map.mapper)
+    }
+
+  private def executeConstructor[A](constructor: Constructor[A]): Task[A] =
+    constructor match {
+      case getById: GetById => executeGetById(getById)
+      case put: Put         => executePut(put)
     }
 
   /*
@@ -42,7 +43,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
    * POST /baseURL/<index>/_create/<id>
    * */
 
-  private def executePut(put: Put) = {
+  private def executePut(put: Put): Task[Unit] = {
     val request = basicRequest
       .post(
         uri"$baseUrl/${put.index}/_doc/"
@@ -55,15 +56,16 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       a.body match {
         case Left(value) =>
           println(value)
-          ZIO.succeed(Document("""{"id": "lambdaworks", "count": 42}"""))
+          ZIO.succeed(())
+
         case Right(value) =>
           println(value)
-          ZIO.succeed(Document("""{"id": "lambdaworks", "count": 42}"""))
+          ZIO.succeed(())
       }
     }
   }
 
-  private def executeGetById(getById: GetById) = {
+  private def executeGetById(getById: GetById): Task[Option[Document]] = {
     val request = basicRequest.get(
       uri"$baseUrl/${getById.index}/_doc/${getById.id}"
     )
@@ -73,10 +75,10 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         a.body match {
           case Left(value) =>
             println(value)
-            ZIO.succeed(Document("""{"id": "lambdaworks", "count": 42}"""))
+            ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
           case Right(value) =>
             println(value)
-            ZIO.succeed(Document("""{"id": "lambdaworks", "count": 42}"""))
+            ZIO.succeed(Some(Document("""{"id": "lambdaworks", "count": 42}""")))
         }
       }
 
