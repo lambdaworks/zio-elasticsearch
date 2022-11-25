@@ -30,14 +30,4 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-  sealed abstract class DocumentGettingError
-
-  object DocumentGettingError {
-
-    case object DocumentNotFound extends DocumentGettingError
-
-    case class JsonDecoderError(errorMsg: String) extends DocumentGettingError
-
-  }
-
 }
