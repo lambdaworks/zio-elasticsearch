@@ -26,11 +26,18 @@ object ElasticRequest {
 
   def create[A: Schema](
     index: IndexName,
-    id: Option[DocumentId],
+    id: DocumentId,
     doc: A,
-    routing: Option[Routing] = None
+    routing: Option[Routing]
   ): ElasticRequest[Unit] =
-    Create(index, id, Document.from(doc), routing)
+    Create(index, Some(id), Document.from(doc), routing)
+
+  def create[A: Schema](
+    index: IndexName,
+    doc: A,
+    routing: Option[Routing]
+  ): ElasticRequest[Unit] =
+    Create(index, None, Document.from(doc), routing)
 
   def upsert[A: Schema](
     index: IndexName,
