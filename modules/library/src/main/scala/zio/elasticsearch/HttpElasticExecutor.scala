@@ -1,13 +1,15 @@
 package zio.elasticsearch
 
 import sttp.client3._
+import sttp.client3.ziojson._
 import sttp.model.Uri
 import zio.elasticsearch.ElasticRequest.{Constructor, GetById, Map, Put}
-import zio.json.DecoderOps
 import zio.{Task, ZIO}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
+
+  import HttpElasticExecutor._
 
   private val uri = Uri(config.host, config.port)
 
@@ -63,21 +65,21 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeGetById(getById: GetById): Task[Option[Document]] = {
     val u =
-      uri.withPath(getById.index.name, "_doc", getById.id.value).withParam("routing", getById.routing.map(_.value))
-    basicRequest.get(u).send(client).map {
-      case Response(Right(body), _, _, _, _, _) =>
-        body.fromJson[ElasticResponse] match {
-          case Right(res) if res.found => Some(Document(res.source.toJson))
-          case _                       => None
-        }
-
-      case Response(Left(_), _, _, _, _, _) => None
-    }
+      uri.withWholePath(s"${getById.index}/$Doc/${getById.id}").withParam("routing", getById.routing.map(_.value))
+    basicRequest
+      .get(u)
+      .response(asJson[ElasticResponse])
+      .send(client)
+      .map(_.body.toOption)
+      .map(_.flatMap(d => Option.when(d.found)(Document.from(d.source.toJson))))
   }
 
 }
 
 private[elasticsearch] object HttpElasticExecutor {
-  def create(config: ElasticConfig, client: SttpBackend[Task, Any]) =
+
+  private final val Doc = "_doc"
+
+  def apply(config: ElasticConfig, client: SttpBackend[Task, Any]) =
     new HttpElasticExecutor(config, client)
 }
