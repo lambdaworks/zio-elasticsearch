@@ -24,13 +24,21 @@ object ElasticRequest {
       case None           => Left(DocumentNotFound)
     }
 
-  def put[A: Schema](
+  def create[A: Schema](
+    index: IndexName,
+    id: Option[DocumentId],
+    doc: A,
+    routing: Option[Routing] = None
+  ): ElasticRequest[Unit] =
+    Create(index, id, Document.from(doc), routing)
+
+  def upsert[A: Schema](
     index: IndexName,
     id: DocumentId,
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    Put(index, id, Document.from(doc), routing)
+    CreateOrUpdate(index, id, Document.from(doc), routing)
 
   private[elasticsearch] final case class GetById(
     index: IndexName,
@@ -38,7 +46,14 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-  private[elasticsearch] final case class Put(
+  private[elasticsearch] final case class Create(
+    index: IndexName,
+    id: Option[DocumentId],
+    document: Document,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit]
+
+  private[elasticsearch] final case class CreateOrUpdate(
     index: IndexName,
     id: DocumentId,
     document: Document,
