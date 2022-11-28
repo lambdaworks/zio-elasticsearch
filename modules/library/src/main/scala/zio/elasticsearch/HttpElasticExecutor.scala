@@ -29,7 +29,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .response(asJson[ElasticResponse])
       .send(client)
       .map(_.body.toOption)
-      .map(_.flatMap(d => Option.when(d.found)(Document.from(d.source))))
+      .map(_.flatMap(d => if (d.found) Option(Document.from(d.source)) else None))
   }
 
 }
