@@ -2,7 +2,7 @@ package example
 
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
-import zio.elasticsearch.{DocumentId, ElasticExecutor, ElasticRequest, IndexName, Routing}
+import zio.elasticsearch._
 
 object ExampleApp extends ZIOAppDefault {
 

@@ -3,8 +3,8 @@ package zio.elasticsearch
 import sttp.client3._
 import sttp.client3.ziojson._
 import sttp.model.Uri
-import zio.elasticsearch.ElasticRequest.{Constructor, GetById, Map, Put}
 import zio.{Task, ZIO}
+import zio.elasticsearch.ElasticRequest.{GetById, Map, Put}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -15,14 +15,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case c: Constructor[_] => executeConstructor(c)
-      case map @ Map(_, _)   => execute(map.request).map(map.mapper)
-    }
-
-  private def executeConstructor[A](constructor: Constructor[A]): Task[A] =
-    constructor match {
-      case getById: GetById => executeGetById(getById)
-      case put: Put         => executePut(put)
+      case r: GetById      => executeGetById(r)
+      case r: Put          => executePut(r)
+      case map @ Map(_, _) => execute(map.request).map(map.mapper)
     }
 
   /*
@@ -38,27 +33,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
    * PUT /baseURL/<index>/_create/<id>
    * POST /baseURL/<index>/_create/<id>
    * */
-
   private def executePut(put: Put): Task[Unit] = {
-//    val request = basicRequest
-//      .post(
-//        uri"$baseUrl/${put.index}/_doc/"
-//      )
-//      .body(putBody)
-//      .contentType("application/json")
-//
-//    request.send(client).flatMap { a =>
-//      println(a.statusText)
-//      a.body match {
-//        case Left(value) =>
-//          println(value)
-//          ZIO.succeed(())
-//
-//        case Right(value) =>
-//          println(value)
-//          ZIO.succeed(())
-//      }
-//    }
     println(put)
     ZIO.unit
   }
