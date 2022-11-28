@@ -28,7 +28,7 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     doc: A,
-    routing: Option[Routing]
+    routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
     Create(index, Some(id), Document.from(doc), routing)
 
