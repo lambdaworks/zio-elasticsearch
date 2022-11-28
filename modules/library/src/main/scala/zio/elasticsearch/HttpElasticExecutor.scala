@@ -11,21 +11,20 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   import HttpElasticExecutor._
 
-  private val uri = Uri(config.host, config.port)
+  private val basePath = Uri(config.host, config.port)
 
   override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
+      case _: Create         => ZIO.unit
+      case _: CreateOrUpdate => ZIO.unit
       case r: GetById        => executeGetById(r)
-      case _: Create         => ZIO.attempt(())
-      case _: CreateOrUpdate => ZIO.attempt(())
       case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
 
   private def executeGetById(getById: GetById): Task[Option[Document]] = {
-    val u =
-      uri.withWholePath(s"${getById.index}/$Doc/${getById.id}").withParam("routing", getById.routing.map(_.value))
+    val uri = uri"$basePath/${getById.index}/$Doc/${getById.id}".withParam("routing", getById.routing.map(_.value))
     basicRequest
-      .get(u)
+      .get(uri)
       .response(asJson[ElasticResponse])
       .send(client)
       .map(_.body.toOption)

@@ -7,8 +7,8 @@ import zio.elasticsearch._
 object ExampleApp extends ZIOAppDefault {
 
   override def run: Task[Unit] = {
-    val index   = IndexName("examples")
-    val docId   = DocumentId("test-document-1")
+    val index   = IndexName("kibana_sample_data_ecommerce")
+    val docId   = DocumentId("wzvbqIQB22WMP-4s4h8K")
     val routing = Some(Routing("10"))
 
     (for {

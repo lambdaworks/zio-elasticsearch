@@ -18,5 +18,4 @@ object ElasticExecutor {
 
   lazy val local: ZLayer[SttpBackend[Task, Any], Throwable, ElasticExecutor] =
     ZLayer.succeed(ElasticConfig.Default) >>> live
-
 }

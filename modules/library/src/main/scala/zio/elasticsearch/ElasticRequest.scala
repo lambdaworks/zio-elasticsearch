@@ -6,10 +6,10 @@ import zio.schema.Schema
 import zio.{RIO, ZIO}
 
 sealed trait ElasticRequest[+A] { self =>
-  final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
-
   final def execute: RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
+
+  final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
 }
 
 object ElasticRequest {
