@@ -1,14 +1,16 @@
 package zio.elasticsearch
 
+sealed trait ElasticError
+
 object ElasticError {
 
-  sealed abstract class DocumentGettingError
+  sealed abstract class DocumentRetrievingError
 
-  object DocumentGettingError {
+  object DocumentRetrievingError {
 
-    final case object DocumentNotFound extends DocumentGettingError
+    final case object DocumentNotFound extends DocumentRetrievingError
 
-    final case class JsonDecoderError(message: String) extends DocumentGettingError
+    final case class DecoderError(reason: String) extends DocumentRetrievingError
 
   }
 }

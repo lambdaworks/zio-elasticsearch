@@ -1,6 +1,6 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticError.DocumentGettingError._
+import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
 import zio.schema.Schema
 
@@ -18,9 +18,9 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
-  ): ElasticRequest[Either[DocumentGettingError, A]] =
+  ): ElasticRequest[Either[DocumentRetrievingError, A]] =
     GetById(index, id, routing).map {
-      case Some(document) => document.decode.left.map(err => JsonDecoderError(err.message))
+      case Some(document) => document.decode.left.map(err => DecoderError(err.message))
       case None           => Left(DocumentNotFound)
     }
 
