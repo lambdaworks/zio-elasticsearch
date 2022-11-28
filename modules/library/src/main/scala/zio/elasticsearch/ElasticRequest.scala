@@ -11,19 +11,6 @@ sealed trait ElasticRequest[+A] { self =>
 
 object ElasticRequest {
 
-  private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
-      extends ElasticRequest[B]
-
-  def getById[A: Schema](
-    index: IndexName,
-    id: DocumentId,
-    routing: Option[Routing] = None
-  ): ElasticRequest[Either[DocumentRetrievingError, A]] =
-    GetById(index, id, routing).map {
-      case Some(document) => document.decode.left.map(err => DecoderError(err.message))
-      case None           => Left(DocumentNotFound)
-    }
-
   def create[A: Schema](
     index: IndexName,
     id: DocumentId,
@@ -39,6 +26,16 @@ object ElasticRequest {
   ): ElasticRequest[Unit] =
     Create(index, None, Document.from(doc), routing)
 
+  def getById[A: Schema](
+    index: IndexName,
+    id: DocumentId,
+    routing: Option[Routing] = None
+  ): ElasticRequest[Either[DocumentRetrievingError, A]] =
+    GetById(index, id, routing).map {
+      case Some(document) => document.decode.left.map(err => DecoderError(err.message))
+      case None           => Left(DocumentNotFound)
+    }
+
   def upsert[A: Schema](
     index: IndexName,
     id: DocumentId,
@@ -46,12 +43,6 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
     CreateOrUpdate(index, id, Document.from(doc), routing)
-
-  private[elasticsearch] final case class GetById(
-    index: IndexName,
-    id: DocumentId,
-    routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[Document]]
 
   private[elasticsearch] final case class Create(
     index: IndexName,
@@ -67,4 +58,12 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Unit]
 
+  private[elasticsearch] final case class GetById(
+    index: IndexName,
+    id: DocumentId,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Option[Document]]
+
+  private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
+      extends ElasticRequest[B]
 }
