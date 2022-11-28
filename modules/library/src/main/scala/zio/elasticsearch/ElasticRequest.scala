@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import zio.{RIO, ZIO}
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
 import zio.schema.Schema
@@ -7,6 +8,8 @@ import zio.schema.Schema
 sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
 
+  final def execute: RIO[ElasticExecutor, A] =
+    ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
 }
 
 object ElasticRequest {

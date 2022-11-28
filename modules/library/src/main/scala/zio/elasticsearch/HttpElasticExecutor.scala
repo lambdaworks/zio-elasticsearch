@@ -4,7 +4,7 @@ import sttp.client3._
 import sttp.client3.ziojson._
 import sttp.model.Uri
 import zio.{Task, ZIO}
-import zio.elasticsearch.ElasticRequest.{GetById, Map, Put}
+import zio.elasticsearch.ElasticRequest._
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -15,28 +15,11 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case r: GetById      => executeGetById(r)
-      case r: Put          => executePut(r)
-      case map @ Map(_, _) => execute(map.request).map(map.mapper)
+      case r: GetById        => executeGetById(r)
+      case _: Create         => ZIO.attempt(())
+      case _: CreateOrUpdate => ZIO.attempt(())
+      case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
-
-  /*
-   * `executePut` can be done with and without Id.
-   *
-   * To execute it without id following has to be used:
-   *
-   * POST /baseURL/<index>/_doc/
-   *
-   * To execute it with id following has to be used:
-   *
-   * POST /baseURL/<index>/_doc/<id>
-   * PUT /baseURL/<index>/_create/<id>
-   * POST /baseURL/<index>/_create/<id>
-   * */
-  private def executePut(put: Put): Task[Unit] = {
-    println(put)
-    ZIO.unit
-  }
 
   private def executeGetById(getById: GetById): Task[Option[Document]] = {
     val u =
