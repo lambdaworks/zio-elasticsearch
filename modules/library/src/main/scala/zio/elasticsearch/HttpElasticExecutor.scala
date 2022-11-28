@@ -3,8 +3,8 @@ package zio.elasticsearch
 import sttp.client3._
 import sttp.client3.ziojson._
 import sttp.model.Uri
-import zio.{Task, ZIO}
 import zio.elasticsearch.ElasticRequest._
+import zio.{Task, ZIO}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {

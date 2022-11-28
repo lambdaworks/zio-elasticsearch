@@ -1,9 +1,9 @@
 package zio.elasticsearch
 
-import zio.{RIO, ZIO}
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
 import zio.schema.Schema
+import zio.{RIO, ZIO}
 
 sealed trait ElasticRequest[+A] { self =>
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
