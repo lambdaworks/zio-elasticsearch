@@ -28,6 +28,7 @@ lazy val library =
   project
     .in(file("modules/library"))
     .settings(stdSettings("zio-elasticsearch"))
+    .settings(scalacOptions += "-language:higherKinds")
     .settings(
       libraryDependencies ++= List(
         "dev.zio"                       %% "zio-json"        % "0.3.0",
