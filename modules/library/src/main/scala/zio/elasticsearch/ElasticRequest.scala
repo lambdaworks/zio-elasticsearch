@@ -11,8 +11,20 @@ sealed trait ElasticRequest[+A] { self =>
 
 object ElasticRequest {
 
-  private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
-      extends ElasticRequest[B]
+  def create[A: Schema](
+    index: IndexName,
+    id: DocumentId,
+    doc: A,
+    routing: Option[Routing] = None
+  ): ElasticRequest[Unit] =
+    Create(index, Some(id), Document.from(doc), routing)
+
+  def create[A: Schema](
+    index: IndexName,
+    doc: A,
+    routing: Option[Routing]
+  ): ElasticRequest[Unit] =
+    Create(index, None, Document.from(doc), routing)
 
   def getById[A: Schema](
     index: IndexName,
@@ -24,10 +36,34 @@ object ElasticRequest {
       case None           => Left(DocumentNotFound)
     }
 
+  def upsert[A: Schema](
+    index: IndexName,
+    id: DocumentId,
+    doc: A,
+    routing: Option[Routing] = None
+  ): ElasticRequest[Unit] =
+    CreateOrUpdate(index, id, Document.from(doc), routing)
+
+  private[elasticsearch] final case class Create(
+    index: IndexName,
+    id: Option[DocumentId],
+    document: Document,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit]
+
+  private[elasticsearch] final case class CreateOrUpdate(
+    index: IndexName,
+    id: DocumentId,
+    document: Document,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit]
+
   private[elasticsearch] final case class GetById(
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
+  private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
+      extends ElasticRequest[B]
 }

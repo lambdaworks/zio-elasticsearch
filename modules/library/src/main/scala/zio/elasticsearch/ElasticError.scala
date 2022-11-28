@@ -8,9 +8,9 @@ object ElasticError {
 
   object DocumentRetrievingError {
 
-    final case object DocumentNotFound extends DocumentRetrievingError
-
     final case class DecoderError(reason: String) extends DocumentRetrievingError
+
+    final case object DocumentNotFound extends DocumentRetrievingError
 
   }
 }
