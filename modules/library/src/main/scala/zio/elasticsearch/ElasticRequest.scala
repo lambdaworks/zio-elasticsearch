@@ -20,7 +20,7 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    Create(index, Some(id), Document.from(doc), routing).map(_ => ())
+    Create(index = index, id = Some(id), document = Document.from(doc), routing = routing).map(_ => ())
 
   def create[A: Schema](
     index: IndexName,
@@ -47,7 +47,7 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    CreateOrUpdate(index, id, Document.from(doc), routing)
+    CreateOrUpdate(index = index, id = id, document = Document.from(doc), routing = routing)
 
   def createIndex(
     name: IndexName,
