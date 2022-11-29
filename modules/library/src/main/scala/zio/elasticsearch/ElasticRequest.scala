@@ -20,13 +20,13 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    Create(index, Some(id), Document.from(doc), routing)
+    Create(index, Some(id), Document.from(doc), routing).map(_ => ())
 
   def create[A: Schema](
     index: IndexName,
     doc: A,
     routing: Option[Routing]
-  ): ElasticRequest[Unit] =
+  ): ElasticRequest[Option[DocumentId]] =
     Create(index, None, Document.from(doc), routing)
 
   def getById[A: Schema](
@@ -52,7 +52,7 @@ object ElasticRequest {
     id: Option[DocumentId],
     document: Document,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Unit]
+  ) extends ElasticRequest[Option[DocumentId]]
 
   private[elasticsearch] final case class CreateOrUpdate(
     index: IndexName,
