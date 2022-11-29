@@ -2,7 +2,6 @@ package zio.elasticsearch
 
 import sttp.client3._
 import sttp.client3.ziojson._
-import sttp.model.Header.contentType
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.Uri
 import zio.Task
@@ -44,7 +43,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
     basicRequest
       .post(createUri(r.id))
-      .header(contentType(ApplicationJson))
+      .contentType(ApplicationJson)
       .response(asJson[ElasticCreateResponse])
       .body(r.document.json)
       .send(client)
@@ -58,7 +57,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
     basicRequest
       .put(u)
-      .header(contentType(ApplicationJson))
+      .contentType(ApplicationJson)
       .body(r.document.json)
       .send(client)
       .unit
