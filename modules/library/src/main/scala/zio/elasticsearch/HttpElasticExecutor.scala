@@ -30,7 +30,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .response(asJson[ElasticGetResponse])
       .send(client)
       .map(_.body.toOption)
-      .map(_.flatMap(d => if (d.found) Option(Document.from(d.source)) else None))
+      .map(_.flatMap(d => if (d.found) Some(Document.from(d.source)) else None))
   }
 
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
@@ -49,7 +49,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .body(r.document.json)
       .send(client)
       .map(_.body.toOption)
-      .map(_.flatMap(body => Option(DocumentId(body.id))))
+      .map(_.flatMap(body => Some(DocumentId(body.id))))
   }
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
@@ -61,7 +61,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .header(contentType(ApplicationJson))
       .body(r.document.json)
       .send(client)
-      .as(())
+      .unit
   }
 }
 
