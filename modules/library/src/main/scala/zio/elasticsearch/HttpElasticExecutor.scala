@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
-import sttp.client3._
 import sttp.client3.ziojson._
+import sttp.client3.{SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.Uri
 import zio.Task
@@ -24,7 +24,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeGetById(r: GetById): Task[Option[Document]] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
-    basicRequest
+    request
       .get(uri)
       .response(asJson[ElasticGetResponse])
       .send(client)
@@ -41,7 +41,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
           uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(_.value))
       }
 
-    basicRequest
+    request
       .post(createUri(r.id))
       .contentType(ApplicationJson)
       .response(asJson[ElasticCreateResponse])
@@ -55,7 +55,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     val u = uri"$basePath/${r.index}/$Doc/${r.id}"
       .withParam("routing", r.routing.map(_.value))
 
-    basicRequest
+    request
       .put(u)
       .contentType(ApplicationJson)
       .body(r.document.json)
