@@ -17,6 +17,7 @@ sealed trait ElasticRequest[+A] { self =>
       case Map(request, mapper) => Map(request.routing(value), mapper)
       case r: Create            => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
       case r: CreateOrUpdate    => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
+      case r: DeleteById        => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
       case r: Exists            => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
       case r: GetById           => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
       case _                    => self
@@ -30,6 +31,9 @@ object ElasticRequest {
 
   def create[A: Schema](index: IndexName, doc: A): ElasticRequest[Option[DocumentId]] =
     Create(index, None, Document.from(doc))
+
+  def deleteById(index: IndexName, id: DocumentId): ElasticRequest[Either[DocumentNotFound.type, Unit]] =
+    DeleteById(index, id).map(_.toRight(DocumentNotFound))
 
   def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean] =
     Exists(index, id)
@@ -67,6 +71,12 @@ object ElasticRequest {
     document: Document,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Unit]
+
+  private[elasticsearch] final case class DeleteById(
+    index: IndexName,
+    id: DocumentId,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Option[Unit]]
 
   private[elasticsearch] final case class DeleteIndex(name: IndexName) extends ElasticRequest[Unit]
 
