@@ -27,7 +27,9 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing]
   ): ElasticRequest[Option[DocumentId]] =
-    Create(index, None, Document.from(doc), routing)
+    Create(index = index, id = None, document = Document.from(doc), routing = routing)
+
+  def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean] = Exists(index = index, id = id)
 
   def getById[A: Schema](
     index: IndexName,
@@ -65,6 +67,11 @@ object ElasticRequest {
     document: Document,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Unit]
+
+  private[elasticsearch] final case class Exists(
+    index: IndexName,
+    id: DocumentId
+  ) extends ElasticRequest[Boolean]
 
   private[elasticsearch] final case class GetById(
     index: IndexName,
