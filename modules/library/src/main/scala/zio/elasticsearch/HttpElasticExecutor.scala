@@ -74,12 +74,13 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .unit
   }
 
-  private def executeExists(r: Exists): Task[Boolean] =
+  private def executeExists(r: Exists): Task[Boolean] = {
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
     request
-      .get(uri"$basePath/${r.index}/$Doc/${r.id}")
-      .response(asJson[ElasticGetResponse])
+      .head(uri)
       .send(client)
       .map(_.code.equals(Ok))
+  }
 
 }
 

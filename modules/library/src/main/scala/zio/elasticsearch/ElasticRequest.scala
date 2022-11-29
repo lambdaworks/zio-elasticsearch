@@ -70,7 +70,8 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Exists(
     index: IndexName,
-    id: DocumentId
+    id: DocumentId,
+    routing: Option[Routing] = None
   ) extends ElasticRequest[Boolean]
 
   private[elasticsearch] final case class GetById(
