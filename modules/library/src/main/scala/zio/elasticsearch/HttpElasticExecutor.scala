@@ -68,7 +68,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     request
       .put(uri"$basePath/${createIndex.name}")
       .contentType(ApplicationJson)
-      .body(createIndex.jsonBody.getOrElse(""))
+      .body(createIndex.definition.getOrElse(""))
       .send(client)
       .unit
 }

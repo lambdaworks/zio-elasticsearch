@@ -49,8 +49,8 @@ object ElasticRequest {
 
   def createIndex(
     name: IndexName,
-    jsonBody: Option[String]
-  ): ElasticRequest[Unit] = CreateIndex(name, jsonBody)
+    definition: Option[String]
+  ): ElasticRequest[Unit] = CreateIndex(name, definition)
 
   private[elasticsearch] final case class Create(
     index: IndexName,
@@ -72,7 +72,7 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-  private[elasticsearch] final case class CreateIndex(name: IndexName, jsonBody: Option[String])
+  private[elasticsearch] final case class CreateIndex(name: IndexName, definition: Option[String])
       extends ElasticRequest[Unit]
 
   private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
