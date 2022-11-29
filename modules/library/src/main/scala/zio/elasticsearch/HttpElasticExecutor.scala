@@ -63,10 +63,18 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .send(client)
       .unit
   }
-  private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] = {
-    val uri = uri"$basePath/${createIndex.index}"
-    request.put(uri).send(client).unit
-  }
+
+  private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
+    request
+      .put(uri"$basePath/${createIndex.name}")
+      .contentType("application/json")
+      .body(createIndex.jsonBody.getOrElse(""))
+      .send(client)
+      .map { res =>
+        println(res)
+        res.body.map(println)
+      }
+      .unit
 }
 
 private[elasticsearch] object HttpElasticExecutor {
