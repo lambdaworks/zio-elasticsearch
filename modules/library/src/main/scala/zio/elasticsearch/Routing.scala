@@ -1,3 +1,3 @@
 package zio.elasticsearch
 
-final case class Routing(value: String) extends AnyVal
+private[elasticsearch] final case class Routing(value: String) extends AnyVal
