@@ -53,7 +53,14 @@ lazy val example =
     .settings(stdSettings("example"))
     .settings(
       libraryDependencies ++= List(
-        "dev.zio" %% "zio" % "2.0.5"
+        "dev.zio" %% "zio"                 % "2.0.5",
+        "dev.zio" %% "zio-config"          % "3.0.2",
+        "dev.zio" %% "zio-config-magnolia" % "3.0.2",
+        "dev.zio" %% "zio-config-typesafe" % "3.0.2",
+        "dev.zio" %% "zio-http"            % "0.0.3",
+        "dev.zio" %% "zio-json"            % "0.3.0",
+        "dev.zio" %% "zio-schema"          % "0.3.1",
+        "dev.zio" %% "zio-schema-json"     % "0.3.1"
       )
     )
     .dependsOn(library)
