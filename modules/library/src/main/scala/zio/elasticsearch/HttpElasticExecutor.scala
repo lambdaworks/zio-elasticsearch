@@ -64,23 +64,13 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val u = uri"$basePath/${r.index}/$Doc/${r.id}"
-      .withParam("routing", r.routing.map(_.value))
-
-    request
-      .put(u)
-      .contentType(ApplicationJson)
-      .body(r.document.json)
-      .send(client)
-      .unit
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    request.put(uri).contentType(ApplicationJson).body(r.document.json).send(client).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
-    request
-      .head(uri)
-      .send(client)
-      .map(_.code.equals(Ok))
+    request.head(uri).send(client).map(_.code.equals(Ok))
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
