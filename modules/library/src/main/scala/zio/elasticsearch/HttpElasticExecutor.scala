@@ -3,6 +3,7 @@ package zio.elasticsearch
 import sttp.client3.ziojson._
 import sttp.client3.{SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
+import sttp.model.StatusCode.Ok
 import sttp.model.Uri
 import zio.Task
 import zio.elasticsearch.ElasticRequest._
@@ -17,8 +18,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
       case r: Create         => executeCreate(r)
-      case r: CreateOrUpdate => executeCreateOrUpdate(r)
       case r: CreateIndex    => executeCreateIndex(r)
+      case r: CreateOrUpdate => executeCreateOrUpdate(r)
+      case r: Exists         => executeExists(r)
       case r: GetById        => executeGetById(r)
       case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
@@ -52,6 +54,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .map(_.flatMap(body => Some(DocumentId(body.id))))
   }
 
+  private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
+    request
+      .put(uri"$basePath/${createIndex.name}")
+      .contentType(ApplicationJson)
+      .body(createIndex.definition.getOrElse(""))
+      .send(client)
+      .unit
+
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
     val u = uri"$basePath/${r.index}/$Doc/${r.id}"
       .withParam("routing", r.routing.map(_.value))
@@ -64,13 +74,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .unit
   }
 
-  private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
+  private def executeExists(r: Exists): Task[Boolean] = {
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
     request
-      .put(uri"$basePath/${createIndex.name}")
-      .contentType(ApplicationJson)
-      .body(createIndex.definition.getOrElse(""))
+      .head(uri)
       .send(client)
-      .unit
+      .map(_.code.equals(Ok))
+  }
+
 }
 
 private[elasticsearch] object HttpElasticExecutor {

@@ -20,14 +20,16 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    Create(index, Some(id), Document.from(doc), routing).map(_ => ())
+    Create(index = index, id = Some(id), document = Document.from(doc), routing = routing).map(_ => ())
 
   def create[A: Schema](
     index: IndexName,
     doc: A,
     routing: Option[Routing]
   ): ElasticRequest[Option[DocumentId]] =
-    Create(index, None, Document.from(doc), routing)
+    Create(index = index, id = None, document = Document.from(doc), routing = routing)
+
+  def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean] = Exists(index = index, id = id)
 
   def getById[A: Schema](
     index: IndexName,
@@ -45,7 +47,7 @@ object ElasticRequest {
     doc: A,
     routing: Option[Routing] = None
   ): ElasticRequest[Unit] =
-    CreateOrUpdate(index, id, Document.from(doc), routing)
+    CreateOrUpdate(index = index, id = id, document = Document.from(doc), routing = routing)
 
   def createIndex(
     name: IndexName,
@@ -65,6 +67,12 @@ object ElasticRequest {
     document: Document,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Unit]
+
+  private[elasticsearch] final case class Exists(
+    index: IndexName,
+    id: DocumentId,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Boolean]
 
   private[elasticsearch] final case class GetById(
     index: IndexName,
