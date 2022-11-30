@@ -7,6 +7,7 @@ import sttp.model.StatusCode.Ok
 import sttp.model.Uri
 import zio.Task
 import zio.elasticsearch.ElasticRequest._
+import zio.prelude.ZValidation
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -28,7 +29,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeGetById(r: GetById): Task[Option[Document]] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}"
     request
       .get(uri)
       .response(asJson[ElasticGetResponse])
@@ -40,11 +41,10 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
     val uri = r.id match {
       case Some(documentId) =>
-        uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(_.value))
+        uri"$basePath/${r.index}/$Create/$documentId"
       case None =>
-        uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(_.value))
+        uri"$basePath/${r.index}/$Doc"
     }
-
     request
       .post(uri)
       .contentType(ApplicationJson)
@@ -52,7 +52,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .body(r.document.json)
       .send(client)
       .map(_.body.toOption)
-      .map(_.flatMap(body => Some(DocumentId(body.id))))
+      .map(a =>
+        a.flatMap { body =>
+          DocumentId.make(body.id) match {
+            case ZValidation.Failure(_, _)     => None // todo how should we handle things like this?
+            case ZValidation.Success(_, value) => Some(value)
+          }
+        }
+      )
   }
 
   private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
@@ -64,12 +71,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}"
     request.put(uri).contentType(ApplicationJson).body(r.document.json).send(client).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}"
     request.head(uri).send(client).map(_.code.equals(Ok))
   }
 

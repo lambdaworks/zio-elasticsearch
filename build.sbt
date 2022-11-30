@@ -34,6 +34,7 @@ lazy val library =
         "dev.zio"                       %% "zio-json"        % "0.3.0",
         "dev.zio"                       %% "zio-schema"      % "0.3.1",
         "dev.zio"                       %% "zio-schema-json" % "0.3.1",
+        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC16",
         "com.softwaremill.sttp.client3" %% "zio"             % "3.8.3",
         "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.3"
       )
