@@ -18,6 +18,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     request match {
       case r: Create         => executeCreate(r)
       case r: CreateOrUpdate => executeCreateOrUpdate(r)
+      case r: CreateIndex    => executeCreateIndex(r)
       case r: GetById        => executeGetById(r)
       case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
@@ -62,6 +63,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .send(client)
       .unit
   }
+
+  private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
+    request
+      .put(uri"$basePath/${createIndex.name}")
+      .contentType(ApplicationJson)
+      .body(createIndex.definition.getOrElse(""))
+      .send(client)
+      .unit
 }
 
 private[elasticsearch] object HttpElasticExecutor {
