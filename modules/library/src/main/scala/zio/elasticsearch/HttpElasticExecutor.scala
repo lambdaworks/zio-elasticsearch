@@ -20,9 +20,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: Create         => executeCreate(r)
       case r: CreateIndex    => executeCreateIndex(r)
       case r: CreateOrUpdate => executeCreateOrUpdate(r)
+      case r: DeleteIndex    => executeDeleteIndex(r)
       case r: Exists         => executeExists(r)
       case r: GetById        => executeGetById(r)
-      case r: RemoveIndex    => executeRemoveIndex(r)
       case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
 
@@ -83,11 +83,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .map(_.code.equals(Ok))
   }
 
-  private def executeRemoveIndex(r: RemoveIndex): Task[Unit] =
-    request.delete(uri"$basePath/${r.name}").send(client).map { response =>
-      println(response)
-      println(response.body)
-    }
+  private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
+    request.delete(uri"$basePath/${r.name}").send(client).unit
+
 }
 
 private[elasticsearch] object HttpElasticExecutor {

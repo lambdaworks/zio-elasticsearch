@@ -54,7 +54,7 @@ object ElasticRequest {
     definition: Option[String]
   ): ElasticRequest[Unit] = CreateIndex(name, definition)
 
-  def removeIndex(name: IndexName): ElasticRequest[Unit] = RemoveIndex(name)
+  def deleteIndex(name: IndexName): ElasticRequest[Unit] = DeleteIndex(name)
 
   private[elasticsearch] final case class Create(
     index: IndexName,
@@ -82,12 +82,10 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
 
-<<<<<<< HEAD
   private[elasticsearch] final case class CreateIndex(name: IndexName, definition: Option[String])
       extends ElasticRequest[Unit]
-=======
-  private[elasticsearch] final case class RemoveIndex(name: IndexName) extends ElasticRequest[Unit]
->>>>>>> 99ffeca (Add removing index)
+
+  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends ElasticRequest[Unit]
 
   private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
       extends ElasticRequest[B]
