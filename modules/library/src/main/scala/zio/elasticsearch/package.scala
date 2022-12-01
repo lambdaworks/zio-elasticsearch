@@ -6,7 +6,7 @@ import zio.prelude.QuotedAssertion
 
 package object elasticsearch {
   object Routing extends Newtype[String] {
-    override def assertion: QuotedAssertion[String] = assert {
+    override def assertion: QuotedAssertion[String] = assert { // scalafix: ok
       !isEmptyString
     }
   }
@@ -16,10 +16,13 @@ package object elasticsearch {
   type DocumentId = DocumentId.Type
 
   object IndexName extends Newtype[String] {
-    override def assertion: QuotedAssertion[String] = assertCustom { (x: String) =>
+    override def assertion: QuotedAssertion[String] = assertCustom { (x: String) => // scalafix: ok
       if (x.toLowerCase != x) Left(AssertionError.Failure("IndexName must be lower case only."))
       else if (x.startsWith("-") || x.startsWith("+") || x.startsWith("_"))
         Left(AssertionError.Failure("IndexName cannot start with -, _, +."))
+      /*
+       * Todo: What is the best way to check these chars?
+       * */
       else if (x.exists(char => raw"""\/*?"<>|,#""".contains(char)) || x.contains(' '))
         Left(
           AssertionError.Failure(
