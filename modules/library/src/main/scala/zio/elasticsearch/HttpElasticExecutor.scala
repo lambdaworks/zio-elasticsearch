@@ -14,7 +14,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private val basePath = Uri(config.host, config.port)
 
-  override def execute[A](request: ElasticRequest[A]): Task[A] =
+  override def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
       case r: Create         => executeCreate(r)
       case r: CreateOrUpdate => executeCreateOrUpdate(r)

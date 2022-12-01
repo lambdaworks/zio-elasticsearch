@@ -17,6 +17,7 @@ object ExampleApp extends ZIOAppDefault {
         ElasticRequest
           .create(index = index, id = docId, doc = ExampleDocument("docId", "docName", 11))
           .routing("10")
+          .refresh
           .execute
       _ <- Console.printLine(newDocId)
       _ <- Console.printLine("Creating document with same id as previous (unsuccessfully)...")
@@ -24,6 +25,7 @@ object ExampleApp extends ZIOAppDefault {
         ElasticRequest
           .create(index = index, id = docId, doc = ExampleDocument("docId2", "docName2", 22))
           .routing("10")
+          .refresh
           .execute
       _ <- Console.printLine(newDocId2)
       _ <- Console.printLine("Updating existing document...")
@@ -31,6 +33,7 @@ object ExampleApp extends ZIOAppDefault {
         ElasticRequest
           .upsert(index = index, id = docId, doc = ExampleDocument("docId3", "docName3", 33))
           .routing("10")
+          .refresh
           .execute
       _   <- Console.printLine("Getting updated document...")
       res <- ElasticRequest.getById[ExampleDocument](index, docId).routing("10").execute
