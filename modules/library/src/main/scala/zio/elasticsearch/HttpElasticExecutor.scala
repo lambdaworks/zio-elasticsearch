@@ -37,16 +37,15 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
-    def createUri(maybeDocumentId: Option[DocumentId]) =
-      maybeDocumentId match {
-        case Some(documentId) =>
-          uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(_.value))
-        case None =>
-          uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(_.value))
-      }
+    val u = r.id match {
+      case Some(documentId) =>
+        uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(_.value))
+      case None =>
+        uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(_.value))
+    }
 
     request
-      .post(createUri(r.id))
+      .post(u)
       .contentType(ApplicationJson)
       .response(asJson[ElasticCreateResponse])
       .body(r.document.json)
