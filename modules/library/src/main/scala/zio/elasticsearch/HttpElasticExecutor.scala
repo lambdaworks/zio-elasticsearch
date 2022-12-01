@@ -7,7 +7,6 @@ import sttp.model.StatusCode.Ok
 import sttp.model.Uri
 import zio.Task
 import zio.elasticsearch.ElasticRequest._
-import zio.prelude.ZValidation
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -53,14 +52,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .body(r.document.json)
       .send(client)
       .map(_.body.toOption)
-      .map(a =>
-        a.flatMap { body =>
-          DocumentId.make(body.id) match {
-            case ZValidation.Failure(_, _)     => None // todo how should we handle things like this?
-            case ZValidation.Success(_, value) => Some(value)
-          }
-        }
-      )
+      .map(_.flatMap(body => DocumentId.make(body.id).toOption))
   }
 
   private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
