@@ -29,7 +29,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeGetById(r: GetById): Task[Option[Document]] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}"
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request
       .get(uri)
       .response(asJson[ElasticGetResponse])
@@ -41,10 +41,11 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
     val uri = r.id match {
       case Some(documentId) =>
-        uri"$basePath/${r.index}/$Create/$documentId"
+        uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(Routing.unwrap))
       case None =>
-        uri"$basePath/${r.index}/$Doc"
+        uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
     }
+
     request
       .post(uri)
       .contentType(ApplicationJson)
@@ -71,12 +72,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}"
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request.put(uri).contentType(ApplicationJson).body(r.document.json).send(client).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}"
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request.head(uri).send(client).map(_.code.equals(Ok))
   }
 
