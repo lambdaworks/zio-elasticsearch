@@ -2,11 +2,10 @@ package zio
 
 import zio.prelude.Assertion._
 import zio.prelude.{AssertionError, Newtype}
-import zio.prelude.QuotedAssertion
 
 package object elasticsearch {
   object Routing extends Newtype[String] {
-    override def assertion: QuotedAssertion[String] = assert { // scalafix: ok
+    override def assertion = assert { // scalafix:ok
       !isEmptyString
     }
   }
@@ -16,7 +15,7 @@ package object elasticsearch {
   type DocumentId = DocumentId.Type
 
   object IndexName extends Newtype[String] {
-    override def assertion: QuotedAssertion[String] = assertCustom { (x: String) => // scalafix: ok
+    override def assertion = assertCustom { (x: String) => // scalafix:ok
       if (x.toLowerCase != x) Left(AssertionError.Failure("IndexName must be lower case only."))
       else if (x.startsWith("-") || x.startsWith("+") || x.startsWith("_"))
         Left(AssertionError.Failure("IndexName cannot start with -, _, +."))
