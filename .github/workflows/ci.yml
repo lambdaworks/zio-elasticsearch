@@ -53,7 +53,7 @@ jobs:
       - name: Run tests
         run: ./sbt ++${{ matrix.scala }}! test
       - name: Run test container
-        run: docker-compose -f modules/library/src/it/resources/docker-compose.yml up -d
+        run: docker-compose -f modules/library/docker-compose.yml up -d
       - name: Run integration tests
         run: ./sbt ++${{ matrix.scala }}! it:test
 
