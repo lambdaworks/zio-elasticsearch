@@ -52,6 +52,10 @@ jobs:
         uses: coursier/cache-action@v6
       - name: Run tests
         run: ./sbt ++${{ matrix.scala }}! test
+      - name: Run test container
+        run: docker-compose modules/library/src/it/resources up -d
+      - name: Run integration tests
+        run: ./sbt ++${{ matrix.scala }}! it:test
 
   website:
     runs-on: ubuntu-20.04
