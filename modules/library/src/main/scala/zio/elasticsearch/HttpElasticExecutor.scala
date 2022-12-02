@@ -20,6 +20,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: Create         => executeCreate(r)
       case r: CreateIndex    => executeCreateIndex(r)
       case r: CreateOrUpdate => executeCreateOrUpdate(r)
+      case r: DeleteById     => executeDeleteById(r)
       case r: DeleteIndex    => executeDeleteIndex(r)
       case r: Exists         => executeExists(r)
       case r: GetById        => executeGetById(r)
@@ -75,6 +76,16 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
     request.delete(uri"$basePath/${r.name}").send(client).unit
 
+  private def executeDeleteById(deleteById: DeleteById): Task[Option[Unit]] = {
+    val uri =
+      uri"$basePath/${deleteById.index}/$Doc/${deleteById.id}".withParam("routing", deleteById.routing.map(_.value))
+    request
+      .delete(uri)
+      .response(asJson[ElasticDeleteResponse])
+      .send(client)
+      .map(_.body.toOption)
+      .map(_.filter(_.result == "deleted").map(_ => ()))
+  }
 }
 
 private[elasticsearch] object HttpElasticExecutor {
