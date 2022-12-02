@@ -1,6 +1,6 @@
 package zio
 
-import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.StringUtils._
 import zio.prelude.Assertion._
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
@@ -16,28 +16,25 @@ package object elasticsearch {
 
   object IndexName extends Newtype[String] {
     override def assertion = assertCustom { (name: String) => // scalafix:ok
-      if (name.toLowerCase != name)
-        Left(failure("IndexName must be lower case only."))
-      else if (StringUtils.startsWithAny(name, "+", "-", "_"))
-        Left(failure("IndexName cannot start with -, _, +."))
-      else if (StringUtils.containsAny(name, '\\', '/', '*', '?', '"', '/', '<', '>', '|', ' ', ',', '#'))
-        Left(failure("IndexName cannot include \\, /, *, ?, \", <, >, |, ` ` (space character), ,(comma), #"))
-      else if (StringUtils.contains(name, ":"))
-        Left(failure("""IndexName cannot include ":"(since 7.0)."""))
-      else if (StringUtils.equalsAny(name, ".", ".."))
-        Left(failure("""IndexName cannot be . or .."""))
-      else if (name.getBytes().length > 255)
-        Left(
-          failure(
-            "IndexName cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster)"
-          )
-        )
-      else if (StringUtils.startsWith(name, ".")) {
-        // todo: Warning should be added that IndexNames starting with . are deprecated?
-        Right(())
-      } else
-        Right(())
+      if (validateIndexName(name)) Left(failure(IndexNameRequirements)) else Right(())
     }
+    private def validateIndexName(name: String): Boolean =
+      name.toLowerCase != name ||
+        startsWithAny(name, "+", "-", "_") ||
+        containsAny(name, '\\', '/', '*', '?', '"', '/', '<', '>', '|', ' ', ',', '#', ':') ||
+        equalsAny(name, ".", "..") ||
+        name.getBytes().length > 255
+
+    private final val IndexNameRequirements =
+      """Index names must meet the following criteria:: 
+        | - Must be lower case only
+        | - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
+        | - Cannot include ":"(since 7.0).
+        | - Cannot start with -, _, +.
+        | - Cannot be `.` or `..`.
+        | - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
+        | - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
+        |""".stripMargin
   }
   type IndexName = IndexName.Type
 
