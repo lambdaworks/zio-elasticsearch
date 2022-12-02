@@ -16,9 +16,10 @@ package object elasticsearch {
 
   object IndexName extends Newtype[String] {
     override def assertion = assertCustom { (name: String) => // scalafix:ok
-      if (validateIndexName(name)) Left(failure(IndexNameRequirements)) else Right(())
+      if (validate(name)) Left(failure(IndexNameRequirements)) else Right(())
     }
-    private def validateIndexName(name: String): Boolean =
+
+    private def validate(name: String): Boolean =
       name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
         containsAny(name, '\\', '/', '*', '?', '"', '/', '<', '>', '|', ' ', ',', '#', ':') ||
@@ -35,6 +36,7 @@ package object elasticsearch {
         | - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
         | - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
         |""".stripMargin
+
   }
   type IndexName = IndexName.Type
 
