@@ -29,7 +29,7 @@ object LiveSpec extends ZIOSpecDefault {
         test("unsuccessfully get document by id if it does not exists") {
           val doc = for {
             docId <- uuid
-            doc   <- ElasticRequest.getById[TestDocument1](docIndex, docId).routing("10").execute
+            doc   <- ElasticRequest.getById[TestDocument1](docIndex, docId).routing(Routing("10")).execute
           } yield doc
 
           assertZIO(doc)(Assertion.equalTo(Left(DocumentNotFound)))
@@ -37,8 +37,8 @@ object LiveSpec extends ZIOSpecDefault {
         test("unsuccessfully get document by id if decoder error happens") {
           val doc = for {
             docId <- uuid
-            _     <- ElasticRequest.upsert[TestDocument1](docIndex, docId, document).routing("10").execute
-            doc   <- ElasticRequest.getById[TestDocument2](docIndex, docId).routing("10").execute
+            _     <- ElasticRequest.upsert[TestDocument1](docIndex, docId, document).routing(Routing("10")).execute
+            doc   <- ElasticRequest.getById[TestDocument2](docIndex, docId).routing(Routing("10")).execute
           } yield doc
 
           assertZIO(doc)(Assertion.equalTo(Left(DecoderError(".desc(missing)"))))
@@ -47,8 +47,8 @@ object LiveSpec extends ZIOSpecDefault {
           val doc = for {
             docId <- uuid
             _     <- Console.printLine(docId)
-            _     <- ElasticRequest.upsert[TestDocument1](docIndex, docId, document).routing("10").execute
-            doc   <- ElasticRequest.getById[TestDocument1](docIndex, docId).routing("10").execute
+            _     <- ElasticRequest.upsert[TestDocument1](docIndex, docId, document).routing(Routing("10")).execute
+            doc   <- ElasticRequest.getById[TestDocument1](docIndex, docId).routing(Routing("10")).execute
           } yield doc
 
           assertZIO(doc)(Assertion.equalTo(Right(document)))
