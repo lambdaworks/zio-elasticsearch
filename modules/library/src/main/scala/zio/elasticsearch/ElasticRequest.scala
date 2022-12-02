@@ -12,7 +12,6 @@ sealed trait ElasticRequest[+A] { self =>
 
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
 
-  // todo: Error for Routing.make Left
   final def routing(value: Routing): ElasticRequest[A] =
     self match {
       case Map(request, mapper) => Map(request.routing(value), mapper)
