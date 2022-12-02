@@ -12,14 +12,14 @@ sealed trait ElasticRequest[+A] { self =>
 
   final def map[B](f: A => B): ElasticRequest[B] = ElasticRequest.Map(self, f)
 
-  final def routing(value: String): ElasticRequest[A] =
+  final def routing(value: Routing): ElasticRequest[A] =
     self match {
       case Map(request, mapper) => Map(request.routing(value), mapper)
-      case r: Create            => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
-      case r: CreateOrUpdate    => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
-      case r: DeleteById        => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
-      case r: Exists            => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
-      case r: GetById           => r.copy(routing = Some(Routing(value))).asInstanceOf[ElasticRequest[A]]
+      case r: Create            => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A]]
+      case r: CreateOrUpdate    => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A]]
+      case r: DeleteById        => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A]]
+      case r: Exists            => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A]]
+      case r: GetById           => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A]]
       case _                    => self
     }
 }

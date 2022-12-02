@@ -28,7 +28,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeGetById(r: GetById): Task[Option[Document]] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request
       .get(uri)
       .response(asJson[ElasticGetResponse])
@@ -40,9 +40,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
     val uri = r.id match {
       case Some(documentId) =>
-        uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(_.value))
+        uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(Routing.unwrap))
       case None =>
-        uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(_.value))
+        uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
     }
 
     request
@@ -52,7 +52,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .body(r.document.json)
       .send(client)
       .map(_.body.toOption)
-      .map(_.flatMap(body => Some(DocumentId(body.id))))
+      .map(_.flatMap(body => DocumentId.make(body.id).toOption))
   }
 
   private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
@@ -64,21 +64,20 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       .unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request.put(uri).contentType(ApplicationJson).body(r.document.json).send(client).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(_.value))
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request.head(uri).send(client).map(_.code.equals(Ok))
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
     request.delete(uri"$basePath/${r.name}").send(client).unit
 
-  private def executeDeleteById(deleteById: DeleteById): Task[Option[Unit]] = {
-    val uri =
-      uri"$basePath/${deleteById.index}/$Doc/${deleteById.id}".withParam("routing", deleteById.routing.map(_.value))
+  private def executeDeleteById(r: DeleteById): Task[Option[Unit]] = {
+    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
     request
       .delete(uri)
       .response(asJson[ElasticDeleteResponse])
