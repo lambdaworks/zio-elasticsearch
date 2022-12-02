@@ -29,14 +29,19 @@ lazy val library =
     .in(file("modules/library"))
     .settings(stdSettings("zio-elasticsearch"))
     .settings(scalacOptions += "-language:higherKinds")
+    .configs(IntegrationTest)
     .settings(
+      Defaults.itSettings,
       libraryDependencies ++= List(
         "dev.zio"                       %% "zio-json"        % "0.3.0",
         "dev.zio"                       %% "zio-schema"      % "0.3.1",
         "dev.zio"                       %% "zio-schema-json" % "0.3.1",
+        "dev.zio"                       %% "zio-test"        % "2.0.4" % IntegrationTest,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.4" % IntegrationTest,
         "com.softwaremill.sttp.client3" %% "zio"             % "3.8.3",
         "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.3"
-      )
+      ),
+      testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
 
 lazy val example =
