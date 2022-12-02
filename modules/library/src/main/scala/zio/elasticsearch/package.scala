@@ -16,27 +16,29 @@ package object elasticsearch {
 
   object IndexName extends Newtype[String] {
     override def assertion = assertCustom { (name: String) => // scalafix:ok
-      if (validate(name)) Left(failure(IndexNameRequirements)) else Right(())
-    }
-
-    private def validate(name: String): Boolean =
-      name.toLowerCase != name ||
+      if (
+        name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
         containsAny(name, '\\', '/', '*', '?', '"', '/', '<', '>', '|', ' ', ',', '#', ':') ||
         equalsAny(name, ".", "..") ||
         name.getBytes().length > 255
-
-    private final val IndexNameRequirements =
-      """Index names must meet the following criteria:: 
-        | - Must be lower case only
-        | - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
-        | - Cannot include ":"(since 7.0).
-        | - Cannot start with -, _, +.
-        | - Cannot be `.` or `..`.
-        | - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
-        | - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
-        |""".stripMargin
-
+      )
+        Left(
+          failure(
+            """Index names must meet the following criteria:
+              |   - Must be lower case only
+              |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
+              |   - Cannot include ":"(since 7.0).
+              |   - Cannot start with -, _, +.
+              |   - Cannot be `.` or `..`.
+              |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
+              |   - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
+              |""".stripMargin
+          )
+        )
+      else
+        Right(())
+    }
   }
   type IndexName = IndexName.Type
 
