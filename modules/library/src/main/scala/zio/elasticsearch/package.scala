@@ -16,11 +16,15 @@ package object elasticsearch {
   type DocumentId = DocumentId.Type
 
   object IndexName extends Newtype[String] {
+
+    private def containsAny(name: String, params: List[String]): Boolean =
+      params.exists(p => StringUtils.contains(name, p))
+
     override def assertion = assertCustom { (name: String) => // scalafix:ok
       if (
         name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
-        List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(p => StringUtils.contains(name, p)) ||
+        containsAny(name, List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) ||
         equalsAny(name, ".", "..") ||
         name.getBytes().length > 255
       )
