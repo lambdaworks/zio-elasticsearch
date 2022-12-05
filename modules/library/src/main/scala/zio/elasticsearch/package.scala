@@ -19,7 +19,12 @@ package object elasticsearch {
       if (
         name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
-        containsAny(name, "\\", "/", "*", "?", "\"", "/", "<", ">", "|", " ", ",", "#", ":") ||
+        contains(name, "\\") || contains(name, "/") ||
+        contains(name, "*") || contains(name, "?") ||
+        contains(name, "\"") || contains(name, "<") ||
+        contains(name, ">") || contains(name, "|") ||
+        contains(name, " ") || contains(name, ",") ||
+        contains(name, "#") || contains(name, ":") ||
         equalsAny(name, ".", "..") ||
         name.getBytes().length > 255
       )
