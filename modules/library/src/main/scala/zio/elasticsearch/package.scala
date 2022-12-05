@@ -1,6 +1,5 @@
 package zio
 
-import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
 import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
@@ -20,7 +19,7 @@ package object elasticsearch {
       if (
         name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
-        !containsNoneOf(name, List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) ||
+        !reg(name) ||
         equalsAny(name, ".", "..") ||
         name.getBytes().length > 255
       )
@@ -43,7 +42,6 @@ package object elasticsearch {
   }
   type IndexName = IndexName.Type
 
-  def containsNoneOf(name: String, params: List[String]): Boolean =
-    params.forall(p => !StringUtils.contains(name, p))
-
+  def reg(name: String) =
+    name.matches("[^*?\"<>| ,#:].*$")
 }
