@@ -2,11 +2,14 @@ package zio.elasticsearch
 
 import zio.schema.{DeriveSchema, Schema}
 
-final case class UserDocument1(id: String, name: String, count: Int)
+final case class CustomerDocument(id: String, name: String, address: String, balance: BigDecimal)
 
-final case class UserDocument2(desc: String)
+final case class EmployeeDocument(id: String, name: String, degree: String)
 
-object UserDocument {
-  implicit val schema1: Schema[UserDocument1] = DeriveSchema.gen[UserDocument1]
-  implicit val schema2: Schema[UserDocument2] = DeriveSchema.gen[UserDocument2]
+object CustomerDocument {
+  implicit val schema: Schema[CustomerDocument] = DeriveSchema.gen[CustomerDocument]
+}
+
+object EmployeeDocument {
+  implicit val schema: Schema[EmployeeDocument] = DeriveSchema.gen[EmployeeDocument]
 }

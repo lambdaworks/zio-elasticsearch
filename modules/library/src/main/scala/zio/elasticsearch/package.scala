@@ -20,7 +20,7 @@ package object elasticsearch {
       if (
         name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
-        containsAny(name, List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) ||
+        List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(p => StringUtils.contains(name, p)) ||
         equalsAny(name, ".", "..") ||
         name.getBytes().length > 255
       )
@@ -42,8 +42,5 @@ package object elasticsearch {
     }
   }
   type IndexName = IndexName.Type
-
-  def containsAny(name: String, params: List[String]): Boolean =
-    params.exists(p => StringUtils.contains(name, p))
 
 }
