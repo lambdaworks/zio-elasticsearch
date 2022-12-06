@@ -5,39 +5,37 @@ import zio.test.Assertion.equalTo
 import zio.test.TestAspect.nondeterministic
 import zio.test._
 
-object HttpExecutorSpec extends ZIOSpecDefault with IntegrationSpec {
+object HttpExecutorSpec extends IntegrationSpec {
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("HTTP Executor")(
       suite("get document by ID")(
         test("successfully get document by ID") {
-          generateCustomer.flatMap { expectedDoc =>
+          checkOnes(genDocId, genCustomer) { (documentId, customerDocument) =>
             val returnedDocument = for {
-              docId       <- generateId
-              _           <- ElasticRequest.upsert[CustomerDocument](docIndex, docId, expectedDoc).execute
-              returnedDoc <- ElasticRequest.getById[CustomerDocument](docIndex, docId).execute
-            } yield returnedDoc
+              _                <- ElasticRequest.upsert[CustomerDocument](docIndex, documentId, customerDocument).execute
+              returnedDocument <- ElasticRequest.getById[CustomerDocument](docIndex, documentId).execute
+            } yield returnedDocument
 
-            assertZIO(returnedDocument)(Assertion.isRight(equalTo(expectedDoc)))
+            assertZIO(returnedDocument)(Assertion.isRight(equalTo(customerDocument)))
           }
         },
         test("unsuccessfully get document by ID if it does not exists") {
-          val returnedDocument = for {
-            docId       <- generateId
-            returnedDoc <- ElasticRequest.getById[CustomerDocument](docIndex, docId).execute
-          } yield returnedDoc
-
-          assertZIO(returnedDocument)(Assertion.isLeft(equalTo(DocumentNotFound)))
+          checkOnes(genDocId) { documentId =>
+            assertZIO(ElasticRequest.getById[CustomerDocument](docIndex, documentId).execute)(
+              Assertion.isLeft(equalTo(DocumentNotFound))
+            )
+          }
         },
         test("unsuccessfully get document by ID if decoder error happens") {
-          val returnedDocument = for {
-            docId       <- generateId
-            newDoc      <- generateEmployee
-            _           <- ElasticRequest.upsert[EmployeeDocument](docIndex, docId, newDoc).execute
-            returnedDoc <- ElasticRequest.getById[CustomerDocument](docIndex, docId).execute
-          } yield returnedDoc
+          checkOnes(genDocId, genEmployee) { (documentId, employeeDocument) =>
+            val returnedDocument = for {
+              _                <- ElasticRequest.upsert[EmployeeDocument](docIndex, documentId, employeeDocument).execute
+              returnedDocument <- ElasticRequest.getById[CustomerDocument](docIndex, documentId).execute
+            } yield returnedDocument
 
-          assertZIO(returnedDocument)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
+            assertZIO(returnedDocument)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
+          }
         }
       ) @@ nondeterministic
     ).provideShared(elasticsearchLayer)
