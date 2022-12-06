@@ -11,7 +11,7 @@ object HttpExecutorSpec extends ZIOSpecDefault with IntegrationSpec {
     suite("HTTP Executor")(
       suite("get document by ID")(
         test("successfully get document by ID") {
-          generateCustomerDocument.flatMap { expectedDoc =>
+          generateCustomer.flatMap { expectedDoc =>
             val returnedDocument = for {
               docId       <- generateId
               _           <- ElasticRequest.upsert[CustomerDocument](docIndex, docId, expectedDoc).execute
@@ -32,7 +32,7 @@ object HttpExecutorSpec extends ZIOSpecDefault with IntegrationSpec {
         test("unsuccessfully get document by ID if decoder error happens") {
           val returnedDocument = for {
             docId       <- generateId
-            newDoc      <- generateEmployeeDocument
+            newDoc      <- generateEmployee
             _           <- ElasticRequest.upsert[EmployeeDocument](docIndex, docId, newDoc).execute
             returnedDoc <- ElasticRequest.getById[CustomerDocument](docIndex, docId).execute
           } yield returnedDoc

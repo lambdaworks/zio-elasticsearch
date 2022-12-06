@@ -44,6 +44,6 @@ package object elasticsearch {
   type IndexName = IndexName.Type
 
   def containsAny(name: String, params: List[String]): Boolean =
-    params.exists(p => StringUtils.contains(name, p))
+    params.exists(StringUtils.contains(name, _))
 
 }

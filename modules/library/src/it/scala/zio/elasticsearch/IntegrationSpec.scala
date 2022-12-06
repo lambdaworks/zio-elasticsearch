@@ -13,7 +13,7 @@ trait IntegrationSpec {
   private[elasticsearch] def generateId: ZIO[Any, Nothing, DocumentId] =
     Gen.stringBounded(10, 40)(Gen.alphaNumericChar).runHead.map(maybeId => DocumentId(maybeId.getOrElse("DocumentId")))
 
-  private[elasticsearch] def generateCustomerDocument: ZIO[Any, Nothing, CustomerDocument] = for {
+  private[elasticsearch] def generateCustomer: ZIO[Any, Nothing, CustomerDocument] = for {
     id      <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar).runHead
     name    <- Gen.stringBounded(5, 10)(Gen.alphaChar).runHead
     address <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar).runHead
@@ -25,7 +25,7 @@ trait IntegrationSpec {
     balance = balance.getOrElse(BigDecimal(100))
   )
 
-  private[elasticsearch] def generateEmployeeDocument: ZIO[Any, Nothing, EmployeeDocument] = for {
+  private[elasticsearch] def generateEmployee: ZIO[Any, Nothing, EmployeeDocument] = for {
     id     <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar).runHead
     name   <- Gen.stringBounded(5, 10)(Gen.alphaChar).runHead
     degree <- Gen.stringBounded(5, 10)(Gen.alphaChar).runHead
