@@ -1,13 +1,13 @@
 package zio.elasticsearch
 
 import sttp.client3.ziojson._
-import sttp.client3.{SttpBackend, UriContext, basicRequest => request}
+import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.StatusCode.Ok
 import sttp.model.Uri
-import zio.Task
-import zio.ZIO.{logError, logInfo}
+import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
+import zio.{Task, ZIO}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -31,15 +31,11 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeGetById(r: GetById): Task[Option[Document]] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    for {
-      _ <- logInfo(s"Executing get document by id: ${r.id}...")
-      maybeDocument <- request
-                         .get(uri)
-                         .response(asJson[ElasticGetResponse])
-                         .send(client)
-                         .map(_.body.toOption)
-                         .map(_.flatMap(d => if (d.found) Some(Document.from(d.source)) else None))
-    } yield maybeDocument
+    sendClientWithResponse[ElasticGetResponse](
+      request
+        .get(uri)
+        .response(asJson[ElasticGetResponse])
+    ).map(_.body.toOption).map(_.flatMap(d => if (d.found) Some(Document.from(d.source)) else None))
   }
 
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
@@ -50,62 +46,65 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
     }
 
-    // for now, it is still "happy path", I don't know if there are any other ways for failure
-    for {
-      _ <- logInfo("Executing create document...")
-      maybeDocumentId <- request
-                           .post(uri)
-                           .contentType(ApplicationJson)
-                           .response(asJson[ElasticCreateResponse])
-                           .body(r.document.json)
-                           .send(client)
-                           .map(_.body.toOption)
-                           .map(_.flatMap(body => DocumentId.make(body.id).toOption))
-      _ <- if (maybeDocumentId.isEmpty)
-             logError("Document could not be created - document with given id already exists.")
-           else logInfo("Document is successfully created.")
-    } yield maybeDocumentId
+    sendClientWithResponse[ElasticCreateResponse](
+      request
+        .post(uri)
+        .contentType(ApplicationJson)
+        .response(asJson[ElasticCreateResponse])
+        .body(r.document.json)
+    ).map(_.body.toOption).map(_.flatMap(body => DocumentId.make(body.id).toOption))
   }
 
   private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
-    for {
-      _ <- logInfo("Executing create index...")
-      _ <- request
-             .put(uri"$basePath/${createIndex.name}")
-             .contentType(ApplicationJson)
-             .body(createIndex.definition.getOrElse(""))
-             .send(client)
-    } yield ()
+    sendClientWithoutResponse(
+      request
+        .put(uri"$basePath/${createIndex.name}")
+        .contentType(ApplicationJson)
+        .body(createIndex.definition.getOrElse(""))
+    ).unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    for {
-      _ <- logInfo("Executing create or update document...")
-      _ <- request.put(uri).contentType(ApplicationJson).body(r.document.json).send(client)
-    } yield ()
+    sendClientWithoutResponse(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
-    request.head(uri).send(client).map(_.code.equals(Ok))
+
+    sendClientWithoutResponse(request.head(uri)).map(_.code.equals(Ok))
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
-    for {
-      _ <- logInfo("Executing delete index...")
-      _ <- request.delete(uri"$basePath/${r.name}").send(client)
-    } yield ()
+    sendClientWithoutResponse(request.delete(uri"$basePath/${r.name}")).unit
 
   private def executeDeleteById(r: DeleteById): Task[Option[Unit]] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
-    request
-      .delete(uri)
-      .response(asJson[ElasticDeleteResponse])
-      .send(client)
-      .map(_.body.toOption)
-      .map(_.filter(_.result == "deleted").map(_ => ()))
+
+    sendClientWithResponse(
+      request
+        .delete(uri)
+        .response(asJson[ElasticDeleteResponse])
+    ).map(_.body.toOption).map(_.filter(_.result == "deleted").map(_ => ()))
   }
+
+  private def sendClientWithResponse[A](
+    req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
+  ): ZIO[Any, Throwable, Response[Either[ResponseException[String, String], A]]] =
+    for {
+      _    <- logDebug(s"REQUEST LOG: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      resp <- req.send(client)
+      _    <- logDebug(s"RESPONSE LOG: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+    } yield resp
+
+  private def sendClientWithoutResponse(
+    req: RequestT[Identity, Either[String, String], Any]
+  ): ZIO[Any, Throwable, Response[Either[String, String]]] =
+    for {
+      _    <- logDebug(s"REQUEST LOG: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      resp <- req.send(client)
+      _    <- logDebug(s"RESPONSE LOG: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+    } yield resp
 }
 
 private[elasticsearch] object HttpElasticExecutor {
