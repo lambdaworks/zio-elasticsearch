@@ -6,7 +6,7 @@ import zio.test.CheckVariants.CheckN
 import zio.test.{Gen, ZIOSpecDefault, checkN}
 
 trait IntegrationSpec extends ZIOSpecDefault {
-  private[elasticsearch] val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
+  val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
     HttpClientZioBackend.layer() >>> ElasticExecutor.local
 
   val index: IndexName = IndexName("users")
