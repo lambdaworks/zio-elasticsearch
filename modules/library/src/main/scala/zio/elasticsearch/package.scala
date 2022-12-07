@@ -1,7 +1,8 @@
 package zio
 
+import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
-import zio.prelude.Assertion._
+import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 
@@ -19,7 +20,7 @@ package object elasticsearch {
       if (
         name.toLowerCase != name ||
         startsWithAny(name, "+", "-", "_") ||
-        containsAny(name, '\\', '/', '*', '?', '"', '/', '<', '>', '|', ' ', ',', '#', ':') ||
+        containsAny(name, List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) ||
         equalsAny(name, ".", "..") ||
         name.getBytes().length > 255
       )
@@ -41,5 +42,8 @@ package object elasticsearch {
     }
   }
   type IndexName = IndexName.Type
+
+  def containsAny(name: String, params: List[String]): Boolean =
+    params.exists(StringUtils.contains(name, _))
 
 }
