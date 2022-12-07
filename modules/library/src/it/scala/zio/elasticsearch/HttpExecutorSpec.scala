@@ -9,32 +9,32 @@ object HttpExecutorSpec extends IntegrationSpec {
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("HTTP Executor")(
-      suite("get document by ID")(
-        test("successfully get document by ID") {
-          checkOnes(genDocId, genCustomer) { (documentId, customerDocument) =>
-            val returnedDocument = for {
-              _                <- ElasticRequest.upsert[CustomerDocument](docIndex, documentId, customerDocument).execute
-              returnedDocument <- ElasticRequest.getById[CustomerDocument](docIndex, documentId).execute
-            } yield returnedDocument
+      suite("retrieving document by ID")(
+        test("successfully return document") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _        <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield document
 
-            assertZIO(returnedDocument)(Assertion.isRight(equalTo(customerDocument)))
+            assertZIO(result)(Assertion.isRight(equalTo(customer)))
           }
         },
-        test("unsuccessfully get document by ID if it does not exists") {
-          checkOnes(genDocId) { documentId =>
-            assertZIO(ElasticRequest.getById[CustomerDocument](docIndex, documentId).execute)(
+        test("return DocumentNotFound if the document does not exist") {
+          checkOnce(genDocumentId) { documentId =>
+            assertZIO(ElasticRequest.getById[CustomerDocument](index, documentId).execute)(
               Assertion.isLeft(equalTo(DocumentNotFound))
             )
           }
         },
-        test("unsuccessfully get document by ID if decoder error happens") {
-          checkOnes(genDocId, genEmployee) { (documentId, employeeDocument) =>
-            val returnedDocument = for {
-              _                <- ElasticRequest.upsert[EmployeeDocument](docIndex, documentId, employeeDocument).execute
-              returnedDocument <- ElasticRequest.getById[CustomerDocument](docIndex, documentId).execute
-            } yield returnedDocument
+        test("fail with decoding error") {
+          checkOnce(genDocumentId, genEmployee) { (documentId, employee) =>
+            val result = for {
+              _        <- ElasticRequest.upsert[EmployeeDocument](index, documentId, employee).execute
+              document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield document
 
-            assertZIO(returnedDocument)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
+            assertZIO(result)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
           }
         }
       ) @@ nondeterministic
