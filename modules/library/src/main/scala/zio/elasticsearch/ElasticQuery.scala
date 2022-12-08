@@ -9,16 +9,11 @@ sealed trait ElasticQuery { self =>
   def asJson: Json
 
   final def and(other: ElasticQuery): ElasticQuery =
-    self match {
-      case And(query, queries) => And(query, queries :+ other)
-      case _                   => And(self, other :: Nil)
-    }
+    And(self, other)
 
   final def or(other: ElasticQuery): ElasticQuery =
-    self match {
-      case Or(query, queries) => Or(query, queries :+ other)
-      case _                  => Or(self, other :: Nil)
-    }
+    Or(self, other)
+
 }
 
 object ElasticQuery {
@@ -32,14 +27,14 @@ object ElasticQuery {
   def matches(field: String, query: Long): ElasticQuery =
     Match(field, query)
 
-  private[elasticsearch] final case class And(query: ElasticQuery, queries: List[ElasticQuery]) extends ElasticQuery {
+  private[elasticsearch] final case class And(query: ElasticQuery, other: ElasticQuery) extends ElasticQuery {
     override def asJson: Json =
-      Obj("bool" -> Obj("must" -> Arr((query +: queries).map(_.asJson): _*)))
+      Obj("bool" -> Obj("must" -> Arr(query.asJson, other.asJson)))
   }
 
-  private[elasticsearch] final case class Or(query: ElasticQuery, queries: List[ElasticQuery]) extends ElasticQuery {
+  private[elasticsearch] final case class Or(query: ElasticQuery, other: ElasticQuery) extends ElasticQuery {
     override def asJson: Json =
-      Obj("bool" -> Obj("should" -> Arr((query +: queries).map(_.asJson): _*)))
+      Obj("bool" -> Obj("should" -> Arr(query.asJson, other.asJson)))
   }
 
   private[elasticsearch] case class Match[A](field: String, query: A) extends ElasticQuery {
