@@ -14,6 +14,8 @@ sealed trait ElasticQuery { self =>
   final def or(other: ElasticQuery): ElasticQuery =
     Or(self, other)
 
+  final def asJsonBody: Json = Obj("query" -> self.asJson)
+
 }
 
 object ElasticQuery {

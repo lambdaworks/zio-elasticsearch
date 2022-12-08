@@ -22,6 +22,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: DeleteIndex    => executeDeleteIndex(r)
       case r: Exists         => executeExists(r)
       case r: GetById        => executeGetById(r)
+      case r: Query          => executeQuery(r)
       case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
 
@@ -102,6 +103,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       resp <- req.send(client)
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
     } yield resp
+
+  private def executeQuery(r: Query): Task[Unit] =
+    request
+      .post(uri"$basePath/${IndexName.unwrap(r.index)}/_search")
+      .contentType(ApplicationJson)
+      .body(r.query.asJsonBody)
+      .send(client)
+      .unit
 }
 
 private[elasticsearch] object HttpElasticExecutor {

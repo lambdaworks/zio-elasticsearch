@@ -44,6 +44,9 @@ object ElasticRequest {
       case None           => Left(DocumentNotFound)
     }
 
+  def query(index: IndexName, query: ElasticQuery): ElasticRequest[Unit] =
+    Query(index, query)
+
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[Unit] =
     CreateIndex(name, definition)
 
@@ -91,6 +94,12 @@ object ElasticRequest {
     id: DocumentId,
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Document]]
+
+  private[elasticsearch] final case class Query(
+    index: IndexName,
+    query: ElasticQuery,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit]
 
   private[elasticsearch] final case class Map[A, B](request: ElasticRequest[A], mapper: A => B)
       extends ElasticRequest[B]
