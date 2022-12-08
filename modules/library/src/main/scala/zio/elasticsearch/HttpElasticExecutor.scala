@@ -31,7 +31,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeGetById(r: GetById): Task[Option[Document]] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    sendClientWithResponse[ElasticGetResponse](
+    sendRequestWithCustomResponse[ElasticGetResponse](
       request
         .get(uri)
         .response(asJson[ElasticGetResponse])
@@ -46,7 +46,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
     }
 
-    sendClientWithResponse[ElasticCreateResponse](
+    sendRequestWithCustomResponse[ElasticCreateResponse](
       request
         .post(uri)
         .contentType(ApplicationJson)
@@ -56,7 +56,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
-    sendClientWithoutResponse(
+    sendRequest(
       request
         .put(uri"$basePath/${createIndex.name}")
         .contentType(ApplicationJson)
@@ -66,29 +66,29 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    sendClientWithoutResponse(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
+    sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    sendClientWithoutResponse(request.head(uri)).map(_.code.equals(Ok))
+    sendRequest(request.head(uri)).map(_.code.equals(Ok))
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
-    sendClientWithoutResponse(request.delete(uri"$basePath/${r.name}")).unit
+    sendRequest(request.delete(uri"$basePath/${r.name}")).unit
 
   private def executeDeleteById(r: DeleteById): Task[Option[Unit]] = {
     val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    sendClientWithResponse(
+    sendRequestWithCustomResponse(
       request
         .delete(uri)
         .response(asJson[ElasticDeleteResponse])
     ).map(_.body.toOption).map(_.filter(_.result == "deleted").map(_ => ()))
   }
 
-  private def sendClientWithResponse[A](
+  private def sendRequestWithCustomResponse[A](
     req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
   ): ZIO[Any, Throwable, Response[Either[ResponseException[String, String], A]]] =
     for {
@@ -97,7 +97,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       _    <- logDebug(s"RESPONSE LOG: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
     } yield resp
 
-  private def sendClientWithoutResponse(
+  private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
   ): ZIO[Any, Throwable, Response[Either[String, String]]] =
     for {
