@@ -1,6 +1,5 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticQuery.{And, Or}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Bool, Num, Obj, Str}
 
@@ -8,14 +7,7 @@ sealed trait ElasticQuery { self =>
 
   def asJson: Json
 
-  final def and(other: ElasticQuery): ElasticQuery =
-    And(self, other)
-
-  final def or(other: ElasticQuery): ElasticQuery =
-    Or(self, other)
-
   final def asJsonBody: Json = Obj("query" -> self.asJson)
-
 }
 
 object ElasticQuery {
@@ -29,17 +21,25 @@ object ElasticQuery {
   def matches(field: String, query: Long): ElasticQuery =
     Match(field, query)
 
-  private[elasticsearch] final case class And(query: ElasticQuery, other: ElasticQuery) extends ElasticQuery {
+  def boolQuery(): BoolQuery = BoolQuery.empty
+
+  private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery], should: List[ElasticQuery])
+      extends ElasticQuery {
     override def asJson: Json =
-      Obj("bool" -> Obj("must" -> Arr(query.asJson, other.asJson)))
+      Obj("bool" -> Obj("must" -> Arr(must.map(_.asJson): _*), "should" -> Arr(should.map(_.asJson): _*)))
+
+    def must(queries: ElasticQuery*): BoolQuery =
+      this.copy(must = must ++ queries)
+
+    def should(queries: ElasticQuery*): BoolQuery =
+      this.copy(should = should ++ queries)
   }
 
-  private[elasticsearch] final case class Or(query: ElasticQuery, other: ElasticQuery) extends ElasticQuery {
-    override def asJson: Json =
-      Obj("bool" -> Obj("should" -> Arr(query.asJson, other.asJson)))
+  object BoolQuery {
+    def empty: BoolQuery = BoolQuery(List.empty, List.empty)
   }
 
-  private[elasticsearch] case class Match[A](field: String, query: A) extends ElasticQuery {
+  private[elasticsearch] final case class Match[A](field: String, query: A) extends ElasticQuery {
     override def asJson: Json =
       query match {
         case str if str.isInstanceOf[String] =>
