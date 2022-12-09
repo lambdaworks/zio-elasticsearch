@@ -1,4 +1,5 @@
 import BuildHelper._
+import sbt.librarymanagement.Configurations.IntegrationTest
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -43,7 +44,7 @@ lazy val library =
         "dev.zio"                       %% "zio-test"        % "2.0.4" % "it,test",
         "dev.zio"                       %% "zio-test-sbt"    % "2.0.4" % "it,test"
       ),
-      testFrameworks := Seq(new TestFramework("zio.test.sbt.ZTestFramework"))
+      testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
 
 lazy val example =

@@ -12,37 +12,37 @@ object IndexNameSpec extends ZIOSpecDefault {
         assert(IndexName.make("index-name"))(equalTo(Validation.succeed(IndexName("index-name"))))
       },
       test("fail for string containing upper letter") {
-        val invalidIndexStr = "Index-name"
-        assert(IndexName.make(invalidIndexStr))(equalTo(Validation.fail(validationFailedStr(invalidIndexStr))))
+        val name = "Index-name"
+        assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
       },
       test("fail for string containing charachter '*'") {
-        val invalidIndexStr = "index*name"
-        assert(IndexName.make(invalidIndexStr))(equalTo(Validation.fail(validationFailedStr(invalidIndexStr))))
+        val name = "index*name"
+        assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
       },
       test("fail for string containing charachter ':'") {
-        val invalidIndexStr = "index:name"
-        assert(IndexName.make(invalidIndexStr))(equalTo(Validation.fail(validationFailedStr(invalidIndexStr))))
+        val name = "index:name"
+        assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
       },
       test("fail for string starting with charachter '-'") {
-        val invalidIndexStr = "-index.name"
-        assert(IndexName.make(invalidIndexStr))(equalTo(Validation.fail(validationFailedStr(invalidIndexStr))))
+        val name = "-index.name"
+        assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
       },
       test("fail for string '.'") {
-        val invalidIndexStr = "."
-        assert(IndexName.make(invalidIndexStr))(equalTo(Validation.fail(validationFailedStr(invalidIndexStr))))
+        val name = "."
+        assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
       },
       test("fail for string longer than 255 bytes") {
-        checkN(5)(Gen.stringN(256)(Gen.alphaChar)) { invalidIndexStr =>
-          val lowerCaseStr = invalidIndexStr.toLowerCase()
+        check(Gen.stringN(256)(Gen.alphaChar)) { name =>
+          val lowerCaseStr = name.toLowerCase()
           assert(IndexName.make(lowerCaseStr.toLowerCase))(
-            equalTo(Validation.fail(validationFailedStr(lowerCaseStr.toLowerCase)))
+            equalTo(Validation.fail(indexNameFailureMessage(lowerCaseStr.toLowerCase)))
           )
         }
       }
     )
 
-  private def validationFailedStr(indexStr: String): String =
-    s"""$indexStr did not satisfy 
+  private def indexNameFailureMessage(name: String): String =
+    s"""$name did not satisfy 
        |   - Must be lower case only
        |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
        |   - Cannot include ":"(since 7.0).
