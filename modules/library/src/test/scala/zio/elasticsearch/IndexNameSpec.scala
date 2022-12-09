@@ -10,30 +10,34 @@ object IndexNameSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment, Any] =
     suite("IndexName validation")(
       test("succeed for valid string") {
-        check(genString(5, 20)) { name =>
+        check(genString(1, 255)) { name =>
           assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(IndexName)(name))))
         }
       },
       test("fail for string containing upper letter") {
-        check(genString(5, 20)) { name =>
-          val invalidName = s"A$name"
+        check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
+          val invalidName = s"${part1}A$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
       },
       test("fail for string containing charachter '*'") {
-        check(genString(5, 20)) { name =>
-          val invalidName = s"*$name"
+        check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
+          val invalidName = s"$part1*$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
       },
       test("fail for string containing charachter ':'") {
-        check(genString(5, 20)) { name =>
-          val invalidName = s":$name"
+        check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
+          val invalidName = s"$part1:$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
       },
+      test("fail for empty string") {
+        val name = ""
+        assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(IndexName)(name))))
+      },
       test("fail for string starting with charachter '-'") {
-        check(genString(5, 20)) { name =>
+        check(genString(1, 255)) { name =>
           val invalidName = s"-$name"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
@@ -43,7 +47,7 @@ object IndexNameSpec extends ZIOSpecDefault {
         assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
       },
       test("fail for string longer than 255 bytes") {
-        check(Gen.stringBounded(256, 300)(Gen.alphaChar).map(_.toLowerCase())) { name =>
+        check(genString(256, 300)) { name =>
           assert(IndexName.make(name))(
             equalTo(Validation.fail(indexNameFailureMessage(name)))
           )
@@ -56,6 +60,7 @@ object IndexNameSpec extends ZIOSpecDefault {
        |   - Must be lower case only
        |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
        |   - Cannot include ":"(since 7.0).
+       |   - Cannot be empty
        |   - Cannot start with -, _, +.
        |   - Cannot be `.` or `..`.
        |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).

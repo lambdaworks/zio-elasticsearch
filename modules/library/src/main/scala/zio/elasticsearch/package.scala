@@ -30,6 +30,7 @@ package object elasticsearch {
                |   - Must be lower case only
                |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
                |   - Cannot include ":"(since 7.0).
+               |   - Cannot be empty
                |   - Cannot start with -, _, +.
                |   - Cannot be `.` or `..`.
                |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
