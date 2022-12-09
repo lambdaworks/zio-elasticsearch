@@ -37,6 +37,109 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
           }
         }
+      ) @@ nondeterministic,
+      suite("creating document")(
+        test("successfully create document") {
+          checkOnce(genCustomer) { customer =>
+            assertZIO(ElasticRequest.create[CustomerDocument](index, customer).execute)(Assertion.isSome)
+          }
+        },
+        test("successfully create document with ID given") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _   <- ElasticRequest.create[CustomerDocument](index, documentId, customer).execute
+              doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield doc
+
+            assertZIO(result)(Assertion.isRight(equalTo(customer)))
+          }
+        },
+        test("fail to create document with ID given") { // TODO: change when introduce error for this case
+          checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer1, customer2) =>
+            val result = for {
+              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer1).execute
+              _   <- ElasticRequest.create[CustomerDocument](index, documentId, customer2).execute
+              doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield doc
+
+            assertZIO(result)(Assertion.isRight(equalTo(customer1)))
+          }
+        }
+      ) @@ nondeterministic,
+      suite("creating or updating document")(
+        test("successfully create document") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield doc
+
+            assertZIO(result)(Assertion.isRight(equalTo(customer)))
+          }
+        },
+        test("successfully update document") {
+          checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer1, customer2) =>
+            val result = for {
+              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer1).execute
+              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer2).execute
+              doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield doc
+
+            assertZIO(result)(Assertion.isRight(equalTo(customer2)))
+          }
+        }
+      ) @@ nondeterministic,
+      suite("finding document")(
+        test("return true if the document exists") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _      <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              exists <- ElasticRequest.exists(index, documentId).execute
+            } yield exists
+
+            assertZIO(result)(equalTo(true))
+          }
+        },
+        test("return false if the document does not exist") {
+          checkOnce(genDocumentId) { documentId =>
+            assertZIO(ElasticRequest.exists(index, documentId).execute)(equalTo(false))
+          }
+        }
+      ) @@ nondeterministic,
+      suite("deleting document by ID")(
+        test("return unit if document deletion was successful") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              res <- ElasticRequest.deleteById(index, documentId).execute
+            } yield res
+
+            assertZIO(result)(Assertion.isRight(equalTo(())))
+          }
+        },
+        test("return DocumentNotFound if the document does not exist") {
+          checkOnce(genDocumentId) { documentId =>
+            val result = for {
+              doc <- ElasticRequest.deleteById(index, documentId).execute
+            } yield doc
+
+            assertZIO(result)(Assertion.isLeft(equalTo(DocumentNotFound)))
+          }
+        }
+      ) @@ nondeterministic,
+      suite("creating index")(
+        test("return unit if creation was successful") {
+          checkOnce(genIndexName) { indexName =>
+            assertZIO(ElasticRequest.createIndex(indexName, None).execute)(equalTo(()))
+          }
+        }
+      ) @@ nondeterministic,
+      suite("delete index")(
+        test("return unit if deletion was successful") {
+          checkOnce(genIndexName) { indexName =>
+            assertZIO(ElasticRequest.deleteIndex(indexName).execute)(equalTo(()))
+          }
+        }
       ) @@ nondeterministic
     ).provideShared(elasticsearchLayer)
 }
