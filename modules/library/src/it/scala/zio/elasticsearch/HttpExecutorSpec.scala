@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticError.DocumentRetrievingError.{DecoderError, DocumentNotFound}
-import zio.test.Assertion.equalTo
+import zio.test.Assertion.{equalTo, isUnit}
 import zio.test.TestAspect.nondeterministic
 import zio.test._
 
@@ -37,7 +37,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
           }
         }
-      ) @@ nondeterministic,
+      ),
       suite("creating document")(
         test("successfully create document") {
           checkOnce(genCustomer) { customer =>
@@ -65,7 +65,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result)(Assertion.isRight(equalTo(customer1)))
           }
         }
-      ) @@ nondeterministic,
+      ),
       suite("creating or updating document")(
         test("successfully create document") {
           checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
@@ -80,7 +80,7 @@ object HttpExecutorSpec extends IntegrationSpec {
         test("successfully update document") {
           checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer1, customer2) =>
             val result = for {
-              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer1).execute
+              _   <- ElasticRequest.create[CustomerDocument](index, documentId, customer1).execute
               _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer2).execute
               doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield doc
@@ -88,7 +88,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result)(Assertion.isRight(equalTo(customer2)))
           }
         }
-      ) @@ nondeterministic,
+      ),
       suite("finding document")(
         test("return true if the document exists") {
           checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
@@ -105,7 +105,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(ElasticRequest.exists(index, documentId).execute)(equalTo(false))
           }
         }
-      ) @@ nondeterministic,
+      ),
       suite("deleting document by ID")(
         test("return unit if document deletion was successful") {
           checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
@@ -114,7 +114,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               res <- ElasticRequest.deleteById(index, documentId).execute
             } yield res
 
-            assertZIO(result)(Assertion.isRight(equalTo(())))
+            assertZIO(result)(Assertion.isRight(isUnit))
           }
         },
         test("return DocumentNotFound if the document does not exist") {
@@ -126,20 +126,20 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result)(Assertion.isLeft(equalTo(DocumentNotFound)))
           }
         }
-      ) @@ nondeterministic,
+      ),
       suite("creating index")(
         test("return unit if creation was successful") {
           checkOnce(genIndexName) { indexName =>
             assertZIO(ElasticRequest.createIndex(indexName, None).execute)(equalTo(()))
           }
         }
-      ) @@ nondeterministic,
+      ),
       suite("delete index")(
         test("return unit if deletion was successful") {
           checkOnce(genIndexName) { indexName =>
             assertZIO(ElasticRequest.deleteIndex(indexName).execute)(equalTo(()))
           }
         }
-      ) @@ nondeterministic
-    ).provideShared(elasticsearchLayer)
+      )
+    ).provideShared(elasticsearchLayer) @@ nondeterministic
 }

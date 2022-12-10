@@ -13,7 +13,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
   val index: IndexName = IndexName("users")
 
   def genIndexName: Gen[Any, IndexName] =
-    Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => unsafeWrap(IndexName)(name))
+    Gen.stringBounded(10, 40)(Gen.alphaChar).map(unsafeWrap(IndexName)(_))
 
   def genDocumentId: Gen[Any, DocumentId] = Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
 
