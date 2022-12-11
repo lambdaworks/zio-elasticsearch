@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticError.DocumentRetrievingError.{DecoderError, DocumentNotFound}
-import zio.test.Assertion.{equalTo, isUnit}
+import zio.test.Assertion.{equalTo, isFalse, isLeft, isRight, isSome, isTrue, isUnit}
 import zio.test.TestAspect.nondeterministic
 import zio.test._
 
@@ -17,13 +17,13 @@ object HttpExecutorSpec extends IntegrationSpec {
               document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield document
 
-            assertZIO(result)(Assertion.isRight(equalTo(customer)))
+            assertZIO(result)(isRight(equalTo(customer)))
           }
         },
         test("return DocumentNotFound if the document does not exist") {
           checkOnce(genDocumentId) { documentId =>
             assertZIO(ElasticRequest.getById[CustomerDocument](index, documentId).execute)(
-              Assertion.isLeft(equalTo(DocumentNotFound))
+              isLeft(equalTo(DocumentNotFound))
             )
           }
         },
@@ -34,14 +34,14 @@ object HttpExecutorSpec extends IntegrationSpec {
               document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield document
 
-            assertZIO(result)(Assertion.isLeft(equalTo(DecoderError(".address(missing)"))))
+            assertZIO(result)(isLeft(equalTo(DecoderError(".address(missing)"))))
           }
         }
       ),
       suite("creating document")(
         test("successfully create document") {
           checkOnce(genCustomer) { customer =>
-            assertZIO(ElasticRequest.create[CustomerDocument](index, customer).execute)(Assertion.isSome)
+            assertZIO(ElasticRequest.create[CustomerDocument](index, customer).execute)(isSome)
           }
         },
         test("successfully create document with ID given") {
@@ -51,7 +51,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield doc
 
-            assertZIO(result)(Assertion.isRight(equalTo(customer)))
+            assertZIO(result)(isRight(equalTo(customer)))
           }
         },
         test("fail to create document with ID given") { // TODO: change when introduce error for this case
@@ -62,7 +62,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield doc
 
-            assertZIO(result)(Assertion.isRight(equalTo(customer1)))
+            assertZIO(result)(isRight(equalTo(customer1)))
           }
         }
       ),
@@ -74,7 +74,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield doc
 
-            assertZIO(result)(Assertion.isRight(equalTo(customer)))
+            assertZIO(result)(isRight(equalTo(customer)))
           }
         },
         test("successfully update document") {
@@ -85,7 +85,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield doc
 
-            assertZIO(result)(Assertion.isRight(equalTo(customer2)))
+            assertZIO(result)(isRight(equalTo(customer2)))
           }
         }
       ),
@@ -97,12 +97,12 @@ object HttpExecutorSpec extends IntegrationSpec {
               exists <- ElasticRequest.exists(index, documentId).execute
             } yield exists
 
-            assertZIO(result)(equalTo(true))
+            assertZIO(result)(isTrue)
           }
         },
         test("return false if the document does not exist") {
           checkOnce(genDocumentId) { documentId =>
-            assertZIO(ElasticRequest.exists(index, documentId).execute)(equalTo(false))
+            assertZIO(ElasticRequest.exists(index, documentId).execute)(isFalse)
           }
         }
       ),
@@ -114,30 +114,26 @@ object HttpExecutorSpec extends IntegrationSpec {
               res <- ElasticRequest.deleteById(index, documentId).execute
             } yield res
 
-            assertZIO(result)(Assertion.isRight(isUnit))
+            assertZIO(result)(isRight(isUnit))
           }
         },
         test("return DocumentNotFound if the document does not exist") {
           checkOnce(genDocumentId) { documentId =>
-            val result = for {
-              doc <- ElasticRequest.deleteById(index, documentId).execute
-            } yield doc
-
-            assertZIO(result)(Assertion.isLeft(equalTo(DocumentNotFound)))
+            assertZIO(ElasticRequest.deleteById(index, documentId).execute)(isLeft(equalTo(DocumentNotFound)))
           }
         }
       ),
       suite("creating index")(
         test("return unit if creation was successful") {
           checkOnce(genIndexName) { indexName =>
-            assertZIO(ElasticRequest.createIndex(indexName, None).execute)(equalTo(()))
+            assertZIO(ElasticRequest.createIndex(indexName, None).execute)(isUnit)
           }
         }
       ),
       suite("delete index")(
         test("return unit if deletion was successful") {
           checkOnce(genIndexName) { indexName =>
-            assertZIO(ElasticRequest.deleteIndex(indexName).execute)(equalTo(()))
+            assertZIO(ElasticRequest.deleteIndex(indexName).execute)(isUnit)
           }
         }
       )
