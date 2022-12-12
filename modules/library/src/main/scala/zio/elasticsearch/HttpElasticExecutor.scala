@@ -7,7 +7,6 @@ import sttp.model.StatusCode.Ok
 import zio.Task
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
-import zio.json.ast.JsonCursor
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -105,23 +104,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
     } yield resp
 
-  private def executeQuery(r: GetByQuery): Task[Unit] =
+  private def executeQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
     request
       .post(uri"$basePath/${IndexName.unwrap(r.index)}/_search")
       .response(asJson[ElasticQueryResponse])
       .contentType(ApplicationJson)
       .body(r.query.asJsonBody)
       .send(client)
-      .map { response =>
-        val cursor        = JsonCursor.field("hits")
-        val cursorLenght  = JsonCursor.field("total")
-        val cursorLenght2 = JsonCursor.field("value")
-        val cursor1       = JsonCursor.element(0)
-        // .get(cursor).flatMap(_.as[CaseClass])
-        println(response.body.toOption.get.source.get(cursorLenght).toOption.get.get(cursorLenght2))
-        val x = response.body.toOption.get.source.get(cursor)
-        x.toOption.get.get(cursor1).map(println)
-      }
+      .map(a => a.body.toOption)
 }
 
 private[elasticsearch] object HttpElasticExecutor {

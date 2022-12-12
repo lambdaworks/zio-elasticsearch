@@ -6,6 +6,7 @@ import zio.elasticsearch.ElasticRequest.search
 import zio.elasticsearch.{ElasticExecutor, IndexName}
 import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
+// TODO : REMOVE CLASS BEFORE MERGE
 object Main extends ZIOAppDefault {
 //  val simpleAnd = matches("day_of_week", "Monday") and matches("customer_gender", "MALE")
 //  println(simpleAnd.asJson)
@@ -31,10 +32,13 @@ object Main extends ZIOAppDefault {
 
   val query =
     boolQuery()
-      .must(matches("customer_last_name", "Weber"))
+      .must(matches("customer_gender", "MALE"))
+      .must(matches("day_of_week", "Monday"))
+      .should(matches("customer_last_name", "Weber"))
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] = (for {
     _        <- ZIO.succeed("Executing query...")
-    response <- search(IndexName(""), query).execute
+    response <- search(IndexName("kibana_sample_data_ecommerce"), query).execute
+    _        <- ZIO.succeed(println(response))
   } yield response).provide(ElasticExecutor.local, HttpClientZioBackend.layer())
 }
