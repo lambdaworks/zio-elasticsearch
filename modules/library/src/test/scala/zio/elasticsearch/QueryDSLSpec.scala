@@ -1,12 +1,13 @@
 package zio.elasticsearch
 
-import zio.test.{Assertion, ZIOSpecDefault, assert}
+import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.json.ast.Json
+import zio.test.{Assertion, Spec, TestEnvironment, ZIOSpecDefault, assert}
 
 object QueryDSLSpec extends ZIOSpecDefault {
 
-  override def spec =
+  override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("Creating Elastic Query Class")(
         test("Successfully create Match Query using `matches` method") {

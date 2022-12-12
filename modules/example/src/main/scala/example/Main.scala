@@ -3,7 +3,7 @@ package example
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.search
-import zio.elasticsearch.{ElasticExecutor, IndexName}
+import zio.elasticsearch.{ElasticExecutor, ElasticQuery, IndexName}
 import zio.{Scope, ZIO, ZIOAppArgs, ZIOAppDefault}
 
 // TODO : REMOVE CLASS BEFORE MERGE
@@ -30,7 +30,7 @@ object Main extends ZIOAppDefault {
 //    (matches("customer_gender", "MALE") and matches("day_of_week", "Monday")) or matches("customer_last_name", "Weber")
 //  println(query2.asJsonBody)
 
-  val query =
+  val query: ElasticQuery =
     boolQuery()
       .must(matches("customer_gender", "MALE"))
       .must(matches("day_of_week", "Monday"))
