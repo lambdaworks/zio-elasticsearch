@@ -41,8 +41,8 @@ lazy val library =
         "dev.zio"                       %% "zio-schema"      % "0.3.1",
         "dev.zio"                       %% "zio-schema-json" % "0.3.1",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.4" % "it,test",
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.4" % "it,test"
+        "dev.zio"                       %% "zio-test"        % "2.0.4" % Tests,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.4" % Tests
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
@@ -77,3 +77,5 @@ lazy val docs =
       docusaurusCreateSite     := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
       docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
     )
+
+val Tests = List(IntegrationTest, Test).mkString(",")
