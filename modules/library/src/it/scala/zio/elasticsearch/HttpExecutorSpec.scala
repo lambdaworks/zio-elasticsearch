@@ -1,7 +1,11 @@
 package zio.elasticsearch
 
+import sttp.client3.{SttpBackend, UriContext, basicRequest}
+import sttp.model.StatusCode.{NotFound, Ok}
+import sttp.model.Uri
+import zio.{Task, ZIO}
 import zio.elasticsearch.ElasticError.DocumentRetrievingError.{DecoderError, DocumentNotFound}
-import zio.test.Assertion.{equalTo, isFalse, isLeft, isRight, isSome, isTrue, isUnit}
+import zio.test.Assertion.{equalTo, isFalse, isLeft, isRight, isTrue, isUnit}
 import zio.test.TestAspect.nondeterministic
 import zio.test._
 
@@ -41,7 +45,12 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("creating document")(
         test("successfully create document") {
           checkOnce(genCustomer) { customer =>
-            assertZIO(ElasticRequest.create[CustomerDocument](index, customer).execute)(isSome)
+            val result = for {
+              docId <- ElasticRequest.create[CustomerDocument](index, customer).execute
+              res   <- ElasticRequest.getById[CustomerDocument](index, docId.getOrElse(DocumentId(""))).execute
+            } yield res
+
+            assertZIO(result)(isRight(equalTo(customer)))
           }
         },
         test("successfully create document with ID given") {
@@ -54,7 +63,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result)(isRight(equalTo(customer)))
           }
         },
-        test("fail to create document with ID given") { // TODO: change when introduce error for this case
+        test("fail to create document with ID given") {
           checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer1, customer2) =>
             val result = for {
               _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer1).execute
@@ -125,17 +134,35 @@ object HttpExecutorSpec extends IntegrationSpec {
       ),
       suite("creating index")(
         test("return unit if creation was successful") {
-          checkOnce(genIndexName) { indexName =>
-            assertZIO(ElasticRequest.createIndex(indexName, None).execute)(isUnit)
+          checkOnce(genIndexName) { name =>
+            val result = for {
+              _    <- ElasticRequest.createIndex(name, None).execute
+              sttp <- ZIO.service[SttpBackend[Task, Any]]
+              indexExists <- basicRequest
+                               .head(uri"${Uri(ElasticConfig.Default.host, ElasticConfig.Default.port)}/$name")
+                               .send(sttp)
+                               .map(_.code.equals(Ok))
+            } yield indexExists
+
+            assertZIO(result)(isTrue)
           }
         }
       ),
       suite("delete index")(
         test("return unit if deletion was successful") {
-          checkOnce(genIndexName) { indexName =>
-            assertZIO(ElasticRequest.deleteIndex(indexName).execute)(isUnit)
+          checkOnce(genIndexName) { name =>
+            val result = for {
+              _    <- ElasticRequest.deleteIndex(name).execute
+              sttp <- ZIO.service[SttpBackend[Task, Any]]
+              deleted <- basicRequest
+                           .head(uri"$basePath/$name")
+                           .send(sttp)
+                           .map(_.code.equals(NotFound))
+            } yield deleted
+
+            assertZIO(result)(isFalse)
           }
         }
       )
-    ).provideShared(elasticsearchLayer) @@ nondeterministic
+    ).provideShared(elasticsearchLayer, httpClientLayer) @@ nondeterministic
 }
