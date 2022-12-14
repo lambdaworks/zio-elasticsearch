@@ -5,9 +5,9 @@ import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBacken
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.StatusCode.Ok
 import sttp.model.Uri
+import zio.Task
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
-import zio.Task
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
