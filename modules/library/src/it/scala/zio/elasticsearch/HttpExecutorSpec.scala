@@ -133,7 +133,7 @@ object HttpExecutorSpec extends IntegrationSpec {
         }
       ),
       suite("creating index")(
-        test("return unit if creation was successful") {
+        test("return true if creation was successful") {
           checkOnce(genIndexName) { name =>
             val result = for {
               _    <- ElasticRequest.createIndex(name, None).execute
@@ -149,7 +149,7 @@ object HttpExecutorSpec extends IntegrationSpec {
         }
       ),
       suite("delete index")(
-        test("return unit if deletion was successful") {
+        test("return true if deletion was successful") {
           checkOnce(genIndexName) { name =>
             val result = for {
               _    <- ElasticRequest.deleteIndex(name).execute
@@ -160,7 +160,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .map(_.code.equals(NotFound))
             } yield deleted
 
-            assertZIO(result)(isFalse)
+            assertZIO(result)(isTrue)
           }
         }
       )
