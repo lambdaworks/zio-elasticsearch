@@ -92,18 +92,18 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
   ): ZIO[Any, Throwable, Response[Either[ResponseException[String, String], A]]] =
     for {
-      _    <- logDebug(s"REQUEST LOG: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
       resp <- req.send(client)
-      _    <- logDebug(s"RESPONSE LOG: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
     } yield resp
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
   ): ZIO[Any, Throwable, Response[Either[String, String]]] =
     for {
-      _    <- logDebug(s"[es-req] ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res] ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
     } yield resp
 }
 
