@@ -7,7 +7,7 @@ import sttp.model.StatusCode.Ok
 import sttp.model.Uri
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
-import zio.{Task, ZIO}
+import zio.Task
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
@@ -90,7 +90,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def sendRequestWithCustomResponse[A](
     req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
-  ): ZIO[Any, Throwable, Response[Either[ResponseException[String, String], A]]] =
+  ): Task[Response[Either[ResponseException[String, String], A]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
       resp <- req.send(client)
@@ -99,7 +99,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
-  ): ZIO[Any, Throwable, Response[Either[String, String]]] =
+  ): Task[Response[Either[String, String]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
       resp <- req.send(client)
