@@ -105,13 +105,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     } yield resp
 
   private def executeQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
-    request
-      .post(uri"$basePath/${IndexName.unwrap(r.index)}/_search")
-      .response(asJson[ElasticQueryResponse])
-      .contentType(ApplicationJson)
-      .body(r.query.asJsonBody)
-      .send(client)
-      .map(a => a.body.toOption)
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"$basePath/${IndexName.unwrap(r.index)}/_search")
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(r.query.asJsonBody)
+    )
+      .map(_.body.toOption)
 }
 
 private[elasticsearch] object HttpElasticExecutor {

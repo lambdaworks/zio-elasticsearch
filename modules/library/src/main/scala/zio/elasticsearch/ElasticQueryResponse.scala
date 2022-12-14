@@ -44,7 +44,7 @@ private[elasticsearch] object Total {
   implicit val decoder: JsonDecoder[Total] = DeriveJsonDecoder.gen[Total]
 }
 
-private[elasticsearch] case class Item(
+private[elasticsearch] final case class Item(
   @jsonField("_index")
   index: String,
   @jsonField("_type")
@@ -56,6 +56,7 @@ private[elasticsearch] case class Item(
   @jsonField("_source")
   source: Json
 )
+
 private[elasticsearch] object Item {
   implicit val decoder: JsonDecoder[Item] = DeriveJsonDecoder.gen[Item]
 }

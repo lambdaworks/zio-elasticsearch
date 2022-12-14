@@ -8,6 +8,7 @@ sealed trait ElasticQuery { self =>
   def asJson: Json
 
   final def asJsonBody: Json = Obj("query" -> self.asJson)
+
 }
 
 object ElasticQuery {
@@ -24,19 +25,20 @@ object ElasticQuery {
   def boolQuery(): BoolQuery = BoolQuery.empty
 
   private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery], should: List[ElasticQuery])
-      extends ElasticQuery {
+      extends ElasticQuery { self =>
+
     override def asJson: Json =
       Obj("bool" -> Obj("must" -> Arr(must.map(_.asJson): _*), "should" -> Arr(should.map(_.asJson): _*)))
 
     def must(queries: ElasticQuery*): BoolQuery =
-      this.copy(must = must ++ queries)
+      self.copy(must = must ++ queries)
 
     def should(queries: ElasticQuery*): BoolQuery =
-      this.copy(should = should ++ queries)
+      self.copy(should = should ++ queries)
   }
 
   object BoolQuery {
-    def empty: BoolQuery = BoolQuery(List.empty, List.empty)
+    def empty: BoolQuery = BoolQuery(Nil, Nil)
   }
 
   private[elasticsearch] final case class Match[A](field: String, query: A) extends ElasticQuery {
