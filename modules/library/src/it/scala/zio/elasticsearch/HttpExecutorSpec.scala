@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
 import sttp.client3.httpclient.zio.HttpClientZioBackend
-import sttp.client3.{SttpBackend, UriContext, basicRequest}
+import sttp.client3.{SttpBackend, basicRequest}
 import sttp.model.StatusCode.{NotFound, Ok}
 import zio.elasticsearch.ElasticConfig.Default
 import zio.{Task, ZIO}
@@ -140,7 +140,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               _    <- ElasticRequest.createIndex(name, None).execute
               sttp <- ZIO.service[SttpBackend[Task, Any]]
               indexExists <- basicRequest
-                               .head(uri"${Default.uri}/$name")
+                               .head(Default.uri.withPath(name.toString))
                                .send(sttp)
                                .map(_.code.equals(Ok))
             } yield indexExists
@@ -156,7 +156,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               _    <- ElasticRequest.deleteIndex(name).execute
               sttp <- ZIO.service[SttpBackend[Task, Any]]
               deleted <- basicRequest
-                           .head(uri"${Default.uri}/$name")
+                           .head(Default.uri.withPath(name.toString))
                            .send(sttp)
                            .map(_.code.equals(NotFound))
             } yield deleted
