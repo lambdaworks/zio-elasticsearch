@@ -1,9 +1,7 @@
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
-import sttp.model.Uri
-import zio.{Task, ZLayer}
+import zio.ZLayer
 import zio.prelude.Newtype.unsafeWrap
 import zio.test.CheckVariants.CheckN
 import zio.test.{Gen, ZIOSpecDefault, checkN}
@@ -11,11 +9,6 @@ import zio.test.{Gen, ZIOSpecDefault, checkN}
 trait IntegrationSpec extends ZIOSpecDefault {
   val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
     HttpClientZioBackend.layer() >>> ElasticExecutor.local
-
-  val httpClientLayer: ZLayer[Any, Throwable, SttpBackend[Task, Any]] =
-    HttpClientZioBackend.layer()
-
-  val basePath: Uri = Uri(ElasticConfig.Default.host, ElasticConfig.Default.port)
 
   val index: IndexName = IndexName("users")
 
