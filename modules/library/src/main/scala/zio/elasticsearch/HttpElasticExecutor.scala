@@ -4,7 +4,6 @@ import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.StatusCode.Ok
-import sttp.model.Uri
 import zio.Task
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
@@ -13,8 +12,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     extends ElasticExecutor {
 
   import HttpElasticExecutor._
-
-  private val basePath = Uri(config.host, config.port)
 
   override def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
@@ -29,7 +26,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeGetById(r: GetById): Task[Option[Document]] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
     sendRequestWithCustomResponse[ElasticGetResponse](
       request
@@ -41,9 +38,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
     val uri = r.id match {
       case Some(documentId) =>
-        uri"$basePath/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(Routing.unwrap))
+        uri"${config.uri}/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(Routing.unwrap))
       case None =>
-        uri"$basePath/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
+        uri"${config.uri}/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
     }
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
@@ -58,28 +55,28 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
     sendRequest(
       request
-        .put(uri"$basePath/${createIndex.name}")
+        .put(uri"${config.uri}/${createIndex.name}")
         .contentType(ApplicationJson)
         .body(createIndex.definition.getOrElse(""))
     ).unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
   }
 
   private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
     sendRequest(request.head(uri)).map(_.code.equals(Ok))
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
-    sendRequest(request.delete(uri"$basePath/${r.name}")).unit
+    sendRequest(request.delete(uri"${config.uri}/${r.name}")).unit
 
   private def executeDeleteById(r: DeleteById): Task[Option[Unit]] = {
-    val uri = uri"$basePath/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
     sendRequestWithCustomResponse(
       request
