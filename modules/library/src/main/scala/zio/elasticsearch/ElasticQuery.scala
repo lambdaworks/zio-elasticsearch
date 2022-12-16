@@ -82,9 +82,8 @@ object ElasticQuery {
   }
 
   private[elasticsearch] final case class Term(field: String, query: String) extends ElasticQuery {
-    override def toJson: Json = {
+    override def toJson: Json =
       Obj("term" -> Obj(field -> Str(query)))
-    }
   }
 
   sealed trait LowerBound {
