@@ -107,7 +107,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"$basePath/${IndexName.unwrap(r.index)}/_search")
+        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(r.query.asJsonBody)
