@@ -1,9 +1,9 @@
-package zio
+package zio.elasticsearch.utils
 
 import zio.json.DecoderOps
 import zio.json.ast.Json
 
-package object elasticsearch {
+object Utils {
 
   implicit class RichString(val text: String) extends AnyVal {
     def toJson: Json = text.fromJson[Json].toOption.get
