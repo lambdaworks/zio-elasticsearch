@@ -2,11 +2,9 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
-import zio.json.ast.Json
-import zio.test.{Assertion, Spec, TestEnvironment, ZIOSpecDefault, assert}
+import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
-
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("Creating Elastic Query Class")(
@@ -72,7 +70,14 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryBool.asJsonBody)(
             Assertion.equalTo(
-              Json.Obj("query" -> Json.Obj("match" -> Json.Obj("day_of_week" -> Json.Bool(true))))
+              """{
+                "query": {
+                  "match": {
+                    "day_of_week":true
+                    }
+                  }
+               }
+              }""".toJson
             )
           )
         },
@@ -81,16 +86,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryBool.asJsonBody)(
             Assertion.equalTo(
-              Json.Obj(
-                "query" -> Json.Obj(
-                  "bool" -> Json.Obj(
-                    "must" -> Json.Arr(
-                      Json.Obj("match" -> Json.Obj("day_of_week" -> Json.Str("Monday")))
-                    ),
-                    "should" -> Json.Arr()
-                  )
-                )
-              )
+              """{
+                "query": {
+                  "bool":{
+                    "must":[
+                     {"match": {"day_of_week":"Monday"}}
+                    ],
+                    "should":[]
+                  }
+               }
+              }""".toJson
             )
           )
         },
@@ -99,14 +104,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryBool.asJsonBody)(
             Assertion.equalTo(
-              Json.Obj(
-                "query" -> Json.Obj(
-                  "bool" -> Json.Obj(
-                    "must"   -> Json.Arr(),
-                    "should" -> Json.Arr(Json.Obj("match" -> Json.Obj("day_of_week" -> Json.Str("Monday"))))
-                  )
-                )
-              )
+              """{
+                "query": {
+                  "bool":{
+                    "must":[],
+                    "should":[
+                     {"match": {"day_of_week":"Monday"}}
+                    ]
+                  }
+               }
+              }""".toJson
             )
           )
         },
@@ -118,14 +125,18 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryBool.asJsonBody)(
             Assertion.equalTo(
-              Json.Obj(
-                "query" -> Json.Obj(
-                  "bool" -> Json.Obj(
-                    "must"   -> Json.Arr(Json.Obj("match" -> Json.Obj("customer_id" -> Json.Num(1)))),
-                    "should" -> Json.Arr(Json.Obj("match" -> Json.Obj("day_of_week" -> Json.Str("Monday"))))
-                  )
-                )
-              )
+              """{
+                "query": {
+                  "bool":{
+                    "must":[
+                      {"match": {"customer_id":1}}
+                    ],
+                    "should":[
+                     {"match": {"day_of_week":"Monday"}}
+                    ]
+                  }
+               }
+              }""".toJson
             )
           )
         }

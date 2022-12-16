@@ -90,18 +90,18 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
   ): Task[Response[Either[ResponseException[String, String], A]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
   ): Task[Response[Either[String, String]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set())}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
   private def executeQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
@@ -111,8 +111,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(r.query.asJsonBody)
-    )
-      .map(_.body.toOption)
+    ).map(_.body.toOption)
 }
 
 private[elasticsearch] object HttpElasticExecutor {
