@@ -50,7 +50,7 @@ object ElasticRequest {
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[Unit] =
     CreateIndex(name, definition)
 
-  def deleteIndex(name: IndexName): ElasticRequest[Unit] =
+  def deleteIndex(name: IndexName): ElasticRequest[Boolean] =
     DeleteIndex(name)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit] =
@@ -81,7 +81,7 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[Unit]]
 
-  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends ElasticRequest[Unit]
+  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends ElasticRequest[Boolean]
 
   private[elasticsearch] final case class Exists(
     index: IndexName,

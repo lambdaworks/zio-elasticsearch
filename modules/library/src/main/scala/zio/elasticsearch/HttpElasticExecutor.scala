@@ -73,8 +73,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     sendRequest(request.head(uri)).map(_.code.equals(Ok))
   }
 
-  private def executeDeleteIndex(r: DeleteIndex): Task[Unit] =
-    sendRequest(request.delete(uri"${config.uri}/${r.name}")).unit
+  private def executeDeleteIndex(r: DeleteIndex): Task[Boolean] =
+    sendRequest(request.delete(uri"${config.uri}/${r.name}")).map(_.code.equals(Ok))
 
   private def executeDeleteById(r: DeleteById): Task[Option[Unit]] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))

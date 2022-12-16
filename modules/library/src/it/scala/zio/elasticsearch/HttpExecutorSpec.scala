@@ -2,7 +2,7 @@ package zio.elasticsearch
 
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import sttp.client3.{SttpBackend, basicRequest}
-import sttp.model.StatusCode.{NotFound, Ok}
+import sttp.model.StatusCode.Ok
 import zio.elasticsearch.ElasticConfig.Default
 import zio.{Task, ZIO}
 import zio.elasticsearch.ElasticError.DocumentRetrievingError.{DecoderError, DocumentNotFound}
@@ -153,15 +153,16 @@ object HttpExecutorSpec extends IntegrationSpec {
         test("return true if deletion was successful") {
           checkOnce(genIndexName) { name =>
             val result = for {
-              _    <- ElasticRequest.deleteIndex(name).execute
-              sttp <- ZIO.service[SttpBackend[Task, Any]]
-              deleted <- basicRequest
-                           .head(Default.uri.withPath(name.toString))
-                           .send(sttp)
-                           .map(_.code.equals(NotFound))
+              _       <- ElasticRequest.createIndex(name, None).execute
+              deleted <- ElasticRequest.deleteIndex(name).execute
             } yield deleted
 
             assertZIO(result)(isTrue)
+          }
+        },
+        test("return false if deletion was not successful") {
+          checkOnce(genIndexName) { name =>
+            assertZIO(ElasticRequest.deleteIndex(name).execute)(isFalse)
           }
         }
       )
