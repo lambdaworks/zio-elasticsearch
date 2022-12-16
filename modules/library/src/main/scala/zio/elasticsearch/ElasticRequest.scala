@@ -33,7 +33,7 @@ object ElasticRequest {
     Create(index, None, Document.from(doc))
 
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[Either[DocumentNotFound.type, Unit]] =
-    DeleteById(index, id).map(_.toRight(DocumentNotFound))
+    DeleteById(index, id).map(deleted => if (deleted) Right(()) else Left(DocumentNotFound))
 
   def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean] =
     Exists(index, id)
@@ -50,7 +50,7 @@ object ElasticRequest {
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[Unit] =
     CreateIndex(name, definition)
 
-  def deleteIndex(name: IndexName): ElasticRequest[Unit] =
+  def deleteIndex(name: IndexName): ElasticRequest[Boolean] =
     DeleteIndex(name)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit] =
@@ -79,9 +79,9 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[Unit]]
+  ) extends ElasticRequest[Boolean]
 
-  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends ElasticRequest[Unit]
+  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends ElasticRequest[Boolean]
 
   private[elasticsearch] final case class Exists(
     index: IndexName,
