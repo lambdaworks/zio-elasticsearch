@@ -22,19 +22,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: DeleteIndex    => executeDeleteIndex(r)
       case r: Exists         => executeExists(r)
       case r: GetById        => executeGetById(r)
-      case r: GetByQuery     => executeQuery(r)
+      case r: GetByQuery     => executeGetByQuery(r)
       case map @ Map(_, _)   => execute(map.request).map(map.mapper)
     }
-
-  private def executeGetById(r: GetById): Task[Option[Document]] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
-
-    sendRequestWithCustomResponse[ElasticGetResponse](
-      request
-        .get(uri)
-        .response(asJson[ElasticGetResponse])
-    ).map(_.body.toOption).map(_.flatMap(d => if (d.found) Some(Document.from(d.source)) else None))
-  }
 
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
     val uri = r.id match {
@@ -67,15 +57,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
   }
 
-  private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
-
-    sendRequest(request.head(uri)).map(_.code.equals(Ok))
-  }
-
-  private def executeDeleteIndex(r: DeleteIndex): Task[Boolean] =
-    sendRequest(request.delete(uri"${config.uri}/${r.name}")).map(_.code.equals(Ok))
-
   private def executeDeleteById(r: DeleteById): Task[Boolean] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
@@ -86,14 +67,33 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     ).map(_.body.toOption).map(_.exists(_.result == "deleted"))
   }
 
-  private def sendRequestWithCustomResponse[A](
-    req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
-  ): Task[Response[Either[ResponseException[String, String], A]]] =
-    for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
-      resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
-    } yield resp
+  private def executeDeleteIndex(r: DeleteIndex): Task[Boolean] =
+    sendRequest(request.delete(uri"${config.uri}/${r.name}")).map(_.code.equals(Ok))
+
+  private def executeExists(r: Exists): Task[Boolean] = {
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+
+    sendRequest(request.head(uri)).map(_.code.equals(Ok))
+  }
+
+  private def executeGetById(r: GetById): Task[Option[Document]] = {
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+
+    sendRequestWithCustomResponse[ElasticGetResponse](
+      request
+        .get(uri)
+        .response(asJson[ElasticGetResponse])
+    ).map(_.body.toOption).map(_.flatMap(d => if (d.found) Some(Document.from(d.source)) else None))
+  }
+
+  private def executeGetByQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(r.query.asJsonBody)
+    ).map(_.body.toOption)
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
@@ -104,14 +104,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
-  private def executeQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
-    sendRequestWithCustomResponse(
-      request
-        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
-        .response(asJson[ElasticQueryResponse])
-        .contentType(ApplicationJson)
-        .body(r.query.asJsonBody)
-    ).map(_.body.toOption)
+  private def sendRequestWithCustomResponse[A](
+    req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
+  ): Task[Response[Either[ResponseException[String, String], A]]] =
+    for {
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      resp <- req.send(client)
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+    } yield resp
 }
 
 private[elasticsearch] object HttpElasticExecutor {

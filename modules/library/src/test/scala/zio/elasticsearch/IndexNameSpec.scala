@@ -68,5 +68,5 @@ object IndexNameSpec extends ZIOSpecDefault {
        |""".stripMargin
 
   private def genString(min: Int, max: Int): Gen[Any, String] =
-    Gen.stringBounded(min, max)(Gen.alphaChar).map(_.toLowerCase())
+    Gen.stringBounded(min, max)(Gen.alphaChar).map(_.toLowerCase)
 }
