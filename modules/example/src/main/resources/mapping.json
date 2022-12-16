@@ -1,0 +1,35 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1
+    }
+  },
+  "mappings": {
+    "_routing": {
+      "required": true
+    },
+    "properties": {
+      "documentType": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "url": {
+        "type": "keyword"
+      },
+      "description": {
+        "type": "keyword"
+      },
+      "lastCommitAt": {
+        "type": "date"
+      },
+      "stars": {
+        "type": "integer"
+      },
+      "forks": {
+        "type": "integer"
+      }
+    }
+  }
+}
