@@ -2,8 +2,8 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
-import zio.test._
 import zio.elasticsearch.utils.Utils._
+import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
