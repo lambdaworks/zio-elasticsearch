@@ -33,7 +33,10 @@ object ElasticRequest {
     Create(index, None, Document.from(doc))
 
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[Either[DocumentNotFound.type, Unit]] =
-    DeleteById(index, id).map(a => if (a) Right(()) else Left(DocumentNotFound))
+    DeleteById(index, id).map {
+      case true  => Right(())
+      case false => Left(DocumentNotFound)
+    }
 
   def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean] = Exists(index, id)
 
