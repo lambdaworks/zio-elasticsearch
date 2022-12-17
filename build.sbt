@@ -51,6 +51,7 @@ lazy val example =
   project
     .in(file("modules/example"))
     .settings(stdSettings("example"))
+    .settings(scalacOptions += "-language:higherKinds")
     .settings(
       libraryDependencies ++= List(
         "dev.zio" %% "zio"                 % "2.0.5",
