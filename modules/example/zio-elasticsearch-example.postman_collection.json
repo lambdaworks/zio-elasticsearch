@@ -24,12 +24,12 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:9200/repositories",
+							"raw": "http://{{ELASTICSEARCH_HOST}}:{{ELASTICSEARCH_PORT}}/repositories",
 							"protocol": "http",
 							"host": [
-								"localhost"
+								"{{ELASTICSEARCH_HOST}}"
 							],
-							"port": "9200",
+							"port": "{{ELASTICSEARCH_PORT}}",
 							"path": [
 								"repositories"
 							]
@@ -43,12 +43,12 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:9200/repositories",
+							"raw": "http://{{ELASTICSEARCH_HOST}}:{{ELASTICSEARCH_PORT}}/repositories",
 							"protocol": "http",
 							"host": [
-								"localhost"
+								"{{ELASTICSEARCH_HOST}}"
 							],
-							"port": "9200",
+							"port": "{{ELASTICSEARCH_PORT}}",
 							"path": [
 								"repositories"
 							]
@@ -64,12 +64,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/health",
+					"raw": "http://localhost:{{HTTP_PORT}}/health",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"health"
 					]
@@ -92,12 +92,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/repositories",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories"
@@ -121,12 +121,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/repositories",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories"
@@ -150,12 +150,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/repositories",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories"
@@ -170,12 +170,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lambdaworks/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-zio-elasticsearch",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -192,12 +192,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lambdaworks/lw-scurl-detector",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-scurl-detector",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -214,12 +214,12 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/zio/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/zio/lw-zio-elasticsearch",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -236,12 +236,12 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lambdaworks/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-zio-elasticsearch",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -258,12 +258,12 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lambdaworks/lw-scurl-detector",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-scurl-detector",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -289,12 +289,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -319,12 +319,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -349,12 +349,12 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:8080/api/repositories/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
 					"protocol": "http",
 					"host": [
 						"localhost"
 					],
-					"port": "8080",
+					"port": "{{HTTP_PORT}}",
 					"path": [
 						"api",
 						"repositories",
@@ -363,6 +363,43 @@
 				}
 			},
 			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "ELASTICSEARCH_HOST",
+			"value": "localhost",
+			"type": "string"
+		},
+		{
+			"key": "ELASTICSEARCH_PORT",
+			"value": "9200",
+			"type": "string"
+		},
+		{
+			"key": "HTTP_PORT",
+			"value": "9000",
+			"type": "string"
 		}
 	]
 }
