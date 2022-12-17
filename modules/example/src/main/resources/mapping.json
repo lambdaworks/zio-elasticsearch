@@ -9,7 +9,10 @@
       "required": true
     },
     "properties": {
-      "documentType": {
+      "id": {
+        "type": "keyword"
+      },
+      "organization": {
         "type": "keyword"
       },
       "name": {
@@ -19,7 +22,7 @@
         "type": "keyword"
       },
       "description": {
-        "type": "keyword"
+        "type": "text"
       },
       "lastCommitAt": {
         "type": "date"

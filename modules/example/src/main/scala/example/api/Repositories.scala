@@ -2,48 +2,80 @@ package example.api
 
 import example.{RepositoriesElasticsearch, Repository}
 import zio.ZIO
-import zio.elasticsearch.ElasticExecutor
+import zio.elasticsearch.{DocumentId, ElasticExecutor}
 import zio.http._
-import zio.http.model.{Method, Status}
+import zio.http.model.Method
+import zio.http.model.Status._
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
 
-final class Repositories(es: RepositoriesElasticsearch) {
+object Repositories {
 
   private final val BasePath = !! / "api" / "repositories"
 
-  final val Routes: Http[ElasticExecutor, Nothing, Request, Response] =
+  final val Routes: Http[ElasticExecutor with RepositoriesElasticsearch, Nothing, Request, Response] =
     Http.collectZIO[Request] {
-      case Method.GET -> !! / "health" =>
-        ZIO.succeed(Response.text("up"))
-
       case Method.GET -> BasePath =>
-        ZIO.succeed(Response.text("list of repositories"))
+        ZIO.succeed(Response.text("TODO: Get a list of repositories").setStatus(NotImplemented))
 
-      case Method.DELETE -> BasePath / id =>
-        ZIO.succeed(Response.text(s"Deleting repository $id"))
+      case Method.GET -> BasePath / organization / id =>
+        RepositoriesElasticsearch
+          .one(organization, id)
+          .map {
+            case Some(r) =>
+              Response.json(r.toJson)
+            case None =>
+              Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(NotFound)
+          }
+          .orDie
 
-      case Method.GET -> BasePath / id =>
-        (for {
-          repository <- es.one(id)
-        } yield repository).map {
-          case Some(r) => Response.json(JsonCodec.JsonEncoder.encode(Repository.schema, r).toJson)
-          case None    => Response.status(Status.NotFound)
-        }.orDie
+      case req @ Method.POST -> BasePath =>
+        req.body.asString
+          .map(JsonCodec.JsonDecoder.decode[Repository](Repository.schema, _))
+          .flatMap {
+            case Left(value) =>
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(value.message).toJson).setStatus(BadRequest))
+            case Right(repo) =>
+              RepositoriesElasticsearch.create(repo).map {
+                case Some(id) =>
+                  Response.json(repo.copy(id = Some(DocumentId.unwrap(id))).toJson).setStatus(Created)
+                case None =>
+                  Response.json(ErrorResponse.fromReasons("Failed to create repository.").toJson).setStatus(BadRequest)
+              }
+          }
+          .orDie
 
-//      case req @ Method.POST -> BasePath =>
-//        (for {
-//          data <- req.body.asString
-//          repo <- JsonCodec.JsonDecoder.decode[Repository](Repository.schema, data)
-//          es   <- ZIO.service[RepositoriesElasticsearch]
-//          id   <- es.create(repo)
-//        } yield id).flatMap {
-//          case Some(id) => Console.printLine(s"Created with $id").as(Response.status(Created))
-//          case None     => ZIO.succeed(Response.status(BadRequest))
-//        }.orDie
+      case req @ Method.PUT -> BasePath / id =>
+        req.body.asString
+          .map(JsonCodec.JsonDecoder.decode[Repository](Repository.schema, _))
+          .flatMap {
+            case Left(value) =>
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(value.message).toJson).setStatus(BadRequest))
+            case Right(repo) if repo.id.exists(_ != id) =>
+              ZIO.succeed(
+                Response
+                  .json(ErrorResponse.fromReasons("Provided ID from path and from body do not match.").toJson)
+                  .setStatus(BadRequest)
+              )
+            case Right(repo) =>
+              (RepositoriesElasticsearch
+                .upsert(id, repo.copy(id = Some(id))) *> RepositoriesElasticsearch.one(repo.organization, id)).map {
+                case Some(updated) => Response.json(updated.toJson)
+                case None          => Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).setStatus(BadRequest)
+              }
+          }
+          .orDie
 
-      case Method.PUT -> BasePath =>
-        ZIO.succeed(Response.text("Upsert repository"))
+      case Method.DELETE -> BasePath / organization / id =>
+        RepositoriesElasticsearch
+          .remove(organization, id)
+          .map {
+            case Right(_) =>
+              Response.status(NoContent)
+            case Left(_) =>
+              Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(NotFound)
+          }
+          .orDie
     }
 
 }
