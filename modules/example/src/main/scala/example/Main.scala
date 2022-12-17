@@ -1,44 +1,51 @@
 package example
 
 import example.api.{Application, Repositories}
-import example.config.{AppConfig, HttpConfig}
+import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.config.getConfig
-import zio.elasticsearch.ElasticExecutor
-import zio.http.Server
+import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
+import zio.http.{Server, ServerConfig}
+
+import scala.io.Source
 
 object Main extends ZIOAppDefault {
 
-//  def migrate(): RIO[ElasticExecutor, Unit] =
-//    for {
-//      conf    <- getConfig[ElasticsearchConfig]
-//      _       <- Console.printLine(s"Elasticsearch on ${conf.host}:${conf.port}...")
-//      mapping <- ZIO.attempt(Source.fromURL(getClass.getResource("mapping.json")).mkString)
-//      _       <- ElasticRequest.createIndex(Index, Some(mapping)).execute
-//    } yield ()
-//
-//  def a(): RIO[ElasticExecutor, Unit] =
-//    for {
-//      conf <- getConfig[ElasticsearchConfig]
-//      _    <- Console.printLine(s"Elasticsearch on ${conf.host}:${conf.port}...")
-//      _    <- ElasticRequest.deleteIndex(Index).execute
-//    } yield ()
+  override def run: Task[ExitCode] = {
+    val elasticConfigLive   = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
+    val elasticExecutorLive = elasticConfigLive >>> ElasticExecutor.live
 
-  override def run: Task[Unit] =
+    (prepare() *> runServer).provide(AppConfig.live, elasticExecutorLive, HttpClientZioBackend.layer())
+  }
+
+  private[this] def prepare(): RIO[ElasticExecutor with ElasticsearchConfig, Unit] = {
+    val deleteIndex =
+      ZIO.logInfo(s"Deleting index '$Index'...") *> ElasticRequest.deleteIndex(Index).execute.unit
+
+    val createIndex: RIO[ElasticExecutor with ElasticsearchConfig, Unit] =
+      for {
+        _       <- ZIO.logInfo(s"Creating index '$Index'...")
+        mapping <- ZIO.attempt(Source.fromURL(getClass.getResource("/mapping.json")).mkString)
+        _       <- ElasticRequest.createIndex(Index, Some(mapping)).execute
+      } yield ()
+
+    deleteIndex *> createIndex
+  }
+
+  private[this] def runServer: RIO[HttpConfig with ElasticExecutor, ExitCode] = {
+    val serverConfigLive = ZLayer(getConfig[HttpConfig].map(http => ServerConfig.default.port(http.port)))
+
     (for {
       http  <- getConfig[HttpConfig]
       _     <- ZIO.logInfo(s"Starting an HTTP service on port: ${http.port}")
       routes = Application.Routes ++ Repositories.Routes
       _     <- Server.serve(routes)
-    } yield ())
-//      .onInterrupt(Console.printLine("Exiting...").orDie)
-//      .onExit(_ => Console.printLine("Exiting..."))
-      .provide(
-        AppConfig.live,
-        ElasticExecutor.local,
-        RepositoriesElasticsearch.live,
-        Server.default,
-        HttpClientZioBackend.layer()
-      )
+    } yield ExitCode.success).provideSome(
+      RepositoriesElasticsearch.live,
+      Server.live,
+      serverConfigLive
+    )
+  }
+
 }
