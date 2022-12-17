@@ -41,8 +41,8 @@ lazy val library =
         "dev.zio"                       %% "zio-schema"      % "0.3.1",
         "dev.zio"                       %% "zio-schema-json" % "0.3.1",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.4" % Tests,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.4" % Tests
+        "dev.zio"                       %% "zio-test"        % "2.0.5" % Tests,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.5" % Tests
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
@@ -53,7 +53,7 @@ lazy val example =
     .settings(stdSettings("example"))
     .settings(
       libraryDependencies ++= List(
-        "dev.zio" %% "zio" % "2.0.4"
+        "dev.zio" %% "zio" % "2.0.5"
       )
     )
     .dependsOn(library)
