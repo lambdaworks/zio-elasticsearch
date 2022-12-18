@@ -106,10 +106,9 @@ object ElasticQuery {
     caseInsensitive: Option[Boolean] = None
   ) extends ElasticQuery { self =>
     override def toJson: Json = {
-      val termFields =
-        Some("value" -> Str(value)) ++ boost.map(double => "boost" -> Num(double)) ++ caseInsensitive.map(boolean =>
-          "case_insensitive" -> Bool(boolean)
-        )
+      val termFields = Some("value" -> Str(value)) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
+        "case_insensitive" -> Bool(_)
+      )
       Obj("term" -> Obj(field -> Obj(termFields.toSeq: _*)))
     }
   }
