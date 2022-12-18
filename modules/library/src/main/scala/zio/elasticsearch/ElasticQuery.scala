@@ -14,13 +14,13 @@ sealed trait ElasticQuery { self =>
 
   def boost(value: Float): ElasticQuery =
     self match {
-      case q: Term => q.copy(boost = Option(value))
+      case q: Term => q.copy(boost = Some(value))
       case _       => self
     }
 
   def caseInsensitive(value: Boolean): ElasticQuery =
     self match {
-      case q: Term => q.copy(caseInsensitive = Option(value))
+      case q: Term => q.copy(caseInsensitive = Some(value))
       case _       => self
     }
 }
