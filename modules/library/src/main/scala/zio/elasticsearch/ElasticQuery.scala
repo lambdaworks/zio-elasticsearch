@@ -102,8 +102,8 @@ object ElasticQuery {
   private[elasticsearch] final case class Term(
     field: String,
     value: String,
-    boost: Option[Float],
-    caseInsensitive: Option[Boolean]
+    boost: Option[Float] = None,
+    caseInsensitive: Option[Boolean] = None
   ) extends ElasticQuery { self =>
     override def toJson: Json = {
       val termFields =
