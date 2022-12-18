@@ -57,7 +57,7 @@ object ElasticQuery {
   def term(
     field: String,
     value: String,
-    boost: Option[Float] = None,
+    boost: Option[Double] = None,
     caseInsensitive: Option[Boolean] = None
   ): ElasticQuery =
     Term(field, value, boost, caseInsensitive)
@@ -102,12 +102,12 @@ object ElasticQuery {
   private[elasticsearch] final case class Term(
     field: String,
     value: String,
-    boost: Option[Float] = None,
+    boost: Option[Double] = None,
     caseInsensitive: Option[Boolean] = None
   ) extends ElasticQuery { self =>
     override def toJson: Json = {
       val termFields =
-        Some("value" -> Str(value)) ++ boost.map(float => "boost" -> Num(float)) ++ caseInsensitive.map(boolean =>
+        Some("value" -> Str(value)) ++ boost.map(double => "boost" -> Num(double)) ++ caseInsensitive.map(boolean =>
           "case_insensitive" -> Bool(boolean)
         )
       Obj("term" -> Obj(field -> Obj(termFields.toSeq: _*)))
