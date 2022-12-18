@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticQuery._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Bool, Num, Obj, Str}
 
@@ -10,6 +11,18 @@ sealed trait ElasticQuery { self =>
   def toJson: Json
 
   final def toJsonBody: Json = Obj("query" -> self.toJson)
+
+  def boost(value: Float): ElasticQuery =
+    self match {
+      case q: Term => q.copy(boost = Option(value))
+      case _       => self
+    }
+
+  def caseInsensitive(value: Boolean): ElasticQuery =
+    self match {
+      case q: Term => q.copy(caseInsensitive = Option(value))
+      case _       => self
+    }
 }
 
 object ElasticQuery {
@@ -41,8 +54,13 @@ object ElasticQuery {
   def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery =
     Match(field, value)
 
-  def term(field: String, value: String): ElasticQuery =
-    Term(field, value)
+  def term(
+    field: String,
+    value: String,
+    boost: Option[Float] = None,
+    caseInsensitive: Option[Boolean] = None
+  ): ElasticQuery =
+    Term(field, value, boost, caseInsensitive)
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
@@ -81,9 +99,19 @@ object ElasticQuery {
     override def toJson: Json = Obj("match_all" -> Obj())
   }
 
-  private[elasticsearch] final case class Term(field: String, value: String) extends ElasticQuery {
-    override def toJson: Json =
-      Obj("term" -> Obj(field -> Str(value)))
+  private[elasticsearch] final case class Term(
+    field: String,
+    value: String,
+    boost: Option[Float],
+    caseInsensitive: Option[Boolean]
+  ) extends ElasticQuery { self =>
+    override def toJson: Json = {
+      val termFields =
+        Some("value" -> Str(value)) ++ boost.map(float => "boost" -> Num(float)) ++ caseInsensitive.map(boolean =>
+          "case_insensitive" -> Bool(boolean)
+        )
+      Obj("term" -> Obj(field -> Obj(termFields.toSeq: _*)))
+    }
   }
 
   sealed trait LowerBound {
