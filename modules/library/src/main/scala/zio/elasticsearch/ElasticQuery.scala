@@ -109,7 +109,7 @@ object ElasticQuery {
       val termFields = Some("value" -> Str(value)) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
         "case_insensitive" -> Bool(_)
       )
-      Obj("term" -> Obj(field -> Obj(termFields.toSeq: _*)))
+      Obj("term" -> Obj(field -> Obj(termFields.toList: _*)))
     }
   }
 
