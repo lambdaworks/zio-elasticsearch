@@ -20,10 +20,13 @@ object Main extends ZIOAppDefault {
   }
 
   private[this] def prepare(): RIO[ElasticExecutor with ElasticsearchConfig, Unit] = {
-    val deleteIndex =
-      ZIO.logInfo(s"Deleting index '$Index'...") *> ElasticRequest.deleteIndex(Index).execute.unit
+    val deleteIndex: RIO[ElasticExecutor, Unit] =
+      for {
+        _ <- ZIO.logInfo(s"Deleting index '$Index'...")
+        _ <- ElasticRequest.deleteIndex(Index).execute
+      } yield ()
 
-    val createIndex: RIO[ElasticExecutor with ElasticsearchConfig, Unit] =
+    val createIndex: RIO[ElasticExecutor, Unit] =
       for {
         _       <- ZIO.logInfo(s"Creating index '$Index'...")
         mapping <- ZIO.attempt(Source.fromURL(getClass.getResource("/mapping.json")).mkString)

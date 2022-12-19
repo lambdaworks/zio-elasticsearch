@@ -20,7 +20,7 @@ object Repositories {
 
       case Method.GET -> BasePath / organization / id =>
         RepositoriesElasticsearch
-          .one(organization, id)
+          .findById(organization, id)
           .map {
             case Some(r) =>
               Response.json(r.toJson)
@@ -33,8 +33,8 @@ object Repositories {
         req.body.asString
           .map(JsonCodec.JsonDecoder.decode[Repository](Repository.schema, _))
           .flatMap {
-            case Left(value) =>
-              ZIO.succeed(Response.json(ErrorResponse.fromReasons(value.message).toJson).setStatus(BadRequest))
+            case Left(e) =>
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
             case Right(repo) =>
               RepositoriesElasticsearch.create(repo).map {
                 case Some(id) =>
@@ -49,17 +49,22 @@ object Repositories {
         req.body.asString
           .map(JsonCodec.JsonDecoder.decode[Repository](Repository.schema, _))
           .flatMap {
-            case Left(value) =>
-              ZIO.succeed(Response.json(ErrorResponse.fromReasons(value.message).toJson).setStatus(BadRequest))
+            case Left(e) =>
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
             case Right(repo) if repo.id.exists(_ != id) =>
               ZIO.succeed(
                 Response
-                  .json(ErrorResponse.fromReasons("Provided ID from path and from body do not match.").toJson)
+                  .json(
+                    ErrorResponse.fromReasons("The ID provided in the path does not match the ID from the body.").toJson
+                  )
                   .setStatus(BadRequest)
               )
             case Right(repo) =>
               (RepositoriesElasticsearch
-                .upsert(id, repo.copy(id = Some(id))) *> RepositoriesElasticsearch.one(repo.organization, id)).map {
+                .upsert(id, repo.copy(id = Some(id))) *> RepositoriesElasticsearch.findById(
+                repo.organization,
+                id
+              )).map {
                 case Some(updated) => Response.json(updated.toJson)
                 case None          => Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).setStatus(BadRequest)
               }

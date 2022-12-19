@@ -18,5 +18,5 @@ This application represents an example of usage `zio-elasticsearch` library for 
 On the application startup - a **"repositories"** index will be deleted, and immediately re-created with the mapping
 definition given in the `resources/mapping.json` file.
 
-After successfully starting the application, you can the exposed ZIO Elasticsearch library's API through exposed HTTP
+After successfully starting the application, you can test the exposed ZIO Elasticsearch library's API through exposed HTTP
 endpoints.

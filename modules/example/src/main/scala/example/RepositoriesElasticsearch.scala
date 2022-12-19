@@ -7,7 +7,7 @@ import zio.{RIO, ULayer, ZIO, ZLayer}
 
 final class RepositoriesElasticsearch {
 
-  def one(organization: String, id: String): RIO[ElasticExecutor, Option[Repository]] =
+  def findById(organization: String, id: String): RIO[ElasticExecutor, Option[Repository]] =
     ElasticRequest
       .getById[Repository](Index, DocumentId(id))
       .routing(unsafeWrap(Routing)(organization))
@@ -37,8 +37,11 @@ final class RepositoriesElasticsearch {
 
 object RepositoriesElasticsearch {
 
-  def one(organization: String, id: String): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[Repository]] =
-    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.one(organization, id))
+  def findById(
+    organization: String,
+    id: String
+  ): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[Repository]] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findById(organization, id))
 
   def create(repository: Repository): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[DocumentId]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
