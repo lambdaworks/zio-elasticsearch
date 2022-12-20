@@ -16,10 +16,10 @@ object Main extends ZIOAppDefault {
     val elasticConfigLive   = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
     val elasticExecutorLive = elasticConfigLive >>> ElasticExecutor.live
 
-    (prepare() *> runServer).provide(AppConfig.live, elasticExecutorLive, HttpClientZioBackend.layer())
+    (prepare *> runServer).provide(AppConfig.live, elasticExecutorLive, HttpClientZioBackend.layer())
   }
 
-  private[this] def prepare(): RIO[ElasticExecutor with ElasticsearchConfig, Unit] = {
+  private[this] def prepare: RIO[ElasticExecutor, Unit] = {
     val deleteIndex: RIO[ElasticExecutor, Unit] =
       for {
         _ <- ZIO.logInfo(s"Deleting index '$Index'...")
