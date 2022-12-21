@@ -18,9 +18,11 @@ object ElasticQuery {
   sealed trait ElasticPrimitive[A] {
     def toJson(a: A): Json
   }
+
   implicit object IntElasticPrimitive extends ElasticPrimitive[Int] {
     override def toJson(a: Int): Json = Num(a)
   }
+
   implicit object StringElasticPrimitive extends ElasticPrimitive[String] {
     override def toJson(a: String): Json = Str(a)
   }
@@ -42,7 +44,7 @@ object ElasticQuery {
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
-  def range(field: String): Range[Unbounded.type, Unbounded.type] = Range.make(field)
+  def range(field: String): Range[Unbounded.type, Unbounded.type] = Range.empty(field)
 
   private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery], should: List[ElasticQuery])
       extends ElasticQuery { self =>
@@ -68,24 +70,28 @@ object ElasticQuery {
   sealed trait LowerBound {
     def toJson: Option[(String, Json)]
   }
-  private[elasticsearch] case class Greater[A: ElasticPrimitive](a: A) extends LowerBound {
+
+  private[elasticsearch] final case class Greater[A: ElasticPrimitive](a: A) extends LowerBound {
     override def toJson: Option[(String, Json)] = Option("gt" -> a.toJson)
   }
-  private[elasticsearch] case class GreaterEqual[A: ElasticPrimitive](a: A) extends LowerBound {
+
+  private[elasticsearch] final case class GreaterEqual[A: ElasticPrimitive](a: A) extends LowerBound {
     def toJson: Option[(String, Json)] = Option("gte" -> a.toJson)
   }
 
   sealed trait UpperBound {
     def toJson: Option[(String, Json)]
   }
-  private[elasticsearch] case class Less[A: ElasticPrimitive](a: A) extends UpperBound {
+
+  private[elasticsearch] final case class Less[A: ElasticPrimitive](a: A) extends UpperBound {
     override def toJson: Option[(String, Json)] = Option("lt" -> a.toJson)
   }
-  private[elasticsearch] case class LessEqual[A: ElasticPrimitive](a: A) extends UpperBound {
+
+  private[elasticsearch] final case class LessEqual[A: ElasticPrimitive](a: A) extends UpperBound {
     override def toJson: Option[(String, Json)] = Option("lte" -> a.toJson)
   }
 
-  private[elasticsearch] case object Unbounded extends LowerBound with UpperBound {
+  private[elasticsearch] final case object Unbounded extends LowerBound with UpperBound {
     override def toJson: Option[(String, Json)] = None
   }
 
@@ -112,6 +118,6 @@ object ElasticQuery {
   }
 
   private[elasticsearch] object Range {
-    def make(field: String): Range[Unbounded.type, Unbounded.type] = Range(field = field, Unbounded, Unbounded)
+    def empty(field: String): Range[Unbounded.type, Unbounded.type] = Range(field = field, Unbounded, Unbounded)
   }
 }
