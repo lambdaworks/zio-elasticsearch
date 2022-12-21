@@ -1,6 +1,6 @@
 package example.api
 
-import example.{RepositoriesElasticsearch, Repository}
+import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.{DocumentId, ElasticExecutor}
 import zio.http._
@@ -31,7 +31,7 @@ object Repositories {
 
       case req @ Method.POST -> BasePath =>
         req.body.asString
-          .map(JsonCodec.JsonDecoder.decode[Repository](Repository.schema, _))
+          .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
@@ -47,7 +47,7 @@ object Repositories {
 
       case req @ Method.PUT -> BasePath / id =>
         req.body.asString
-          .map(JsonCodec.JsonDecoder.decode[Repository](Repository.schema, _))
+          .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))

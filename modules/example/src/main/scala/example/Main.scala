@@ -13,10 +13,14 @@ import scala.io.Source
 object Main extends ZIOAppDefault {
 
   override def run: Task[ExitCode] = {
-    val elasticConfigLive   = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
-    val elasticExecutorLive = elasticConfigLive >>> ElasticExecutor.live
+    val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
 
-    (prepare *> runServer).provide(AppConfig.live, elasticExecutorLive, HttpClientZioBackend.layer())
+    (prepare *> runServer).provide(
+      AppConfig.live,
+      elasticConfigLive,
+      ElasticExecutor.live,
+      HttpClientZioBackend.layer()
+    )
   }
 
   private[this] def prepare: RIO[ElasticExecutor, Unit] = {

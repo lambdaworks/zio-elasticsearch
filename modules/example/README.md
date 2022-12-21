@@ -8,7 +8,7 @@ This application represents an example of usage `zio-elasticsearch` library for 
   repository)
 - Start the application by running the following command:
   ```shell
-    ./sbt example/run
+    ./sbt "~example/reStart"
     ```
 - Check whether the application is running [here](http://localhost:9000/health)
 - Explore endpoints using Postman collection (`zio-elasticsearch-example.postman_collection.json`)

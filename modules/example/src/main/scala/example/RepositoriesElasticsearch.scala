@@ -7,20 +7,20 @@ import zio.{RIO, ULayer, ZIO, ZLayer}
 
 final class RepositoriesElasticsearch {
 
-  def findById(organization: String, id: String): RIO[ElasticExecutor, Option[Repository]] =
+  def findById(organization: String, id: String): RIO[ElasticExecutor, Option[GitHubRepo]] =
     ElasticRequest
-      .getById[Repository](Index, DocumentId(id))
+      .getById[GitHubRepo](Index, DocumentId(id))
       .routing(unsafeWrap(Routing)(organization))
       .execute
       .map(_.toOption)
 
-  def create(repository: Repository): RIO[ElasticExecutor, Option[DocumentId]] =
+  def create(repository: GitHubRepo): RIO[ElasticExecutor, Option[DocumentId]] =
     ElasticRequest
       .create(Index, repository)
       .routing(unsafeWrap(Routing)(repository.organization))
       .execute
 
-  def upsert(id: String, repository: Repository): RIO[ElasticExecutor, Unit] =
+  def upsert(id: String, repository: GitHubRepo): RIO[ElasticExecutor, Unit] =
     ElasticRequest
       .upsert(Index, DocumentId(id), repository)
       .routing(unsafeWrap(Routing)(repository.organization))
@@ -40,13 +40,13 @@ object RepositoriesElasticsearch {
   def findById(
     organization: String,
     id: String
-  ): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[Repository]] =
+  ): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findById(organization, id))
 
-  def create(repository: Repository): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[DocumentId]] =
+  def create(repository: GitHubRepo): RIO[ElasticExecutor with RepositoriesElasticsearch, Option[DocumentId]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
 
-  def upsert(id: String, repository: Repository): RIO[ElasticExecutor with RepositoriesElasticsearch, Unit] =
+  def upsert(id: String, repository: GitHubRepo): RIO[ElasticExecutor with RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsert(id, repository))
 
   def remove(

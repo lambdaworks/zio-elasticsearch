@@ -5,7 +5,7 @@ import zio.schema.{DeriveSchema, Schema}
 
 import java.time.LocalDateTime
 
-final case class Repository(
+final case class GitHubRepo(
   id: Option[String],
   organization: String,
   name: String,
@@ -16,8 +16,8 @@ final case class Repository(
   forks: Int
 )
 
-object Repository {
-  implicit val schema: Schema[Repository] = DeriveSchema.gen[Repository]
+object GitHubRepo {
+  implicit val schema: Schema[GitHubRepo] = DeriveSchema.gen[GitHubRepo]
 
-  implicit val encoder: JsonEncoder[Repository] = DeriveJsonEncoder.gen[Repository]
+  implicit val encoder: JsonEncoder[GitHubRepo] = DeriveJsonEncoder.gen[GitHubRepo]
 }

@@ -2,12 +2,12 @@ package example.api
 
 import zio.http._
 import zio.http.model.Method
-import zio.json.ast.Json
+import zio.json.ast.Json._
 
 object Application {
 
   final val Routes: Http[Any, Nothing, Any, Response] = Http.collect { case Method.GET -> !! / "health" =>
-    Response.json(Json.Obj("name" -> Json.Str("zio-elasticsearch-example"), "status" -> Json.Str("up")).toJson)
+    Response.json(Obj("name" -> Str("zio-elasticsearch-example"), "status" -> Str("up")).toJson)
   }
 
 }
