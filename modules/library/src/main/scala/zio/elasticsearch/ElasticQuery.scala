@@ -37,13 +37,7 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
-  def matches(field: String, query: String): ElasticQuery =
-    Match(field, query)
-
-  def matches(field: String, query: Boolean): ElasticQuery =
-    Match(field, query)
-
-  def matches(field: String, query: Long): ElasticQuery =
+  def matches[A: ElasticPrimitive](field: String, query: A): ElasticQuery =
     Match(field, query)
 
   def boolQuery(): BoolQuery = BoolQuery.empty
@@ -74,24 +68,24 @@ object ElasticQuery {
   sealed trait LowerBound {
     def toJson: Option[(String, Json)]
   }
-  case class Greater[A: ElasticPrimitive](a: A) extends LowerBound {
+  private[elasticsearch] case class Greater[A: ElasticPrimitive](a: A) extends LowerBound {
     override def toJson: Option[(String, Json)] = Option("gt" -> a.toJson)
   }
-  case class GreaterEqual[A: ElasticPrimitive](a: A) extends LowerBound {
+  private[elasticsearch] case class GreaterEqual[A: ElasticPrimitive](a: A) extends LowerBound {
     def toJson: Option[(String, Json)] = Option("gte" -> a.toJson)
   }
 
   sealed trait UpperBound {
     def toJson: Option[(String, Json)]
   }
-  case class Less[A: ElasticPrimitive](a: A) extends UpperBound {
+  private[elasticsearch] case class Less[A: ElasticPrimitive](a: A) extends UpperBound {
     override def toJson: Option[(String, Json)] = Option("lt" -> a.toJson)
   }
-  case class LessEqual[A: ElasticPrimitive](a: A) extends UpperBound {
+  private[elasticsearch] case class LessEqual[A: ElasticPrimitive](a: A) extends UpperBound {
     override def toJson: Option[(String, Json)] = Option("lte" -> a.toJson)
   }
 
-  case object Unbounded extends LowerBound with UpperBound {
+  private[elasticsearch] case object Unbounded extends LowerBound with UpperBound {
     override def toJson: Option[(String, Json)] = None
   }
 
@@ -115,7 +109,6 @@ object ElasticQuery {
       self.copy(upper = LessEqual(a))
 
     override def asJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
-
   }
 
   private[elasticsearch] object Range {
