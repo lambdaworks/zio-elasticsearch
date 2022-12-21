@@ -3,6 +3,8 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Bool, Num, Obj, Str}
 
+import scala.annotation.unused
+
 sealed trait ElasticQuery { self =>
 
   def asJson: Json
@@ -99,13 +101,17 @@ object ElasticQuery {
     upper: UB
   ) extends ElasticQuery { self =>
 
-    def greaterThan[A: ElasticPrimitive](a: A)(implicit ev: LB =:= Unbounded.type): Range[Greater[A], UB] =
+    def greaterThan[A: ElasticPrimitive](a: A)(implicit @unused ev: LB =:= Unbounded.type): Range[Greater[A], UB] =
       self.copy(lower = Greater(a))
-    def greaterEqual[A: ElasticPrimitive](a: A)(implicit ev: LB =:= Unbounded.type): Range[GreaterEqual[A], UB] =
+
+    def greaterEqual[A: ElasticPrimitive](a: A)(implicit
+      @unused ev: LB =:= Unbounded.type
+    ): Range[GreaterEqual[A], UB] =
       self.copy(lower = GreaterEqual(a))
-    def lessThan[A: ElasticPrimitive](a: A)(implicit ev: UB =:= Unbounded.type): Range[LB, Less[A]] =
+
+    def lessThan[A: ElasticPrimitive](a: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, Less[A]] =
       self.copy(upper = Less(a))
-    def lessEqual[A: ElasticPrimitive](a: A)(implicit ev: UB =:= Unbounded.type): Range[LB, LessEqual[A]] =
+    def lessEqual[A: ElasticPrimitive](a: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessEqual[A]] =
       self.copy(upper = LessEqual(a))
 
     override def asJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
