@@ -46,7 +46,7 @@ object Main extends ZIOAppDefault {
     (for {
       http  <- getConfig[HttpConfig]
       _     <- ZIO.logInfo(s"Starting an HTTP service on port: ${http.port}")
-      routes = HealthCheck.Routes ++ Repositories.Routes
+      routes = HealthCheck.Route ++ Repositories.Routes
       _     <- Server.serve(routes)
     } yield ExitCode.success).provideSome(
       RepositoriesElasticsearch.live,
