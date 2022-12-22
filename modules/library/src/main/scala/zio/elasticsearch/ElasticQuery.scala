@@ -45,6 +45,8 @@ object ElasticQuery {
 
   def exists(field: String): Exists = Exists(field)
 
+  def matchAll(): MatchAll = MatchAll()
+
   def range(field: String): Range[Unbounded.type, Unbounded.type] = Range.empty(field)
 
   private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery], should: List[ElasticQuery])
@@ -70,6 +72,10 @@ object ElasticQuery {
 
   private[elasticsearch] final case class Match[A: ElasticPrimitive](field: String, value: A) extends ElasticQuery {
     override def toJson: Json = Obj("match" -> Obj(field -> value.toJson))
+  }
+
+  private[elasticsearch] final case class MatchAll() extends ElasticQuery {
+    override def toJson: Json = Obj("match_all" -> Obj())
   }
 
   sealed trait LowerBound {
