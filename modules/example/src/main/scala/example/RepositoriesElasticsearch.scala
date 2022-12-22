@@ -38,10 +38,7 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
 object RepositoriesElasticsearch {
 
-  def findById(
-    organization: String,
-    id: String
-  ): RIO[RepositoriesElasticsearch, Option[GitHubRepo]] =
+  def findById(organization: String, id: String): RIO[RepositoriesElasticsearch, Option[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findById(organization, id))
 
   def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, Option[DocumentId]] =
