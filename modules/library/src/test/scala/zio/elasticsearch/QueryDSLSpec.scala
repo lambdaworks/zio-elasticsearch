@@ -104,7 +104,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.asJsonBody)(equalTo(expected.toJson))
+          assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool query with Must") {
           val query = boolQuery().must(matches(field = "day_of_week", query = "Monday"))
@@ -126,7 +126,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.asJsonBody)(equalTo(expected.toJson))
+          assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool query with Should") {
           val query = boolQuery().should(matches(field = "day_of_week", query = "Monday"))
@@ -148,7 +148,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.asJsonBody)(equalTo(expected.toJson))
+          assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool query both with Must and Should") {
           val query = boolQuery()
@@ -178,7 +178,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.asJsonBody)(equalTo(expected.toJson))
+          assert(query.toJsonBody)(equalTo(expected.toJson))
         }
       )
     )
