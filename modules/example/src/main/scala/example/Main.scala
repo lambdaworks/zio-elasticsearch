@@ -1,6 +1,6 @@
 package example
 
-import example.api.{Application, Repositories}
+import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
@@ -46,7 +46,7 @@ object Main extends ZIOAppDefault {
     (for {
       http  <- getConfig[HttpConfig]
       _     <- ZIO.logInfo(s"Starting an HTTP service on port: ${http.port}")
-      routes = Application.Routes ++ Repositories.Routes
+      routes = HealthCheck.Routes ++ Repositories.Routes
       _     <- Server.serve(routes)
     } yield ExitCode.success).provideSome(
       RepositoriesElasticsearch.live,

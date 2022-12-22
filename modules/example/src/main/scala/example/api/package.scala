@@ -11,7 +11,7 @@ package object api {
     implicit val encoder: JsonEncoder[ErrorResponseData] = DeriveJsonEncoder.gen[ErrorResponseData]
   }
 
-  final case class ErrorResponse(errors: ErrorResponseData) extends AnyVal
+  final case class ErrorResponse(errors: ErrorResponseData)
 
   object ErrorResponse {
     implicit val encoder: JsonEncoder[ErrorResponse] = DeriveJsonEncoder.gen[ErrorResponse]
