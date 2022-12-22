@@ -11,58 +11,80 @@ object QueryDSLSpec extends ZIOSpecDefault {
     suite("Query DSL")(
       suite("creating ElasticQuery")(
         test("successfully create Match query using `matches` method") {
-          val queryString = matches("day_of_week", "Monday")
-          val queryBool   = matches("day_of_week", true)
-          val queryLong   = matches("day_of_week", 1L)
+          val queryString = matches(field = "day_of_week", query = "Monday")
+          val queryBool   = matches(field = "day_of_week", query = true)
+          val queryLong   = matches(field = "day_of_week", query = 1L)
 
-          assert(queryString)(equalTo(Match("day_of_week", "Monday")))
-          assert(queryBool)(equalTo(Match("day_of_week", true)))
-          assert(queryLong)(equalTo(Match("day_of_week", 1)))
+          assert(queryString)(equalTo(Match(field = "day_of_week", query = "Monday")))
+          assert(queryBool)(equalTo(Match(field = "day_of_week", query = true)))
+          assert(queryLong)(equalTo(Match(field = "day_of_week", query = 1)))
         },
         test("successfully create `Must` query from two Match queries") {
           val query = boolQuery()
-            .must(matches("day_of_week", "Monday"), matches("customer_gender", "MALE"))
+            .must(matches(field = "day_of_week", query = "Monday"), matches(field = "customer_gender", query = "MALE"))
 
           assert(query)(
             equalTo(
-              BoolQuery(List(Match("day_of_week", "Monday"), Match("customer_gender", "MALE")), List.empty)
+              BoolQuery(
+                must = List(
+                  Match(field = "day_of_week", query = "Monday"),
+                  Match(field = "customer_gender", query = "MALE")
+                ),
+                should = List.empty
+              )
             )
           )
         },
         test("successfully create `Should` query from two Match queries") {
           val query = boolQuery()
-            .should(matches("day_of_week", "Monday"), matches("customer_gender", "MALE"))
+            .should(
+              matches(field = "day_of_week", query = "Monday"),
+              matches(field = "customer_gender", query = "MALE")
+            )
 
           assert(query)(
             equalTo(
-              BoolQuery(List.empty, List(Match("day_of_week", "Monday"), Match("customer_gender", "MALE")))
+              BoolQuery(
+                must = List.empty,
+                should = List(
+                  Match(field = "day_of_week", query = "Monday"),
+                  Match(field = "customer_gender", query = "MALE")
+                )
+              )
             )
           )
         },
         test("successfully create `Must/Should` mixed query") {
           val query = boolQuery()
-            .must(matches("day_of_week", "Monday"), matches("customer_gender", "MALE"))
-            .should(matches("customer_age", 23))
+            .must(matches(field = "day_of_week", query = "Monday"), matches(field = "customer_gender", query = "MALE"))
+            .should(matches(field = "customer_age", query = 23))
 
           assert(query)(
             equalTo(
               BoolQuery(
-                List(Match("day_of_week", "Monday"), Match("customer_gender", "MALE")),
-                List(Match("customer_age", 23))
+                must = List(
+                  Match(field = "day_of_week", query = "Monday"),
+                  Match(field = "customer_gender", query = "MALE")
+                ),
+                should = List(Match(field = "customer_age", query = 23))
               )
             )
           )
         },
         test("successfully create `Should/Must` mixed query") {
           val query = boolQuery()
-            .must(matches("customer_age", 23))
-            .should(matches("day_of_week", "Monday"), matches("customer_gender", "MALE"))
+            .must(matches(field = "customer_age", query = 23))
+            .should(
+              matches(field = "day_of_week", query = "Monday"),
+              matches(field = "customer_gender", query = "MALE")
+            )
 
           assert(query)(
             equalTo(
               BoolQuery(
-                List(Match("customer_age", 23)),
-                List(Match("day_of_week", "Monday"), Match("customer_gender", "MALE"))
+                must = List(Match(field = "customer_age", query = 23)),
+                should =
+                  List(Match(field = "day_of_week", query = "Monday"), Match(field = "customer_gender", query = "MALE"))
               )
             )
           )
@@ -70,7 +92,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
       ),
       suite("encoding ElasticQuery as JSON")(
         test("properly encode Match query") {
-          val query = matches("day_of_week", true)
+          val query = matches(field = "day_of_week", query = true)
           val expected =
             """
               |{
@@ -85,7 +107,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.asJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool query with Must") {
-          val query = boolQuery().must(matches("day_of_week", "Monday"))
+          val query = boolQuery().must(matches(field = "day_of_week", query = "Monday"))
           val expected =
             """
               |{
@@ -107,7 +129,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.asJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool query with Should") {
-          val query = boolQuery().should(matches("day_of_week", "Monday"))
+          val query = boolQuery().should(matches(field = "day_of_week", query = "Monday"))
           val expected =
             """
               |{
@@ -129,7 +151,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.asJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool query both with Must and Should") {
-          val query = boolQuery().must(matches("customer_id", 1)).should(matches("day_of_week", "Monday"))
+          val query = boolQuery()
+            .must(matches(field = "customer_id", query = 1))
+            .should(matches(field = "day_of_week", query = "Monday"))
           val expected =
             """
               |{
