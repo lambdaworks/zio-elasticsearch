@@ -50,10 +50,7 @@ object RepositoriesElasticsearch {
   def upsert(id: String, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsert(id, repository))
 
-  def remove(
-    organization: String,
-    id: String
-  ): RIO[RepositoriesElasticsearch, Either[DocumentNotFound.type, Unit]] =
+  def remove(organization: String, id: String): RIO[RepositoriesElasticsearch, Either[DocumentNotFound.type, Unit]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
 
   lazy val live: URLayer[ElasticExecutor, RepositoriesElasticsearch] =
