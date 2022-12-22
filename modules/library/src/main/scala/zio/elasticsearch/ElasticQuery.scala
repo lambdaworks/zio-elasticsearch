@@ -15,31 +15,31 @@ sealed trait ElasticQuery { self =>
 object ElasticQuery {
 
   sealed trait ElasticPrimitive[A] {
-    def toJson(a: A): Json
+    def toJson(value: A): Json
   }
 
   implicit object ElasticInt extends ElasticPrimitive[Int] {
-    override def toJson(a: Int): Json = Num(a)
+    override def toJson(value: Int): Json = Num(value)
   }
 
   implicit object ElasticString extends ElasticPrimitive[String] {
-    override def toJson(a: String): Json = Str(a)
+    override def toJson(value: String): Json = Str(value)
   }
 
   implicit object ElasticBool extends ElasticPrimitive[Boolean] {
-    override def toJson(a: Boolean): Json = Bool(a)
+    override def toJson(value: Boolean): Json = Bool(value)
   }
 
   implicit object ElasticLong extends ElasticPrimitive[Long] {
-    override def toJson(a: Long): Json = Num(a)
+    override def toJson(value: Long): Json = Num(value)
   }
 
   implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
-  def matches[A: ElasticPrimitive](field: String, query: A): ElasticQuery =
-    Match(field, query)
+  def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery =
+    Match(field, value)
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
@@ -62,32 +62,32 @@ object ElasticQuery {
     def empty: BoolQuery = BoolQuery(Nil, Nil)
   }
 
-  private[elasticsearch] final case class Match[A: ElasticPrimitive](field: String, query: A) extends ElasticQuery {
-    override def toJson: Json = Obj("match" -> Obj(field -> query.toJson))
+  private[elasticsearch] final case class Match[A: ElasticPrimitive](field: String, value: A) extends ElasticQuery {
+    override def toJson: Json = Obj("match" -> Obj(field -> value.toJson))
   }
 
   sealed trait LowerBound {
     def toJson: Option[(String, Json)]
   }
 
-  private[elasticsearch] final case class Greater[A: ElasticPrimitive](a: A) extends LowerBound {
-    override def toJson: Option[(String, Json)] = Some("gt" -> a.toJson)
+  private[elasticsearch] final case class GreaterThan[A: ElasticPrimitive](value: A) extends LowerBound {
+    override def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
   }
 
-  private[elasticsearch] final case class GreaterEqual[A: ElasticPrimitive](a: A) extends LowerBound {
-    def toJson: Option[(String, Json)] = Some("gte" -> a.toJson)
+  private[elasticsearch] final case class GreaterEqual[A: ElasticPrimitive](value: A) extends LowerBound {
+    def toJson: Option[(String, Json)] = Some("gte" -> value.toJson)
   }
 
   sealed trait UpperBound {
     def toJson: Option[(String, Json)]
   }
 
-  private[elasticsearch] final case class Less[A: ElasticPrimitive](a: A) extends UpperBound {
-    override def toJson: Option[(String, Json)] = Some("lt" -> a.toJson)
+  private[elasticsearch] final case class LessThan[A: ElasticPrimitive](value: A) extends UpperBound {
+    override def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
   }
 
-  private[elasticsearch] final case class LessEqual[A: ElasticPrimitive](a: A) extends UpperBound {
-    override def toJson: Option[(String, Json)] = Some("lte" -> a.toJson)
+  private[elasticsearch] final case class LessEqual[A: ElasticPrimitive](value: A) extends UpperBound {
+    override def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
   }
 
   private[elasticsearch] final case object Unbounded extends LowerBound with UpperBound {
@@ -100,19 +100,21 @@ object ElasticQuery {
     upper: UB
   ) extends ElasticQuery { self =>
 
-    def greaterThan[A: ElasticPrimitive](a: A)(implicit @unused ev: LB =:= Unbounded.type): Range[Greater[A], UB] =
-      self.copy(lower = Greater(a))
+    def greaterThan[A: ElasticPrimitive](value: A)(implicit
+      @unused ev: LB =:= Unbounded.type
+    ): Range[GreaterThan[A], UB] =
+      self.copy(lower = GreaterThan(value))
 
-    def greaterEqual[A: ElasticPrimitive](a: A)(implicit
+    def greaterEqual[A: ElasticPrimitive](value: A)(implicit
       @unused ev: LB =:= Unbounded.type
     ): Range[GreaterEqual[A], UB] =
-      self.copy(lower = GreaterEqual(a))
+      self.copy(lower = GreaterEqual(value))
 
-    def lessThan[A: ElasticPrimitive](a: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, Less[A]] =
-      self.copy(upper = Less(a))
+    def lessThan[A: ElasticPrimitive](value: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessThan[A]] =
+      self.copy(upper = LessThan(value))
 
-    def lessEqual[A: ElasticPrimitive](a: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessEqual[A]] =
-      self.copy(upper = LessEqual(a))
+    def lessEqual[A: ElasticPrimitive](value: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessEqual[A]] =
+      self.copy(upper = LessEqual(value))
 
     override def toJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
   }
