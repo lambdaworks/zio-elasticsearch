@@ -88,9 +88,39 @@ object QueryDSLSpec extends ZIOSpecDefault {
               )
             )
           )
+        },
+        test("successfully create empty Range Query") {
+          val query = range("field")
+
+          assert(query)(equalTo(Range("field", Unbounded, Unbounded)))
+        },
+        test("successfully create Range Query with upper bound") {
+          val query = range("field").lessThan(23)
+
+          assert(query)(equalTo(Range("field", Unbounded, Less(23))))
+        },
+        test("successfully create Range Query with lower bound") {
+          val query = range("field").greaterThan(23)
+
+          assert(query)(equalTo(Range("field", Greater(23), Unbounded)))
+        },
+        test("successfully create Range Query with inclusive upper bound") {
+          val query = range("field").lessEqual(23)
+
+          assert(query)(equalTo(Range("field", Unbounded, LessEqual(23))))
+        },
+        test("successfully create Range Query with inclusive lower bound") {
+          val query = range("field").greaterEqual(23)
+
+          assert(query)(equalTo(Range("field", GreaterEqual(23), Unbounded)))
+        },
+        test("successfully create Range Query with both upper and lower bound") {
+          val query = range("field").greaterEqual(23).lessThan(50)
+
+          assert(query)(equalTo(Range("field", GreaterEqual(23), Less(50))))
         }
       ),
-      suite("encoding ElasticQuery as JSON")(
+      suite("encoding ElasticQuery containing `Match` leaf query as JSON")(
         test("properly encode Match query") {
           val query = matches(field = "day_of_week", query = true)
           val expected =
@@ -106,7 +136,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
-        test("properly encode Bool query with Must") {
+        test("properly encode Bool Query with Must containing `Match` leaf query") {
           val query = boolQuery().must(matches(field = "day_of_week", query = "Monday"))
           val expected =
             """
@@ -128,7 +158,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
-        test("properly encode Bool query with Should") {
+        test("properly encode Bool Query with Should containing `Match` leaf query") {
           val query = boolQuery().should(matches(field = "day_of_week", query = "Monday"))
           val expected =
             """
@@ -150,7 +180,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
-        test("properly encode Bool query both with Must and Should") {
+        test("properly encode Bool Query with both Must and Should containing `Match` leaf query") {
           val query = boolQuery()
             .must(matches(field = "customer_id", query = 1))
             .should(matches(field = "day_of_week", query = "Monday"))
@@ -173,6 +203,108 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |          }
               |        }
               |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Unbounded Range Query") {
+          val query = range("field")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Range Query with Lower Bound") {
+          val query = range("field").greaterThan(23)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |        "gt": 23
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Range Query with Upper Bound") {
+          val query = range("field").lessThan(23)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |        "lt": 23
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Range Query with Inclusive Lower Bound") {
+          val query = range("field").greaterEqual("now")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |        "gte": "now"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Range Query with inclusive Upper Bound") {
+          val query = range("field").lessEqual(100L)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |        "lte": 100
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Range Query with both Upper and Lower Bound") {
+          val query = range("field").greaterEqual(10).lessThan(100)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |        "gte": 10,
+              |        "lt": 100
+              |      }
               |    }
               |  }
               |}
