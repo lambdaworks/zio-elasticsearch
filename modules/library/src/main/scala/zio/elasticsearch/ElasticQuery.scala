@@ -74,7 +74,7 @@ object ElasticQuery {
     override def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
   }
 
-  private[elasticsearch] final case class GreaterEqual[A: ElasticPrimitive](value: A) extends LowerBound {
+  private[elasticsearch] final case class GreaterThanOrEqualTo[A: ElasticPrimitive](value: A) extends LowerBound {
     def toJson: Option[(String, Json)] = Some("gte" -> value.toJson)
   }
 
@@ -86,7 +86,7 @@ object ElasticQuery {
     override def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
   }
 
-  private[elasticsearch] final case class LessEqual[A: ElasticPrimitive](value: A) extends UpperBound {
+  private[elasticsearch] final case class LessThanOrEqualTo[A: ElasticPrimitive](value: A) extends UpperBound {
     override def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
   }
 
@@ -100,21 +100,21 @@ object ElasticQuery {
     upper: UB
   ) extends ElasticQuery { self =>
 
-    def greaterThan[A: ElasticPrimitive](value: A)(implicit
-      @unused ev: LB =:= Unbounded.type
-    ): Range[GreaterThan[A], UB] =
+    def gt[A: ElasticPrimitive](value: A)(implicit @unused ev: LB =:= Unbounded.type): Range[GreaterThan[A], UB] =
       self.copy(lower = GreaterThan(value))
 
-    def greaterEqual[A: ElasticPrimitive](value: A)(implicit
+    def gte[A: ElasticPrimitive](value: A)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[GreaterEqual[A], UB] =
-      self.copy(lower = GreaterEqual(value))
+    ): Range[GreaterThanOrEqualTo[A], UB] =
+      self.copy(lower = GreaterThanOrEqualTo(value))
 
-    def lessThan[A: ElasticPrimitive](value: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessThan[A]] =
+    def lt[A: ElasticPrimitive](value: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessThan[A]] =
       self.copy(upper = LessThan(value))
 
-    def lessEqual[A: ElasticPrimitive](value: A)(implicit @unused ev: UB =:= Unbounded.type): Range[LB, LessEqual[A]] =
-      self.copy(upper = LessEqual(value))
+    def lte[A: ElasticPrimitive](value: A)(implicit
+      @unused ev: UB =:= Unbounded.type
+    ): Range[LB, LessThanOrEqualTo[A]] =
+      self.copy(upper = LessThanOrEqualTo(value))
 
     override def toJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
   }

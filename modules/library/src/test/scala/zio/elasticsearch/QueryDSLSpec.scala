@@ -95,29 +95,29 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = Unbounded)))
         },
         test("successfully create Range Query with upper bound") {
-          val query = range(field = "customer_age").lessThan(23)
+          val query = range(field = "customer_age").lt(23)
 
           assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = LessThan(23))))
         },
         test("successfully create Range Query with lower bound") {
-          val query = range(field = "customer_age").greaterThan(23)
+          val query = range(field = "customer_age").gt(23)
 
           assert(query)(equalTo(Range(field = "customer_age", lower = GreaterThan(23), upper = Unbounded)))
         },
         test("successfully create Range Query with inclusive upper bound") {
-          val query = range(field = "customer_age").lessEqual(23)
+          val query = range(field = "customer_age").lte(23)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = LessEqual(23))))
+          assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = LessThanOrEqualTo(23))))
         },
         test("successfully create Range Query with inclusive lower bound") {
-          val query = range(field = "customer_age").greaterEqual(23)
+          val query = range(field = "customer_age").gte(23)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterEqual(23), upper = Unbounded)))
+          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = Unbounded)))
         },
         test("successfully create Range Query with both upper and lower bound") {
-          val query = range(field = "customer_age").greaterEqual(23).lessThan(50)
+          val query = range(field = "customer_age").gte(23).lt(50)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterEqual(23), upper = LessThan(50))))
+          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = LessThan(50))))
         }
       ),
       suite("encoding ElasticQuery containing `Match` leaf query as JSON")(
@@ -227,7 +227,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Lower Bound") {
-          val query = range(field = "customer_age").greaterThan(23)
+          val query = range(field = "customer_age").gt(23)
           val expected =
             """
               |{
@@ -244,7 +244,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Upper Bound") {
-          val query = range(field = "customer_age").lessThan(23)
+          val query = range(field = "customer_age").lt(23)
           val expected =
             """
               |{
@@ -261,7 +261,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Inclusive Lower Bound") {
-          val query = range(field = "expiry_date").greaterEqual("now")
+          val query = range(field = "expiry_date").gte("now")
           val expected =
             """
               |{
@@ -278,7 +278,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with inclusive Upper Bound") {
-          val query = range(field = "customer_age").lessEqual(100L)
+          val query = range(field = "customer_age").lte(100L)
           val expected =
             """
               |{
@@ -295,7 +295,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with both Upper and Lower Bound") {
-          val query = range(field = "customer_age").greaterEqual(10).lessThan(100)
+          val query = range(field = "customer_age").gte(10).lt(100)
           val expected =
             """
               |{
