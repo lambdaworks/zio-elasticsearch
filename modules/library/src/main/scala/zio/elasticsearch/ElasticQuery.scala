@@ -43,6 +43,8 @@ object ElasticQuery {
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
+  def exists(field: String): Exists = Exists(field)
+
   def range(field: String): Range[Unbounded.type, Unbounded.type] = Range.empty(field)
 
   private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery], should: List[ElasticQuery])
@@ -60,6 +62,10 @@ object ElasticQuery {
 
   private[elasticsearch] object BoolQuery {
     def empty: BoolQuery = BoolQuery(Nil, Nil)
+  }
+
+  private[elasticsearch] final case class Exists private (field: String) extends ElasticQuery {
+    override def toJson: Json = Obj("exists" -> Obj("field" -> field.toJson))
   }
 
   private[elasticsearch] final case class Match[A: ElasticPrimitive](field: String, value: A) extends ElasticQuery {

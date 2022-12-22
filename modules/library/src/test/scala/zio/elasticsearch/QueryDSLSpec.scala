@@ -89,6 +89,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("successfully create Exists Query") {
+          val query = exists(field = "day_of_week")
+
+          assert(query)(equalTo(Exists(field = "day_of_week")))
+        },
         test("successfully create empty Range Query") {
           val query = range(field = "customer_age")
 
@@ -203,6 +208,21 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |          }
               |        }
               |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Exists Query") {
+          val query = exists(field = "day_of_week")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "exists": {
+              |      "field": "day_of_week"
               |    }
               |  }
               |}
