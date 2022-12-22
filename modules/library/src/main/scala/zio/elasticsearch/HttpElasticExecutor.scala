@@ -92,7 +92,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
-        .body(r.query.asJsonBody)
+        .body(r.query.toJsonBody)
     ).map(_.body.toOption)
 
   private def sendRequest(
