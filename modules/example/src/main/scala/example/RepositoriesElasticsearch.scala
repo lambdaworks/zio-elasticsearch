@@ -51,5 +51,5 @@ object RepositoriesElasticsearch {
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
 
   lazy val live: URLayer[ElasticExecutor, RepositoriesElasticsearch] =
-    ZLayer.fromZIO(ZIO.service[ElasticExecutor].map(RepositoriesElasticsearch(_)))
+    ZLayer.fromFunction(RepositoriesElasticsearch(_))
 }
