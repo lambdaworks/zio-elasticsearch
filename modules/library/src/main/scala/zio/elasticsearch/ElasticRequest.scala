@@ -2,7 +2,6 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
-import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.schema.Schema
 import zio.{RIO, ZIO}
@@ -23,15 +22,6 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
   final def refreshTrue(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
     wr.withRefresh(request = self, value = true)
 
-  final def routing(value: Routing): ElasticRequest[A, ERT] = self match {
-    case Map(request, mapper)     => Map(request.routing(value), mapper)
-    case r: CreateRequest         => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
-    case r: CreateOrUpdateRequest => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
-    case r: DeleteByIdRequest     => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
-    case r: ExistsRequest         => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
-    case r: GetByIdRequest        => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
-    case _                        => self
-  }
 }
 
 object ElasticRequest {
