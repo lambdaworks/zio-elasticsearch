@@ -28,18 +28,19 @@ lazy val root =
 lazy val library =
   project
     .in(file("modules/library"))
+    .disablePlugins(RevolverPlugin)
     .settings(stdSettings("zio-elasticsearch"))
     .settings(scalacOptions += "-language:higherKinds")
     .configs(IntegrationTest)
     .settings(
       Defaults.itSettings,
       libraryDependencies ++= List(
-        "com.softwaremill.sttp.client3" %% "zio"             % "3.8.3",
-        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.3",
+        "com.softwaremill.sttp.client3" %% "zio"             % "3.8.5",
+        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.5",
         "dev.zio"                       %% "zio-json"        % "0.3.0",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC16",
-        "dev.zio"                       %% "zio-schema"      % "0.3.1",
-        "dev.zio"                       %% "zio-schema-json" % "0.3.1",
+        "dev.zio"                       %% "zio-schema"      % "0.4.1",
+        "dev.zio"                       %% "zio-schema-json" % "0.4.1",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
         "dev.zio"                       %% "zio-test"        % "2.0.5" % Tests,
         "dev.zio"                       %% "zio-test-sbt"    % "2.0.5" % Tests
@@ -51,9 +52,17 @@ lazy val example =
   project
     .in(file("modules/example"))
     .settings(stdSettings("example"))
+    .settings(scalacOptions += "-language:higherKinds")
     .settings(
       libraryDependencies ++= List(
-        "dev.zio" %% "zio" % "2.0.5"
+        "dev.zio" %% "zio"                 % "2.0.5",
+        "dev.zio" %% "zio-config"          % "3.0.6",
+        "dev.zio" %% "zio-config-magnolia" % "3.0.6",
+        "dev.zio" %% "zio-config-typesafe" % "3.0.6",
+        "dev.zio" %% "zio-http"            % "0.0.3",
+        "dev.zio" %% "zio-json"            % "0.3.0",
+        "dev.zio" %% "zio-schema"          % "0.4.1",
+        "dev.zio" %% "zio-schema-json"     % "0.4.1"
       )
     )
     .dependsOn(library)
@@ -65,6 +74,7 @@ lazy val docs =
   project
     .in(file("modules/docs"))
     .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
+    .disablePlugins(RevolverPlugin)
     .dependsOn(library)
     .settings(
       publish / skip := true,

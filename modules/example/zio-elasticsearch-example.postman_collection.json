@@ -1,0 +1,405 @@
+{
+	"info": {
+		"_postman_id": "7bf079a3-55fa-4833-9627-648026c5fda4",
+		"name": "zio-elasticsearch-example",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "1136886"
+	},
+	"item": [
+		{
+			"name": "es",
+			"item": [
+				{
+					"name": "Create \"repositories\" index",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"settings\": {\n    \"index\": {\n      \"number_of_shards\": 1\n    }\n  },\n  \"mappings\": {\n    \"_routing\": {\n      \"required\": true\n    },\n    \"properties\": {\n      \"id\": {\n        \"type\": \"keyword\"\n      },\n      \"organization\": {\n        \"type\": \"keyword\"\n      },\n      \"name\": {\n        \"type\": \"keyword\"\n      },\n      \"url\": {\n        \"type\": \"keyword\"\n      },\n      \"description\": {\n        \"type\": \"text\"\n      },\n      \"lastCommitAt\": {\n        \"type\": \"date\"\n      },\n      \"stars\": {\n        \"type\": \"integer\"\n      },\n      \"forks\": {\n        \"type\": \"integer\"\n      }\n    }\n  }\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://{{ELASTICSEARCH_HOST}}:{{ELASTICSEARCH_PORT}}/repositories",
+							"protocol": "http",
+							"host": [
+								"{{ELASTICSEARCH_HOST}}"
+							],
+							"port": "{{ELASTICSEARCH_PORT}}",
+							"path": [
+								"repositories"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete \"repositories\" index",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://{{ELASTICSEARCH_HOST}}:{{ELASTICSEARCH_PORT}}/repositories",
+							"protocol": "http",
+							"host": [
+								"{{ELASTICSEARCH_HOST}}"
+							],
+							"port": "{{ELASTICSEARCH_PORT}}",
+							"path": [
+								"repositories"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Checking app health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Creating a repository (scurl-detector)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scrul-detector\",\n    \"url\": \"https://github.com/lambdaworks/scurl-detector\",\n    \"description\": \"Scala library that detects and extracts URLs from text.\",\n    \"lastCommitAt\": \"2022-12-01T14:27:11.436\",\n    \"stars\": 14,\n    \"forks\": 1\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Creating a repository with invalid body",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"We build awesome digital products\",\n    \"url\": \"https://lambdaworks.io\",\n    \"lastCommitAt\": \"No commit date!\",\n    \"stars\": 9999\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Creating a repository (scountries)",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scountries\",\n    \"url\": \"https://github.com/lambdaworks/scountries\",\n    \"description\": \"Scala library that provides an enumeration of ISO 3166 codes for countries, along with their subdivisions.\",\n    \"lastCommitAt\": \"2022-12-08T19:10:46.016\",\n    \"stars\": 16,\n    \"forks\": 1\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieving an existing repository",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-zio-elasticsearch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lambdaworks",
+						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieving a non-existing repository (wrong ID)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-scurl-detector",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lambdaworks",
+						"lw-scurl-detector"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieving a non-existing repository (wrong organization)",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/zio/lw-zio-elasticsearch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"zio",
+						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deleting an existing repository",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-zio-elasticsearch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lambdaworks",
+						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Deleting a non-existing repository",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-scurl-detector",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lambdaworks",
+						"lw-scurl-detector"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Creating/updating a repository",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"zio-elasticsearch\",\n    \"url\": \"https://github.com/lambdaworks/zio-elasticsearch\",\n    \"description\": \"ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.\",\n    \"lastCommitAt\": \"2022-12-27T15:58:30.996\",\n    \"stars\": 21,\n    \"forks\": 5\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Creating/updating a repository (wrong IDs)",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"id\": \"zio-elasticsearch\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"zio-elasticsearch\",\n    \"url\": \"https://github.com/lambdaworks/zio-elasticsearch\",\n    \"description\": \"ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.\",\n    \"lastCommitAt\": \"2022-12-27T15:58:30.996\",\n    \"stars\": 21,\n    \"forks\": 5\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Updating a repository with invalid body",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"url\": \"https://github.com/lambdaworks/zio-elasticsearch\",\n    \"lastCommitAt\": \"2022-12-27T15:58:30.996\",\n    \"stars\": 21,\n    \"forks\": 5\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "ELASTICSEARCH_HOST",
+			"value": "localhost",
+			"type": "string"
+		},
+		{
+			"key": "ELASTICSEARCH_PORT",
+			"value": "9200",
+			"type": "string"
+		},
+		{
+			"key": "HTTP_PORT",
+			"value": "9000",
+			"type": "string"
+		}
+	]
+}
