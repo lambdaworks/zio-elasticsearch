@@ -29,9 +29,10 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreate(r: Create): Task[Option[DocumentId]] = {
     val uri = r.id match {
       case Some(documentId) =>
-        uri"${config.uri}/${r.index}/$Create/$documentId".withParam("routing", r.routing.map(Routing.unwrap))
+        uri"${config.uri}/${r.index}/$Create/$documentId"
+          .withParams(("routing", r.routing.toString), ("refresh", r.refresh.toString))
       case None =>
-        uri"${config.uri}/${r.index}/$Doc".withParam("routing", r.routing.map(Routing.unwrap))
+        uri"${config.uri}/${r.index}/$Doc".withParams(("routing", r.routing.toString), ("refresh", r.refresh.toString))
     }
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
@@ -52,13 +53,15 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     ).unit
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+      .withParams(("routing", r.routing.toString), ("refresh", r.refresh.toString))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
   }
 
   private def executeDeleteById(r: DeleteById): Task[Boolean] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+      .withParams(("routing", r.routing.toString), ("refresh", r.refresh.toString))
 
     sendRequestWithCustomResponse(
       request

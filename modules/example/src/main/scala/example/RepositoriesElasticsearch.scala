@@ -16,21 +16,21 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
   def create(repository: GitHubRepo): Task[Option[DocumentId]] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, repository).routing(routing)
+      req      = ElasticRequest.create(Index, repository).routing(routing).refresh
       res     <- executor.execute(req)
     } yield res
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing)
+      req      = ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh
       _       <- executor.execute(req)
     } yield ()
 
   def remove(organization: String, id: String): Task[Either[DocumentNotFound.type, Unit]] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing)
+      req      = ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refresh
       res     <- executor.execute(req)
     } yield res
 
