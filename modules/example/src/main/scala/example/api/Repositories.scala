@@ -2,7 +2,7 @@ package example.api
 
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
-import zio.elasticsearch.{DocumentId, ElasticExecutor}
+import zio.elasticsearch.DocumentId
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status._
@@ -13,7 +13,7 @@ object Repositories {
 
   private final val BasePath = !! / "api" / "repositories"
 
-  final val Routes: Http[ElasticExecutor with RepositoriesElasticsearch, Nothing, Request, Response] =
+  final val Routes: Http[RepositoriesElasticsearch, Nothing, Request, Response] =
     Http.collectZIO[Request] {
       case Method.GET -> BasePath =>
         ZIO.succeed(Response.text("TODO: Get a list of repositories").setStatus(NotImplemented))
