@@ -10,7 +10,10 @@ private[elasticsearch] final case class ElasticQueryResponse(
   @jsonField("_shards")
   shards: Shards,
   hits: Hits
-)
+) { self =>
+
+  def results: List[Json] = self.hits.hits.map(_.source)
+}
 
 private[elasticsearch] object ElasticQueryResponse {
   implicit val decoder: JsonDecoder[ElasticQueryResponse] = DeriveJsonDecoder.gen[ElasticQueryResponse]
