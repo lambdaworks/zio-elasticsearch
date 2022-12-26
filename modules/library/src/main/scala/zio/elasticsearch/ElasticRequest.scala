@@ -6,34 +6,22 @@ import zio.elasticsearch.ElasticRequest._
 import zio.schema.Schema
 import zio.{RIO, ZIO}
 
-sealed trait ElasticRequestType
-object ElasticRequestType {
-  trait CreateIndexType extends ElasticRequestType
-  trait CreateType      extends ElasticRequestType
-  trait DeleteByIdType  extends ElasticRequestType
-  trait DeleteIndexType extends ElasticRequestType
-  trait ExistsType      extends ElasticRequestType
-  trait GetByIdType     extends ElasticRequestType
-  trait GetByQueryType  extends ElasticRequestType
-  trait UpsertType      extends ElasticRequestType
-}
+sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
-sealed trait ElasticRequest[+A, RequestType <: ElasticRequestType] { self =>
   final def execute: RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
 
-  final def map[B](f: A => B): ElasticRequest[B, RequestType] = ElasticRequest.Map(self, f)
+  final def map[B](f: A => B): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
 
-  final def refresh(implicit addRefresh: AddRefresh[RequestType]): ElasticRequest[A, RequestType] =
-    addRefresh.addRefresh(self)
+  final def refresh()(implicit request: WithRefresh[ERT]): ElasticRequest[A, ERT] = request.withRefresh(self)
 
-  final def routing(value: Routing): ElasticRequest[A, RequestType] = self match {
+  final def routing(value: Routing): ElasticRequest[A, ERT] = self match {
     case Map(request, mapper) => Map(request.routing(value), mapper)
-    case r: Create            => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, RequestType]]
-    case r: CreateOrUpdate    => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, RequestType]]
-    case r: DeleteById        => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, RequestType]]
-    case r: Exists            => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, RequestType]]
-    case r: GetById           => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, RequestType]]
+    case r: Create            => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
+    case r: CreateOrUpdate    => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
+    case r: DeleteById        => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
+    case r: Exists            => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
+    case r: GetById           => r.copy(routing = Some(value)).asInstanceOf[ElasticRequest[A, ERT]]
     case _                    => self
   }
 }
@@ -126,37 +114,50 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[ElasticQueryResponse], GetByQueryType]
 
-  private[elasticsearch] final case class Map[A, B, T <: ElasticRequestType](
-    request: ElasticRequest[A, T],
+  private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
+    request: ElasticRequest[A, ERT],
     mapper: A => B
-  ) extends ElasticRequest[B, T]
+  ) extends ElasticRequest[B, ERT]
 
-  trait AddRefresh[T <: ElasticRequestType] {
-    def addRefresh[A](req: ElasticRequest[A, T]): ElasticRequest[A, T]
+  trait WithRefresh[ERT <: ElasticRequestType] {
+    def withRefresh[A](request: ElasticRequest[A, ERT]): ElasticRequest[A, ERT]
   }
 
-  object AddRefresh {
-    implicit val addRefreshToCreate: AddRefresh[CreateType] = new AddRefresh[CreateType] {
-      override def addRefresh[A](req: ElasticRequest[A, CreateType]): ElasticRequest[A, CreateType] =
-        req match {
-          case Map(r, mapper) => Map(addRefresh(r), mapper)
+  object WithRefresh {
+    implicit val createWithRefresh: WithRefresh[CreateType] = new WithRefresh[CreateType] {
+      override def withRefresh[A](request: ElasticRequest[A, CreateType]): ElasticRequest[A, CreateType] =
+        request match {
+          case Map(r, mapper) => Map(withRefresh(r), mapper)
           case r: Create      => r.copy(refresh = true)
         }
     }
-    implicit val addRefreshToUpsert: AddRefresh[UpsertType] = new AddRefresh[UpsertType] {
-      override def addRefresh[A](req: ElasticRequest[A, UpsertType]): ElasticRequest[A, UpsertType] =
-        req match {
-          case Map(r, mapper)    => Map(addRefresh(r), mapper)
+    implicit val upsertWithRefresh: WithRefresh[UpsertType] = new WithRefresh[UpsertType] {
+      override def withRefresh[A](request: ElasticRequest[A, UpsertType]): ElasticRequest[A, UpsertType] =
+        request match {
+          case Map(r, mapper)    => Map(withRefresh(r), mapper)
           case r: CreateOrUpdate => r.copy(refresh = true)
         }
     }
 
-    implicit val addRefreshToDeleteById: AddRefresh[DeleteByIdType] = new AddRefresh[DeleteByIdType] {
-      override def addRefresh[A](req: ElasticRequest[A, DeleteByIdType]): ElasticRequest[A, DeleteByIdType] =
-        req match {
-          case Map(r, mapper) => Map(addRefresh(r), mapper)
+    implicit val deleteByIdWithRefresh: WithRefresh[DeleteByIdType] = new WithRefresh[DeleteByIdType] {
+      override def withRefresh[A](request: ElasticRequest[A, DeleteByIdType]): ElasticRequest[A, DeleteByIdType] =
+        request match {
+          case Map(r, mapper) => Map(withRefresh(r), mapper)
           case r: DeleteById  => r.copy(refresh = true)
         }
     }
   }
+}
+
+sealed trait ElasticRequestType
+
+object ElasticRequestType {
+  trait CreateIndexType extends ElasticRequestType
+  trait CreateType      extends ElasticRequestType
+  trait DeleteByIdType  extends ElasticRequestType
+  trait DeleteIndexType extends ElasticRequestType
+  trait ExistsType      extends ElasticRequestType
+  trait GetByIdType     extends ElasticRequestType
+  trait GetByQueryType  extends ElasticRequestType
+  trait UpsertType      extends ElasticRequestType
 }
