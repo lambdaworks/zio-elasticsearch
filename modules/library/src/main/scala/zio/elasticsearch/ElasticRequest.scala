@@ -38,10 +38,10 @@ object ElasticRequest {
 
   import zio.elasticsearch.ElasticRequestType._
 
-  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, CreateType] =
+  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Create] =
     CreateRequest(index, Some(id), Document.from(doc)).map(_ => ())
 
-  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[Option[DocumentId], CreateType] =
+  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[Option[DocumentId], Create] =
     CreateRequest(index, None, Document.from(doc))
 
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[Unit, CreateIndex] =
@@ -80,7 +80,7 @@ object ElasticRequest {
     document: Document,
     refresh: Boolean = false,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[DocumentId], CreateType]
+  ) extends ElasticRequest[Option[DocumentId], Create]
 
   private[elasticsearch] final case class CreateIndexRequest(
     name: IndexName,
@@ -134,7 +134,7 @@ sealed trait ElasticRequestType
 
 object ElasticRequestType {
   trait CreateIndex extends ElasticRequestType
-  trait CreateType  extends ElasticRequestType
+  trait Create      extends ElasticRequestType
   trait DeleteById  extends ElasticRequestType
   trait DeleteIndex extends ElasticRequestType
   trait Exists      extends ElasticRequestType
