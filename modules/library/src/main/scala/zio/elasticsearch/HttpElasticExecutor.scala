@@ -15,18 +15,18 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   override def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
-      case r: Create         => executeCreate(r)
-      case r: CreateIndex    => executeCreateIndex(r)
-      case r: CreateOrUpdate => executeCreateOrUpdate(r)
-      case r: DeleteById     => executeDeleteById(r)
-      case r: DeleteIndex    => executeDeleteIndex(r)
-      case r: Exists         => executeExists(r)
-      case r: GetById        => executeGetById(r)
-      case r: GetByQuery     => executeGetByQuery(r)
-      case map @ Map(_, _)   => execute(map.request).map(map.mapper)
+      case r: CreateRequest         => executeCreate(r)
+      case r: CreateIndexRequest    => executeCreateIndex(r)
+      case r: CreateOrUpdateRequest => executeCreateOrUpdate(r)
+      case r: DeleteByIdRequest     => executeDeleteById(r)
+      case r: DeleteIndexRequest    => executeDeleteIndex(r)
+      case r: ExistsRequest         => executeExists(r)
+      case r: GetByIdRequest        => executeGetById(r)
+      case r: GetByQueryRequest     => executeGetByQuery(r)
+      case map @ Map(_, _)          => execute(map.request).map(map.mapper)
     }
 
-  private def executeCreate(r: Create): Task[Option[DocumentId]] = {
+  private def executeCreate(r: CreateRequest): Task[Option[DocumentId]] = {
     val uri = r.id match {
       case Some(documentId) =>
         uri"${config.uri}/${r.index}/$Create/$documentId"
@@ -47,7 +47,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     ).map(_.body.toOption).map(_.flatMap(body => DocumentId.make(body.id).toOption))
   }
 
-  private def executeCreateIndex(createIndex: CreateIndex): Task[Unit] =
+  private def executeCreateIndex(createIndex: CreateIndexRequest): Task[Unit] =
     sendRequest(
       request
         .put(uri"${config.uri}/${createIndex.name}")
@@ -55,7 +55,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .body(createIndex.definition.getOrElse(""))
     ).unit
 
-  private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
+  private def executeCreateOrUpdate(r: CreateOrUpdateRequest): Task[Unit] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
       .withParam("routing", r.routing.map(Routing.unwrap))
       .withParam("refresh", r.refresh.toString)
@@ -63,7 +63,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).unit
   }
 
-  private def executeDeleteById(r: DeleteById): Task[Boolean] = {
+  private def executeDeleteById(r: DeleteByIdRequest): Task[Boolean] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
       .withParam("routing", r.routing.map(Routing.unwrap))
       .withParam("refresh", r.refresh.toString)
@@ -75,16 +75,16 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     ).map(_.body.toOption).map(_.exists(_.result == "deleted"))
   }
 
-  private def executeDeleteIndex(r: DeleteIndex): Task[Boolean] =
+  private def executeDeleteIndex(r: DeleteIndexRequest): Task[Boolean] =
     sendRequest(request.delete(uri"${config.uri}/${r.name}")).map(_.code.equals(Ok))
 
-  private def executeExists(r: Exists): Task[Boolean] = {
+  private def executeExists(r: ExistsRequest): Task[Boolean] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
     sendRequest(request.head(uri)).map(_.code.equals(Ok))
   }
 
-  private def executeGetById(r: GetById): Task[Option[Document]] = {
+  private def executeGetById(r: GetByIdRequest): Task[Option[Document]] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
     sendRequestWithCustomResponse[ElasticGetResponse](
@@ -94,7 +94,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     ).map(_.body.toOption).map(_.flatMap(d => if (d.found) Some(Document.from(d.source)) else None))
   }
 
-  private def executeGetByQuery(r: GetByQuery): Task[Option[ElasticQueryResponse]] =
+  private def executeGetByQuery(r: GetByQueryRequest): Task[Option[ElasticQueryResponse]] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
