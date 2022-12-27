@@ -2,36 +2,32 @@ package example
 
 import zio._
 import zio.elasticsearch.ElasticError.DocumentRetrievingError.DocumentNotFound
-import zio.elasticsearch.{DocumentId, ElasticExecutor, ElasticRequest, Routing}
+import zio.elasticsearch.{DocumentId, ElasticClient, ElasticExecutor, ElasticRequest, Routing}
 
-final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
+final case class RepositoriesElasticsearch(executor: ElasticExecutor) extends ElasticClient(executor) {
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.getById[GitHubRepo](Index, DocumentId(id)).routing(routing)
-      res     <- executor.execute(req)
+      res     <- ElasticRequest.getById[GitHubRepo](Index, DocumentId(id)).routing(routing).run
     } yield res.toOption
 
   def create(repository: GitHubRepo): Task[Option[DocumentId]] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, repository).routing(routing)
-      res     <- executor.execute(req)
+      res     <- ElasticRequest.create(Index, repository).routing(routing).run
     } yield res
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing)
-      _       <- executor.execute(req)
+      _       <- ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).run
     } yield ()
 
   def remove(organization: String, id: String): Task[Either[DocumentNotFound.type, Unit]] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing)
-      res     <- executor.execute(req)
+      res     <- ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).run
     } yield res
 
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
