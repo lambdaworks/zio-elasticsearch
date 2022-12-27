@@ -16,7 +16,7 @@ object Routing extends Newtype[String] {
 
   object WithRouting {
     implicit val createWithRouting: WithRouting[Create] = new WithRouting[Create] {
-      override def withRouting[A](request: ElasticRequest[A, Create], routing: Routing): ElasticRequest[A, Create] =
+      def withRouting[A](request: ElasticRequest[A, Create], routing: Routing): ElasticRequest[A, Create] =
         request match {
           case Map(r, mapper)   => Map(withRouting(r, routing), mapper)
           case r: CreateRequest => r.copy(routing = Some(routing))
@@ -24,10 +24,7 @@ object Routing extends Newtype[String] {
     }
 
     implicit val deleteByIdWithRouting: WithRouting[DeleteById] = new WithRouting[DeleteById] {
-      override def withRouting[A](
-        request: ElasticRequest[A, DeleteById],
-        routing: Routing
-      ): ElasticRequest[A, DeleteById] =
+      def withRouting[A](request: ElasticRequest[A, DeleteById], routing: Routing): ElasticRequest[A, DeleteById] =
         request match {
           case Map(r, mapper)       => Map(withRouting(r, routing), mapper)
           case r: DeleteByIdRequest => r.copy(routing = Some(routing))
@@ -35,7 +32,7 @@ object Routing extends Newtype[String] {
     }
 
     implicit val existsWithRouting: WithRouting[Exists] = new WithRouting[Exists] {
-      override def withRouting[A](request: ElasticRequest[A, Exists], routing: Routing): ElasticRequest[A, Exists] =
+      def withRouting[A](request: ElasticRequest[A, Exists], routing: Routing): ElasticRequest[A, Exists] =
         request match {
           case Map(r, mapper)   => Map(withRouting(r, routing), mapper)
           case r: ExistsRequest => r.copy(routing = Some(routing))
@@ -43,10 +40,7 @@ object Routing extends Newtype[String] {
     }
 
     implicit val getByIdWithRouting: WithRouting[GetById] = new WithRouting[GetById] {
-      override def withRouting[A](
-        request: ElasticRequest[A, GetById],
-        routing: Routing
-      ): ElasticRequest[A, GetById] =
+      def withRouting[A](request: ElasticRequest[A, GetById], routing: Routing): ElasticRequest[A, GetById] =
         request match {
           case Map(r, mapper)    => Map(withRouting(r, routing), mapper)
           case r: GetByIdRequest => r.copy(routing = Some(routing))
@@ -54,7 +48,7 @@ object Routing extends Newtype[String] {
     }
 
     implicit val upsertWithRouting: WithRouting[Upsert] = new WithRouting[Upsert] {
-      override def withRouting[A](request: ElasticRequest[A, Upsert], routing: Routing): ElasticRequest[A, Upsert] =
+      def withRouting[A](request: ElasticRequest[A, Upsert], routing: Routing): ElasticRequest[A, Upsert] =
         request match {
           case Map(r, mapper)           => Map(withRouting(r, routing), mapper)
           case r: CreateOrUpdateRequest => r.copy(routing = Some(routing))
