@@ -29,7 +29,7 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
 object ElasticRequest {
 
-  import zio.elasticsearch.ElasticRequestType._
+  import ElasticRequestType._
 
   def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Create] =
     CreateRequest(index, Some(id), Document.from(doc)).map(_ => ())
