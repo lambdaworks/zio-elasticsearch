@@ -20,16 +20,6 @@ object Refresh {
           case r: CreateRequest => r.copy(refresh = value)
         }
     }
-    implicit val upsertWithRefresh: WithRefresh[Upsert] = new WithRefresh[Upsert] {
-      override def withRefresh[A](
-        request: ElasticRequest[A, Upsert],
-        value: Boolean
-      ): ElasticRequest[A, Upsert] =
-        request match {
-          case Map(r, mapper)           => Map(withRefresh(r, value), mapper)
-          case r: CreateOrUpdateRequest => r.copy(refresh = value)
-        }
-    }
 
     implicit val deleteByIdWithRefresh: WithRefresh[DeleteById] = new WithRefresh[DeleteById] {
       override def withRefresh[A](
@@ -39,6 +29,14 @@ object Refresh {
         request match {
           case Map(r, mapper)       => Map(withRefresh(r, value), mapper)
           case r: DeleteByIdRequest => r.copy(refresh = value)
+        }
+    }
+
+    implicit val upsertWithRefresh: WithRefresh[Upsert] = new WithRefresh[Upsert] {
+      override def withRefresh[A](request: ElasticRequest[A, Upsert], value: Boolean): ElasticRequest[A, Upsert] =
+        request match {
+          case Map(r, mapper)           => Map(withRefresh(r, value), mapper)
+          case r: CreateOrUpdateRequest => r.copy(refresh = value)
         }
     }
   }

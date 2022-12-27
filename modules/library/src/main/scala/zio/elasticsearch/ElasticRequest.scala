@@ -17,11 +17,11 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
   final def refresh(value: Boolean)(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
     wr.withRefresh(request = self, value = value)
 
-  final def refreshTrue(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
-    wr.withRefresh(request = self, value = true)
-
   final def refreshFalse(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
     wr.withRefresh(request = self, value = false)
+
+  final def refreshTrue(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
+    wr.withRefresh(request = self, value = true)
 
   final def routing(value: Routing): ElasticRequest[A, ERT] = self match {
     case Map(request, mapper)     => Map(request.routing(value), mapper)
