@@ -4,7 +4,7 @@ import sttp.client3.SttpBackend
 import zio.{Task, ZIO, ZLayer}
 
 trait ElasticExecutor {
-  def execute[A](request: ElasticRequest[A]): Task[A]
+  def execute[A](request: ElasticRequest[A, _]): Task[A]
 }
 
 object ElasticExecutor {
