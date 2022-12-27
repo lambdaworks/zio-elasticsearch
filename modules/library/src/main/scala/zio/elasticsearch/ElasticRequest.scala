@@ -2,8 +2,8 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticError.DocumentRetrievingError._
 import zio.elasticsearch.ElasticError._
-import zio.elasticsearch.ElasticRequest.AddRouting
 import zio.elasticsearch.Refresh.WithRefresh
+import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.schema.Schema
 import zio.{RIO, ZIO}
 
@@ -23,8 +23,8 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
   final def refreshTrue(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
     wr.withRefresh(request = self, value = true)
 
-  final def routing(value: Routing)(implicit addRouting: AddRouting[ERT]): ElasticRequest[A, ERT] =
-    addRouting.addRouting(self, value)
+  final def routing(value: Routing)(implicit wr: WithRouting[ERT]): ElasticRequest[A, ERT] =
+    wr.withRouting(request = self, routing = value)
 }
 
 object ElasticRequest {
@@ -120,55 +120,6 @@ object ElasticRequest {
     request: ElasticRequest[A, ERT],
     mapper: A => B
   ) extends ElasticRequest[B, ERT]
-
-  trait AddRouting[T <: ElasticRequestType] {
-    def addRouting[A](req: ElasticRequest[A, T], routing: Routing): ElasticRequest[A, T]
-  }
-
-  object AddRouting {
-    implicit val addRoutingToCreate: AddRouting[Create] = new AddRouting[Create] {
-      override def addRouting[A](req: ElasticRequest[A, Create], routing: Routing): ElasticRequest[A, Create] =
-        req match {
-          case Map(r, mapper)   => Map(addRouting(r, routing), mapper)
-          case r: CreateRequest => r.copy(routing = Some(routing))
-        }
-    }
-    implicit val addRoutingToDeleteById: AddRouting[DeleteById] = new AddRouting[DeleteById] {
-      override def addRouting[A](
-        req: ElasticRequest[A, DeleteById],
-        routing: Routing
-      ): ElasticRequest[A, DeleteById] =
-        req match {
-          case Map(r, mapper)       => Map(addRouting(r, routing), mapper)
-          case r: DeleteByIdRequest => r.copy(routing = Some(routing))
-        }
-    }
-    implicit val addRoutingToExists: AddRouting[Exists] = new AddRouting[Exists] {
-      override def addRouting[A](req: ElasticRequest[A, Exists], routing: Routing): ElasticRequest[A, Exists] =
-        req match {
-          case Map(r, mapper)   => Map(addRouting(r, routing), mapper)
-          case r: ExistsRequest => r.copy(routing = Some(routing))
-        }
-    }
-    implicit val addRoutingToGetById: AddRouting[GetById] = new AddRouting[GetById] {
-      override def addRouting[A](
-        req: ElasticRequest[A, GetById],
-        routing: Routing
-      ): ElasticRequest[A, GetById] =
-        req match {
-          case Map(r, mapper)    => Map(addRouting(r, routing), mapper)
-          case r: GetByIdRequest => r.copy(routing = Some(routing))
-        }
-    }
-    implicit val addRoutingToUpsert: AddRouting[Upsert] = new AddRouting[Upsert] {
-      override def addRouting[A](req: ElasticRequest[A, Upsert], routing: Routing): ElasticRequest[A, Upsert] =
-        req match {
-          case Map(r, mapper)           => Map(addRouting(r, routing), mapper)
-          case r: CreateOrUpdateRequest => r.copy(routing = Some(routing))
-        }
-    }
-  }
-
 }
 
 sealed trait ElasticRequestType

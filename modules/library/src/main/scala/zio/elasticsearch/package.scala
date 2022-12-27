@@ -2,16 +2,10 @@ package zio
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
-import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 
 package object elasticsearch {
-  object Routing extends Newtype[String] {
-    override def assertion = assert(!isEmptyString) // scalafix:ok
-  }
-  type Routing = Routing.Type
-
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 
