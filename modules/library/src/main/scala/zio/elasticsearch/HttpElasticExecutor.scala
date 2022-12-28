@@ -3,7 +3,7 @@ package zio.elasticsearch
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
-import sttp.model.StatusCode.{BadRequest, Conflict, Ok, Created => CreatedCode, NotFound => NotFoundCode}
+import sttp.model.StatusCode.{BadRequest, Conflict, Created => CreatedCode, NotFound => NotFoundCode, Ok}
 import zio.ZIO.logDebug
 import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
