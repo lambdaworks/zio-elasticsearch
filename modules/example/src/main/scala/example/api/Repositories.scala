@@ -2,7 +2,7 @@ package example.api
 
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
-import zio.elasticsearch.DocumentId
+import zio.elasticsearch.{DeletionOutcome, DocumentId}
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status._
@@ -36,11 +36,12 @@ object Repositories {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
             case Right(repo) =>
-              RepositoriesElasticsearch.create(repo).map {
-                case Some(id) =>
+              RepositoriesElasticsearch.create(repo).map { id =>
+                Response.json(repo.copy(id = Some(DocumentId.unwrap(id))).toJson).setStatus(Created)
+              /*                case Some(id) =>
                   Response.json(repo.copy(id = Some(DocumentId.unwrap(id))).toJson).setStatus(Created)
                 case None =>
-                  Response.json(ErrorResponse.fromReasons("Failed to create repository.").toJson).setStatus(BadRequest)
+                  Response.json(ErrorResponse.fromReasons("Failed to create repository.").toJson).setStatus(BadRequest)*/
               }
           }
           .orDie
@@ -75,9 +76,9 @@ object Repositories {
         RepositoriesElasticsearch
           .remove(organization, id)
           .map {
-            case Right(_) =>
+            case DeletionOutcome.Deleted =>
               Response.status(NoContent)
-            case Left(_) =>
+            case DeletionOutcome.NotFound =>
               Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(NotFound)
           }
           .orDie

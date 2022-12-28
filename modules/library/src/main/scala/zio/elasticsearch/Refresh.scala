@@ -1,7 +1,13 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticRequest.{CreateOrUpdateRequest, CreateRequest, DeleteByIdRequest, Map}
-import zio.elasticsearch.ElasticRequestType.{Create, DeleteById, Upsert}
+import zio.elasticsearch.ElasticRequest.{
+  CreateOrUpdateRequest,
+  CreateRequest,
+  CreateWithIdRequest,
+  DeleteByIdRequest,
+  Map
+}
+import zio.elasticsearch.ElasticRequestType.{Create, CreateWithId, DeleteById, Upsert}
 
 object Refresh {
 
@@ -15,6 +21,14 @@ object Refresh {
         request match {
           case Map(r, mapper)   => Map(withRefresh(r, value), mapper)
           case r: CreateRequest => r.copy(refresh = value)
+        }
+    }
+
+    implicit val createWithIdWithRefresh: WithRefresh[CreateWithId] = new WithRefresh[CreateWithId] {
+      def withRefresh[A](request: ElasticRequest[A, CreateWithId], value: Boolean): ElasticRequest[A, CreateWithId] =
+        request match {
+          case Map(r, mapper)         => Map(withRefresh(r, value), mapper)
+          case r: CreateWithIdRequest => r.copy(refresh = value)
         }
     }
 
