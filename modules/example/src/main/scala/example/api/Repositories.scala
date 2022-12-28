@@ -38,10 +38,6 @@ object Repositories {
             case Right(repo) =>
               RepositoriesElasticsearch.create(repo).map { id =>
                 Response.json(repo.copy(id = Some(DocumentId.unwrap(id))).toJson).setStatus(Created)
-              /*                case Some(id) =>
-                  Response.json(repo.copy(id = Some(DocumentId.unwrap(id))).toJson).setStatus(Created)
-                case None =>
-                  Response.json(ErrorResponse.fromReasons("Failed to create repository.").toJson).setStatus(BadRequest)*/
               }
           }
           .orDie

@@ -11,33 +11,6 @@ object HttpExecutorSpec extends IntegrationSpec {
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("HTTP Executor")(
-      suite("retrieving document by ID")(
-        test("successfully return document") {
-          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
-            val result = for {
-              _        <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
-              document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
-            } yield document
-
-            assertZIO(result)(isSome(equalTo(customer)))
-          }
-        },
-        test("return None if the document does not exist") {
-          checkOnce(genDocumentId) { documentId =>
-            assertZIO(ElasticRequest.getById[CustomerDocument](index, documentId).execute)(isNone)
-          }
-        },
-        test("fail with throwable if decoding fails") {
-          checkOnce(genDocumentId, genEmployee) { (documentId, employee) =>
-            lazy val result: ZIO[ElasticExecutor, Throwable, Option[CustomerDocument]] = for {
-              _        <- ElasticRequest.upsert[EmployeeDocument](index, documentId, employee).execute
-              document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
-            } yield document
-
-            assertZIO(result.exit)(dies(isSubtype[Exception](assertException("Decoding error: .address(missing)"))))
-          }
-        }
-      ),
       suite("creating document")(
         test("successfully create document") {
           checkOnce(genCustomer) { customer =>
@@ -59,6 +32,23 @@ object HttpExecutorSpec extends IntegrationSpec {
             val result = for {
               _       <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer1).execute
               outcome <- ElasticRequest.create[CustomerDocument](index, documentId, customer2).execute
+            } yield outcome
+
+            assertZIO(result)(equalTo(AlreadyExists))
+          }
+        }
+      ),
+      suite("creating index")(
+        test("successfully create index") {
+          checkOnce(genIndexName) { name =>
+            assertZIO(ElasticRequest.createIndex(name, None).execute)(equalTo(Created))
+          }
+        },
+        test("return 'AlreadyExists' if index already exists") {
+          checkOnce(genIndexName) { name =>
+            val result = for {
+              _       <- ElasticRequest.createIndex(name, None).execute
+              outcome <- ElasticRequest.createIndex(name, None).execute
             } yield outcome
 
             assertZIO(result)(equalTo(AlreadyExists))
@@ -88,23 +78,6 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         }
       ),
-      suite("finding document")(
-        test("return true if the document exists") {
-          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
-            val result = for {
-              _      <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
-              exists <- ElasticRequest.exists(index, documentId).execute
-            } yield exists
-
-            assertZIO(result)(isTrue)
-          }
-        },
-        test("return false if the document does not exist") {
-          checkOnce(genDocumentId) { documentId =>
-            assertZIO(ElasticRequest.exists(index, documentId).execute)(isFalse)
-          }
-        }
-      ),
       suite("deleting document by ID")(
         test("successfully delete existing document") {
           checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
@@ -122,23 +95,6 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         }
       ),
-      suite("creating index")(
-        test("successfully create index") {
-          checkOnce(genIndexName) { name =>
-            assertZIO(ElasticRequest.createIndex(name, None).execute)(equalTo(Created))
-          }
-        },
-        test("return 'AlreadyExists' if index already exists") {
-          checkOnce(genIndexName) { name =>
-            val result = for {
-              _       <- ElasticRequest.createIndex(name, None).execute
-              outcome <- ElasticRequest.createIndex(name, None).execute
-            } yield outcome
-
-            assertZIO(result)(equalTo(AlreadyExists))
-          }
-        }
-      ),
       suite("delete index")(
         test("successfully delete existing index") {
           checkOnce(genIndexName) { name =>
@@ -153,6 +109,50 @@ object HttpExecutorSpec extends IntegrationSpec {
         test("return 'NotFound' if index does not exists") {
           checkOnce(genIndexName) { name =>
             assertZIO(ElasticRequest.deleteIndex(name).execute)(equalTo(NotFound))
+          }
+        }
+      ),
+      suite("finding document")(
+        test("return true if the document exists") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _      <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              exists <- ElasticRequest.exists(index, documentId).execute
+            } yield exists
+
+            assertZIO(result)(isTrue)
+          }
+        },
+        test("return false if the document does not exist") {
+          checkOnce(genDocumentId) { documentId =>
+            assertZIO(ElasticRequest.exists(index, documentId).execute)(isFalse)
+          }
+        }
+      ),
+      suite("retrieving document by ID")(
+        test("successfully return document") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _        <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield document
+
+            assertZIO(result)(isSome(equalTo(customer)))
+          }
+        },
+        test("return None if the document does not exist") {
+          checkOnce(genDocumentId) { documentId =>
+            assertZIO(ElasticRequest.getById[CustomerDocument](index, documentId).execute)(isNone)
+          }
+        },
+        test("fail with throwable if decoding fails") {
+          checkOnce(genDocumentId, genEmployee) { (documentId, employee) =>
+            lazy val result: ZIO[ElasticExecutor, Throwable, Option[CustomerDocument]] = for {
+              _        <- ElasticRequest.upsert[EmployeeDocument](index, documentId, employee).execute
+              document <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
+            } yield document
+
+            assertZIO(result.exit)(dies(isSubtype[Exception](assertException("Decoding error: .address(missing)"))))
           }
         }
       )
