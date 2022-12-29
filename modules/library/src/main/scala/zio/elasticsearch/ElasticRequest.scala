@@ -127,18 +127,18 @@ object ElasticRequest {
   ) extends ElasticRequest[B, ERT]
 }
 
-sealed trait ElasticRequestType
+sealed abstract class ElasticRequestType
 
 object ElasticRequestType {
-  trait CreateIndex  extends ElasticRequestType
-  trait Create       extends ElasticRequestType
-  trait CreateWithId extends ElasticRequestType
-  trait DeleteById   extends ElasticRequestType
-  trait DeleteIndex  extends ElasticRequestType
-  trait Exists       extends ElasticRequestType
-  trait GetById      extends ElasticRequestType
-  trait GetByQuery   extends ElasticRequestType
-  trait Upsert       extends ElasticRequestType
+  class CreateIndex  extends ElasticRequestType
+  class Create       extends ElasticRequestType
+  class CreateWithId extends ElasticRequestType
+  class DeleteById   extends ElasticRequestType
+  class DeleteIndex  extends ElasticRequestType
+  class Exists       extends ElasticRequestType
+  class GetById      extends ElasticRequestType
+  class GetByQuery   extends ElasticRequestType
+  class Upsert       extends ElasticRequestType
 }
 
 sealed abstract class CreationOutcome

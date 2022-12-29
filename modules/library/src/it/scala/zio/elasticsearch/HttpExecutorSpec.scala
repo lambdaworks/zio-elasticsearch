@@ -151,7 +151,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               res <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield res
 
-            assertZIO(result.exit)(fails((assertException("Decoding error: .address(missing)"))))
+            assertZIO(result.exit)(fails(isSubtype[Exception](assertException("Decoding error: .address(missing)"))))
           }
         }
       )
