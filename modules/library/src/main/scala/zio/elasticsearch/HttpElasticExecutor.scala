@@ -3,7 +3,8 @@ package zio.elasticsearch
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
-import sttp.model.StatusCode.{BadRequest, Conflict, Created => CreatedCode, NotFound => NotFoundCode, Ok}
+import sttp.model.StatusCode
+import sttp.model.StatusCode.{BadRequest, Conflict, Ok}
 import zio.ZIO.logDebug
 import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
@@ -26,7 +27,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: ExistsRequest         => executeExists(r)
       case r: GetByIdRequest        => executeGetById(r)
       case r: GetByQueryRequest     => executeGetByQuery(r)
-      case map @ Map(_, _)          => execute(map.request).map(map.mapper)
+      case map @ Map(_, _)          => execute(map.request).flatMap(a => ZIO.fromTry(map.mapper(a)))
     }
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
@@ -42,12 +43,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .response(asJson[ElasticCreateResponse])
     ).flatMap { response =>
       response.code match {
-        case CreatedCode =>
-          response.body.map(a => DocumentId.apply(a.id)) match {
-            case Left(e)      => ZIO.fail(ElasticException(s"Exception occurred: ${e.getMessage}"))
-            case Right(value) => ZIO.succeed(value)
-          }
-        case _ => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case StatusCode.Created =>
+          response.body
+            .map(res => DocumentId(res.id))
+            .fold(e => ZIO.fail(ElasticException(s"Exception occurred: ${e.getMessage}")), value => ZIO.succeed(value))
+        case _ =>
+          ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
 
@@ -65,9 +66,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .body(r.document.json)
     ).flatMap { response =>
       response.code match {
-        case CreatedCode => ZIO.succeed(Created)
-        case Conflict    => ZIO.succeed(AlreadyExists)
-        case _           => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case StatusCode.Created => ZIO.succeed(Created)
+        case Conflict           => ZIO.succeed(AlreadyExists)
+        case _                  => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
   }
@@ -93,8 +94,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
-        case Ok | CreatedCode => ZIO.unit
-        case _                => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case Ok | StatusCode.Created => ZIO.unit
+        case _                       => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
   }
@@ -106,9 +107,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
-        case Ok           => ZIO.succeed(Deleted)
-        case NotFoundCode => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case Ok                  => ZIO.succeed(Deleted)
+        case StatusCode.NotFound => ZIO.succeed(NotFound)
+        case _                   => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
   }
@@ -116,9 +117,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeDeleteIndex(r: DeleteIndexRequest): Task[DeletionOutcome] =
     sendRequest(request.delete(uri"${config.uri}/${r.name}")).flatMap { response =>
       response.code match {
-        case Ok           => ZIO.succeed(Deleted)
-        case NotFoundCode => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case Ok                  => ZIO.succeed(Deleted)
+        case StatusCode.NotFound => ZIO.succeed(NotFound)
+        case _                   => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
 
@@ -127,9 +128,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
-        case Ok           => ZIO.succeed(true)
-        case NotFoundCode => ZIO.succeed(false)
-        case _            => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case Ok                  => ZIO.succeed(true)
+        case StatusCode.NotFound => ZIO.succeed(false)
+        case _                   => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
   }
@@ -143,9 +144,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .response(asJson[ElasticGetResponse])
     ).flatMap { response =>
       response.code match {
-        case Ok           => ZIO.attempt(response.body.toOption.map(d => Document.from(d.source)))
-        case NotFoundCode => ZIO.succeed(None)
-        case _            => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+        case Ok                  => ZIO.attempt(response.body.toOption.map(d => Document.from(d.source)))
+        case StatusCode.NotFound => ZIO.succeed(None)
+        case _                   => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
   }
@@ -160,11 +161,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     ).flatMap { response =>
       response.code match {
         case Ok =>
-          response.body match {
-            case Left(e)      => ZIO.fail(ElasticException(s"Exception occurred: ${e.getMessage}"))
-            case Right(value) => ZIO.succeed(value)
-          }
-        case _ => ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
+          response.body.fold(
+            e => ZIO.fail(ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(value)
+          )
+        case _ =>
+          ZIO.fail(ElasticException(s"Unexpected response from Elasticsearch: $response"))
       }
     }
 
