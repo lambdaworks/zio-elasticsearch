@@ -101,6 +101,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(MatchAllQuery()))
         },
+        test("successfully create MatchAll Query with boost") {
+          val query = matchAll().boost(1.0)
+
+          assert(query)(equalTo(MatchAllQuery(boost = Some(1.0))))
+        },
         test("successfully create empty Range Query") {
           val query = range(field = "customer_age")
 
@@ -133,6 +138,40 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = LessThan(50)))
+          )
+        },
+        test("successfully create Term Query") {
+          val queryInt    = term(field = "day_of_week", value = 1)
+          val queryString = term(field = "day_of_week", value = "Monday")
+          val queryBool   = term(field = "day_of_week", value = true)
+          val queryLong   = term(field = "day_of_week", value = 1L)
+
+          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1)))
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday")))
+          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true)))
+          assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
+        },
+        test("successfully create Term Query with boost") {
+          val queryInt    = term(field = "day_of_week", value = 1).boost(1.0)
+          val queryString = term(field = "day_of_week", value = "Monday").boost(1.0)
+          val queryBool   = term(field = "day_of_week", value = true).boost(1.0)
+          val queryLong   = term(field = "day_of_week", value = 1L).boost(1.0)
+
+          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0))))
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0))))
+          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0))))
+          assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L, boost = Some(1.0))))
+        },
+        test("successfully create case insensitive Term Query") {
+          val queryString = term(field = "day_of_week", value = "Monday").caseInsensitiveTrue
+
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", caseInsensitive = Some(true))))
+        },
+        test("successfully create case insensitive Term Query with boost") {
+          val queryString = term(field = "day_of_week", value = "Monday").boost(1.0).caseInsensitiveTrue
+
+          assert(queryString)(
+            equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0), caseInsensitive = Some(true)))
           )
         }
       ),
@@ -254,6 +293,21 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
+        test("properly encode MatchAll Query with boost") {
+          val query = matchAll().boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "match_all": {
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
         test("properly encode Unbounded Range Query") {
           val query = range(field = "field")
           val expected =
@@ -348,6 +402,78 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "customer_age": {
               |        "gte": 10,
               |        "lt": 100
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Term query") {
+          val query = term(field = "day_of_week", value = true)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "day_of_week": {
+              |        "value": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Term query with boost") {
+          val query = term(field = "day_of_week", value = true).boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "day_of_week": {
+              |        "value": true,
+              |        "boost": 1.0
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode case insensitive Term query") {
+          val query = term(field = "day_of_week", value = "Monday").caseInsensitiveTrue
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "day_of_week": {
+              |        "value": "Monday",
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode case insensitive Term query with boost") {
+          val query = term(field = "day_of_week", value = "Monday").boost(1.0).caseInsensitiveTrue
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "day_of_week": {
+              |        "value": "Monday",
+              |        "boost": 1.0,
+              |        "case_insensitive": true
               |      }
               |    }
               |  }
