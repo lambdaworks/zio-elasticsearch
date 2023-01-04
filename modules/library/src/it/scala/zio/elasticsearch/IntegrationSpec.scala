@@ -3,8 +3,9 @@ package zio.elasticsearch
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio.ZLayer
 import zio.prelude.Newtype.unsafeWrap
+import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
-import zio.test.{Gen, ZIOSpecDefault, checkN}
+import zio.test.{Assertion, Gen, ZIOSpecDefault, checkN}
 
 trait IntegrationSpec extends ZIOSpecDefault {
   val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
@@ -31,4 +32,6 @@ trait IntegrationSpec extends ZIOSpecDefault {
   } yield EmployeeDocument(id = id, name = name, degree = degree)
 
   def checkOnce: CheckN = checkN(1)
+
+  def assertException(substring: String): Assertion[Throwable] = hasMessage(containsString(substring))
 }

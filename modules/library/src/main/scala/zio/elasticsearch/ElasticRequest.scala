@@ -1,7 +1,5 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticError.DocumentRetrievingError._
-import zio.elasticsearch.ElasticError._
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.schema.Schema
@@ -12,7 +10,7 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
   final def execute: RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
 
-  final def map[B](f: A => B): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
+  final def map[B](f: A => Either[DecodingException, B]): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
 
   final def refresh(value: Boolean)(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
     wr.withRefresh(request = self, value = value)
@@ -31,37 +29,35 @@ object ElasticRequest {
 
   import ElasticRequestType._
 
-  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Create] =
-    CreateRequest(index, Some(id), Document.from(doc)).map(_ => ())
+  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
+    CreateRequest(index, Document.from(doc))
 
-  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[Option[DocumentId], Create] =
-    CreateRequest(index, None, Document.from(doc))
+  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
+    CreateWithIdRequest(index, id, Document.from(doc))
 
-  def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[Unit, CreateIndex] =
+  def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex] =
     CreateIndexRequest(name, definition)
 
-  def deleteById(
-    index: IndexName,
-    id: DocumentId
-  ): ElasticRequest[Either[DocumentNotFound.type, Unit], DeleteById] =
-    DeleteByIdRequest(index, id).map(deleted => if (deleted) Right(()) else Left(DocumentNotFound))
+  def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
+    DeleteByIdRequest(index, id)
 
-  def deleteIndex(name: IndexName): ElasticRequest[Boolean, DeleteIndex] =
+  def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex] =
     DeleteIndexRequest(name)
 
   def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean, Exists] =
     ExistsRequest(index, id)
 
-  def getById[A: Schema](
-    index: IndexName,
-    id: DocumentId
-  ): ElasticRequest[Either[DocumentRetrievingError, A], GetById] =
+  def getById[A: Schema](index: IndexName, id: DocumentId): ElasticRequest[Option[A], GetById] =
     GetByIdRequest(index, id).map {
-      case Some(document) => document.decode.left.map(err => DecoderError(err.message))
-      case None           => Left(DocumentNotFound)
+      case Some(document) =>
+        document.decode match {
+          case Left(e)    => Left(DecodingException(s"Decoding error: ${e.message}"))
+          case Right(doc) => Right(Some(doc))
+        }
+      case None => Right(None)
     }
 
-  def search(index: IndexName, query: ElasticQuery): ElasticRequest[Option[ElasticQueryResponse], GetByQuery] =
+  def search(index: IndexName, query: ElasticQuery): ElasticRequest[ElasticQueryResponse, GetByQuery] =
     GetByQueryRequest(index, query)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
@@ -69,16 +65,23 @@ object ElasticRequest {
 
   private[elasticsearch] final case class CreateRequest(
     index: IndexName,
-    id: Option[DocumentId],
     document: Document,
     refresh: Boolean = false,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[DocumentId], Create]
+  ) extends ElasticRequest[DocumentId, Create]
+
+  private[elasticsearch] final case class CreateWithIdRequest(
+    index: IndexName,
+    id: DocumentId,
+    document: Document,
+    refresh: Boolean = false,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[CreationOutcome, CreateWithId]
 
   private[elasticsearch] final case class CreateIndexRequest(
     name: IndexName,
     definition: Option[String]
-  ) extends ElasticRequest[Unit, CreateIndex]
+  ) extends ElasticRequest[CreationOutcome, CreateIndex]
 
   private[elasticsearch] final case class CreateOrUpdateRequest(
     index: IndexName,
@@ -93,10 +96,10 @@ object ElasticRequest {
     id: DocumentId,
     refresh: Boolean = false,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Boolean, DeleteById]
+  ) extends ElasticRequest[DeletionOutcome, DeleteById]
 
   private[elasticsearch] final case class DeleteIndexRequest(name: IndexName)
-      extends ElasticRequest[Boolean, DeleteIndex]
+      extends ElasticRequest[DeletionOutcome, DeleteIndex]
 
   private[elasticsearch] final case class ExistsRequest(
     index: IndexName,
@@ -114,23 +117,38 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Option[ElasticQueryResponse], GetByQuery]
+  ) extends ElasticRequest[ElasticQueryResponse, GetByQuery]
 
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
     request: ElasticRequest[A, ERT],
-    mapper: A => B
+    mapper: A => Either[DecodingException, B]
   ) extends ElasticRequest[B, ERT]
 }
 
 sealed trait ElasticRequestType
 
 object ElasticRequestType {
-  trait CreateIndex extends ElasticRequestType
-  trait Create      extends ElasticRequestType
-  trait DeleteById  extends ElasticRequestType
-  trait DeleteIndex extends ElasticRequestType
-  trait Exists      extends ElasticRequestType
-  trait GetById     extends ElasticRequestType
-  trait GetByQuery  extends ElasticRequestType
-  trait Upsert      extends ElasticRequestType
+  trait CreateIndex  extends ElasticRequestType
+  trait Create       extends ElasticRequestType
+  trait CreateWithId extends ElasticRequestType
+  trait DeleteById   extends ElasticRequestType
+  trait DeleteIndex  extends ElasticRequestType
+  trait Exists       extends ElasticRequestType
+  trait GetById      extends ElasticRequestType
+  trait GetByQuery   extends ElasticRequestType
+  trait Upsert       extends ElasticRequestType
+}
+
+sealed abstract class CreationOutcome
+
+object CreationOutcome {
+  case object Created       extends CreationOutcome
+  case object AlreadyExists extends CreationOutcome
+}
+
+sealed abstract class DeletionOutcome
+
+object DeletionOutcome {
+  case object Deleted  extends DeletionOutcome
+  case object NotFound extends DeletionOutcome
 }
