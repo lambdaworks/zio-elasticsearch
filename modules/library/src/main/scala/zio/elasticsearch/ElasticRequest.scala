@@ -57,7 +57,7 @@ object ElasticRequest {
       case None => Right(None)
     }
 
-  def search(index: IndexName, query: ElasticQuery[_]): ElasticRequest[Option[ElasticQueryResponse], GetByQuery] =
+  def search(index: IndexName, query: ElasticQuery[_]): ElasticRequest[ElasticQueryResponse, GetByQuery] =
     GetByQueryRequest(index, query)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
