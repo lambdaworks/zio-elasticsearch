@@ -5,14 +5,12 @@ import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.schema.Schema
 import zio.{RIO, ZIO}
 
-import scala.util.{Failure, Success, Try}
-
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
   final def execute: RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
 
-  final def map[B](f: A => Try[B]): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
+  final def map[B](f: A => Either[DecodingException, B]): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
 
   final def refresh(value: Boolean)(implicit wr: WithRefresh[ERT]): ElasticRequest[A, ERT] =
     wr.withRefresh(request = self, value = value)
@@ -53,10 +51,10 @@ object ElasticRequest {
     GetByIdRequest(index, id).map {
       case Some(document) =>
         document.decode match {
-          case Left(e)    => Failure(DecodingException(s"Decoding error: ${e.message}"))
-          case Right(doc) => Success(Some(doc))
+          case Left(e)    => Left(DecodingException(s"Decoding error: ${e.message}"))
+          case Right(doc) => Right(Some(doc))
         }
-      case None => Success(None)
+      case None => Right(None)
     }
 
   def search(index: IndexName, query: ElasticQuery): ElasticRequest[ElasticQueryResponse, GetByQuery] =
@@ -123,7 +121,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
     request: ElasticRequest[A, ERT],
-    mapper: A => Try[B]
+    mapper: A => Either[DecodingException, B]
   ) extends ElasticRequest[B, ERT]
 }
 

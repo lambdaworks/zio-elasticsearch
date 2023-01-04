@@ -6,9 +6,9 @@ import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 
 package object elasticsearch {
-  private[elasticsearch] final case class ElasticException(message: String) extends RuntimeException(message)
+  private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
 
-  private[elasticsearch] final case class DecodingException(message: String) extends RuntimeException(message)
+  private[elasticsearch] final case class DecodingException(message: String) extends ElasticException(message)
 
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
