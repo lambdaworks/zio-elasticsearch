@@ -63,8 +63,10 @@ object ElasticRequest {
   ): ElasticRequest[List[A], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
       val eithers = response.results.map(json => JsonDecoder.decode(schema, json.toString()))
-      if (eithers.exists(_.isLeft)) Left(DecodingException("Could not parse all documents successfully."))
-      else Right(eithers.flatMap(_.toOption))
+      val lefts   = eithers.collect { case Left(value) => value }
+      if (lefts.nonEmpty)
+        Left(DecodingException("Decoding Error: Could not parse all documents successfully."))
+      else Right(eithers.collect { case Right(value) => value })
     }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
