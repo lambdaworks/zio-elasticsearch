@@ -15,9 +15,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = matches(field = "day_of_week", value = true)
           val queryLong   = matches(field = "day_of_week", value = 1L)
 
-          assert(queryString)(equalTo(Match(field = "day_of_week", value = "Monday")))
-          assert(queryBool)(equalTo(Match(field = "day_of_week", value = true)))
-          assert(queryLong)(equalTo(Match(field = "day_of_week", value = 1)))
+          assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday")))
+          assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true)))
+          assert(queryLong)(equalTo(MatchQuery(field = "day_of_week", value = 1)))
         },
         test("successfully create `Must` query from two Match queries") {
           val query = boolQuery()
@@ -27,8 +27,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
             equalTo(
               BoolQuery(
                 must = List(
-                  Match(field = "day_of_week", value = "Monday"),
-                  Match(field = "customer_gender", value = "MALE")
+                  MatchQuery(field = "day_of_week", value = "Monday"),
+                  MatchQuery(field = "customer_gender", value = "MALE")
                 ),
                 should = List.empty
               )
@@ -47,8 +47,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
               BoolQuery(
                 must = List.empty,
                 should = List(
-                  Match(field = "day_of_week", value = "Monday"),
-                  Match(field = "customer_gender", value = "MALE")
+                  MatchQuery(field = "day_of_week", value = "Monday"),
+                  MatchQuery(field = "customer_gender", value = "MALE")
                 )
               )
             )
@@ -63,10 +63,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
             equalTo(
               BoolQuery(
                 must = List(
-                  Match(field = "day_of_week", value = "Monday"),
-                  Match(field = "customer_gender", value = "MALE")
+                  MatchQuery(field = "day_of_week", value = "Monday"),
+                  MatchQuery(field = "customer_gender", value = "MALE")
                 ),
-                should = List(Match(field = "customer_age", value = 23))
+                should = List(MatchQuery(field = "customer_age", value = 23))
               )
             )
           )
@@ -82,9 +82,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               BoolQuery(
-                must = List(Match(field = "customer_age", value = 23)),
-                should =
-                  List(Match(field = "day_of_week", value = "Monday"), Match(field = "customer_gender", value = "MALE"))
+                must = List(MatchQuery(field = "customer_age", value = 23)),
+                should = List(
+                  MatchQuery(field = "day_of_week", value = "Monday"),
+                  MatchQuery(field = "customer_gender", value = "MALE")
+                )
               )
             )
           )
@@ -92,42 +94,46 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create Exists Query") {
           val query = exists(field = "day_of_week")
 
-          assert(query)(equalTo(Exists(field = "day_of_week")))
+          assert(query)(equalTo(ExistsQuery(field = "day_of_week")))
         },
         test("successfully create MatchAll Query") {
           val query = matchAll()
 
-          assert(query)(equalTo(MatchAll()))
+          assert(query)(equalTo(MatchAllQuery()))
         },
         test("successfully create empty Range Query") {
           val query = range(field = "customer_age")
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = Unbounded)))
+          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = Unbounded)))
         },
         test("successfully create Range Query with upper bound") {
           val query = range(field = "customer_age").lt(23)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = LessThan(23))))
+          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = LessThan(23))))
         },
         test("successfully create Range Query with lower bound") {
           val query = range(field = "customer_age").gt(23)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterThan(23), upper = Unbounded)))
+          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = GreaterThan(23), upper = Unbounded)))
         },
         test("successfully create Range Query with inclusive upper bound") {
           val query = range(field = "customer_age").lte(23)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = Unbounded, upper = LessThanOrEqualTo(23))))
+          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = LessThanOrEqualTo(23))))
         },
         test("successfully create Range Query with inclusive lower bound") {
           val query = range(field = "customer_age").gte(23)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = Unbounded)))
+          assert(query)(
+            equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = Unbounded))
+          )
         },
         test("successfully create Range Query with both upper and lower bound") {
           val query = range(field = "customer_age").gte(23).lt(50)
 
-          assert(query)(equalTo(Range(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = LessThan(50))))
+          assert(query)(
+            equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = LessThan(50)))
+          )
         }
       ),
       suite("encoding ElasticQuery containing `Match` leaf query as JSON")(

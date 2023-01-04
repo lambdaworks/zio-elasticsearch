@@ -61,7 +61,7 @@ object ElasticRequest {
       case None           => Left(DocumentNotFound)
     }
 
-  def search(index: IndexName, query: ElasticQuery): ElasticRequest[Option[ElasticQueryResponse], GetByQuery] =
+  def search(index: IndexName, query: ElasticQuery[_]): ElasticRequest[Option[ElasticQueryResponse], GetByQuery] =
     GetByQueryRequest(index, query)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
@@ -112,7 +112,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class GetByQueryRequest(
     index: IndexName,
-    query: ElasticQuery,
+    query: ElasticQuery[_],
     routing: Option[Routing] = None
   ) extends ElasticRequest[Option[ElasticQueryResponse], GetByQuery]
 
