@@ -175,7 +175,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         }
       ),
-      suite("encoding ElasticQuery containing `Match` leaf query as JSON")(
+      suite("encoding ElasticQuery as JSON")(
         test("properly encode Match query") {
           val query = matches(field = "day_of_week", value = true)
           val expected =
