@@ -59,7 +59,7 @@ object ElasticRequest {
       case None => Right(None)
     }
 
-  def search[A](index: IndexName, query: ElasticQuery)(implicit
+  def search[A](index: IndexName, query: ElasticQuery[_])(implicit
     schema: Schema[A]
   ): ElasticRequest[ZIO[Any, DecodeError, List[A]], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
