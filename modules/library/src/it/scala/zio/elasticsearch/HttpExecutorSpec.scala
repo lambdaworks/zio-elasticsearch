@@ -151,41 +151,53 @@ object HttpExecutorSpec extends IntegrationSpec {
               res <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield res
 
-            assertZIO(result.exit)(fails(isSubtype[Exception](assertException("Decoding error: .address(missing)"))))
+            assertZIO(result.exit)(
+              fails(isSubtype[Exception](assertException("Could not parse the document: .address(missing)")))
+            )
           }
         }
       ),
       suite("searching documents")(
         test("search for document using range query") {
-          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
-            val result = for {
-              _    <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
-              query = ElasticQuery.range("balance").gte(100)
-              res  <- ElasticRequest.search[CustomerDocument](index, query).execute
-            } yield res
+          checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+            (documentId_1, customer_1, documentId_2, customer_2) =>
+              val result = for {
+                _    <- ElasticRequest.upsert[CustomerDocument](index, documentId_1, customer_1).execute
+                _    <- ElasticRequest.upsert[CustomerDocument](index, documentId_2, customer_2).execute
+                query = ElasticQuery.range("balance").gte(100)
+                res  <- ElasticRequest.search[CustomerDocument](index, query).execute
+              } yield res
 
-            assertZIO(result)(isNonEmpty)
+              assertZIO(result)(isNonEmpty)
           }
         },
         test("fail if any of results cannot be decoded") {
-          checkOnce(genDocumentId, genEmployee, genCustomer) { (documentId, employee, customer) =>
-            val result = for {
-              _ <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
-              _ <-
-                ElasticRequest.upsert[EmployeeDocument](index, documentId, employee.copy(name = customer.name)).execute
-              query = ElasticQuery.matches("name", customer.name)
-              res  <- ElasticRequest.search[CustomerDocument](index, query).execute
-            } yield res
+          checkOnce(genDocumentId, genDocumentId, genEmployee, genCustomer) {
+            (docIdEmployee, docIdCustomer, employee, customer) =>
+              val result = for {
+                _    <- ElasticRequest.upsert[CustomerDocument](index, docIdCustomer, customer).execute
+                _    <- ElasticRequest.upsert[EmployeeDocument](index, docIdEmployee, employee).execute
+                query = ElasticQuery.range("age").gte(0)
+                res  <- ElasticRequest.search[CustomerDocument](index, query).execute
+              } yield res
 
-            assertZIO(result.exit)(
-              fails(
-                isSubtype[Exception](
-                  assertException("[Decoding Error] Could not parse all documents successfully: .address(missing))")
+              assertZIO(result.exit)(
+                fails(
+                  isSubtype[Exception](
+                    assertException("Could not parse all documents successfully: .address(missing))")
+                  )
                 )
               )
-            )
           }
         }
       )
-    ).provideShared(elasticsearchLayer) @@ nondeterministic
+    ).provideShared(elasticsearchLayer) @@ nondeterministic /*@@ beforeAll(
+      (for {
+        _ <- ElasticRequest.createIndex(index, None).execute
+      } yield ()).provide(elasticsearchLayer)
+    ) @@ before(
+      (for {
+        _ <- ElasticRequest.deleteByQuery(index, ElasticQuery.matchAll()).execute
+      } yield ()).provide(elasticsearchLayer)
+    )*/
 }

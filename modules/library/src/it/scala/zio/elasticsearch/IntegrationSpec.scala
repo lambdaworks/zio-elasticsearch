@@ -23,13 +23,15 @@ trait IntegrationSpec extends ZIOSpecDefault {
     name    <- Gen.stringBounded(5, 10)(Gen.alphaChar)
     address <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
     balance <- Gen.bigDecimal(100, 10000)
-  } yield CustomerDocument(id = id, name = name, address = address, balance = balance)
+    age     <- Gen.int(18, 75)
+  } yield CustomerDocument(id = id, name = name, address = address, balance = balance, age = age)
 
   def genEmployee: Gen[Any, EmployeeDocument] = for {
     id     <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
     name   <- Gen.stringBounded(5, 10)(Gen.alphaChar)
     degree <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-  } yield EmployeeDocument(id = id, name = name, degree = degree)
+    age    <- Gen.int(18, 75)
+  } yield EmployeeDocument(id = id, name = name, degree = degree, age = age)
 
   def checkOnce: CheckN = checkN(1)
 

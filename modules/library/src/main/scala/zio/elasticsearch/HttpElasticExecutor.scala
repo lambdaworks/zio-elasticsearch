@@ -32,6 +32,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: ExistsRequest         => executeExists(r)
       case r: GetByIdRequest        => executeGetById(r)
       case r: GetByQueryRequest     => executeGetByQuery(r)
+      case r: DeleteByQueryRequest  => executeDeleteByQuery(r)
       case map @ Map(_, _)          => execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
 
@@ -175,6 +176,19 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
+  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[Unit] =
+    sendRequest(
+      request
+        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_delete_by_query")
+        .contentType(ApplicationJson)
+        .body(r.query.toJsonBody)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk | HttpCreated => ZIO.unit
+        case _                    => ZIO.fail(createElasticException(response))
       }
     }
 

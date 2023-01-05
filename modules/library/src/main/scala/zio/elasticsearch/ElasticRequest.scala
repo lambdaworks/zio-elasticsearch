@@ -52,7 +52,7 @@ object ElasticRequest {
     GetByIdRequest(index, id).map {
       case Some(document) =>
         document.decode match {
-          case Left(e)    => Left(DecodingException(s"Decoding error: ${e.message}"))
+          case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
           case Right(doc) => Right(Some(doc))
         }
       case None => Right(None)
@@ -62,16 +62,18 @@ object ElasticRequest {
     schema: Schema[A]
   ): ElasticRequest[List[A], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
-      val eithers = response.results.map(json => JsonDecoder.decode(schema, json.toString()))
-      val lefts   = eithers.collect { case Left(value) => value }
-      if (lefts.nonEmpty)
+      val (failed, successful) = response.results.partitionMap(json => JsonDecoder.decode(schema, json.toString))
+      if (failed.nonEmpty) {
         Left(
-          DecodingException(
-            s"[Decoding Error] Could not parse all documents successfully: ${lefts.map(_.message).mkString(",")})"
-          )
+          DecodingException(s"Could not parse all documents successfully: ${failed.map(_.message).mkString(",")})")
         )
-      else Right(eithers.collect { case Right(value) => value })
+      } else {
+        Right(successful)
+      }
     }
+
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[Unit, DeleteByQuery] =
+    DeleteByQueryRequest(index, query)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
@@ -132,6 +134,12 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[ElasticQueryResponse, GetByQuery]
 
+  private[elasticsearch] final case class DeleteByQueryRequest(
+    index: IndexName,
+    query: ElasticQuery[_],
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit, DeleteByQuery]
+
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
     request: ElasticRequest[A, ERT],
     mapper: A => Either[DecodingException, B]
@@ -141,15 +149,16 @@ object ElasticRequest {
 sealed trait ElasticRequestType
 
 object ElasticRequestType {
-  trait CreateIndex  extends ElasticRequestType
-  trait Create       extends ElasticRequestType
-  trait CreateWithId extends ElasticRequestType
-  trait DeleteById   extends ElasticRequestType
-  trait DeleteIndex  extends ElasticRequestType
-  trait Exists       extends ElasticRequestType
-  trait GetById      extends ElasticRequestType
-  trait GetByQuery   extends ElasticRequestType
-  trait Upsert       extends ElasticRequestType
+  trait CreateIndex   extends ElasticRequestType
+  trait Create        extends ElasticRequestType
+  trait CreateWithId  extends ElasticRequestType
+  trait DeleteById    extends ElasticRequestType
+  trait DeleteIndex   extends ElasticRequestType
+  trait Exists        extends ElasticRequestType
+  trait GetById       extends ElasticRequestType
+  trait GetByQuery    extends ElasticRequestType
+  trait Upsert        extends ElasticRequestType
+  trait DeleteByQuery extends ElasticRequestType
 }
 
 sealed abstract class CreationOutcome
