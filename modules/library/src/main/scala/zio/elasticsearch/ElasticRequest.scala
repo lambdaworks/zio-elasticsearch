@@ -3,6 +3,7 @@ package zio.elasticsearch
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.schema.Schema
+import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 import zio.{RIO, ZIO}
 
@@ -60,13 +61,9 @@ object ElasticRequest {
 
   def search[A](index: IndexName, query: ElasticQuery)(implicit
     schema: Schema[A]
-  ): ElasticRequest[List[A], GetByQuery] =
+  ): ElasticRequest[ZIO[Any, DecodeError, List[A]], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
-      val eithers = response.results.map(json => JsonDecoder.decode(schema, json.toString()))
-      val lefts   = eithers.collect { case Left(value) => value }
-      if (lefts.nonEmpty)
-        Left(DecodingException("Decoding Error: Could not parse all documents successfully."))
-      else Right(eithers.collect { case Right(value) => value })
+      Right(ZIO.foreach(response.results)(json => ZIO.fromEither(JsonDecoder.decode(schema, json.toString()))))
     }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =

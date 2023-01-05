@@ -10,9 +10,9 @@ private[elasticsearch] final case class ElasticQueryResponse(
   @jsonField("_shards")
   shards: Shards,
   hits: Hits
-) { self =>
+) {
 
-  def results: List[Json] = self.hits.hits.map(_.source)
+  lazy val results: List[Json] = hits.hits.map(_.source)
 }
 
 private[elasticsearch] object ElasticQueryResponse {
