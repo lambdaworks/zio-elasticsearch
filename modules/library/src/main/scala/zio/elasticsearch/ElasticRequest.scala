@@ -63,7 +63,7 @@ object ElasticRequest {
     schema: Schema[A]
   ): ElasticRequest[ZIO[Any, DecodeError, List[A]], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
-      Right(ZIO.foreach(response.results)(json => ZIO.fromEither(JsonDecoder.decode(schema, json.toString()))))
+      Right(ZIO.foreach(response.results)(json => ZIO.fromEither(JsonDecoder.decode(schema, json.toString))))
     }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
