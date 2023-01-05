@@ -154,6 +154,38 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(result.exit)(fails(isSubtype[Exception](assertException("Decoding error: .address(missing)"))))
           }
         }
+      ),
+      suite("searching documents")(
+        test("search for document using range query") {
+          checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
+            val result = for {
+              _    <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              query = ElasticQuery.range("balance").gte(100)
+              res  <- ElasticRequest.search[CustomerDocument](index, query).execute
+            } yield res
+
+            assertZIO(result)(isNonEmpty)
+          }
+        },
+        test("fail if any of results cannot be decoded") {
+          checkOnce(genDocumentId, genEmployee, genCustomer) { (documentId, employee, customer) =>
+            val result = for {
+              _ <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer).execute
+              _ <-
+                ElasticRequest.upsert[EmployeeDocument](index, documentId, employee.copy(name = customer.name)).execute
+              query = ElasticQuery.matches("name", customer.name)
+              res  <- ElasticRequest.search[CustomerDocument](index, query).execute
+            } yield res
+
+            assertZIO(result.exit)(
+              fails(
+                isSubtype[Exception](
+                  assertException("[Decoding Error] Could not parse all documents successfully: .address(missing))")
+                )
+              )
+            )
+          }
+        }
       )
     ).provideShared(elasticsearchLayer) @@ nondeterministic
 }
