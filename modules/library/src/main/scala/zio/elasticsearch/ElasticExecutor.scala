@@ -1,6 +1,7 @@
 package zio.elasticsearch
 
 import sttp.client3.SttpBackend
+import zio.stm.TMap
 import zio.{Task, ZIO, ZLayer}
 
 trait ElasticExecutor {
@@ -14,6 +15,11 @@ object ElasticExecutor {
         conf <- ZIO.service[ElasticConfig]
         sttp <- ZIO.service[SttpBackend[Task, Any]]
       } yield HttpElasticExecutor(conf, sttp)
+    }
+
+  lazy val test: ZLayer[Any, Throwable, ElasticExecutor] =
+    ZLayer {
+      TMap.empty[IndexName, TMap[DocumentId, Document]].map(esMap => TestExecutor(esMap)).commit
     }
 
   lazy val local: ZLayer[SttpBackend[Task, Any], Throwable, ElasticExecutor] =
