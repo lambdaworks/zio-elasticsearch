@@ -21,7 +21,5 @@ object ElasticExecutor {
     ZLayer.succeed(ElasticConfig.Default) >>> live
 
   lazy val test: ULayer[TestExecutor] =
-    ZLayer(
-      TMap.empty[IndexName, TMap[DocumentId, Document]].map(TestExecutor).commit
-    )
+    ZLayer(TMap.empty[IndexName, TMap[DocumentId, Document]].map(TestExecutor).commit)
 }

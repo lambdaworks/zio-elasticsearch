@@ -8,9 +8,8 @@ import zio.json.ast.Json
 import zio.stm.{STM, TMap, ZSTM}
 import zio.{Task, ZIO}
 
-private[elasticsearch] final case class TestExecutor private (
-  indexWithDocumentsMap: TMap[IndexName, TMap[DocumentId, Document]]
-) extends ElasticExecutor {
+private[elasticsearch] final case class TestExecutor private (data: TMap[IndexName, TMap[DocumentId, Document]])
+    extends ElasticExecutor {
   self =>
 
   override def execute[A](request: ElasticRequest[A, _]): Task[A] =
@@ -33,7 +32,8 @@ private[elasticsearch] final case class TestExecutor private (
         fakeGetById(index, id)
       case GetByQueryRequest(index, _, _) =>
         fakeGetByQuery(index)
-      case map @ Map(_, _) => execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
+      case map @ Map(_, _) =>
+        execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
 
   private def fakeCreate(index: IndexName, document: Document): Task[DocumentId] =
@@ -52,9 +52,9 @@ private[elasticsearch] final case class TestExecutor private (
 
   private def fakeCreateIndex(index: IndexName): Task[CreationOutcome] =
     (for {
-      alreadyExists  <- self.indexWithDocumentsMap.contains(index)
+      alreadyExists  <- self.data.contains(index)
       emptyDocuments <- TMap.empty[DocumentId, Document]
-      _              <- self.indexWithDocumentsMap.putIfAbsent(index, emptyDocuments)
+      _              <- self.data.putIfAbsent(index, emptyDocuments)
     } yield if (alreadyExists) AlreadyExists else Created).commit
 
   private def fakeCreateOrUpdate(index: IndexName, documentId: DocumentId, document: Document): Task[Unit] =
@@ -72,8 +72,8 @@ private[elasticsearch] final case class TestExecutor private (
 
   private def fakeDeleteIndex(index: IndexName): Task[DeletionOutcome] =
     (for {
-      notExists <- self.indexWithDocumentsMap.contains(index)
-      _         <- self.indexWithDocumentsMap.delete(index)
+      notExists <- self.data.contains(index)
+      _         <- self.data.delete(index)
     } yield if (notExists) NotFound else Deleted).commit
 
   private def fakeExists(index: IndexName, documentId: DocumentId): Task[Boolean] =
@@ -96,7 +96,7 @@ private[elasticsearch] final case class TestExecutor private (
 
   private def getDocumentsFromIndex(index: IndexName): ZSTM[Any, ElasticException, TMap[DocumentId, Document]] =
     for {
-      maybeDocuments <- self.indexWithDocumentsMap.get(index)
+      maybeDocuments <- self.data.get(index)
       documents <- maybeDocuments.fold[STM[ElasticException, TMap[DocumentId, Document]]](
                      STM.fail[ElasticException](new ElasticException(s"Index $index does not exists!"))
                    )(STM.succeed(_))
