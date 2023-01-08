@@ -88,11 +88,36 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
       maybeDocument <- documents.get(documentId)
     } yield maybeDocument).commit
 
-  private def fakeGetByQuery(index: IndexName): Task[ElasticQueryResponse] =
+  private def fakeGetByQuery(index: IndexName): Task[ElasticQueryResponse] = {
+    def createElasticQueryResponse(
+      index: IndexName,
+      documents: TMap[DocumentId, Document]
+    ): ZSTM[Any, Nothing, ElasticQueryResponse] = {
+      val shards = Shards(total = 1, successful = 1, skipped = 0, failed = 0)
+
+      for {
+        items <-
+          documents.toList.map(
+            _.map { case (id, document) =>
+              Item(
+                index = index.toString,
+                `type` = "type",
+                id = id.toString,
+                score = 1,
+                source = Json.Str(document.json)
+              )
+            }
+          )
+        hitsSize <- documents.size
+        hits      = Hits(total = Total(value = hitsSize, relation = ""), maxScore = 1, hits = items)
+      } yield ElasticQueryResponse(took = 1, timedOut = false, shards = shards, hits = hits)
+    }
+
     (for {
-      documents            <- getDocumentsFromIndex(index)
-      elasticQueryResponse <- createElasticQueryResponse(index, documents)
-    } yield elasticQueryResponse).commit
+      documents <- getDocumentsFromIndex(index)
+      response  <- createElasticQueryResponse(index, documents)
+    } yield response).commit
+  }
 
   private def getDocumentsFromIndex(index: IndexName): ZSTM[Any, ElasticException, TMap[DocumentId, Document]] =
     for {
@@ -101,28 +126,4 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
                      STM.fail[ElasticException](new ElasticException(s"Index $index does not exists!"))
                    )(STM.succeed(_))
     } yield documents
-
-  private def createElasticQueryResponse(
-    index: IndexName,
-    documents: TMap[DocumentId, Document]
-  ): ZSTM[Any, Nothing, ElasticQueryResponse] = {
-    val shards = Shards(total = 1, successful = 1, skipped = 0, failed = 0)
-
-    for {
-      items <-
-        documents.toList.map(
-          _.map(pair =>
-            Item(
-              index = index.toString,
-              `type` = "type",
-              id = pair._1.toString,
-              score = 1,
-              source = Json.Str(pair._2.json)
-            )
-          )
-        )
-      hitsSize <- documents.size
-      hits      = Hits(total = Total(value = hitsSize, relation = ""), maxScore = 1, hits = items)
-    } yield ElasticQueryResponse(took = 1, timedOut = false, shards = shards, hits = hits)
-  }
 }
