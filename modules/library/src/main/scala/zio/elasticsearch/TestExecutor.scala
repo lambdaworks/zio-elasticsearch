@@ -37,11 +37,12 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
     }
 
   private def fakeCreate(index: IndexName, document: Document): Task[DocumentId] =
-    (for {
-      documents <- getDocumentsFromIndex(index)
-      documentId = DocumentId(nextUUID.toString)
-      _         <- documents.put(documentId, document)
-    } yield documentId).commit
+    for {
+      uuid      <- nextUUID
+      documents <- getDocumentsFromIndex(index).commit
+      documentId = DocumentId(uuid.toString)
+      _         <- documents.put(documentId, document).commit
+    } yield documentId
 
   private def fakeCreateWithId(index: IndexName, documentId: DocumentId, document: Document): Task[CreationOutcome] =
     (for {
@@ -66,15 +67,15 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
   private def fakeDeleteById(index: IndexName, documentId: DocumentId): Task[DeletionOutcome] =
     (for {
       documents <- getDocumentsFromIndex(index)
-      notExists <- documents.contains(documentId)
+      exists    <- documents.contains(documentId)
       _         <- documents.delete(documentId)
-    } yield if (notExists) NotFound else Deleted).commit
+    } yield if (exists) Deleted else NotFound).commit
 
   private def fakeDeleteIndex(index: IndexName): Task[DeletionOutcome] =
     (for {
-      notExists <- self.data.contains(index)
-      _         <- self.data.delete(index)
-    } yield if (notExists) NotFound else Deleted).commit
+      exists <- self.data.contains(index)
+      _      <- self.data.delete(index)
+    } yield if (exists) Deleted else NotFound).commit
 
   private def fakeExists(index: IndexName, documentId: DocumentId): Task[Boolean] =
     (for {
