@@ -65,6 +65,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreateWithId(r: CreateWithIdRequest): Task[CreationOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
       .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
+
     sendRequest(
       request
         .post(uri)
