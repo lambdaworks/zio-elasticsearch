@@ -3,10 +3,10 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.schema.{AccessorBuilder, Schema}
 
-import scala.annotation.{Annotation, tailrec}
+import scala.annotation.tailrec
 
 object Annotation {
-  final case class name(value: String) extends Annotation
+  final case class name(value: String) extends scala.annotation.Annotation
 
   def maybeName(annotations: Chunk[Any]): Option[String] =
     annotations.collect { case name(value) => value }.headOption
@@ -38,8 +38,8 @@ final case class Field[From, To](parent: Selection[From, _], name: String) exten
 
 object ElasticQueryAccessorBuilder extends AccessorBuilder {
   override type Lens[_, From, To] = Selection[From, To]
-  override type Prism[_, _, _]    = Unit
-  override type Traversal[_, _]   = Unit
+  override type Prism[_, From, To]    = Unit
+  override type Traversal[From, To]   = Unit
 
   override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[F, S, A] = {
     val label = Annotation.maybeName(term.annotations).getOrElse(term.name)
