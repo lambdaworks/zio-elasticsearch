@@ -37,8 +37,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc?refresh=${r.refresh}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc"
+      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
       request
@@ -63,9 +63,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreateWithId(r: CreateWithIdRequest): Task[CreationOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$Create/${r.id}?refresh=${r.refresh}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
-
+    val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
+      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
     sendRequest(
       request
         .post(uri)
@@ -95,8 +94,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeCreateOrUpdate(r: CreateOrUpdateRequest): Task[Unit] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}?refresh=${r.refresh}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -107,8 +106,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeDeleteById(r: DeleteByIdRequest): Task[DeletionOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}?refresh=${r.refresh}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
