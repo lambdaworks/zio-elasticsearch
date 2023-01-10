@@ -204,7 +204,7 @@ object HttpExecutorSpec extends IntegrationSpec {
       (for {
         _ <- ElasticRequest.createIndex(index, None).execute
         _ <- ElasticRequest.deleteByQuery(index, ElasticQuery.matchAll()).execute
-        _ <- ZIO.succeed(Thread.sleep(3000))
+        _ <- ZIO.succeed(Thread.sleep(2000))
       } yield ()).provide(elasticsearchLayer)
     )
 }

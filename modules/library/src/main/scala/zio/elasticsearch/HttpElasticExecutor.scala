@@ -187,8 +187,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .body(r.query.toJsonBody)
     ).flatMap { response =>
       response.code match {
-        case HttpOk | HttpCreated => ZIO.unit
-        case _                    => ZIO.fail(createElasticException(response))
+        case HttpOk => ZIO.unit
+        case _      => ZIO.fail(createElasticException(response))
       }
     }
 
