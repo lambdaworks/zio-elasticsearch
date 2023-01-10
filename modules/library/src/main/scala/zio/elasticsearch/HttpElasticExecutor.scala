@@ -37,9 +37,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc"
+    val uri = uri"${config.uri}/${r.index}/$Doc?refresh=${r.refresh}"
       .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
       request
@@ -64,9 +63,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreateWithId(r: CreateWithIdRequest): Task[CreationOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
+    val uri = uri"${config.uri}/${r.index}/$Create/${r.id}?refresh=${r.refresh}"
       .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
 
     sendRequest(
       request
@@ -97,9 +95,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeCreateOrUpdate(r: CreateOrUpdateRequest): Task[Unit] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}?refresh=${r.refresh}"
       .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -110,9 +107,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeDeleteById(r: DeleteByIdRequest): Task[DeletionOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}?refresh=${r.refresh}"
       .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
