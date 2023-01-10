@@ -37,9 +37,9 @@ case object Root extends Selection[Any, Nothing]
 final case class Field[From, To](parent: Selection[From, _], name: String) extends Selection[From, To]
 
 object ElasticQueryAccessorBuilder extends AccessorBuilder {
-  override type Lens[_, From, To] = Selection[From, To]
-  override type Prism[_, From, To]    = Unit
-  override type Traversal[From, To]   = Unit
+  override type Lens[_, From, To]   = Selection[From, To]
+  override type Prism[_, From, To]  = Unit
+  override type Traversal[From, To] = Unit
 
   override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[F, S, A] = {
     val label = Annotation.maybeName(term.annotations).getOrElse(term.name)

@@ -72,7 +72,8 @@ object ElasticQuery {
 
   def range(field: String): RangeQuery[Unbounded.type, Unbounded.type] = RangeQuery.empty(field)
 
-  def term[S, A: ElasticPrimitive](field: Selection[S, A], value: A): ElasticQuery[Term[A]] = TermQuery(field.toString, value)
+  def term[S, A: ElasticPrimitive](field: Selection[S, A], value: A): ElasticQuery[Term[A]] =
+    TermQuery(field.toString, value)
 
   def term[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Term[A]] = TermQuery(field, value)
 
