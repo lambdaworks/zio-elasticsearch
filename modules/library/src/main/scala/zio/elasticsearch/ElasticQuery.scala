@@ -54,16 +54,25 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
+  def matches[S, A: ElasticPrimitive](field: Selection[S, A], value: A): ElasticQuery[Match] =
+    MatchQuery(field.toString, value)
+
   def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Match] =
     MatchQuery(field, value)
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
+  def exists(field: Selection[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
+
   def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
 
   def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
 
+  def range(field: Selection[_, _]): RangeQuery[Unbounded.type, Unbounded.type] = RangeQuery.empty(field.toString)
+
   def range(field: String): RangeQuery[Unbounded.type, Unbounded.type] = RangeQuery.empty(field)
+
+  def term[S, A: ElasticPrimitive](field: Selection[S, A], value: A): ElasticQuery[Term[A]] = TermQuery(field.toString, value)
 
   def term[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Term[A]] = TermQuery(field, value)
 
