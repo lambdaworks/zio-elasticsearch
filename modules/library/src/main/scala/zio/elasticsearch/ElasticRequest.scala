@@ -42,6 +42,9 @@ object ElasticRequest {
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
     DeleteByIdRequest(index, id)
 
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[Unit, DeleteByQuery] =
+    DeleteByQueryRequest(index, query)
+
   def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex] =
     DeleteIndexRequest(name)
 
@@ -71,9 +74,6 @@ object ElasticRequest {
         Right(successful)
       }
     }
-
-  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[Unit, DeleteByQuery] =
-    DeleteByQueryRequest(index, query)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
@@ -113,6 +113,12 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[DeletionOutcome, DeleteById]
 
+  private[elasticsearch] final case class DeleteByQueryRequest(
+    index: IndexName,
+    query: ElasticQuery[_],
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit, DeleteByQuery]
+
   private[elasticsearch] final case class DeleteIndexRequest(name: IndexName)
       extends ElasticRequest[DeletionOutcome, DeleteIndex]
 
@@ -134,12 +140,6 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[ElasticQueryResponse, GetByQuery]
 
-  private[elasticsearch] final case class DeleteByQueryRequest(
-    index: IndexName,
-    query: ElasticQuery[_],
-    routing: Option[Routing] = None
-  ) extends ElasticRequest[Unit, DeleteByQuery]
-
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
     request: ElasticRequest[A, ERT],
     mapper: A => Either[DecodingException, B]
@@ -153,12 +153,12 @@ object ElasticRequestType {
   trait Create        extends ElasticRequestType
   trait CreateWithId  extends ElasticRequestType
   trait DeleteById    extends ElasticRequestType
+  trait DeleteByQuery extends ElasticRequestType
   trait DeleteIndex   extends ElasticRequestType
   trait Exists        extends ElasticRequestType
   trait GetById       extends ElasticRequestType
   trait GetByQuery    extends ElasticRequestType
   trait Upsert        extends ElasticRequestType
-  trait DeleteByQuery extends ElasticRequestType
 }
 
 sealed abstract class CreationOutcome

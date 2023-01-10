@@ -33,7 +33,7 @@ private[elasticsearch] object Shards {
 private[elasticsearch] final case class Hits(
   total: Total,
   @jsonField("max_score")
-  maxScore: Double,
+  maxScore: Option[Double] = None,
   hits: List[Item]
 )
 

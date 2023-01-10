@@ -28,11 +28,11 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: CreateIndexRequest    => executeCreateIndex(r)
       case r: CreateOrUpdateRequest => executeCreateOrUpdate(r)
       case r: DeleteByIdRequest     => executeDeleteById(r)
+      case r: DeleteByQueryRequest  => executeDeleteByQuery(r)
       case r: DeleteIndexRequest    => executeDeleteIndex(r)
       case r: ExistsRequest         => executeExists(r)
       case r: GetByIdRequest        => executeGetById(r)
       case r: GetByQueryRequest     => executeGetByQuery(r)
-      case r: DeleteByQueryRequest  => executeDeleteByQuery(r)
       case map @ Map(_, _)          => execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
 
@@ -163,7 +163,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeGetByQuery(r: GetByQueryRequest): Task[ElasticQueryResponse] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
+        .post(uri"${config.uri}/${r.index}/_search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJsonBody)

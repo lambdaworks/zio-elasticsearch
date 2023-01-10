@@ -13,6 +13,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val index: IndexName = IndexName("users")
 
+  val createIndexTestName: IndexName = IndexName("create-index-test-name")
+
   def genIndexName: Gen[Any, IndexName] =
     Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => unsafeWrap(IndexName)(name.toLowerCase))
 
