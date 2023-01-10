@@ -2,9 +2,13 @@ package zio.elasticsearch
 
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.elasticsearch.Routing.{Routing, WithRouting}
+import zio.json.ast.Json
 import zio.schema.Schema
+import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 import zio.{RIO, ZIO}
+
+import scala.annotation.tailrec
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
@@ -42,7 +46,7 @@ object ElasticRequest {
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
     DeleteByIdRequest(index, id)
 
-  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[Unit, DeleteByQuery] =
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[DeletionOutcome, DeleteByQuery] =
     DeleteByQueryRequest(index, query)
 
   def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex] =
@@ -63,9 +67,25 @@ object ElasticRequest {
 
   def search[A](index: IndexName, query: ElasticQuery[_])(implicit
     schema: Schema[A]
-  ): ElasticRequest[List[A], GetByQuery] =
+  ): ElasticRequest[List[A], GetByQuery] = {
+    @tailrec
+    def loop(
+      results: List[Json],
+      errors: List[DecodeError] = List.empty,
+      documents: List[A] = List.empty
+    ): (List[DecodeError], List[A]) =
+      results match {
+        case json :: tail =>
+          JsonDecoder.decode(schema, json.toString()) match {
+            case Left(error) =>
+              loop(tail, error +: errors, documents)
+            case Right(document) =>
+              loop(tail, errors, document +: documents)
+          }
+        case Nil => (errors, documents)
+      }
     GetByQueryRequest(index, query).map { response =>
-      val (failed, successful) = response.results.partitionMap(json => JsonDecoder.decode(schema, json.toString))
+      val (failed, successful) = loop(response.results)
       if (failed.nonEmpty) {
         Left(
           DecodingException(s"Could not parse all documents successfully: ${failed.map(_.message).mkString(",")})")
@@ -74,6 +94,7 @@ object ElasticRequest {
         Right(successful)
       }
     }
+  }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
@@ -117,7 +138,7 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     routing: Option[Routing] = None
-  ) extends ElasticRequest[Unit, DeleteByQuery]
+  ) extends ElasticRequest[DeletionOutcome, DeleteByQuery]
 
   private[elasticsearch] final case class DeleteIndexRequest(name: IndexName)
       extends ElasticRequest[DeletionOutcome, DeleteIndex]

@@ -24,8 +24,8 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
         fakeCreateOrUpdate(index, id, document)
       case DeleteByIdRequest(index, id, _, _) =>
         fakeDeleteById(index, id)
-      case DeleteByQueryRequest(_, _, _) =>
-        fakeDeleteByQuery()
+      case DeleteByQueryRequest(index, _, _) =>
+        fakeDeleteByQuery(index)
       case DeleteIndexRequest(name) =>
         fakeDeleteIndex(name)
       case ExistsRequest(index, id, _) =>
@@ -73,8 +73,11 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
       _         <- documents.delete(documentId)
     } yield if (exists) Deleted else NotFound).commit
 
-  private def fakeDeleteByQuery(): Task[Unit] =
-    ZIO.unit // until we have a way of using query to delete we can either delete all or delete none documents
+  private def fakeDeleteByQuery(index: IndexName): Task[DeletionOutcome] =
+    (for {
+      exists <- self.data.contains(index)
+    } yield if (exists) Deleted else NotFound).commit
+  // until we have a way of using query to delete we can either delete all or delete none documents
 
   private def fakeDeleteIndex(index: IndexName): Task[DeletionOutcome] =
     (for {

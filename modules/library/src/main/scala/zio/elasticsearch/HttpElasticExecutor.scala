@@ -179,7 +179,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       }
     }
 
-  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[Unit] =
+  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] =
     sendRequest(
       request
         .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_delete_by_query")
@@ -187,8 +187,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .body(r.query.toJsonBody)
     ).flatMap { response =>
       response.code match {
-        case HttpOk => ZIO.unit
-        case _      => ZIO.fail(createElasticException(response))
+        case HttpOk       => ZIO.succeed(Deleted)
+        case HttpNotFound => ZIO.succeed(NotFound)
+        case _            => ZIO.fail(createElasticException(response))
       }
     }
 
