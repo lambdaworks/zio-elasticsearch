@@ -148,8 +148,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeExists(r: ExistsRequest): Task[Boolean] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
-    println(uri)
-
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(true)

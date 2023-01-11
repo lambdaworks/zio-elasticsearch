@@ -13,6 +13,9 @@ trait IntegrationSpec extends ZIOSpecDefault {
   val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
     HttpClientZioBackend.layer() >>> ElasticExecutor.local
 
+  val elasticsearchWireMockLayer: ZLayer[Any, Throwable, ElasticExecutor] =
+    HttpClientZioBackend.layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", 9300)) >>> ElasticExecutor.live)
+
   val index: IndexName = IndexName("users")
 
   val createIndexTestName: IndexName = IndexName("create-index-test-name")

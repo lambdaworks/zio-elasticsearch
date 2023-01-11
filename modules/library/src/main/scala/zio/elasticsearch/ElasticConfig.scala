@@ -7,5 +7,5 @@ final case class ElasticConfig(host: String, port: Int) {
 }
 
 object ElasticConfig {
-  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9301)
+  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200)
 }
