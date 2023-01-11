@@ -24,7 +24,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
         fakeCreateOrUpdate(index, id, document)
       case DeleteByIdRequest(index, id, _, _) =>
         fakeDeleteById(index, id)
-      case DeleteByQueryRequest(index, _, _) =>
+      case DeleteByQueryRequest(index, _, _, _) =>
         fakeDeleteByQuery(index)
       case DeleteIndexRequest(name) =>
         fakeDeleteIndex(name)
