@@ -10,7 +10,7 @@ import sttp.model.StatusCode.{
   NotFound => HttpNotFound,
   Ok => HttpOk
 }
-import zio.ZIO.logDebug
+import zio.ZIO.{logDebug, logInfo}
 import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
@@ -148,6 +148,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeExists(r: ExistsRequest): Task[Boolean] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
 
+    println(uri)
+
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(true)
@@ -196,9 +198,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     req: RequestT[Identity, Either[String, String], Any]
   ): Task[Response[Either[String, String]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logInfo(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logInfo(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
