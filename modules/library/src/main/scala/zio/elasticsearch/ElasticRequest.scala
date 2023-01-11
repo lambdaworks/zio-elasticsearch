@@ -62,30 +62,33 @@ object ElasticRequest {
           case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
           case Right(doc) => Right(Some(doc))
         }
-      case None => Right(None)
+      case None =>
+        Right(None)
     }
 
   def search[A](index: IndexName, query: ElasticQuery[_])(implicit
     schema: Schema[A]
   ): ElasticRequest[List[A], GetByQuery] = {
     @tailrec
-    def loop(
+    def decodeAndValidateResults(
       results: List[Json],
-      errors: List[DecodeError] = List.empty,
-      documents: List[A] = List.empty
+      errors: List[DecodeError] = Nil,
+      documents: List[A] = Nil
     ): (List[DecodeError], List[A]) =
       results match {
         case json :: tail =>
-          JsonDecoder.decode(schema, json.toString()) match {
+          JsonDecoder.decode(schema, json.toString) match {
             case Left(error) =>
-              loop(tail, error +: errors, documents)
+              decodeAndValidateResults(tail, error +: errors, documents)
             case Right(document) =>
-              loop(tail, errors, document +: documents)
+              decodeAndValidateResults(tail, errors, document +: documents)
           }
-        case Nil => (errors, documents)
+        case Nil =>
+          (errors.reverse, documents.reverse)
       }
+
     GetByQueryRequest(index, query).map { response =>
-      val (failed, successful) = loop(response.results)
+      val (failed, successful) = decodeAndValidateResults(response.results)
       if (failed.nonEmpty) {
         Left(
           DecodingException(s"Could not parse all documents successfully: ${failed.map(_.message).mkString(",")})")
@@ -137,6 +140,7 @@ object ElasticRequest {
   private[elasticsearch] final case class DeleteByQueryRequest(
     index: IndexName,
     query: ElasticQuery[_],
+    refresh: Boolean = false,
     routing: Option[Routing] = None
   ) extends ElasticRequest[DeletionOutcome, DeleteByQuery]
 

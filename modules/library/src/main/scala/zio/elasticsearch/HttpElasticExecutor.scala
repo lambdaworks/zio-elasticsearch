@@ -123,6 +123,23 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
+  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
+    val uri = uri"${config.uri}/${IndexName.unwrap(r.index)}/_delete_by_query".withParam("refresh", r.refresh.toString)
+
+    sendRequest(
+      request
+        .post(uri)
+        .contentType(ApplicationJson)
+        .body(r.query.toJsonBody)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk       => ZIO.succeed(Deleted)
+        case HttpNotFound => ZIO.succeed(NotFound)
+        case _            => ZIO.fail(createElasticException(response))
+      }
+    }
+  }
+
   private def executeDeleteIndex(r: DeleteIndexRequest): Task[DeletionOutcome] =
     sendRequest(request.delete(uri"${config.uri}/${r.name}")).flatMap { response =>
       response.code match {
@@ -176,20 +193,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
-      }
-    }
-
-  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] =
-    sendRequest(
-      request
-        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_delete_by_query")
-        .contentType(ApplicationJson)
-        .body(r.query.toJsonBody)
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk       => ZIO.succeed(Deleted)
-        case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
       }
     }
 
