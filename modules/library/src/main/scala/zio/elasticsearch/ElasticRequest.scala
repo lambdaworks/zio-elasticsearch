@@ -2,13 +2,10 @@ package zio.elasticsearch
 
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.elasticsearch.Routing.{Routing, WithRouting}
-import zio.json.ast.Json
+import zio.prelude._
 import zio.schema.Schema
-import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 import zio.{RIO, ZIO}
-
-import scala.annotation.tailrec
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
@@ -68,36 +65,16 @@ object ElasticRequest {
 
   def search[A](index: IndexName, query: ElasticQuery[_])(implicit
     schema: Schema[A]
-  ): ElasticRequest[List[A], GetByQuery] = {
-    @tailrec
-    def decodeAndValidateResults(
-      results: List[Json],
-      errors: List[DecodeError] = Nil,
-      documents: List[A] = Nil
-    ): (List[DecodeError], List[A]) =
-      results match {
-        case json :: tail =>
-          JsonDecoder.decode(schema, json.toString) match {
-            case Left(error) =>
-              decodeAndValidateResults(tail, error +: errors, documents)
-            case Right(document) =>
-              decodeAndValidateResults(tail, errors, document +: documents)
-          }
-        case Nil =>
-          (errors.reverse, documents.reverse)
-      }
-
+  ): ElasticRequest[List[A], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
-      val (failed, successful) = decodeAndValidateResults(response.results)
-      if (failed.nonEmpty) {
-        Left(
-          DecodingException(s"Could not parse all documents successfully: ${failed.map(_.message).mkString(",")})")
-        )
-      } else {
-        Right(successful)
-      }
+      Validation
+        .validateAll(response.results.map { json =>
+          ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))
+        })
+        .toEitherWith { errors =>
+          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
+        }
     }
-  }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
