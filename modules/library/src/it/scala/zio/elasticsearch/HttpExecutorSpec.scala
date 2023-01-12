@@ -193,8 +193,8 @@ object HttpExecutorSpec extends IntegrationSpec {
       ) @@ shrinks(0) @@ sequential @@ afterAll(
         ElasticRequest.deleteByQuery(index, matchAll()).refreshTrue.execute.orDie
       ),
-      suite("Test Delete by query")(
-        test("use Delete query successfully") {
+      suite("deleting by query")(
+        test("successfully deleted all matched documents") {
           checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer, genDocumentId, genCustomer) {
             (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer, thirdDocumentId, thirdCustomer) =>
               val result =
@@ -219,7 +219,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               assertZIO(result)(hasSameElements(List(firstCustomer.copy(balance = 150))))
           }
         },
-        test("Deleting from missing index returns Not Found") {
+        test("returns Not Found when provided index is missing") {
           checkOnce(genIndexName) { missingIndex =>
             assertZIO(ElasticRequest.deleteByQuery(missingIndex, matchAll()).execute)(equalTo(NotFound))
           }

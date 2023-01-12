@@ -72,7 +72,7 @@ object ElasticRequest {
           ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))
         })
         .toEitherWith { errors =>
-          DecodingException(s"Could not parse all documents successfully: ${errors.mkString(",")})")
+          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
         }
     }
 
