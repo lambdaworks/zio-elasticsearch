@@ -213,8 +213,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .execute
                   deleteQuery = range("balance").gte(300)
                   _          <- ElasticRequest.deleteByQuery(index, deleteQuery).refreshTrue.execute
-                  res1       <- ElasticRequest.search[CustomerDocument](index, matchAll()).execute
-                } yield res1
+                  res        <- ElasticRequest.search[CustomerDocument](index, matchAll()).execute
+                } yield res
 
               assertZIO(result)(hasSameElements(List(firstCustomer.copy(balance = 150))))
           }
