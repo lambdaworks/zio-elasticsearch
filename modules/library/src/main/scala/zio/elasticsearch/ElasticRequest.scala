@@ -67,10 +67,13 @@ object ElasticRequest {
     schema: Schema[A]
   ): ElasticRequest[List[A], GetByQuery] =
     GetByQueryRequest(index, query).map { response =>
-      response.results.forEach(json => ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))).toEitherWith {
-        errors =>
-          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
-      }
+      Validation
+        .validateAll(response.results.map { json =>
+          ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))
+        })
+        .toEitherWith { errors =>
+          DecodingException(s"Could not parse all documents successfully: ${errors.mkString(",")})")
+        }
     }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
