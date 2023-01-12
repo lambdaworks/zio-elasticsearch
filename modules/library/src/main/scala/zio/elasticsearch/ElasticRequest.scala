@@ -2,7 +2,9 @@ package zio.elasticsearch
 
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.elasticsearch.Routing.{Routing, WithRouting}
+import zio.prelude._
 import zio.schema.Schema
+import zio.schema.codec.JsonCodec.JsonDecoder
 import zio.{RIO, ZIO}
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
@@ -41,6 +43,9 @@ object ElasticRequest {
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
     DeleteByIdRequest(index, id)
 
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[DeletionOutcome, DeleteByQuery] =
+    DeleteByQueryRequest(index, query)
+
   def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex] =
     DeleteIndexRequest(name)
 
@@ -51,14 +56,25 @@ object ElasticRequest {
     GetByIdRequest(index, id).map {
       case Some(document) =>
         document.decode match {
-          case Left(e)    => Left(DecodingException(s"Decoding error: ${e.message}"))
+          case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
           case Right(doc) => Right(Some(doc))
         }
-      case None => Right(None)
+      case None =>
+        Right(None)
     }
 
-  def search(index: IndexName, query: ElasticQuery[_]): ElasticRequest[ElasticQueryResponse, GetByQuery] =
-    GetByQueryRequest(index, query)
+  def search[A](index: IndexName, query: ElasticQuery[_])(implicit
+    schema: Schema[A]
+  ): ElasticRequest[List[A], GetByQuery] =
+    GetByQueryRequest(index, query).map { response =>
+      Validation
+        .validateAll(response.results.map { json =>
+          ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))
+        })
+        .toEitherWith { errors =>
+          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
+        }
+    }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
@@ -98,6 +114,13 @@ object ElasticRequest {
     routing: Option[Routing] = None
   ) extends ElasticRequest[DeletionOutcome, DeleteById]
 
+  private[elasticsearch] final case class DeleteByQueryRequest(
+    index: IndexName,
+    query: ElasticQuery[_],
+    refresh: Boolean = false,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[DeletionOutcome, DeleteByQuery]
+
   private[elasticsearch] final case class DeleteIndexRequest(name: IndexName)
       extends ElasticRequest[DeletionOutcome, DeleteIndex]
 
@@ -128,15 +151,16 @@ object ElasticRequest {
 sealed trait ElasticRequestType
 
 object ElasticRequestType {
-  trait CreateIndex  extends ElasticRequestType
-  trait Create       extends ElasticRequestType
-  trait CreateWithId extends ElasticRequestType
-  trait DeleteById   extends ElasticRequestType
-  trait DeleteIndex  extends ElasticRequestType
-  trait Exists       extends ElasticRequestType
-  trait GetById      extends ElasticRequestType
-  trait GetByQuery   extends ElasticRequestType
-  trait Upsert       extends ElasticRequestType
+  trait CreateIndex   extends ElasticRequestType
+  trait Create        extends ElasticRequestType
+  trait CreateWithId  extends ElasticRequestType
+  trait DeleteById    extends ElasticRequestType
+  trait DeleteByQuery extends ElasticRequestType
+  trait DeleteIndex   extends ElasticRequestType
+  trait Exists        extends ElasticRequestType
+  trait GetById       extends ElasticRequestType
+  trait GetByQuery    extends ElasticRequestType
+  trait Upsert        extends ElasticRequestType
 }
 
 sealed abstract class CreationOutcome

@@ -5,9 +5,10 @@ import zio.elasticsearch.ElasticRequest.{
   CreateRequest,
   CreateWithIdRequest,
   DeleteByIdRequest,
+  DeleteByQueryRequest,
   Map
 }
-import zio.elasticsearch.ElasticRequestType.{Create, CreateWithId, DeleteById, Upsert}
+import zio.elasticsearch.ElasticRequestType.{Create, CreateWithId, DeleteById, DeleteByQuery, Upsert}
 
 object Refresh {
 
@@ -37,6 +38,14 @@ object Refresh {
         request match {
           case Map(r, mapper)       => Map(withRefresh(r, value), mapper)
           case r: DeleteByIdRequest => r.copy(refresh = value)
+        }
+    }
+
+    implicit val deleteByQueryWithRefresh: WithRefresh[DeleteByQuery] = new WithRefresh[DeleteByQuery] {
+      def withRefresh[A](request: ElasticRequest[A, DeleteByQuery], value: Boolean): ElasticRequest[A, DeleteByQuery] =
+        request match {
+          case Map(r, mapper)          => Map(withRefresh(r, value), mapper)
+          case r: DeleteByQueryRequest => r.copy(refresh = value)
         }
     }
 

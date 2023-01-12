@@ -28,6 +28,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: CreateIndexRequest    => executeCreateIndex(r)
       case r: CreateOrUpdateRequest => executeCreateOrUpdate(r)
       case r: DeleteByIdRequest     => executeDeleteById(r)
+      case r: DeleteByQueryRequest  => executeDeleteByQuery(r)
       case r: DeleteIndexRequest    => executeDeleteIndex(r)
       case r: ExistsRequest         => executeExists(r)
       case r: GetByIdRequest        => executeGetById(r)
@@ -122,6 +123,23 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
+  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
+    val uri = uri"${config.uri}/${IndexName.unwrap(r.index)}/_delete_by_query".withParam("refresh", r.refresh.toString)
+
+    sendRequest(
+      request
+        .post(uri)
+        .contentType(ApplicationJson)
+        .body(r.query.toJsonBody)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk       => ZIO.succeed(Deleted)
+        case HttpNotFound => ZIO.succeed(NotFound)
+        case _            => ZIO.fail(createElasticException(response))
+      }
+    }
+  }
+
   private def executeDeleteIndex(r: DeleteIndexRequest): Task[DeletionOutcome] =
     sendRequest(request.delete(uri"${config.uri}/${r.name}")).flatMap { response =>
       response.code match {
@@ -162,7 +180,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeGetByQuery(r: GetByQueryRequest): Task[ElasticQueryResponse] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/${IndexName.unwrap(r.index)}/_search")
+        .post(uri"${config.uri}/${r.index}/_search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJsonBody)

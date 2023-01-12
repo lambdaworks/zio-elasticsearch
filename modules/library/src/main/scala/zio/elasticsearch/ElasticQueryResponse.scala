@@ -10,7 +10,10 @@ private[elasticsearch] final case class ElasticQueryResponse(
   @jsonField("_shards")
   shards: Shards,
   hits: Hits
-)
+) {
+
+  lazy val results: List[Json] = hits.hits.map(_.source)
+}
 
 private[elasticsearch] object ElasticQueryResponse {
   implicit val decoder: JsonDecoder[ElasticQueryResponse] = DeriveJsonDecoder.gen[ElasticQueryResponse]
@@ -30,7 +33,7 @@ private[elasticsearch] object Shards {
 private[elasticsearch] final case class Hits(
   total: Total,
   @jsonField("max_score")
-  maxScore: Double,
+  maxScore: Option[Double] = None,
   hits: List[Item]
 )
 

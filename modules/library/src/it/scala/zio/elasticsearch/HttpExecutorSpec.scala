@@ -2,8 +2,9 @@ package zio.elasticsearch
 
 import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
+import zio.elasticsearch.ElasticQuery._
 import zio.test.Assertion._
-import zio.test.TestAspect.nondeterministic
+import zio.test.TestAspect._
 import zio.test._
 
 object HttpExecutorSpec extends IntegrationSpec {
@@ -39,21 +40,17 @@ object HttpExecutorSpec extends IntegrationSpec {
       ),
       suite("creating index")(
         test("successfully create index") {
-          checkOnce(genIndexName) { name =>
-            assertZIO(ElasticRequest.createIndex(name, None).execute)(equalTo(Created))
-          }
+          assertZIO(ElasticRequest.createIndex(createIndexTestName, None).execute)(equalTo(Created))
         },
         test("return 'AlreadyExists' if index already exists") {
-          checkOnce(genIndexName) { name =>
-            val result = for {
-              _   <- ElasticRequest.createIndex(name, None).execute
-              res <- ElasticRequest.createIndex(name, None).execute
-            } yield res
+          val result = for {
+            _   <- ElasticRequest.createIndex(createIndexTestName, None).execute
+            res <- ElasticRequest.createIndex(createIndexTestName, None).execute
+          } yield res
 
-            assertZIO(result)(equalTo(AlreadyExists))
-          }
+          assertZIO(result)(equalTo(AlreadyExists))
         }
-      ),
+      ) @@ after(ElasticRequest.deleteIndex(createIndexTestName).execute.orDie),
       suite("creating or updating document")(
         test("successfully create document") {
           checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
@@ -66,14 +63,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         },
         test("successfully update document") {
-          checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer1, customer2) =>
+          checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, firstCustomer, secondCustomer) =>
             val result = for {
-              _   <- ElasticRequest.create[CustomerDocument](index, documentId, customer1).execute
-              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, customer2).execute
+              _   <- ElasticRequest.create[CustomerDocument](index, documentId, firstCustomer).execute
+              _   <- ElasticRequest.upsert[CustomerDocument](index, documentId, secondCustomer).execute
               doc <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield doc
 
-            assertZIO(result)(isSome(equalTo(customer2)))
+            assertZIO(result)(isSome(equalTo(secondCustomer)))
           }
         }
       ),
@@ -151,9 +148,83 @@ object HttpExecutorSpec extends IntegrationSpec {
               res <- ElasticRequest.getById[CustomerDocument](index, documentId).execute
             } yield res
 
-            assertZIO(result.exit)(fails(isSubtype[Exception](assertException("Decoding error: .address(missing)"))))
+            assertZIO(result.exit)(
+              fails(isSubtype[Exception](assertException("Could not parse the document: .address(missing)")))
+            )
+          }
+        }
+      ),
+      suite("searching documents")(
+        test("search for document using range query") {
+          checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+            (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+              val result = for {
+                _ <- ElasticRequest.deleteByQuery(index, matchAll()).execute
+                _ <- ElasticRequest.upsert[CustomerDocument](index, firstDocumentId, firstCustomer).execute
+                _ <-
+                  ElasticRequest.upsert[CustomerDocument](index, secondDocumentId, secondCustomer).refreshTrue.execute
+                query = range("balance").gte(100)
+                res  <- ElasticRequest.search[CustomerDocument](index, query).execute
+              } yield res
+
+              assertZIO(result)(isNonEmpty)
+          }
+        },
+        test("fail if any of results cannot be decoded") {
+          checkOnce(genDocumentId, genDocumentId, genEmployee, genCustomer) {
+            (employeeDocumentId, customerDocumentId, employee, customer) =>
+              val result = for {
+                _    <- ElasticRequest.deleteByQuery(index, matchAll()).execute
+                _    <- ElasticRequest.upsert[CustomerDocument](index, customerDocumentId, customer).execute
+                _    <- ElasticRequest.upsert[EmployeeDocument](index, employeeDocumentId, employee).refreshTrue.execute
+                query = range("age").gte(0)
+                res  <- ElasticRequest.search[CustomerDocument](index, query).execute
+              } yield res
+
+              assertZIO(result.exit)(
+                fails(
+                  isSubtype[Exception](
+                    assertException("Could not parse all documents successfully: .address(missing))")
+                  )
+                )
+              )
+          }
+        }
+      ) @@ shrinks(0) @@ sequential @@ afterAll(
+        ElasticRequest.deleteByQuery(index, matchAll()).refreshTrue.execute.orDie
+      ),
+      suite("deleting by query")(
+        test("successfully deleted all matched documents") {
+          checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer, genDocumentId, genCustomer) {
+            (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer, thirdDocumentId, thirdCustomer) =>
+              val result =
+                for {
+                  _ <- ElasticRequest
+                         .upsert[CustomerDocument](index, firstDocumentId, firstCustomer.copy(balance = 150))
+                         .execute
+                  _ <-
+                    ElasticRequest
+                      .upsert[CustomerDocument](index, secondDocumentId, secondCustomer.copy(balance = 350))
+                      .execute
+                  _ <-
+                    ElasticRequest
+                      .upsert[CustomerDocument](index, thirdDocumentId, thirdCustomer.copy(balance = 400))
+                      .refreshTrue
+                      .execute
+                  deleteQuery = range("balance").gte(300)
+                  _          <- ElasticRequest.deleteByQuery(index, deleteQuery).refreshTrue.execute
+                  res        <- ElasticRequest.search[CustomerDocument](index, matchAll()).execute
+                } yield res
+
+              assertZIO(result)(hasSameElements(List(firstCustomer.copy(balance = 150))))
+          }
+        },
+        test("returns Not Found when provided index is missing") {
+          checkOnce(genIndexName) { missingIndex =>
+            assertZIO(ElasticRequest.deleteByQuery(missingIndex, matchAll()).execute)(equalTo(NotFound))
           }
         }
       )
-    ).provideShared(elasticsearchLayer) @@ nondeterministic
+    ).provideShared(elasticsearchLayer) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests
+
 }

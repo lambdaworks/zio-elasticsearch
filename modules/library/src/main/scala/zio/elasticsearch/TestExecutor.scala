@@ -24,6 +24,8 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
         fakeCreateOrUpdate(index, id, document)
       case DeleteByIdRequest(index, id, _, _) =>
         fakeDeleteById(index, id)
+      case DeleteByQueryRequest(index, _, _, _) =>
+        fakeDeleteByQuery(index)
       case DeleteIndexRequest(name) =>
         fakeDeleteIndex(name)
       case ExistsRequest(index, id, _) =>
@@ -71,6 +73,12 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
       _         <- documents.delete(documentId)
     } yield if (exists) Deleted else NotFound).commit
 
+  private def fakeDeleteByQuery(index: IndexName): Task[DeletionOutcome] =
+    (for {
+      exists <- self.data.contains(index)
+    } yield if (exists) Deleted else NotFound).commit
+  // until we have a way of using query to delete we can either delete all or delete none documents
+
   private def fakeDeleteIndex(index: IndexName): Task[DeletionOutcome] =
     (for {
       exists <- self.data.contains(index)
@@ -110,7 +118,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
             }
           )
         hitsSize <- documents.size
-        hits      = Hits(total = Total(value = hitsSize, relation = ""), maxScore = 1, hits = items)
+        hits      = Hits(total = Total(value = hitsSize, relation = ""), maxScore = Some(1), hits = items)
       } yield ElasticQueryResponse(took = 1, timedOut = false, shards = shards, hits = hits)
     }
 
