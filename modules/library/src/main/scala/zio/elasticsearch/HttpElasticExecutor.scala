@@ -10,7 +10,7 @@ import sttp.model.StatusCode.{
   NotFound => HttpNotFound,
   Ok => HttpOk
 }
-import zio.ZIO.{logDebug, logInfo}
+import zio.ZIO.logDebug
 import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
@@ -38,7 +38,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
     val uri = uri"${config.uri}/${r.index}/$Doc"
-      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
       request
@@ -64,7 +64,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateWithId(r: CreateWithIdRequest): Task[CreationOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
-      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
 
     sendRequest(
       request
@@ -96,7 +96,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateOrUpdate(r: CreateOrUpdateRequest): Task[Unit] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -108,7 +108,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeDeleteById(r: DeleteByIdRequest): Task[DeletionOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(("refresh", r.refresh.toString), ("routing", r.routing.map(Routing.unwrap).toString))
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
@@ -120,7 +120,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$DeleteByQuery".withParam("refresh", r.refresh.toString)
+    val uri =
+      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(getQueryParams(List(("refresh", Some(r.refresh)))).toMap)
 
     sendRequest(
       request
@@ -146,7 +147,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeExists(r: ExistsRequest): Task[Boolean] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))).toMap)
 
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
@@ -158,7 +159,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeGetById(r: GetByIdRequest): Task[Option[Document]] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))).toMap)
 
     sendRequestWithCustomResponse[ElasticGetResponse](
       request
@@ -196,9 +197,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     req: RequestT[Identity, Either[String, String], Any]
   ): Task[Response[Either[String, String]]] =
     for {
-      _    <- logInfo(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
       resp <- req.send(client)
-      _    <- logInfo(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
@@ -221,6 +222,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     new ElasticException(
       s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
     )
+
+  private def getQueryParams(parameters: List[(String, Any)]): List[(String, String)] =
+    parameters.collect { case (name: String, Some(value)) => (name, value.toString) }
 
 }
 
