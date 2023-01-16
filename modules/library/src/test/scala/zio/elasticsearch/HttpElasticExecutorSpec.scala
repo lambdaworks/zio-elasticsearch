@@ -14,7 +14,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
     suite("HttpElasticExecutor")(
       suite("creating document request") {
         test("return document ID") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             post(urlEqualTo("/organization/_doc?refresh=true&routing=routing"))
               .willReturn(
                 aResponse
@@ -26,16 +26,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
           assertZIO(
             ElasticRequest
-              .create[GitHubRepo](
-                index = index,
-                doc = GitHubRepo(
-                  id = Some("123"),
-                  organization = "lambdaworks.io",
-                  name = "zio-elasticsearch",
-                  stars = 10,
-                  forks = 10
-                )
-              )
+              .create[GitHubRepo](index = index, doc = gitHubRepo)
               .routing(Routing("routing"))
               .refresh(value = true)
               .execute
@@ -44,7 +35,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       },
       suite("creating request with given ID") {
         test("return Created outcome") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             post(urlEqualTo("/organization/_create/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Created.code))
               .build
@@ -52,17 +43,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
           assertZIO(
             ElasticRequest
-              .create[GitHubRepo](
-                index = index,
-                id = DocumentId("V4x8q4UB3agN0z75fv5r"),
-                doc = GitHubRepo(
-                  id = Some("123"),
-                  organization = "lambdaworks.io",
-                  name = "zio-elasticsearch",
-                  stars = 10,
-                  forks = 10
-                )
-              )
+              .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = gitHubRepo)
               .routing(Routing("routing"))
               .refresh(value = true)
               .execute
@@ -71,7 +52,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       },
       suite("creating index request") {
         test("return Created outcome") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             put(urlEqualTo("/organization"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
@@ -84,7 +65,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       },
       suite("creating or updating request") {
         test("successfully create or update document") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             put(urlEqualTo("/organization/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Created.code))
               .build
@@ -92,26 +73,16 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
           assertZIO(
             ElasticRequest
-              .upsert[GitHubRepo](
-                index = index,
-                id = DocumentId("V4x8q4UB3agN0z75fv5r"),
-                doc = GitHubRepo(
-                  id = Some("123"),
-                  organization = "lambdaworks.io",
-                  name = "zio-elasticsearch",
-                  stars = 10,
-                  forks = 10
-                )
-              )
+              .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = gitHubRepo)
               .routing(Routing("routing"))
               .refresh(value = true)
               .execute
           )(isUnit)
         }
       },
-      suite("deleting by id request") {
+      suite("deleting by ID request") {
         test("return Deleted outcome") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             delete(urlEqualTo("/organization/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
@@ -128,7 +99,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       },
       suite("deleting by query request") {
         test("return Deleted outcome") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             post(urlEqualTo("/organization/_delete_by_query?refresh=true"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
@@ -141,7 +112,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       },
       suite("deleting index request") {
         test("return Deleted outcome") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             delete(urlEqualTo("/organization"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
@@ -152,7 +123,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       },
       suite("exists request") {
         test("return true") {
-          wireMockServer.addStubMapping(
+          server.addStubMapping(
             head(urlEqualTo("/organization/_doc/example-id?routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
@@ -163,15 +134,24 @@ object HttpElasticExecutorSpec extends WiremockSpec {
           )(isTrue)
         }
       },
-      suite("getting by id request") {
-        test("return Document") {
-          wireMockServer.addStubMapping(
+      suite("getting by ID request") {
+        test("successfully return Document") {
+          server.addStubMapping(
             get(urlEqualTo("/organization/_doc/V4x8q4UB3agN0z75fv5r?routing=routing"))
               .willReturn(
                 aResponse
                   .withStatus(StatusCode.Ok.code)
                   .withBody(
-                    "{\"_source\": {\"id\": \"111\", \"organization\": \"organization\", \"name\": \"lambdaworks.io\", \"stars\": 5, \"forks\": 5}}"
+                    """
+                      |{
+                      |  "_source": {
+                      |    "id": "123",
+                      |    "organization": "lambdaworks.io",
+                      |    "name": "LambdaWorks",
+                      |    "stars": 10,
+                      |    "forks": 10
+                      |  }
+                      |}""".stripMargin
                   )
               )
               .build
@@ -183,55 +163,62 @@ object HttpElasticExecutorSpec extends WiremockSpec {
               .routing(Routing("routing"))
               .execute
           )(
-            isSome(
-              equalTo(
-                GitHubRepo(
-                  id = Some("111"),
-                  organization = "organization",
-                  name = "lambdaworks.io",
-                  stars = 5,
-                  forks = 5
-                )
-              )
-            )
+            isSome(equalTo(gitHubRepo))
           )
         }
       },
       suite("getting by query request") {
-        test("return documents") {
-          wireMockServer.addStubMapping(
+        test("successfully return documents") {
+          server.addStubMapping(
             post(urlEqualTo("/organization/_search"))
               .willReturn(
                 aResponse
                   .withStatus(StatusCode.Ok.code)
                   .withBody(
-                    "{\"took\": 5, \"timed_out\": false, \"_shards\": {\"total\": 8, \"successful\": 5, \"skipped\": 3, \"failed\": 0}, " +
-                      "\"hits\": {\"total\": {\"value\": 2, \"relation\": \"relation\"}, \"max_score\": 1, " +
-                      "\"hits\": [{\"_index\": \"organization\", \"_type\": \"type\", \"_id\": \"111\", \"_score\": 1, \"_source\": " +
-                      "{\"id\": \"111\", \"organization\": \"organization\", \"name\": \"lambdaworks.io\", \"stars\": 5, \"forks\": 5}}]}}}}"
+                    """
+                      |{
+                      |  "took": 5, 
+                      |  "timed_out": false,
+                      |  "_shards": {
+                      |    "total": 8,
+                      |    "successful": 5,
+                      |    "skipped": 3,
+                      |    "failed": 0
+                      |  },
+                      |  "hits": {
+                      |    "total": {
+                      |      "value": 2,
+                      |      "relation": "relation"
+                      |    }, 
+                      |    "max_score": 1,
+                      |    "hits": [
+                      |      {
+                      |        "_index": "organization",
+                      |        "_type": "type",
+                      |        "_id": "111",
+                      |        "_score": 1,
+                      |        "_source": {
+                      |          "id": "123",
+                      |          "organization": "lambdaworks.io",
+                      |          "name": "LambdaWorks",
+                      |          "stars": 10,
+                      |          "forks": 10
+                      |        }
+                      |      }
+                      |    ]
+                      |  }
+                      |}""".stripMargin
                   )
               )
               .build
           )
 
-          assertZIO(
-            ElasticRequest.search[GitHubRepo](index = index, query = matchAll()).execute
-          )(
-            equalTo(
-              List(
-                GitHubRepo(
-                  id = Some("111"),
-                  organization = "organization",
-                  name = "lambdaworks.io",
-                  stars = 5,
-                  forks = 5
-                )
-              )
-            )
+          assertZIO(ElasticRequest.search[GitHubRepo](index = index, query = matchAll()).execute)(
+            equalTo(List(gitHubRepo))
           )
         }
       }
     ).provideShared(elasticsearchWireMockLayer) @@
-      beforeAll(ZIO.attempt(wireMockServer.start())) @@
-      afterAll(ZIO.attempt(wireMockServer.stop()).orDie)
+      beforeAll(ZIO.attempt(server.start())) @@
+      afterAll(ZIO.attempt(server.stop()).orDie)
 }

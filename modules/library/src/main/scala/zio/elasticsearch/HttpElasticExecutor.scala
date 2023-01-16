@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import scala.collection.immutable.{Map => ScalaMap}
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
@@ -38,7 +39,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
     val uri = uri"${config.uri}/${r.index}/$Doc"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
       request
@@ -64,7 +65,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateWithId(r: CreateWithIdRequest): Task[CreationOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(
       request
@@ -96,7 +97,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateOrUpdate(r: CreateOrUpdateRequest): Task[Unit] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -108,7 +109,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeDeleteById(r: DeleteByIdRequest): Task[DeletionOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))).toMap)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
@@ -121,7 +122,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
     val uri =
-      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(getQueryParams(List(("refresh", Some(r.refresh)))).toMap)
+      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(getQueryParams(List(("refresh", Some(r.refresh)))))
 
     sendRequest(
       request
@@ -147,7 +148,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeExists(r: ExistsRequest): Task[Boolean] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))).toMap)
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
@@ -159,7 +160,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeGetById(r: GetByIdRequest): Task[Option[Document]] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))).toMap)
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticGetResponse](
       request
@@ -223,8 +224,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
     )
 
-  private def getQueryParams(parameters: List[(String, Any)]): List[(String, String)] =
-    parameters.collect { case (name: String, Some(value)) => (name, value.toString) }
+  private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
+    parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
 }
 
