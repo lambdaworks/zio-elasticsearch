@@ -2,11 +2,11 @@ package zio.elasticsearch
 
 import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, delete, get, head, post, put, urlEqualTo}
 import sttp.model.StatusCode
+import zio.ZIO
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.test.Assertion._
 import zio.test.TestAspect.{afterAll, beforeAll}
 import zio.test.{Spec, TestEnvironment, assertZIO}
-import zio.ZIO
 
 object HttpElasticExecutorSpec extends WiremockSpec {
 
