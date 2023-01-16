@@ -124,7 +124,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
-    val uri = uri"${config.uri}/${IndexName.unwrap(r.index)}/_delete_by_query".withParam("refresh", r.refresh.toString)
+    val uri = uri"${config.uri}/${r.index}/$DeleteByQuery".withParam("refresh", r.refresh.toString)
 
     sendRequest(
       request
@@ -180,7 +180,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeGetByQuery(r: GetByQueryRequest): Task[ElasticQueryResponse] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/${r.index}/_search")
+        .post(uri"${config.uri}/${r.index}/$Search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJsonBody)
@@ -230,8 +230,10 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
 private[elasticsearch] object HttpElasticExecutor {
 
-  private final val Doc    = "_doc"
-  private final val Create = "_create"
+  private final val Doc           = "_doc"
+  private final val Create        = "_create"
+  private final val DeleteByQuery = "_delete_by_query"
+  private final val Search        = "_search"
 
   def apply(config: ElasticConfig, client: SttpBackend[Task, Any]) =
     new HttpElasticExecutor(config, client)
