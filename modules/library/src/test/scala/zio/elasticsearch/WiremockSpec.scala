@@ -7,20 +7,12 @@ import sttp.model.StatusCode
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.json.{DeriveJsonEncoder, JsonEncoder}
 import zio.schema.{DeriveSchema, Schema}
-import zio.{ZIO, ZLayer}
 import zio.test.Assertion._
-import zio.test.TestAspect.{afterAll, beforeAll, nondeterministic}
+import zio.test.TestAspect.{afterAll, beforeAll}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertZIO}
+import zio.{ZIO, ZLayer}
 
 object WiremockSpec extends ZIOSpecDefault {
-
-  private val index: IndexName = IndexName("organization")
-
-  private val elasticsearchWireMockLayer: ZLayer[Any, Throwable, ElasticExecutor] =
-    HttpClientZioBackend.layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", 5700)) >>> ElasticExecutor.live)
-
-  private val wireMockPort   = 5700
-  private val wireMockServer = new WireMockServer(wireMockPort)
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Wiremock")(
@@ -89,7 +81,9 @@ object WiremockSpec extends ZIOSpecDefault {
               .build
           )
 
-          assertZIO(ElasticRequest.createIndex(index, None).execute)(equalTo(CreationOutcome.Created))
+          assertZIO(ElasticRequest.createIndex(name = index, definition = None).execute)(
+            equalTo(CreationOutcome.Created)
+          )
         }
       },
       suite("creating or updating request") {
@@ -168,7 +162,9 @@ object WiremockSpec extends ZIOSpecDefault {
               .build
           )
 
-          assertZIO(ElasticRequest.exists(index, DocumentId("example-id")).routing(Routing("routing")).execute)(isTrue)
+          assertZIO(
+            ElasticRequest.exists(index = index, id = DocumentId("example-id")).routing(Routing("routing")).execute
+          )(isTrue)
         }
       },
       suite("getting by id request") {
@@ -241,8 +237,15 @@ object WiremockSpec extends ZIOSpecDefault {
       }
     ).provideShared(elasticsearchWireMockLayer) @@
       beforeAll(ZIO.attempt(wireMockServer.start())) @@
-      afterAll(ZIO.attempt(wireMockServer.stop()).orDie) @@
-      nondeterministic
+      afterAll(ZIO.attempt(wireMockServer.stop()).orDie)
+
+  private val index: IndexName = IndexName("organization")
+
+  private val elasticsearchWireMockLayer: ZLayer[Any, Throwable, ElasticExecutor] =
+    HttpClientZioBackend.layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", 5700)) >>> ElasticExecutor.live)
+
+  private val wireMockPort   = 5700
+  private val wireMockServer = new WireMockServer(wireMockPort)
 }
 
 private final case class GitHubRepo(
