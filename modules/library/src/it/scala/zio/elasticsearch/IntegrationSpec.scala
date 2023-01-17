@@ -10,6 +10,7 @@ import zio.test.TestAspect.beforeAll
 import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
 
 trait IntegrationSpec extends ZIOSpecDefault {
+
   val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
     HttpClientZioBackend.layer() >>> ElasticExecutor.local
 

@@ -16,6 +16,8 @@ import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
 import zio.{Task, ZIO}
 
+import scala.collection.immutable.{Map => ScalaMap}
+
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
 
@@ -38,8 +40,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
     val uri = uri"${config.uri}/${r.index}/$Doc"
-      .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
       request
@@ -65,8 +66,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateWithId(r: CreateWithIdRequest): Task[CreationOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(
       request
@@ -98,8 +98,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateOrUpdate(r: CreateOrUpdateRequest): Task[Unit] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -111,8 +110,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeDeleteById(r: DeleteByIdRequest): Task[DeletionOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParam("routing", r.routing.map(Routing.unwrap))
-      .withParam("refresh", r.refresh.toString)
+      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
@@ -124,7 +122,8 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$DeleteByQuery".withParam("refresh", r.refresh.toString)
+    val uri =
+      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(getQueryParams(List(("refresh", Some(r.refresh)))))
 
     sendRequest(
       request
@@ -150,7 +149,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeExists(r: ExistsRequest): Task[Boolean] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
@@ -162,7 +161,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeGetById(r: GetByIdRequest): Task[Option[Document]] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParam("routing", r.routing.map(Routing.unwrap))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticGetResponse](
       request
@@ -225,6 +224,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     new ElasticException(
       s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
     )
+
+  private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
+    parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
 }
 
