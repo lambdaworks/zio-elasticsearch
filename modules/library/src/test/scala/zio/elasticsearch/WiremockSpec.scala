@@ -6,7 +6,7 @@ import zio.test.ZIOSpecDefault
 import zio.{TaskLayer, ZLayer}
 
 trait WiremockSpec extends ZIOSpecDefault {
-  val index: IndexName = IndexName("organization")
+  val index: IndexName = IndexName("repositories")
 
   val repo: GitHubRepo =
     GitHubRepo(id = Some("123"), organization = "lambdaworks.io", name = "LambdaWorks", stars = 10, forks = 10)

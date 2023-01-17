@@ -15,7 +15,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("creating document request") {
         test("return document ID") {
           server.addStubMapping(
-            post(urlEqualTo("/organization/_doc?refresh=true&routing=routing"))
+            post(urlEqualTo("/repositories/_doc?refresh=true&routing=routing"))
               .willReturn(
                 aResponse
                   .withBody("""
@@ -39,7 +39,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("creating request with given ID") {
         test("return Created outcome") {
           server.addStubMapping(
-            post(urlEqualTo("/organization/_create/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
+            post(urlEqualTo("/repositories/_create/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Created.code))
               .build
           )
@@ -56,7 +56,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("creating index request") {
         test("return Created outcome") {
           server.addStubMapping(
-            put(urlEqualTo("/organization"))
+            put(urlEqualTo("/repositories"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
           )
@@ -69,7 +69,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("creating or updating request") {
         test("successfully create or update document") {
           server.addStubMapping(
-            put(urlEqualTo("/organization/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
+            put(urlEqualTo("/repositories/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Created.code))
               .build
           )
@@ -86,7 +86,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("deleting by ID request") {
         test("return Deleted outcome") {
           server.addStubMapping(
-            delete(urlEqualTo("/organization/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
+            delete(urlEqualTo("/repositories/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
           )
@@ -103,7 +103,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("deleting by query request") {
         test("return Deleted outcome") {
           server.addStubMapping(
-            post(urlEqualTo("/organization/_delete_by_query?refresh=true"))
+            post(urlEqualTo("/repositories/_delete_by_query?refresh=true"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
           )
@@ -116,7 +116,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("deleting index request") {
         test("return Deleted outcome") {
           server.addStubMapping(
-            delete(urlEqualTo("/organization"))
+            delete(urlEqualTo("/repositories"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
           )
@@ -127,7 +127,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("exists request") {
         test("return true") {
           server.addStubMapping(
-            head(urlEqualTo("/organization/_doc/example-id?routing=routing"))
+            head(urlEqualTo("/repositories/_doc/example-id?routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
           )
@@ -138,9 +138,9 @@ object HttpElasticExecutorSpec extends WiremockSpec {
         }
       },
       suite("getting by ID request") {
-        test("successfully return Document") {
+        test("successfully return document") {
           server.addStubMapping(
-            get(urlEqualTo("/organization/_doc/V4x8q4UB3agN0z75fv5r?routing=routing"))
+            get(urlEqualTo("/repositories/_doc/V4x8q4UB3agN0z75fv5r?routing=routing"))
               .willReturn(
                 aResponse
                   .withStatus(StatusCode.Ok.code)
@@ -173,7 +173,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("getting by query request") {
         test("successfully return documents") {
           server.addStubMapping(
-            post(urlEqualTo("/organization/_search"))
+            post(urlEqualTo("/repositories/_search"))
               .willReturn(
                 aResponse
                   .withStatus(StatusCode.Ok.code)
@@ -196,7 +196,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
                       |    "max_score": 1,
                       |    "hits": [
                       |      {
-                      |        "_index": "organization",
+                      |        "_index": "repositories",
                       |        "_type": "type",
                       |        "_id": "111",
                       |        "_score": 1,
