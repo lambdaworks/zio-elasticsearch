@@ -1,6 +1,5 @@
 package zio.elasticsearch
 
-import scala.collection.immutable.{Map => ScalaMap}
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
@@ -16,6 +15,7 @@ import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
 import zio.{Task, ZIO}
+import scala.collection.immutable.{Map => ScalaMap}
 
 private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {

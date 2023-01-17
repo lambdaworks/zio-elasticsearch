@@ -18,7 +18,10 @@ object HttpElasticExecutorSpec extends WiremockSpec {
             post(urlEqualTo("/organization/_doc?refresh=true&routing=routing"))
               .willReturn(
                 aResponse
-                  .withBody("{\"_id\": \"V4x8q4UB3agN0z75fv5r\"}")
+                  .withBody("""
+                              |{
+                              |  "_id": "V4x8q4UB3agN0z75fv5r"
+                              |}""".stripMargin)
                   .withStatus(StatusCode.Created.code)
               )
               .build
@@ -26,7 +29,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
           assertZIO(
             ElasticRequest
-              .create[GitHubRepo](index = index, doc = gitHubRepo)
+              .create[GitHubRepo](index = index, doc = repo)
               .routing(Routing("routing"))
               .refresh(value = true)
               .execute
@@ -43,7 +46,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
           assertZIO(
             ElasticRequest
-              .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = gitHubRepo)
+              .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
               .refresh(value = true)
               .execute
@@ -73,7 +76,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
           assertZIO(
             ElasticRequest
-              .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = gitHubRepo)
+              .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
               .refresh(value = true)
               .execute
@@ -163,7 +166,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
               .routing(Routing("routing"))
               .execute
           )(
-            isSome(equalTo(gitHubRepo))
+            isSome(equalTo(repo))
           )
         }
       },
@@ -214,7 +217,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
           )
 
           assertZIO(ElasticRequest.search[GitHubRepo](index = index, query = matchAll()).execute)(
-            equalTo(List(gitHubRepo))
+            equalTo(List(repo))
           )
         }
       }
