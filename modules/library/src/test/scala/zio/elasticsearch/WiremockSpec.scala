@@ -2,8 +2,8 @@ package zio.elasticsearch
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import sttp.client3.httpclient.zio.HttpClientZioBackend
-import zio.{TaskLayer, ZLayer}
 import zio.test.ZIOSpecDefault
+import zio.{TaskLayer, ZLayer}
 
 trait WiremockSpec extends ZIOSpecDefault {
   val index: IndexName = IndexName("organization")
