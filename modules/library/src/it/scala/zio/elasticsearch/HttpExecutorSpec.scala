@@ -224,6 +224,17 @@ object HttpExecutorSpec extends IntegrationSpec {
             assertZIO(ElasticRequest.deleteByQuery(missingIndex, matchAll()).execute)(equalTo(NotFound))
           }
         }
+      ),
+      suite("bulk query")(
+        test("successfully execute bulk query") {
+          checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer, c2) =>
+            val q1                                                             = ElasticRequest.create[CustomerDocument](index, documentId, customer)
+            val q2                                                             = ElasticRequest.create[CustomerDocument](index, c2)
+            val bulk: ElasticRequest[CreationOutcome, ElasticRequestType.Bulk] = ElasticRequest.bulk(q1, q2)()
+
+            assertZIO(bulk.execute)(equalTo(Created))
+          }
+        } @@ shrinks(0) @@ after(ElasticRequest.deleteByQuery(index, matchAll()).execute)
       )
     ).provideShared(elasticsearchLayer) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests
 

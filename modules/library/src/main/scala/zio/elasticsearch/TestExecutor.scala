@@ -14,6 +14,8 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
 
   override def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
+      case BulkRequest(_, _, _, _) =>
+        fakeBulk()
       case CreateRequest(index, document, _, _) =>
         fakeCreate(index, document)
       case CreateWithIdRequest(index, id, document, _, _) =>
@@ -37,6 +39,9 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
       case map @ Map(_, _) =>
         execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
+
+  private def fakeBulk(): Task[CreationOutcome] =
+    ZIO.succeed(Created)
 
   private def fakeCreate(index: IndexName, document: Document): Task[DocumentId] =
     for {

@@ -31,10 +31,19 @@ object ElasticRequest {
 
   import ElasticRequestType._
 
-  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
+  def bulk(bulkable: ElasticRequest[_, _] with Bulkable*)(
+    defaultIndexName: Option[IndexName] = None
+  ): ElasticRequest[CreationOutcome, Bulk] =
+    BulkRequest(defaultIndexName, bulkable.map(_.bulkable()).toList)
+
+  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] with Bulkable =
     CreateRequest(index, Document.from(doc))
 
-  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
+  def create[A: Schema](
+    index: IndexName,
+    id: DocumentId,
+    doc: A
+  ): ElasticRequest[CreationOutcome, CreateWithId] with Bulkable =
     CreateWithIdRequest(index, id, Document.from(doc))
 
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex] =
@@ -79,12 +88,33 @@ object ElasticRequest {
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
 
+  private[elasticsearch] final case class BulkRequest(
+    index: Option[IndexName],
+    requests: List[Bulkable],
+    refresh: Boolean = false,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[CreationOutcome, Bulk] {
+    lazy val body: String = requests.map {
+      case CreateRequest(index, document, _, _) =>
+        s"""
+           |{ "create" : { "_index" : "$index" } }
+           |${document.json}""".stripMargin
+      case CreateWithIdRequest(index, id, document, _, _) =>
+        s"""
+           |{ "create" : { "_index" : "$index", "_id" : "$id" } }
+           |${document.json}""".stripMargin
+    }.mkString("", "", "\n")
+  }
+
   private[elasticsearch] final case class CreateRequest(
     index: IndexName,
     document: Document,
     refresh: Boolean = false,
     routing: Option[Routing] = None
   ) extends ElasticRequest[DocumentId, Create]
+      with Bulkable { self =>
+    override def bulkable(): Bulkable = self.asInstanceOf[CreateRequest]
+  }
 
   private[elasticsearch] final case class CreateWithIdRequest(
     index: IndexName,
@@ -93,6 +123,9 @@ object ElasticRequest {
     refresh: Boolean = false,
     routing: Option[Routing] = None
   ) extends ElasticRequest[CreationOutcome, CreateWithId]
+      with Bulkable { self =>
+    override def bulkable(): Bulkable = self.asInstanceOf[CreateWithIdRequest]
+  }
 
   private[elasticsearch] final case class CreateIndexRequest(
     name: IndexName,
@@ -146,11 +179,17 @@ object ElasticRequest {
     request: ElasticRequest[A, ERT],
     mapper: A => Either[DecodingException, B]
   ) extends ElasticRequest[B, ERT]
+
 }
 
 sealed trait ElasticRequestType
 
+sealed trait Bulkable {
+  def bulkable(): Bulkable
+}
+
 object ElasticRequestType {
+  trait Bulk          extends ElasticRequestType
   trait CreateIndex   extends ElasticRequestType
   trait Create        extends ElasticRequestType
   trait CreateWithId  extends ElasticRequestType
