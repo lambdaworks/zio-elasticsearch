@@ -3,11 +3,17 @@ package example
 import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import sttp.client3.httpclient.zio.HttpClientZioBackend
+import zio.ZIO.collectAll
 import zio._
 import zio.config.getConfig
-import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
+import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Routing}
 import zio.http.{Server, ServerConfig}
+import zio.json.DecoderOps
+import zio.prelude.Newtype.unsafeWrap
 
+import java.net.URI
+import java.net.http.{HttpClient, HttpRequest, HttpResponse}
+import java.nio.charset.StandardCharsets
 import scala.io.Source
 
 object Main extends ZIOAppDefault {
@@ -15,12 +21,38 @@ object Main extends ZIOAppDefault {
   override def run: Task[ExitCode] = {
     val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
 
-    (prepare *> runServer).provide(
+    (prepare *> insertInitialData() *> runServer).provide(
       AppConfig.live,
       elasticConfigLive,
       ElasticExecutor.live,
       HttpClientZioBackend.layer()
     )
+  }
+
+  private[this] def insertInitialData(): RIO[ElasticExecutor, List[Unit]] = {
+    val httpClient: HttpClient = HttpClient.newHttpClient
+
+    val request: HttpRequest =
+      HttpRequest.newBuilder.uri(URI.create("https://api.github.com/orgs/zio/repos?type=all&per_page=100")).GET.build
+    val response: HttpResponse[String] =
+      httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+
+    val initialData =
+      response.body.fromJson[Array[GitHubRepoResponse]].fold(_ => List(), data => data.map(GitHubRepo(_)).toList)
+
+    collectAll(
+      initialData.map(repository =>
+        for {
+          _ <- ZIO.logInfo(s"Adding GitHub repository '${repository.name}'...")
+          _ <-
+            ElasticRequest
+              .create[GitHubRepo](Index, repository)
+              .routing(unsafeWrap(Routing)(repository.organization))
+              .execute
+        } yield ()
+      )
+    )
+
   }
 
   private[this] def prepare: RIO[ElasticExecutor, Unit] = {
