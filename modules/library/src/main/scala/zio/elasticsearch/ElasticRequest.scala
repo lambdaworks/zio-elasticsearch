@@ -111,20 +111,20 @@ object ElasticRequest {
         case DeleteByIdRequest(index, id, _, _) =>
           s"""
              |{ "delete" : { "_index" : "$index", "_id" : "$id" } }""".stripMargin
-        case _ => ""
+        case other => throw new IllegalStateException(s"$other should not be part of bulk request!")
       }
     }.mkString("", "", "\n")
   }
 
   object BulkRequest {
-    def of(requests: BulkableRequest*): BulkRequest = BulkRequest(Chunk.from(requests))
+    def of(requests: BulkableRequest*): BulkRequest = BulkRequest(Chunk.fromIterable(requests))
   }
 
   private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
 
   object BulkableRequest {
     implicit def toBulkable[ERT <: ElasticRequestType](req: ElasticRequest[_, ERT])(implicit
-      ev: ERT <:< BulkableRequestType
+      ev: ERT <:< BulkableRequestType // scalafix:ok
     ): BulkableRequest =
       BulkableRequest(req)
   }

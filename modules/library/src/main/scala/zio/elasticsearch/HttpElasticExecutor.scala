@@ -48,7 +48,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     sendRequest(
       request.post(uri).contentType(ApplicationJson).body(r.body)
     ).flatMap { response =>
-      println(response)
       response.code match {
         case HttpOk => ZIO.succeed(Created)
         case _      => ZIO.fail(createElasticException(response))
