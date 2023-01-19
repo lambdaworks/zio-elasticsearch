@@ -4,8 +4,8 @@ import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import example.external.github.RepoFetcher
 import sttp.client3.httpclient.zio.HttpClientZioBackend
-import zio._
 import zio.ZIO.collectAll
+import zio._
 import zio.config.getConfig
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
 import zio.http.{Server, ServerConfig}
