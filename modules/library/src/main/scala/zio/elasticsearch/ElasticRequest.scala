@@ -103,23 +103,27 @@ object ElasticRequest {
     lazy val body: String = requests.map { r =>
       r.request match {
         case CreateRequest(index, document, _, _) =>
-          s"""
-             |{ "create" : { "_index" : "$index" } }
-             |${document.json}""".stripMargin
+          Seq(
+            s"""{ "create" : { "_index" : "$index" } }""",
+            s"""${document.json}"""
+          )
         case CreateWithIdRequest(index, id, document, _, _) =>
-          s"""
-             |{ "create" : { "_index" : "$index", "_id" : "$id" } }
-             |${document.json}""".stripMargin
+          Seq(
+            s"""{ "create" : { "_index" : "$index", "_id" : "$id" } }""",
+            s"""${document.json}"""
+          )
         case CreateOrUpdateRequest(index, id, document, _, _) =>
-          s"""
-             |{ "index" : { "_index" : "$index", "_id" : "$id" } }
-             |${document.json}""".stripMargin
+          Seq(
+            s"""{ "index" : { "_index" : "$index", "_id" : "$id" } }""",
+            s"""${document.json}"""
+          )
         case DeleteByIdRequest(index, id, _, _) =>
-          s"""
-             |{ "delete" : { "_index" : "$index", "_id" : "$id" } }""".stripMargin
+          Seq(
+            s"""{ "delete" : { "_index" : "$index", "_id" : "$id" } }"""
+          )
         case other => throw new IllegalStateException(s"$other should not be part of bulk request!")
       }
-    }.mkString("", "", "\n")
+    }.flatten.mkString("", "\n", "\n")
   }
 
   object BulkRequest {
