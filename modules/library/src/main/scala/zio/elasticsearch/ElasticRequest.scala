@@ -7,6 +7,7 @@ import zio.schema.Schema
 import zio.schema.codec.JsonCodec.JsonDecoder
 import zio.{Chunk, RIO, ZIO}
 
+import scala.annotation.unused
 import scala.language.implicitConversions
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
@@ -124,7 +125,7 @@ object ElasticRequest {
 
   object BulkableRequest {
     implicit def toBulkable[ERT <: ElasticRequestType](req: ElasticRequest[_, ERT])(implicit
-      ev: ERT <:< BulkableRequestType // scalafix:ok
+      @unused ev: ERT <:< BulkableRequestType
     ): BulkableRequest =
       BulkableRequest(req)
   }
