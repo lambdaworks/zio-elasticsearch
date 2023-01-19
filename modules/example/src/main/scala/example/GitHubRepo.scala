@@ -1,10 +1,10 @@
 package example
 
 import example.external.github.model.RepoResponse
-import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
+import zio.json.{DeriveJsonEncoder, JsonEncoder}
 import zio.schema.{DeriveSchema, Schema}
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime, ZoneId}
 
 final case class GitHubRepo(
   id: Option[String],
@@ -25,14 +25,12 @@ object GitHubRepo {
       name = response.name,
       url = response.url,
       description = response.description,
-      lastCommitAt = LocalDateTime.parse(response.updatedAt.dropRight(1)),
+      lastCommitAt = LocalDateTime.ofInstant(Instant.parse(response.updatedAt), ZoneId.systemDefault()),
       stars = response.stars,
       forks = response.forks
     )
 
   implicit val schema: Schema[GitHubRepo] = DeriveSchema.gen[GitHubRepo]
-
-  implicit val decoder: JsonDecoder[GitHubRepo] = DeriveJsonDecoder.gen[GitHubRepo]
 
   implicit val encoder: JsonEncoder[GitHubRepo] = DeriveJsonEncoder.gen[GitHubRepo]
 }

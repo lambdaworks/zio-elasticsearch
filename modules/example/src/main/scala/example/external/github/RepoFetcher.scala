@@ -2,25 +2,21 @@ package example.external.github
 
 import example.GitHubRepo
 import example.external.github.model.RepoResponse
+import sttp.client3.{SttpBackend, UriContext, basicRequest}
+import zio.{RIO, Task, ZIO}
 import zio.json.DecoderOps
-
-import java.net.URI
-import java.net.http.{HttpClient, HttpRequest, HttpResponse}
-import java.nio.charset.StandardCharsets
 
 object RepoFetcher {
 
-  def fetchAllByOrganization(organization: String): List[GitHubRepo] = {
-    val httpClient: HttpClient = HttpClient.newHttpClient
-
-    val request: HttpRequest =
-      HttpRequest.newBuilder
-        .uri(URI.create(s"https://api.github.com/orgs/$organization/repos?type=all&per_page=100"))
-        .GET
-        .build
-    val response: HttpResponse[String] =
-      httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
-
-    response.body.fromJson[Array[RepoResponse]].fold(_ => List(), _.map(GitHubRepo.fromResponse).toList)
-  }
+  def fetchAllByOrganization(
+    organization: String,
+    limit: Int = 100
+  ): RIO[SttpBackend[Task, Any], List[GitHubRepo]] =
+    for {
+      sttpClient <- ZIO.service[SttpBackend[Task, Any]]
+      req         = basicRequest.get(uri"https://api.github.com/orgs/$organization/repos?per_page=$limit")
+      res        <- req.send(sttpClient)
+    } yield res.body.toOption
+      .map(_.fromJson[Array[RepoResponse]].fold(_ => Nil, _.map(GitHubRepo.fromResponse).toList))
+      .getOrElse(Nil)
 }

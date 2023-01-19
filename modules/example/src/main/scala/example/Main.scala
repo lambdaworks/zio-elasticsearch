@@ -3,8 +3,8 @@ package example
 import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import example.external.github.RepoFetcher
+import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
-import zio.ZIO.collectAll
 import zio._
 import zio.config.getConfig
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
@@ -17,7 +17,7 @@ object Main extends ZIOAppDefault {
   override def run: Task[ExitCode] = {
     val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
 
-    (prepare *> populate *> runServer).provide(
+    (prepare *> runServer).provide(
       AppConfig.live,
       elasticConfigLive,
       ElasticExecutor.live,
@@ -25,20 +25,7 @@ object Main extends ZIOAppDefault {
     )
   }
 
-  private[this] def populate: RIO[ElasticExecutor, Unit] = {
-    val repositories = RepoFetcher.fetchAllByOrganization("zio")
-
-    collectAll(
-      repositories.map(repository =>
-        for {
-          _ <- ZIO.logInfo(s"Adding GitHub repository '${repository.name}'...")
-          _ <- RepositoriesElasticsearch.create(repository)
-        } yield ()
-      )
-    ).unit.provideSome(RepositoriesElasticsearch.live)
-  }
-
-  private[this] def prepare: RIO[ElasticExecutor, Unit] = {
+  private[this] def prepare: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] = {
     val deleteIndex: RIO[ElasticExecutor, Unit] =
       for {
         _ <- ZIO.logInfo(s"Deleting index '$Index'...")
@@ -52,7 +39,20 @@ object Main extends ZIOAppDefault {
         _       <- ElasticRequest.createIndex(Index, Some(mapping)).execute
       } yield ()
 
-    deleteIndex *> createIndex
+    val populate: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] =
+      (for {
+        repositories <- RepoFetcher.fetchAllByOrganization("zio")
+        _ <- ZIO.collectAll {
+               repositories.map { repository =>
+                 for {
+                   _ <- ZIO.logInfo(s"Adding GitHub repository '${repository.name}'...")
+                   _ <- RepositoriesElasticsearch.create(repository)
+                 } yield ()
+               }
+             }
+      } yield ()).provideSome(RepositoriesElasticsearch.live)
+
+    deleteIndex *> createIndex *> populate
   }
 
   private[this] def runServer: RIO[HttpConfig with ElasticExecutor, ExitCode] = {
