@@ -231,13 +231,15 @@ object HttpExecutorSpec extends IntegrationSpec {
             (firstDocId, secondDocId, thirdDocId, customer) =>
               val result =
                 for {
-                  _ <- ElasticRequest.create[CustomerDocument](index, firstDocId, customer.copy(id = "oldId")).execute
                   _ <- ElasticRequest
-                         .create[CustomerDocument](index, secondDocId, customer.copy(id = "abcdefg"))
+                         .create[CustomerDocument](index, firstDocId, customer.copy(id = "randomIdString"))
+                         .execute
+                  _ <- ElasticRequest
+                         .create[CustomerDocument](index, secondDocId, customer.copy(id = "randomIdString2"))
                          .refreshTrue
                          .execute
                   q1   = ElasticRequest.create[CustomerDocument](index, thirdDocId, customer)
-                  q2   = ElasticRequest.create[CustomerDocument](index, customer.copy(id = "randomId"))
+                  q2   = ElasticRequest.create[CustomerDocument](index, customer.copy(id = "randomIdString3"))
                   q3   = ElasticRequest.upsert[CustomerDocument](index, firstDocId, customer.copy(balance = 3000))
                   q4   = ElasticRequest.deleteById(index, secondDocId)
                   res <- ElasticRequest.bulk(q1, q2, q3, q4).execute

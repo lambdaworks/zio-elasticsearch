@@ -40,11 +40,7 @@ object ElasticRequest {
   def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
     CreateRequest(index, Document.from(doc))
 
-  def create[A: Schema](
-    index: IndexName,
-    id: DocumentId,
-    doc: A
-  ): ElasticRequest[CreationOutcome, CreateWithId] =
+  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
     CreateWithIdRequest(index, id, Document.from(doc))
 
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex] =
@@ -89,6 +85,15 @@ object ElasticRequest {
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
 
+  private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
+
+  object BulkableRequest {
+    implicit def toBulkable[ERT <: ElasticRequestType](req: ElasticRequest[_, ERT])(implicit
+      @unused ev: ERT <:< BulkableRequestType
+    ): BulkableRequest =
+      BulkableRequest(req)
+  }
+
   private[elasticsearch] final case class BulkRequest(
     requests: Chunk[BulkableRequest],
     index: Option[IndexName] = None,
@@ -119,15 +124,6 @@ object ElasticRequest {
 
   object BulkRequest {
     def of(requests: BulkableRequest*): BulkRequest = BulkRequest(Chunk.fromIterable(requests))
-  }
-
-  private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
-
-  object BulkableRequest {
-    implicit def toBulkable[ERT <: ElasticRequestType](req: ElasticRequest[_, ERT])(implicit
-      @unused ev: ERT <:< BulkableRequestType
-    ): BulkableRequest =
-      BulkableRequest(req)
   }
 
   private[elasticsearch] final case class CreateRequest(
