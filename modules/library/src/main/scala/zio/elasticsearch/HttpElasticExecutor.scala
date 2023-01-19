@@ -40,10 +40,10 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeBulk(r: BulkRequest): Task[CreationOutcome] = {
-    val uri = r.index match {
+    val uri = (r.index match {
       case Some(index) => uri"${config.uri}/$index/$Bulk"
       case None        => uri"${config.uri}/$Bulk"
-    }
+    }).withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
 
     sendRequest(
       request.post(uri).contentType(ApplicationJson).body(r.body)

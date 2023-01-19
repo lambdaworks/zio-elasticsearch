@@ -227,14 +227,25 @@ object HttpExecutorSpec extends IntegrationSpec {
       ),
       suite("bulk query")(
         test("successfully execute bulk query") {
-          checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer, c2) =>
-            val q1                                                             = ElasticRequest.create[CustomerDocument](index, documentId, customer)
-            val q2                                                             = ElasticRequest.create[CustomerDocument](index, c2)
-            val bulk: ElasticRequest[CreationOutcome, ElasticRequestType.Bulk] = ElasticRequest.bulk(q1, q2)()
+          checkOnce(genDocumentId, genDocumentId, genDocumentId, genCustomer) {
+            (firstDocId, secondDocId, thirdDocId, customer) =>
+              val result =
+                for {
+                  _ <- ElasticRequest.create[CustomerDocument](index, firstDocId, customer.copy(id = "oldId")).execute
+                  _ <- ElasticRequest
+                         .create[CustomerDocument](index, secondDocId, customer.copy(id = "abcdefg"))
+                         .refreshTrue
+                         .execute
+                  q1   = ElasticRequest.create[CustomerDocument](index, thirdDocId, customer)
+                  q2   = ElasticRequest.create[CustomerDocument](index, customer.copy(id = "randomId"))
+                  q3   = ElasticRequest.upsert[CustomerDocument](index, firstDocId, customer.copy(balance = 3000))
+                  q4   = ElasticRequest.deleteById(index, secondDocId)
+                  res <- ElasticRequest.bulk(q1, q2, q3, q4).execute
+                } yield res
 
-            assertZIO(bulk.execute)(equalTo(Created))
+              assertZIO(result)(equalTo(Created))
           }
-        } @@ shrinks(0) @@ after(ElasticRequest.deleteByQuery(index, matchAll()).execute)
+        }
       )
     ).provideShared(elasticsearchLayer) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests
 
