@@ -3,8 +3,8 @@ package example.external.github
 import example.GitHubRepo
 import example.external.github.model.RepoResponse
 import sttp.client3.{SttpBackend, UriContext, basicRequest}
-import zio.{RIO, Task, ZIO}
 import zio.json.DecoderOps
+import zio.{RIO, Task, ZIO}
 
 object RepoFetcher {
 
