@@ -25,6 +25,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   override def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
+      case r: BulkRequest           => executeBulk(r)
       case r: CreateRequest         => executeCreate(r)
       case r: CreateWithIdRequest   => executeCreateWithId(r)
       case r: CreateIndexRequest    => executeCreateIndex(r)
@@ -37,6 +38,22 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: GetByQueryRequest     => executeGetByQuery(r)
       case map @ Map(_, _)          => execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
+
+  private def executeBulk(r: BulkRequest): Task[Unit] = {
+    val uri = (r.index match {
+      case Some(index) => uri"${config.uri}/$index/$Bulk"
+      case None        => uri"${config.uri}/$Bulk"
+    }).withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
+
+    sendRequest(
+      request.post(uri).contentType(ApplicationJson).body(r.body)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk => ZIO.unit
+        case _      => ZIO.fail(createElasticException(response))
+      }
+    }
+  }
 
   private def executeCreate(r: CreateRequest): Task[DocumentId] = {
     val uri = uri"${config.uri}/${r.index}/$Doc"
@@ -232,9 +249,10 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
 private[elasticsearch] object HttpElasticExecutor {
 
-  private final val Doc           = "_doc"
+  private final val Bulk          = "_bulk"
   private final val Create        = "_create"
   private final val DeleteByQuery = "_delete_by_query"
+  private final val Doc           = "_doc"
   private final val Search        = "_search"
 
   def apply(config: ElasticConfig, client: SttpBackend[Task, Any]) =

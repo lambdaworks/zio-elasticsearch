@@ -5,7 +5,10 @@ import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.prelude._
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec.JsonDecoder
-import zio.{RIO, ZIO}
+import zio.{Chunk, RIO, ZIO}
+
+import scala.annotation.unused
+import scala.language.implicitConversions
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
@@ -30,6 +33,9 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 object ElasticRequest {
 
   import ElasticRequestType._
+
+  def bulk(requests: BulkableRequest*): ElasticRequest[Unit, Bulk] =
+    BulkRequest.of(requests: _*)
 
   def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
     CreateRequest(index, Document.from(doc))
@@ -78,6 +84,45 @@ object ElasticRequest {
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     CreateOrUpdateRequest(index, id, Document.from(doc))
+
+  private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
+
+  object BulkableRequest {
+    implicit def toBulkable[ERT <: ElasticRequestType](req: ElasticRequest[_, ERT])(implicit
+      @unused ev: ERT <:< BulkableRequestType
+    ): BulkableRequest =
+      BulkableRequest(req)
+  }
+
+  private[elasticsearch] final case class BulkRequest(
+    requests: Chunk[BulkableRequest],
+    index: Option[IndexName] = None,
+    refresh: Boolean = false,
+    routing: Option[Routing] = None
+  ) extends ElasticRequest[Unit, Bulk] {
+    lazy val body: String = requests.flatMap { r =>
+      // We use @unchecked to ignore 'pattern match not exhaustive' error since we guarantee that it will not happen
+      // because these are only Bulkable Requests and other matches will not occur.
+      (r.request: @unchecked) match {
+        case CreateRequest(index, document, _, _) =>
+          val actionAndMeta = s"""{ "create" : { "_index" : "$index" } }"""
+          List(actionAndMeta, document.json)
+        case CreateWithIdRequest(index, id, document, _, _) =>
+          val actionAndMeta = s"""{ "create" : { "_index" : "$index", "_id" : "$id" } }"""
+          List(actionAndMeta, document.json)
+        case CreateOrUpdateRequest(index, id, document, _, _) =>
+          val actionAndMeta = s"""{ "index" : { "_index" : "$index", "_id" : "$id" } }"""
+          List(actionAndMeta, document.json)
+        case DeleteByIdRequest(index, id, _, _) =>
+          val actionAndMeta = s"""{ "delete" : { "_index" : "$index", "_id" : "$id" } }"""
+          List(actionAndMeta)
+      }
+    }.mkString(start = "", sep = "\n", end = "\n")
+  }
+
+  object BulkRequest {
+    def of(requests: BulkableRequest*): BulkRequest = BulkRequest(Chunk.fromIterable(requests))
+  }
 
   private[elasticsearch] final case class CreateRequest(
     index: IndexName,
@@ -146,21 +191,25 @@ object ElasticRequest {
     request: ElasticRequest[A, ERT],
     mapper: A => Either[DecodingException, B]
   ) extends ElasticRequest[B, ERT]
+
 }
 
 sealed trait ElasticRequestType
 
+sealed trait BulkableRequestType extends ElasticRequestType
+
 object ElasticRequestType {
+  trait Bulk          extends ElasticRequestType
   trait CreateIndex   extends ElasticRequestType
-  trait Create        extends ElasticRequestType
-  trait CreateWithId  extends ElasticRequestType
-  trait DeleteById    extends ElasticRequestType
+  trait Create        extends BulkableRequestType
+  trait CreateWithId  extends BulkableRequestType
+  trait DeleteById    extends BulkableRequestType
   trait DeleteByQuery extends ElasticRequestType
   trait DeleteIndex   extends ElasticRequestType
   trait Exists        extends ElasticRequestType
   trait GetById       extends ElasticRequestType
   trait GetByQuery    extends ElasticRequestType
-  trait Upsert        extends ElasticRequestType
+  trait Upsert        extends BulkableRequestType
 }
 
 sealed abstract class CreationOutcome
