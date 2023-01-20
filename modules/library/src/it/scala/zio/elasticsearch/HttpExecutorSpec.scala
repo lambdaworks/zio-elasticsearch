@@ -238,14 +238,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .create[CustomerDocument](index, secondDocId, customer.copy(id = "randomIdString2"))
                          .refreshTrue
                          .execute
-                  q1   = ElasticRequest.create[CustomerDocument](index, thirdDocId, customer)
-                  q2   = ElasticRequest.create[CustomerDocument](index, customer.copy(id = "randomIdString3"))
-                  q3   = ElasticRequest.upsert[CustomerDocument](index, firstDocId, customer.copy(balance = 3000))
-                  q4   = ElasticRequest.deleteById(index, secondDocId)
-                  res <- ElasticRequest.bulk(q1, q2, q3, q4).execute
+                  req1 = ElasticRequest.create[CustomerDocument](index, thirdDocId, customer)
+                  req2 = ElasticRequest.create[CustomerDocument](index, customer.copy(id = "randomIdString3"))
+                  req3 = ElasticRequest.upsert[CustomerDocument](index, firstDocId, customer.copy(balance = 3000))
+                  req4 = ElasticRequest.deleteById(index, secondDocId)
+                  res <- ElasticRequest.bulk(req1, req2, req3, req4).execute
                 } yield res
 
-              assertZIO(result)(equalTo(Created))
+              assertZIO(result)(equalTo(()))
           }
         }
       )

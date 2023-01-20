@@ -34,7 +34,7 @@ object ElasticRequest {
 
   import ElasticRequestType._
 
-  def bulk(requests: BulkableRequest*): BulkRequest =
+  def bulk(requests: BulkableRequest*): ElasticRequest[Unit, Bulk] =
     BulkRequest.of(requests: _*)
 
   def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
@@ -99,31 +99,25 @@ object ElasticRequest {
     index: Option[IndexName] = None,
     refresh: Boolean = false,
     routing: Option[Routing] = None
-  ) extends ElasticRequest[CreationOutcome, Bulk] {
-    lazy val body: String = requests.map { r =>
-      r.request match {
+  ) extends ElasticRequest[Unit, Bulk] {
+    lazy val body: String = requests.flatMap { r =>
+      // We use @unchecked to ignore 'pattern match not exhaustive' error since we guarantee that it will not happen
+      // because these are only Bulkable Requests and other matches will not occur.
+      (r.request: @unchecked) match {
         case CreateRequest(index, document, _, _) =>
-          Seq(
-            s"""{ "create" : { "_index" : "$index" } }""",
-            s"""${document.json}"""
-          )
+          val actionAndMeta = s"""{ "create" : { "_index" : "$index" } }"""
+          List(actionAndMeta, document.json)
         case CreateWithIdRequest(index, id, document, _, _) =>
-          Seq(
-            s"""{ "create" : { "_index" : "$index", "_id" : "$id" } }""",
-            s"""${document.json}"""
-          )
+          val actionAndMeta = s"""{ "create" : { "_index" : "$index", "_id" : "$id" } }"""
+          List(actionAndMeta, document.json)
         case CreateOrUpdateRequest(index, id, document, _, _) =>
-          Seq(
-            s"""{ "index" : { "_index" : "$index", "_id" : "$id" } }""",
-            s"""${document.json}"""
-          )
+          val actionAndMeta = s"""{ "index" : { "_index" : "$index", "_id" : "$id" } }"""
+          List(actionAndMeta, document.json)
         case DeleteByIdRequest(index, id, _, _) =>
-          Seq(
-            s"""{ "delete" : { "_index" : "$index", "_id" : "$id" } }"""
-          )
-        case other => throw new IllegalStateException(s"$other should not be part of bulk request!")
+          val actionAndMeta = s"""{ "delete" : { "_index" : "$index", "_id" : "$id" } }"""
+          List(actionAndMeta)
       }
-    }.flatten.mkString("", "\n", "\n")
+    }.mkString(start = "", sep = "\n", end = "\n")
   }
 
   object BulkRequest {

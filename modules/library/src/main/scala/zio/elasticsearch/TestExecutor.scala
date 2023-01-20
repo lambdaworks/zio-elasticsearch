@@ -6,7 +6,7 @@ import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
 import zio.stm.{STM, TMap, ZSTM}
-import zio.{Task, ZIO}
+import zio.{Chunk, Task, ZIO}
 
 private[elasticsearch] final case class TestExecutor private (data: TMap[IndexName, TMap[DocumentId, Document]])
     extends ElasticExecutor {
@@ -14,8 +14,8 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
 
   override def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
-      case BulkRequest(_, _, _, _) =>
-        fakeBulk()
+      case BulkRequest(requests, _, _, _) =>
+        fakeBulk(requests)
       case CreateRequest(index, document, _, _) =>
         fakeCreate(index, document)
       case CreateWithIdRequest(index, id, document, _, _) =>
@@ -40,8 +40,12 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
         execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
 
-  private def fakeBulk(): Task[CreationOutcome] =
-    ZIO.succeed(Created)
+  private def fakeBulk(requests: Chunk[BulkableRequest]): Task[Unit] =
+    ZIO.attempt {
+      requests.map(_.request).map { r =>
+        execute(r)
+      }
+    }.unit
 
   private def fakeCreate(index: IndexName, document: Document): Task[DocumentId] =
     for {
