@@ -7,7 +7,7 @@ import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.config.getConfig
-import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
+import zio.elasticsearch.{DocumentId, ElasticConfig, ElasticExecutor, ElasticRequest}
 import zio.http.{Server, ServerConfig}
 
 import scala.io.Source
@@ -42,11 +42,14 @@ object Main extends ZIOAppDefault {
     val populate: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] =
       (for {
         repositories <- RepoFetcher.fetchAllByOrganization("zio")
-        _ <- ZIO.collectAll {
+        _ <- ZIO.collectAllPar {
                repositories.map { repository =>
                  for {
                    _ <- ZIO.logInfo(s"Adding GitHub repository '${repository.name}'...")
-                   _ <- RepositoriesElasticsearch.create(repository)
+                   _ <- RepositoriesElasticsearch.create(
+                          id = DocumentId(s"${repository.organization}:${repository.name}"),
+                          repository = repository
+                        )
                  } yield ()
                }
              }

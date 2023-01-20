@@ -19,6 +19,13 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       res     <- executor.execute(req)
     } yield res
 
+  def create(id: DocumentId, repository: GitHubRepo): Task[Unit] =
+    for {
+      routing <- routingOf(repository.organization)
+      req      = ElasticRequest.create(Index, id, repository).routing(routing).refreshTrue
+      _       <- executor.execute(req)
+    } yield ()
+
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
@@ -45,6 +52,9 @@ object RepositoriesElasticsearch {
 
   def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, DocumentId] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
+
+  def create(id: DocumentId, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(id, repository))
 
   def upsert(id: String, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsert(id, repository))
