@@ -245,7 +245,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- ElasticRequest.bulk(req1, req2, req3, req4).execute
                 } yield res
 
-              assertZIO(result)(equalTo(()))
+              assertZIO(result)(isUnit)
           }
         }
       )
