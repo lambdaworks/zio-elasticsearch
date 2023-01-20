@@ -13,9 +13,9 @@ object RepoFetcher {
     limit: Int = 100
   ): RIO[SttpBackend[Task, Any], List[GitHubRepo]] =
     for {
-      sttpClient <- ZIO.service[SttpBackend[Task, Any]]
-      req         = basicRequest.get(uri"https://api.github.com/orgs/$organization/repos?per_page=$limit")
-      res        <- req.send(sttpClient)
+      client <- ZIO.service[SttpBackend[Task, Any]]
+      req     = basicRequest.get(uri"https://api.github.com/orgs/$organization/repos?per_page=$limit")
+      res    <- req.send(client)
     } yield res.body.toOption
       .map(_.fromJson[Array[RepoResponse]].fold(_ => Nil, _.map(GitHubRepo.fromResponse).toList))
       .getOrElse(Nil)
