@@ -15,26 +15,22 @@ object Annotation {
 sealed trait Selection[-From, +To] { self =>
 
   def /[To2](that: Selection[To, To2]): Selection[From, To2] = that match {
-    case Root               => self.asInstanceOf[Selection[From, To2]]
-    case Field(parent, key) => Field(self / parent, key)
+    case Field(parent, key) => Field(parent.map(self / _).orElse(Some(self)), key)
   }
 
   override def toString: String = {
     @tailrec
     def loop(selection: Selection[_, _], acc: List[String]): List[String] =
       selection match {
-        case Root                => acc
-        case Field(Root, name)   => acc :+ s"$name"
-        case Field(parent, name) => loop(parent, acc :+ s".$name")
+        case Field(None, name) => acc :+ s"$name"
+        case Field(Some(parent), name) => loop(parent, acc :+ s".$name")
       }
 
     loop(self, List.empty).reverse.mkString("")
   }
 }
 
-case object Root extends Selection[Any, Nothing]
-
-final case class Field[From, To](parent: Selection[From, _], name: String) extends Selection[From, To]
+final case class Field[From, To](parent: Option[Selection[From, _]], name: String) extends Selection[From, To]
 
 object ElasticQueryAccessorBuilder extends AccessorBuilder {
   override type Lens[_, From, To]   = Selection[From, To]
@@ -43,7 +39,7 @@ object ElasticQueryAccessorBuilder extends AccessorBuilder {
 
   override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[F, S, A] = {
     val label = Annotation.maybeName(term.annotations).getOrElse(term.name)
-    Field[S, A](Root, label)
+    Field[S, A](None, label)
   }
 
   override def makePrism[F, S, A](sum: Schema.Enum[S], term: Schema.Case[S, A]): Prism[F, S, A] = ()
