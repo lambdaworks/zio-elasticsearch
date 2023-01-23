@@ -3,7 +3,6 @@ package zio.elasticsearch
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.BulkRequest
-import zio.elasticsearch.HttpExecutorSpec.index
 import zio.elasticsearch.utils._
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
@@ -484,7 +483,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
-        test("properly encode Bulk query") {
+        test("properly encode Bulk request body") {
+          val index = IndexName("users")
           val customer =
             CustomerDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
           val req1 =
