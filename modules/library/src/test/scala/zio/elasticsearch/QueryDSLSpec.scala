@@ -1,12 +1,29 @@
 package zio.elasticsearch
 
 import zio.Scope
+import zio.elasticsearch.Annotation.name
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.utils._
+import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.equalTo
 import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
+
+  final case class Student(
+    name: String,
+    age: Int,
+    @name("is_employed")
+    isEmployed: Boolean
+  )
+
+  object Student {
+
+    implicit val schema: Schema.CaseClass3[String, Int, Boolean, Student] = DeriveSchema.gen[Student]
+
+    val (name, age, isEmployed) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  }
+
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
@@ -18,6 +35,20 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday")))
           assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true)))
           assert(queryLong)(equalTo(MatchQuery(field = "day_of_week", value = 1)))
+        },
+        test("successfully create type-safe Match query using `matches` method") {
+          val queryString = matches(field = Student.name, value = "James")
+          val queryInt    = matches(field = Student.age, value = 20)
+          val queryBool   = matches(field = Student.isEmployed, value = true)
+
+          assert(queryString)(equalTo(MatchQuery(field = "name", value = "Monday")))
+          assert(queryInt)(equalTo(MatchQuery(field = "age", value = 20)))
+          assert(queryBool)(equalTo(MatchQuery(field = "is_employed", value = true)))
+        },
+        test("successfully create type-safe Match query with multi-field using `matches` method") {
+          val query = matches(field = Student.name, multiField = Some("keyword"), value = "James")
+
+          assert(query)(equalTo(MatchQuery(field = "name.keyword", value = "James")))
         },
         test("successfully create `Must` query from two Match queries") {
           val query = boolQuery()
@@ -96,6 +127,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(ExistsQuery(field = "day_of_week")))
         },
+        test("successfully create Exists Query with accessor") {
+          val query = exists(field = Student.name)
+
+          assert(query)(equalTo(ExistsQuery(field = "name")))
+        },
+        test("successfully create Exists Query with accessor and multi-field") {
+          val query = exists(field = Student.name, multiField = Some("keyword"))
+
+          assert(query)(equalTo(ExistsQuery(field = "name.keyword")))
+        },
         test("successfully create MatchAll Query") {
           val query = matchAll()
 
@@ -110,6 +151,20 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val query = range(field = "customer_age")
 
           assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = Unbounded)))
+        },
+        test("successfully create empty type-safe Range Query") {
+          val queryString = range(field = Student.name)
+          val queryInt    = range(field = Student.age)
+          val queryBool   = range(field = Student.isEmployed)
+
+          assert(queryString)(equalTo(RangeQuery(field = "name", lower = Unbounded, upper = Unbounded)))
+          assert(queryInt)(equalTo(RangeQuery(field = "age", lower = Unbounded, upper = Unbounded)))
+          assert(queryBool)(equalTo(RangeQuery(field = "is_employed", lower = Unbounded, upper = Unbounded)))
+        },
+        test("successfully create empty type-safe Range Query with multi-field") {
+          val query = range(field = Student.name, multiField = Some("keyword"))
+
+          assert(query)(equalTo(RangeQuery(field = "name.keyword", lower = Unbounded, upper = Unbounded)))
         },
         test("successfully create Range Query with upper bound") {
           val query = range(field = "customer_age").lt(23)
@@ -150,6 +205,20 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday")))
           assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true)))
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
+        },
+        test("successfully create type-safe Term Query") {
+          val queryString = term(field = Student.name, value = "James")
+          val queryInt    = term(field = Student.age, value = 20)
+          val queryBool   = term(field = Student.isEmployed, value = true)
+
+          assert(queryString)(equalTo(TermQuery(field = "name", value = "Monday")))
+          assert(queryInt)(equalTo(TermQuery(field = "age", value = 20)))
+          assert(queryBool)(equalTo(TermQuery(field = "is_employed", value = true)))
+        },
+        test("successfully create type-safe Term Query with multi-field") {
+          val query = term(field = Student.name, multiField = Some("keyword"), value = "James")
+
+          assert(query)(equalTo(TermQuery(field = "name.keyword", value = "James")))
         },
         test("successfully create Term Query with boost") {
           val queryInt    = term(field = "day_of_week", value = 1).boost(1.0)
