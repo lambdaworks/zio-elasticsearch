@@ -92,6 +92,11 @@ object ElasticRequest {
       @unused ev: ERT <:< BulkableRequestType
     ): BulkableRequest =
       BulkableRequest(req)
+
+    implicit def toBulkableList[ERT <: ElasticRequestType](req: List[ElasticRequest[_, ERT]])(implicit
+      @unused ev: ERT <:< BulkableRequestType
+    ): List[BulkableRequest] =
+      req.map(BulkableRequest(_))
   }
 
   private[elasticsearch] final case class BulkRequest(

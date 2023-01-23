@@ -1,7 +1,6 @@
 package example
 
 import zio._
-import zio.elasticsearch.ElasticRequest.BulkableRequest
 import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticRequest, Routing}
 import zio.prelude.Newtype.unsafeWrap
 
@@ -27,11 +26,10 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
                 repositories.map { repository =>
                   for {
                     routing <- routingOf(repository.organization)
-                  } yield BulkableRequest(
-                    ElasticRequest
-                      .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
-                      .routing(routing)
-                  )
+                    req = ElasticRequest
+                            .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+                            .routing(routing)
+                  } yield req
                 }
               }
       bulkReq = ElasticRequest.bulk(reqs: _*)
