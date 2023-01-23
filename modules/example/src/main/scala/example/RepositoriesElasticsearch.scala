@@ -27,12 +27,11 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
                 repositories.map { repository =>
                   for {
                     routing <- routingOf(repository.organization)
-                    req = BulkableRequest.toBulkable(
-                            ElasticRequest
-                              .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
-                              .routing(routing)
-                          )
-                  } yield req
+                  } yield BulkableRequest(
+                    ElasticRequest
+                      .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+                      .routing(routing)
+                  )
                 }
               }
       bulkReq = ElasticRequest.bulk(reqs: _*)
