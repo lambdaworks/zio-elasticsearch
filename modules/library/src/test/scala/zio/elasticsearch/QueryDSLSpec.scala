@@ -3,6 +3,7 @@ package zio.elasticsearch
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.BulkRequest
+import zio.elasticsearch.UserDocument._
 import zio.elasticsearch.utils._
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
@@ -485,13 +486,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("properly encode Bulk request body") {
           val index = IndexName("users")
-          val customer =
-            CustomerDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
+          val user =
+            UserDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
           val req1 =
-            ElasticRequest.create[CustomerDocument](index, DocumentId("ETux1srpww2ObCx"), customer.copy(age = 39))
-          val req2 = ElasticRequest.create[CustomerDocument](index, customer)
+            ElasticRequest.create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
+          val req2 = ElasticRequest.create[UserDocument](index, user)
           val req3 =
-            ElasticRequest.upsert[CustomerDocument](index, DocumentId("yMyEG8iFL5qx"), customer.copy(balance = 3000))
+            ElasticRequest.upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
           val req4 = ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
           val bulkQuery = ElasticRequest.bulk(req1, req2, req3, req4) match {
             case r: BulkRequest => Some(r.body)
@@ -500,11 +501,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           val expectedBody =
             """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx" } }
-               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000,"age":39}
+               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":39}
                |{ "create" : { "_index" : "users" } }
-               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000,"age":24}
+               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":24}
                |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx" } }
-               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":3000,"age":24}
+               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":3000.0,"age":24}
                |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc" } }
                |""".stripMargin
 
