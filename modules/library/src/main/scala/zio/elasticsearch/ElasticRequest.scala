@@ -88,15 +88,15 @@ object ElasticRequest {
   private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
 
   object BulkableRequest {
-    implicit def toBulkable[ERT <: ElasticRequestType](req: ElasticRequest[_, ERT])(implicit
+    implicit def toBulkable[ERT <: ElasticRequestType](request: ElasticRequest[_, ERT])(implicit
       @unused ev: ERT <:< BulkableRequestType
     ): BulkableRequest =
-      BulkableRequest(req)
+      BulkableRequest(request)
 
-    implicit def toBulkableList[ERT <: ElasticRequestType](req: List[ElasticRequest[_, ERT]])(implicit
+    implicit def toBulkableList[ERT <: ElasticRequestType](requests: List[ElasticRequest[_, ERT]])(implicit
       @unused ev: ERT <:< BulkableRequestType
     ): List[BulkableRequest] =
-      req.map(BulkableRequest(_))
+      requests.map(BulkableRequest(_))
   }
 
   private[elasticsearch] final case class BulkRequest(

@@ -24,12 +24,11 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
     for {
       reqs <- ZIO.collectAllPar {
                 repositories.map { repository =>
-                  for {
-                    routing <- routingOf(repository.organization)
-                    req = ElasticRequest
-                            .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
-                            .routing(routing)
-                  } yield req
+                  routingOf(repository.organization).map(
+                    ElasticRequest
+                      .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+                      .routing(_)
+                  )
                 }
               }
       bulkReq = ElasticRequest.bulk(reqs: _*)
