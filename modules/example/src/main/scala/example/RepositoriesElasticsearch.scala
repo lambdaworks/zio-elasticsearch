@@ -2,6 +2,7 @@ package example
 
 import zio._
 import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticRequest, Routing}
+import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
@@ -18,6 +19,21 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       req      = ElasticRequest.create(Index, repository).routing(routing).refreshTrue
       res     <- executor.execute(req)
     } yield res
+
+  def createAll(repositories: List[GitHubRepo]): Task[Unit] =
+    for {
+      reqs <- ZIO.collectAllPar {
+                repositories.map { repository =>
+                  routingOf(repository.organization).map(
+                    ElasticRequest
+                      .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+                      .routing(_)
+                  )
+                }
+              }
+      bulkReq = ElasticRequest.bulk(reqs: _*)
+      _      <- executor.execute(bulkReq)
+    } yield ()
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
@@ -45,6 +61,9 @@ object RepositoriesElasticsearch {
 
   def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, DocumentId] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
+
+  def createAll(repositories: List[GitHubRepo]): RIO[RepositoriesElasticsearch, Unit] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.createAll(repositories))
 
   def upsert(id: String, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsert(id, repository))
