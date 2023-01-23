@@ -17,6 +17,6 @@ object RepoFetcher {
       req     = basicRequest.get(uri"https://api.github.com/orgs/$organization/repos?per_page=$limit")
       res    <- req.send(client)
     } yield res.body.toOption
-      .map(_.fromJson[Array[RepoResponse]].fold(_ => Nil, _.map(GitHubRepo.fromResponse).toList))
+      .map(_.fromJson[List[RepoResponse]].fold(_ => Nil, _.map(GitHubRepo.fromResponse).toList))
       .getOrElse(Nil)
 }
