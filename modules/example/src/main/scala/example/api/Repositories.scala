@@ -37,7 +37,7 @@ object Repositories {
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
             case Right(repo) =>
               RepositoriesElasticsearch.create(repo).map { id =>
-                Response.json(repo.copy(id = Some(DocumentId.unwrap(id))).toJson).setStatus(Created)
+                Response.json(repo.copy(id = DocumentId.unwrap(id)).toJson).setStatus(Created)
               }
           }
           .orDie
@@ -48,7 +48,7 @@ object Repositories {
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
-            case Right(repo) if repo.id.exists(_ != id) =>
+            case Right(repo) if repo.id.equals(id) =>
               ZIO.succeed(
                 Response
                   .json(
@@ -58,7 +58,7 @@ object Repositories {
               )
             case Right(repo) =>
               (RepositoriesElasticsearch
-                .upsert(id, repo.copy(id = Some(id))) *> RepositoriesElasticsearch.findById(
+                .upsert(id, repo.copy(id = id)) *> RepositoriesElasticsearch.findById(
                 repo.organization,
                 id
               )).map {

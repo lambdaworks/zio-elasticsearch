@@ -1,7 +1,9 @@
 package example
 
 import zio._
+import zio.elasticsearch.ElasticRequest.BulkableRequest
 import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticRequest, Routing}
+import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
@@ -19,11 +21,23 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       res     <- executor.execute(req)
     } yield res
 
-  def create(id: DocumentId, repository: GitHubRepo): Task[Unit] =
+  def createAll(repositories: List[GitHubRepo]): Task[Unit] =
     for {
-      routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, id, repository).routing(routing).refreshTrue
-      _       <- executor.execute(req)
+      routing <- routingOf("aaa")
+      reqs <- ZIO.collectAllPar {
+                repositories.map { repository =>
+                  for {
+                    routing <- routingOf(repository.organization)
+                    req = BulkableRequest(
+                            ElasticRequest
+                              .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+                              .routing(routing)
+                          )
+                  } yield req
+                }
+              }
+      bulkReq = ElasticRequest.bulk(reqs: _*).routing(routing)
+      _      <- executor.execute(bulkReq)
     } yield ()
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
@@ -53,8 +67,8 @@ object RepositoriesElasticsearch {
   def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, DocumentId] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
 
-  def create(id: DocumentId, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
-    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(id, repository))
+  def createAll(repositories: List[GitHubRepo]): RIO[RepositoriesElasticsearch, Unit] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.createAll(repositories))
 
   def upsert(id: String, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsert(id, repository))

@@ -3,7 +3,7 @@ package example.external.github.model
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 final case class RepoResponse(
-  id: Option[Int],
+  id: Int,
   name: String,
   url: String,
   description: Option[String],

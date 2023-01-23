@@ -7,7 +7,7 @@ import zio.schema.{DeriveSchema, Schema}
 import java.time.{Instant, LocalDateTime, ZoneId}
 
 final case class GitHubRepo(
-  id: Option[String],
+  id: String,
   organization: String,
   name: String,
   url: String,
@@ -20,7 +20,7 @@ final case class GitHubRepo(
 object GitHubRepo {
   def fromResponse(response: RepoResponse): GitHubRepo =
     GitHubRepo(
-      id = response.id.map(_.toString),
+      id = response.id.toString,
       organization = response.owner.organization,
       name = response.name,
       url = response.url,
