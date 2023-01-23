@@ -66,9 +66,7 @@ object ElasticQuery {
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
-  def exists(field: Selection[_, _], multiField: Option[String] = None): ElasticQuery[Exists] = ExistsQuery(
-    field.toString ++ multiField.map("." ++ _).getOrElse("")
-  )
+  def exists(field: Selection[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
 
   def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
 
