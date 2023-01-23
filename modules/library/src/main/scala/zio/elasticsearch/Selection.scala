@@ -30,7 +30,8 @@ sealed trait Selection[-From, +To] { self =>
   }
 }
 
-private[elasticsearch] final case class Field[From, To](parent: Option[Selection[From, _]], name: String) extends Selection[From, To]
+private[elasticsearch] final case class Field[From, To](parent: Option[Selection[From, _]], name: String)
+    extends Selection[From, To]
 
 object ElasticQueryAccessorBuilder extends AccessorBuilder {
   override type Lens[_, From, To]   = Selection[From, To]
