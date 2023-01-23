@@ -3,12 +3,19 @@ package zio.elasticsearch
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.BulkRequest
-import zio.elasticsearch.UserDocument._
 import zio.elasticsearch.utils._
+import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
+
+  final case class UserDocument(id: String, name: String, address: String, balance: Double, age: Int)
+
+  object UserDocument {
+    implicit val schema: Schema[UserDocument] = DeriveSchema.gen[UserDocument]
+  }
+
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
