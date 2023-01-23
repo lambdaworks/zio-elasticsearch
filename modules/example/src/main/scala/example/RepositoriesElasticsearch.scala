@@ -23,7 +23,6 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
   def createAll(repositories: List[GitHubRepo]): Task[Unit] =
     for {
-      routing <- routingOf("aaa")
       reqs <- ZIO.collectAllPar {
                 repositories.map { repository =>
                   for {
@@ -36,7 +35,7 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
                   } yield req
                 }
               }
-      bulkReq = ElasticRequest.bulk(reqs: _*).routing(routing)
+      bulkReq = ElasticRequest.bulk(reqs: _*)
       _      <- executor.execute(bulkReq)
     } yield ()
 
