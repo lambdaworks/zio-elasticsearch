@@ -2,11 +2,20 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
+import zio.elasticsearch.ElasticRequest.BulkRequest
 import zio.elasticsearch.utils._
-import zio.test.Assertion.equalTo
+import zio.schema.{DeriveSchema, Schema}
+import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
+
+  final case class UserDocument(id: String, name: String, address: String, balance: Double, age: Int)
+
+  object UserDocument {
+    implicit val schema: Schema[UserDocument] = DeriveSchema.gen[UserDocument]
+  }
+
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
@@ -15,8 +24,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = matches(field = "day_of_week", value = true)
           val queryLong   = matches(field = "day_of_week", value = 1L)
 
-          assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday")))
-          assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true)))
+          assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday"))) &&
+          assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true))) &&
           assert(queryLong)(equalTo(MatchQuery(field = "day_of_week", value = 1)))
         },
         test("successfully create `Must` query from two Match queries") {
@@ -146,9 +155,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = term(field = "day_of_week", value = true)
           val queryLong   = term(field = "day_of_week", value = 1L)
 
-          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1)))
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday")))
-          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true)))
+          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1))) &&
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday"))) &&
+          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true))) &&
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
         },
         test("successfully create Term Query with boost") {
@@ -157,9 +166,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = term(field = "day_of_week", value = true).boost(1.0)
           val queryLong   = term(field = "day_of_week", value = 1L).boost(1.0)
 
-          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0))))
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0))))
-          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0))))
+          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0)))) &&
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0)))) &&
+          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0)))) &&
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L, boost = Some(1.0))))
         },
         test("successfully create case insensitive Term Query") {
@@ -481,6 +490,33 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Bulk request body") {
+          val index = IndexName("users")
+          val user =
+            UserDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
+          val req1 =
+            ElasticRequest.create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
+          val req2 = ElasticRequest.create[UserDocument](index, user)
+          val req3 =
+            ElasticRequest.upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
+          val req4 = ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
+          val bulkQuery = ElasticRequest.bulk(req1, req2, req3, req4) match {
+            case r: BulkRequest => Some(r.body)
+            case _              => None
+          }
+
+          val expectedBody =
+            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx" } }
+               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":39}
+               |{ "create" : { "_index" : "users" } }
+               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":24}
+               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx" } }
+               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":3000.0,"age":24}
+               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc" } }
+               |""".stripMargin
+
+          assert(bulkQuery)(isSome(equalTo(expectedBody)))
         }
       )
     )

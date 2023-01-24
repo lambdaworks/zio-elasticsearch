@@ -16,6 +16,12 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val index: IndexName = IndexName("users")
 
+  val deleteByQueryIndex: IndexName = IndexName("delete-by-query-index")
+
+  val firstSearchIndex: IndexName = IndexName("search-index-1")
+
+  val secondSearchIndex: IndexName = IndexName("search-index-2")
+
   val createIndexTestName: IndexName = IndexName("create-index-test-name")
 
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
