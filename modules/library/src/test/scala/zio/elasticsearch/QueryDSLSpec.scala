@@ -24,8 +24,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = matches(field = "day_of_week", value = true)
           val queryLong   = matches(field = "day_of_week", value = 1L)
 
-          assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday")))
-          assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true)))
+          assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday"))) &&
+          assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true))) &&
           assert(queryLong)(equalTo(MatchQuery(field = "day_of_week", value = 1)))
         },
         test("successfully create `Must` query from two Match queries") {
@@ -155,9 +155,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = term(field = "day_of_week", value = true)
           val queryLong   = term(field = "day_of_week", value = 1L)
 
-          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1)))
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday")))
-          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true)))
+          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1))) &&
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday"))) &&
+          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true))) &&
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
         },
         test("successfully create Term Query with boost") {
@@ -166,9 +166,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = term(field = "day_of_week", value = true).boost(1.0)
           val queryLong   = term(field = "day_of_week", value = 1L).boost(1.0)
 
-          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0))))
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0))))
-          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0))))
+          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0)))) &&
+          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0)))) &&
+          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0)))) &&
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L, boost = Some(1.0))))
         },
         test("successfully create case insensitive Term Query") {
