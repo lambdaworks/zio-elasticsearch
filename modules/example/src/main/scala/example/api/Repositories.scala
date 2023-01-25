@@ -1,8 +1,7 @@
 package example.api
 
-import example.external.github.dto.CompoundOperator.{And, Or}
-import example.external.github.dto.SimpleOperator.{GreaterThan, LessThan}
-import example.external.github.dto._
+import CompoundOperator.{And, Or}
+import FilterOperator.{GreaterThan, LessThan}
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.boolQuery
@@ -48,7 +47,7 @@ object Repositories {
 
       case req @ Method.POST -> BasePath / "search" =>
         req.body.asString
-          .map(JsonCodec.JsonDecoder.decode[QueryDto](QueryDto.schema, _))
+          .map(JsonCodec.JsonDecoder.decode[Criteria](Criteria.schema, _))
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
@@ -94,26 +93,26 @@ object Repositories {
           .orDie
     }
 
-  private def createElasticQuery(query: QueryDto): ElasticQuery[_] =
+  private def createElasticQuery(query: Criteria): ElasticQuery[_] =
     query match {
-      case SimpleIntQueryDto(field, operator, value) =>
+      case IntCriteria(field, operator, value) =>
         operator match {
           case GreaterThan =>
             ElasticQuery.range(field.toString).gt(value)
           case LessThan =>
             ElasticQuery.range(field.toString).lt(value)
         }
-      case SimpleDateQueryDto(field, operator, value) =>
+      case DateCriteria(field, operator, value) =>
         operator match {
           case GreaterThan =>
             ElasticQuery.range(field.toString).gt(value.toString)
           case LessThan =>
             ElasticQuery.range(field.toString).lt(value.toString)
         }
-      case CompoundQueryDto(operator, operands) =>
+      case CompoundCriteria(operator, filters) =>
         operator match {
-          case And => boolQuery().must(createElasticQuery(operands.head), createElasticQuery(operands.last))
-          case Or  => boolQuery().should(createElasticQuery(operands.head), createElasticQuery(operands.last))
+          case And => boolQuery().must(filters.map(createElasticQuery): _*)
+          case Or  => boolQuery().should(filters.map(createElasticQuery): _*)
         }
     }
 
