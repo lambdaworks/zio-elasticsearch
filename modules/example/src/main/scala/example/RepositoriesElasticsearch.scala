@@ -1,10 +1,14 @@
 package example
 
 import zio._
-import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticRequest, Routing}
 import zio.prelude.Newtype.unsafeWrap
+import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticQuery, ElasticRequest, Routing}
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
+
+  def findAll(): Task[List[GitHubRepo]] =
+    executor.execute(ElasticRequest.search[GitHubRepo](Index, matchAll()))
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
@@ -49,12 +53,18 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       res     <- executor.execute(req)
     } yield res
 
+  def search(query: ElasticQuery[_]): Task[List[GitHubRepo]] =
+    executor.execute(ElasticRequest.search[GitHubRepo](Index, query))
+
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
     Routing.make(value).toZIO.mapError(e => new IllegalArgumentException(e))
 
 }
 
 object RepositoriesElasticsearch {
+
+  def findAll(): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findAll())
 
   def findById(organization: String, id: String): RIO[RepositoriesElasticsearch, Option[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findById(organization, id))
@@ -70,6 +80,9 @@ object RepositoriesElasticsearch {
 
   def remove(organization: String, id: String): RIO[RepositoriesElasticsearch, DeletionOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
+
+  def search(query: ElasticQuery[_]): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.search(query))
 
   lazy val live: URLayer[ElasticExecutor, RepositoriesElasticsearch] =
     ZLayer.fromFunction(RepositoriesElasticsearch(_))

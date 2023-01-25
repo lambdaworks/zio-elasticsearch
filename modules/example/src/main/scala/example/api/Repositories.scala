@@ -1,8 +1,11 @@
 package example.api
 
+import example.external.github.dto.SimpleOperator.{GreaterThan, LessThan}
+import example.external.github.dto._
 import example.{GitHubRepo, RepositoriesElasticsearch}
+import zio.elasticsearch.ElasticQuery.boolQuery
 import zio.ZIO
-import zio.elasticsearch.{DeletionOutcome, DocumentId}
+import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticQuery}
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status._
@@ -16,7 +19,7 @@ object Repositories {
   final val Routes: Http[RepositoriesElasticsearch, Nothing, Request, Response] =
     Http.collectZIO[Request] {
       case Method.GET -> BasePath =>
-        ZIO.succeed(Response.text("TODO: Get a list of repositories").setStatus(NotImplemented))
+        RepositoriesElasticsearch.findAll().map(repositories => Response.json(repositories.toJson)).orDie
 
       case Method.GET -> BasePath / organization / id =>
         RepositoriesElasticsearch
@@ -42,6 +45,19 @@ object Repositories {
           }
           .orDie
 
+      case req @ Method.POST -> BasePath / "search" =>
+        req.body.asString
+          .map(JsonCodec.JsonDecoder.decode[QueryDto](QueryDto.schema, _))
+          .flatMap {
+            case Left(e) =>
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
+            case Right(queryBody) =>
+              RepositoriesElasticsearch
+                .search(makeQuery(queryBody))
+                .map(repositories => Response.json(repositories.toJson))
+          }
+          .orDie
+
       case req @ Method.PUT -> BasePath / id =>
         req.body.asString
           .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
@@ -58,10 +74,7 @@ object Repositories {
               )
             case Right(repo) =>
               (RepositoriesElasticsearch
-                .upsert(id, repo.copy(id = id)) *> RepositoriesElasticsearch.findById(
-                repo.organization,
-                id
-              )).map {
+                .upsert(id, repo.copy(id = id)) *> RepositoriesElasticsearch.findById(repo.organization, id)).map {
                 case Some(updated) => Response.json(updated.toJson)
                 case None          => Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).setStatus(BadRequest)
               }
@@ -78,6 +91,29 @@ object Repositories {
               Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(NotFound)
           }
           .orDie
+    }
+
+  private def makeQuery(query: QueryDto): ElasticQuery[_] =
+    query match {
+      case SimpleIntQueryDto(field, operator, value) =>
+        operator match {
+          case GreaterThan =>
+            ElasticQuery.range(field.toString).gt(value)
+          case LessThan =>
+            ElasticQuery.range(field.toString).lt(value)
+        }
+      case SimpleDateQueryDto(field, operator, value) =>
+        operator match {
+          case GreaterThan =>
+            ElasticQuery.range(field.toString).gt(value.toString)
+          case LessThan =>
+            ElasticQuery.range(field.toString).lt(value.toString)
+        }
+      case CompoundQueryDto(operator, operands) =>
+        operator match {
+          case CompoundOperator.And => boolQuery().must(makeQuery(operands.head), makeQuery(operands.last))
+          case CompoundOperator.Or  => boolQuery().should(makeQuery(operands.head), makeQuery(operands.last))
+        }
     }
 
 }
