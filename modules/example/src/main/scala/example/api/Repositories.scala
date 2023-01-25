@@ -4,8 +4,8 @@ import example.external.github.dto.CompoundOperator.{And, Or}
 import example.external.github.dto.SimpleOperator.{GreaterThan, LessThan}
 import example.external.github.dto._
 import example.{GitHubRepo, RepositoriesElasticsearch}
-import zio.elasticsearch.ElasticQuery.boolQuery
 import zio.ZIO
+import zio.elasticsearch.ElasticQuery.boolQuery
 import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticQuery}
 import zio.http._
 import zio.http.model.Method

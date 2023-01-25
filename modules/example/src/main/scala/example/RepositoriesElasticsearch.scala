@@ -1,9 +1,9 @@
 package example
 
 import zio._
-import zio.prelude.Newtype.unsafeWrap
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticQuery, ElasticRequest, Routing}
+import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
