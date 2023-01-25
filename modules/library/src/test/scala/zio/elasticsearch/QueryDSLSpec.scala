@@ -6,6 +6,7 @@ import zio.elasticsearch.ElasticRequest.BulkRequest
 import zio.elasticsearch.utils._
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.{equalTo, isSome}
+import zio.test.TestAspect.nonFlaky
 import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
@@ -519,5 +520,5 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(bulkQuery)(isSome(equalTo(expectedBody)))
         }
       )
-    )
+    ) @@ nonFlaky
 }
