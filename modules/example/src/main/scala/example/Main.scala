@@ -41,7 +41,7 @@ object Main extends ZIOAppDefault {
 
     val populate: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] =
       (for {
-        repositories <- RepoFetcher.fetchAllByOrganization("zio")
+        repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
         _            <- RepositoriesElasticsearch.createAll(repositories)
       } yield ()).provideSome(RepositoriesElasticsearch.live)
