@@ -1,7 +1,5 @@
 package example.api
 
-import CompoundOperator.{And, Or}
-import FilterOperator.{GreaterThan, LessThan}
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.boolQuery
@@ -11,6 +9,9 @@ import zio.http.model.Method
 import zio.http.model.Status._
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
+
+import CompoundOperator.{And, Or}
+import FilterOperator.{GreaterThan, LessThan}
 
 object Repositories {
 
