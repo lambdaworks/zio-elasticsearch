@@ -10,9 +10,10 @@ object QueryDto {
   implicit val schema: Schema[QueryDto] = DeriveSchema.gen[QueryDto]
 }
 
-case class SimpleIntQueryDto(field: FieldTypeInt, operator: SimpleOperator, value: Int) extends QueryDto
+final case class SimpleIntQueryDto(field: FieldTypeInt, operator: SimpleOperator, value: Int) extends QueryDto
 
-case class SimpleDateQueryDto(field: FieldTypeDate, operator: SimpleOperator, value: LocalDateTime) extends QueryDto
+final case class SimpleDateQueryDto(field: FieldTypeDate, operator: SimpleOperator, value: LocalDateTime)
+    extends QueryDto
 
 final case class CompoundQueryDto(
   operator: CompoundOperator,

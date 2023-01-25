@@ -1,5 +1,6 @@
 package example.api
 
+import example.external.github.dto.CompoundOperator.{And, Or}
 import example.external.github.dto.SimpleOperator.{GreaterThan, LessThan}
 import example.external.github.dto._
 import example.{GitHubRepo, RepositoriesElasticsearch}
@@ -53,7 +54,7 @@ object Repositories {
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
             case Right(queryBody) =>
               RepositoriesElasticsearch
-                .search(makeQuery(queryBody))
+                .search(createElasticQuery(queryBody))
                 .map(repositories => Response.json(repositories.toJson))
           }
           .orDie
@@ -93,7 +94,7 @@ object Repositories {
           .orDie
     }
 
-  private def makeQuery(query: QueryDto): ElasticQuery[_] =
+  private def createElasticQuery(query: QueryDto): ElasticQuery[_] =
     query match {
       case SimpleIntQueryDto(field, operator, value) =>
         operator match {
@@ -111,8 +112,8 @@ object Repositories {
         }
       case CompoundQueryDto(operator, operands) =>
         operator match {
-          case CompoundOperator.And => boolQuery().must(makeQuery(operands.head), makeQuery(operands.last))
-          case CompoundOperator.Or  => boolQuery().should(makeQuery(operands.head), makeQuery(operands.last))
+          case And => boolQuery().must(createElasticQuery(operands.head), createElasticQuery(operands.last))
+          case Or  => boolQuery().should(createElasticQuery(operands.head), createElasticQuery(operands.last))
         }
     }
 
