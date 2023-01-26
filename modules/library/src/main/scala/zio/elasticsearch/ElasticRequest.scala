@@ -200,8 +200,8 @@ object ElasticRequest {
   ) extends ElasticRequest[B, ERT]
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
-    parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}" """ }
-      .mkString(s"""{ "$requestType" : { """, ", ", "} }")
+    parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }
+      .mkString(s"""{ "$requestType" : { """, ", ", " } }")
 
 }
 

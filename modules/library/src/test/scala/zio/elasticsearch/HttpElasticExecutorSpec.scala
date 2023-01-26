@@ -12,6 +12,49 @@ object HttpElasticExecutorSpec extends WiremockSpec {
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("HttpElasticExecutor")(
+      suite("bulk request") {
+        test("return ???? ") {
+          server.addStubMapping(
+            post(urlEqualTo("/_bulk?refresh=true"))
+              .willReturn(
+                aResponse
+                  .withBody("""
+                              |{
+                              | "took" = 3,
+                              | "errors" = false,
+                              | "items" = [
+                              |   {
+                              |     "create": {
+                              |       "_index": "repositories",
+                              |       "_type": "_doc",
+                              |       "_id": "123",
+                              |       "_version": 1,
+                              |       "result": "created",
+                              |       "_shards": {
+                              |         "total": 1,
+                              |         "successful": 1,
+                              |         "failed": 0
+                              |       },
+                              |       "_seq_no": 0,
+                              |       "_primary_term": 1,
+                              |       "status": 201
+                              |     }
+                              |   }
+                              | ]
+                              |}""".stripMargin)
+                  .withStatus(StatusCode.Ok.code)
+              )
+              .build
+          )
+
+          assertZIO(
+            ElasticRequest
+              .bulk(ElasticRequest.create(index, repo))
+              .refresh(value = true)
+              .execute
+          )(isUnit)
+        }
+      },
       suite("creating document request") {
         test("return document ID") {
           server.addStubMapping(
