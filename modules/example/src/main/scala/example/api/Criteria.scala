@@ -24,6 +24,7 @@ sealed trait FilterOperator
 object FilterOperator {
   case object GreaterThan extends FilterOperator
   case object LessThan    extends FilterOperator
+  case object EqualTo     extends FilterOperator
 }
 
 sealed trait CompoundOperator

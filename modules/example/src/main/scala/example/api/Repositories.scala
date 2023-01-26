@@ -9,9 +9,8 @@ import zio.http.model.Method
 import zio.http.model.Status._
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
-
 import CompoundOperator.{And, Or}
-import FilterOperator.{GreaterThan, LessThan}
+import FilterOperator.{EqualTo, GreaterThan, LessThan}
 
 object Repositories {
 
@@ -102,6 +101,8 @@ object Repositories {
             ElasticQuery.range(field.toString).gt(value)
           case LessThan =>
             ElasticQuery.range(field.toString).lt(value)
+          case EqualTo =>
+            ElasticQuery.matches(field.toString, value)
         }
       case DateCriteria(field, operator, value) =>
         operator match {
@@ -109,6 +110,8 @@ object Repositories {
             ElasticQuery.range(field.toString).gt(value.toString)
           case LessThan =>
             ElasticQuery.range(field.toString).lt(value.toString)
+          case EqualTo =>
+            ElasticQuery.matches(field.toString, value.toString)
         }
       case CompoundCriteria(operator, filters) =>
         operator match {

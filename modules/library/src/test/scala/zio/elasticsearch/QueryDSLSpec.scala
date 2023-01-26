@@ -520,5 +520,5 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(bulkQuery)(isSome(equalTo(expectedBody)))
         }
       )
-    ) @@ nonFlaky
+    )
 }
