@@ -18,41 +18,38 @@ object HttpElasticExecutorSpec extends WiremockSpec {
             post(urlEqualTo("/_bulk?refresh=true"))
               .willReturn(
                 aResponse
-                  .withBody("""
-                              |{
-                              | "took" = 3,
-                              | "errors" = false,
-                              | "items" = [
-                              |   {
-                              |     "create": {
-                              |       "_index": "repositories",
-                              |       "_type": "_doc",
-                              |       "_id": "123",
-                              |       "_version": 1,
-                              |       "result": "created",
-                              |       "_shards": {
-                              |         "total": 1,
-                              |         "successful": 1,
-                              |         "failed": 0
-                              |       },
-                              |       "_seq_no": 0,
-                              |       "_primary_term": 1,
-                              |       "status": 201
-                              |     }
-                              |   }
-                              | ]
-                              |}""".stripMargin)
+                  .withBody(
+                    """
+                      |{
+                      | "took" = 3,
+                      | "errors" = false,
+                      | "items" = [
+                      |   {
+                      |     "create": {
+                      |       "_index": "repositories",
+                      |       "_type": "_doc",
+                      |       "_id": "123",
+                      |       "_version": 1,
+                      |       "result": "created",
+                      |       "_shards": {
+                      |         "total": 1,
+                      |         "successful": 1,
+                      |         "failed": 0
+                      |       },
+                      |       "_seq_no": 0,
+                      |       "_primary_term": 1,
+                      |       "status": 201
+                      |     }
+                      |   }
+                      | ]
+                      |}""".stripMargin
+                  )
                   .withStatus(StatusCode.Ok.code)
               )
               .build
           )
 
-          assertZIO(
-            ElasticRequest
-              .bulk(ElasticRequest.create(index, repo))
-              .refresh(value = true)
-              .execute
-          )(isUnit)
+          assertZIO(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue.execute)(isUnit)
         }
       },
       suite("creating document request") {
@@ -61,21 +58,19 @@ object HttpElasticExecutorSpec extends WiremockSpec {
             post(urlEqualTo("/repositories/_doc?refresh=true&routing=routing"))
               .willReturn(
                 aResponse
-                  .withBody("""
-                              |{
-                              |  "_id": "V4x8q4UB3agN0z75fv5r"
-                              |}""".stripMargin)
+                  .withBody(
+                    """
+                      |{
+                      |  "_id": "V4x8q4UB3agN0z75fv5r"
+                      |}""".stripMargin
+                  )
                   .withStatus(StatusCode.Created.code)
               )
               .build
           )
 
           assertZIO(
-            ElasticRequest
-              .create[GitHubRepo](index = index, doc = repo)
-              .routing(Routing("routing"))
-              .refresh(value = true)
-              .execute
+            ElasticRequest.create[GitHubRepo](index = index, doc = repo).routing(Routing("routing")).refreshTrue.execute
           )(equalTo(DocumentId("V4x8q4UB3agN0z75fv5r")))
         }
       },
@@ -91,7 +86,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
             ElasticRequest
               .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
-              .refresh(value = true)
+              .refreshTrue
               .execute
           )(equalTo(CreationOutcome.Created))
         }
@@ -99,9 +94,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
       suite("creating index request") {
         test("return Created outcome") {
           server.addStubMapping(
-            put(urlEqualTo("/repositories"))
-              .willReturn(aResponse.withStatus(StatusCode.Ok.code))
-              .build
+            put(urlEqualTo("/repositories")).willReturn(aResponse.withStatus(StatusCode.Ok.code)).build
           )
 
           assertZIO(ElasticRequest.createIndex(name = index, definition = None).execute)(
@@ -121,7 +114,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
             ElasticRequest
               .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
-              .refresh(value = true)
+              .refreshTrue
               .execute
           )(isUnit)
         }
@@ -138,7 +131,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
             ElasticRequest
               .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
               .routing(Routing("routing"))
-              .refresh(value = true)
+              .refreshTrue
               .execute
           )(equalTo(DeletionOutcome.Deleted))
         }
@@ -151,9 +144,9 @@ object HttpElasticExecutorSpec extends WiremockSpec {
               .build
           )
 
-          assertZIO(
-            ElasticRequest.deleteByQuery(index = index, query = matchAll()).refresh(value = true).execute
-          )(equalTo(DeletionOutcome.Deleted))
+          assertZIO(ElasticRequest.deleteByQuery(index = index, query = matchAll()).refreshTrue.execute)(
+            equalTo(DeletionOutcome.Deleted)
+          )
         }
       },
       suite("deleting index request") {
