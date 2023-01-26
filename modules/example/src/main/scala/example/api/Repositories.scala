@@ -9,6 +9,7 @@ import zio.http.model.Method
 import zio.http.model.Status._
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
+
 import CompoundOperator._
 import FilterOperator._
 
