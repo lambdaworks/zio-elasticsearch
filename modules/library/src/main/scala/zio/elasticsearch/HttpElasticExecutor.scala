@@ -10,7 +10,7 @@ import sttp.model.StatusCode.{
   NotFound => HttpNotFound,
   Ok => HttpOk
 }
-import zio.ZIO.{logDebug, logInfo}
+import zio.ZIO.logDebug
 import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
@@ -216,9 +216,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     req: RequestT[Identity, Either[String, String], Any]
   ): Task[Response[Either[String, String]]] =
     for {
-      _    <- logInfo(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
       resp <- req.send(client)
-      _    <- logInfo(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
