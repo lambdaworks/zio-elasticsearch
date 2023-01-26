@@ -4,6 +4,7 @@ import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.BulkRequest
 import zio.elasticsearch.utils._
+import zio.prelude.Newtype.unsafeWrap
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.{equalTo, isSome}
 import zio.test._
@@ -496,24 +497,29 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val user =
             UserDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
           val req1 =
-            ElasticRequest.create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
-          val req2 = ElasticRequest.create[UserDocument](index, user)
+            ElasticRequest
+              .create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
+              .routing(unsafeWrap(Routing)(user.id))
+          val req2 = ElasticRequest.create[UserDocument](index, user).routing(unsafeWrap(Routing)(user.id))
           val req3 =
-            ElasticRequest.upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
-          val req4 = ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
+            ElasticRequest
+              .upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
+              .routing(unsafeWrap(Routing)(user.id))
+          val req4 =
+            ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(unsafeWrap(Routing)(user.id))
           val bulkQuery = ElasticRequest.bulk(req1, req2, req3, req4) match {
             case r: BulkRequest => Some(r.body)
             case _              => None
           }
 
           val expectedBody =
-            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx" } }
+            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "WeeMwR5d5" } }
                |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":39}
-               |{ "create" : { "_index" : "users" } }
+               |{ "create" : { "_index" : "users", "routing" : "WeeMwR5d5" } }
                |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":24}
-               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx" } }
+               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx", "routing" : "WeeMwR5d5" } }
                |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":3000.0,"age":24}
-               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc" } }
+               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "WeeMwR5d5" } }
                |""".stripMargin
 
           assert(bulkQuery)(isSome(equalTo(expectedBody)))
