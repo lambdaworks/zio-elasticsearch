@@ -11,7 +11,7 @@ trait WiremockSpec extends ZIOSpecDefault {
   val repo: GitHubRepo =
     GitHubRepo(id = Some("123"), organization = "lambdaworks.io", name = "LambdaWorks", stars = 10, forks = 10)
 
-  val port: Int = 5600
+  val port: Int = 9300
   val elasticsearchWireMockLayer: TaskLayer[ElasticExecutor] =
     HttpClientZioBackend
       .layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", port)) >>> ElasticExecutor.live)

@@ -13,7 +13,7 @@ object HttpElasticExecutorSpec extends WiremockSpec {
   override def spec: Spec[TestEnvironment, Any] =
     suite("HttpElasticExecutor")(
       suite("bulk request") {
-        test("return ???? ") {
+        test("successfully execute bulk request") {
           server.addStubMapping(
             post(urlEqualTo("/_bulk?refresh=true"))
               .willReturn(
