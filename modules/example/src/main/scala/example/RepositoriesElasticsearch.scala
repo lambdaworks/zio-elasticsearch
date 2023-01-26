@@ -2,7 +2,15 @@ package example
 
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
-import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticQuery, ElasticRequest, Routing}
+import zio.elasticsearch.{
+  CreationOutcome,
+  DeletionOutcome,
+  DocumentId,
+  ElasticExecutor,
+  ElasticQuery,
+  ElasticRequest,
+  Routing
+}
 import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
@@ -17,10 +25,10 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       res     <- executor.execute(req)
     } yield res
 
-  def create(repository: GitHubRepo): Task[DocumentId] =
+  def create(repository: GitHubRepo): Task[CreationOutcome] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, repository).routing(routing).refreshTrue
+      req      = ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
       res     <- executor.execute(req)
     } yield res
 
@@ -64,7 +72,7 @@ object RepositoriesElasticsearch {
   def findById(organization: String, id: String): RIO[RepositoriesElasticsearch, Option[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findById(organization, id))
 
-  def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, DocumentId] =
+  def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, CreationOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
 
   def createAll(repositories: List[GitHubRepo]): RIO[RepositoriesElasticsearch, Unit] =

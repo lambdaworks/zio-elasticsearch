@@ -3,14 +3,14 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.boolQuery
-import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticQuery}
+import zio.elasticsearch.{CreationOutcome, DeletionOutcome, ElasticQuery}
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status._
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
-import CompoundOperator.{And, Or}
-import FilterOperator.{EqualTo, GreaterThan, LessThan}
+import CompoundOperator._
+import FilterOperator._
 
 object Repositories {
 
@@ -39,8 +39,11 @@ object Repositories {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
             case Right(repo) =>
-              RepositoriesElasticsearch.create(repo).map { id =>
-                Response.json(repo.copy(id = DocumentId.unwrap(id)).toJson).setStatus(Created)
+              RepositoriesElasticsearch.create(repo).map {
+                case CreationOutcome.Created =>
+                  Response.json(repo.toJson).setStatus(Created)
+                case CreationOutcome.AlreadyExists =>
+                  Response.json("").setStatus(Conflict)
               }
           }
           .orDie
