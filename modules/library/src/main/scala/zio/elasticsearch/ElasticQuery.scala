@@ -72,10 +72,13 @@ object ElasticQuery {
 
   def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
 
-  def range(field: Selection[_, _], multiField: Option[String] = None): RangeQuery[Unbounded.type, Unbounded.type] =
+  def range[A](
+    field: Selection[_, A],
+    multiField: Option[String] = None
+  ): RangeQuery[A, Unbounded.type, Unbounded.type] =
     RangeQuery.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
 
-  def range(field: String): RangeQuery[Unbounded.type, Unbounded.type] = RangeQuery.empty(field)
+  def range(field: String): RangeQuery[Any, Unbounded.type, Unbounded.type] = RangeQuery.empty[Any](field)
 
   def term[S, A: ElasticPrimitive](
     field: Selection[S, A],
@@ -144,33 +147,38 @@ object ElasticQuery {
     override def toJson: Option[(String, Json)] = None
   }
 
-  private[elasticsearch] final case class RangeQuery[LB <: LowerBound, UB <: UpperBound] private (
+  private[elasticsearch] final case class RangeQuery[A, LB <: LowerBound, UB <: UpperBound] private (
     field: String,
     lower: LB,
     upper: UB
   ) extends ElasticQuery[Range] { self =>
 
-    def gt[A: ElasticPrimitive](value: A)(implicit @unused ev: LB =:= Unbounded.type): RangeQuery[GreaterThan[A], UB] =
+    def gt[B <: A: ElasticPrimitive](value: B)(implicit
+      @unused ev: LB =:= Unbounded.type
+    ): RangeQuery[B, GreaterThan[B], UB] =
       self.copy(lower = GreaterThan(value))
 
-    def gte[A: ElasticPrimitive](value: A)(implicit
+    def gte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): RangeQuery[GreaterThanOrEqualTo[A], UB] =
+    ): RangeQuery[B, GreaterThanOrEqualTo[B], UB] =
       self.copy(lower = GreaterThanOrEqualTo(value))
 
-    def lt[A: ElasticPrimitive](value: A)(implicit @unused ev: UB =:= Unbounded.type): RangeQuery[LB, LessThan[A]] =
+    def lt[B <: A: ElasticPrimitive](value: B)(implicit
+      @unused ev: UB =:= Unbounded.type
+    ): RangeQuery[B, LB, LessThan[B]] =
       self.copy(upper = LessThan(value))
 
-    def lte[A: ElasticPrimitive](value: A)(implicit
+    def lte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): RangeQuery[LB, LessThanOrEqualTo[A]] =
+    ): RangeQuery[B, LB, LessThanOrEqualTo[B]] =
       self.copy(upper = LessThanOrEqualTo(value))
 
     override def toJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
   }
 
   private[elasticsearch] object RangeQuery {
-    def empty(field: String): RangeQuery[Unbounded.type, Unbounded.type] = RangeQuery(field, Unbounded, Unbounded)
+    def empty[A](field: String): RangeQuery[A, Unbounded.type, Unbounded.type] =
+      RangeQuery[A, Unbounded.type, Unbounded.type](field, Unbounded, Unbounded)
   }
 
   private[elasticsearch] final case class TermQuery[A: ElasticPrimitive](

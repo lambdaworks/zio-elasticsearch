@@ -133,7 +133,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(equalTo(ExistsQuery(field = "name")))
         },
         test("successfully create Exists Query with accessor and multi-field") {
-          val query = exists(field = Student.name, multiField = Some("keyword"))
+          val query = exists(field = Student.name)
 
           assert(query)(equalTo(ExistsQuery(field = "name.keyword")))
         },
@@ -150,49 +150,117 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create empty Range Query") {
           val query = range(field = "customer_age")
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = Unbounded)))
+          assert(query)(
+            equalTo(
+              RangeQuery[Any, Unbounded.type, Unbounded.type](
+                field = "customer_age",
+                lower = Unbounded,
+                upper = Unbounded
+              )
+            )
+          )
         },
         test("successfully create empty type-safe Range Query") {
           val queryString = range(field = Student.name)
           val queryInt    = range(field = Student.age)
           val queryBool   = range(field = Student.isEmployed)
 
-          assert(queryString)(equalTo(RangeQuery(field = "name", lower = Unbounded, upper = Unbounded)))
-          assert(queryInt)(equalTo(RangeQuery(field = "age", lower = Unbounded, upper = Unbounded)))
-          assert(queryBool)(equalTo(RangeQuery(field = "is_employed", lower = Unbounded, upper = Unbounded)))
+          assert(queryString)(
+            equalTo(
+              RangeQuery[String, Unbounded.type, Unbounded.type](field = "name", lower = Unbounded, upper = Unbounded)
+            )
+          )
+          assert(queryInt)(
+            equalTo(
+              RangeQuery[Int, Unbounded.type, Unbounded.type](field = "age", lower = Unbounded, upper = Unbounded)
+            )
+          )
+          assert(queryBool)(
+            equalTo(
+              RangeQuery[Boolean, Unbounded.type, Unbounded.type](
+                field = "is_employed",
+                lower = Unbounded,
+                upper = Unbounded
+              )
+            )
+          )
         },
         test("successfully create empty type-safe Range Query with multi-field") {
           val query = range(field = Student.name, multiField = Some("keyword"))
 
-          assert(query)(equalTo(RangeQuery(field = "name.keyword", lower = Unbounded, upper = Unbounded)))
+          assert(query)(
+            equalTo(
+              RangeQuery[String, Unbounded.type, Unbounded.type](
+                field = "name.keyword",
+                lower = Unbounded,
+                upper = Unbounded
+              )
+            )
+          )
         },
         test("successfully create Range Query with upper bound") {
           val query = range(field = "customer_age").lt(23)
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = LessThan(23))))
+          assert(query)(
+            equalTo(
+              RangeQuery[Int, Unbounded.type, LessThan[Int]](
+                field = "customer_age",
+                lower = Unbounded,
+                upper = LessThan(23)
+              )
+            )
+          )
         },
         test("successfully create Range Query with lower bound") {
           val query = range(field = "customer_age").gt(23)
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = GreaterThan(23), upper = Unbounded)))
+          assert(query)(
+            equalTo(
+              RangeQuery[Int, GreaterThan[Int], Unbounded.type](
+                field = "customer_age",
+                lower = GreaterThan(23),
+                upper = Unbounded
+              )
+            )
+          )
         },
         test("successfully create Range Query with inclusive upper bound") {
           val query = range(field = "customer_age").lte(23)
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = LessThanOrEqualTo(23))))
+          assert(query)(
+            equalTo(
+              RangeQuery[Int, Unbounded.type, LessThanOrEqualTo[Int]](
+                field = "customer_age",
+                lower = Unbounded,
+                upper = LessThanOrEqualTo(23)
+              )
+            )
+          )
         },
         test("successfully create Range Query with inclusive lower bound") {
           val query = range(field = "customer_age").gte(23)
 
           assert(query)(
-            equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = Unbounded))
+            equalTo(
+              RangeQuery[Int, GreaterThanOrEqualTo[Int], Unbounded.type](
+                field = "customer_age",
+                lower = GreaterThanOrEqualTo(23),
+                upper = Unbounded
+              )
+            )
           )
         },
         test("successfully create Range Query with both upper and lower bound") {
           val query = range(field = "customer_age").gte(23).lt(50)
 
           assert(query)(
-            equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = LessThan(50)))
+            equalTo(
+              RangeQuery[Int, GreaterThanOrEqualTo[Int], LessThan[Int]](
+                field = "customer_age",
+                lower = GreaterThanOrEqualTo(23),
+                upper = LessThan(50)
+              )
+            )
           )
         },
         test("successfully create Term Query") {
