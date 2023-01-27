@@ -2,11 +2,12 @@ package zio.elasticsearch
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import sttp.client3.httpclient.zio.HttpClientZioBackend
+import zio.prelude.Newtype.unsafeWrap
 import zio.test.ZIOSpecDefault
 import zio.{TaskLayer, ZLayer}
 
 trait WiremockSpec extends ZIOSpecDefault {
-  val index: IndexName = IndexName("repositories")
+  val index: IndexName = unsafeWrap(IndexName)("repositories")
 
   val repo: GitHubRepo =
     GitHubRepo(id = Some("123"), organization = "lambdaworks.io", name = "LambdaWorks", stars = 10, forks = 10)
