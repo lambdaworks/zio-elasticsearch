@@ -12,29 +12,24 @@ object Annotation {
     annotations.collect { case name(value) => value }.headOption
 }
 
-sealed trait Selection[-From, +To] { self =>
+private[elasticsearch] final case class Field[From, To](parent: Option[Field[From, _]], name: String) { self =>
 
-  def /[To2](that: Selection[To, To2]): Selection[From, To2] = that match {
-    case Field(parent, key) => Field(parent.map(self / _).orElse(Some(self)), key)
-  }
+  def /[To2](that: Field[To, To2]): Field[From, To2] =
+    Field(that.parent.map(self / _).orElse(Some(self)), that.name)
 
   override def toString: String = {
     @tailrec
-    def loop(selection: Selection[_, _], acc: List[String]): List[String] =
-      selection match {
-        case Field(None, name)         => s"$name" +: acc
-        case Field(Some(parent), name) => loop(parent, s".$name" +: acc)
-      }
+    def loop(field: Field[_, _], acc: List[String]): List[String] = field match {
+      case Field(None, name)         => s"$name" +: acc
+      case Field(Some(parent), name) => loop(parent, s".$name" +: acc)
+    }
 
     loop(self, List.empty).mkString("")
   }
 }
 
-private[elasticsearch] final case class Field[From, To](parent: Option[Selection[From, _]], name: String)
-    extends Selection[From, To]
-
 object ElasticQueryAccessorBuilder extends AccessorBuilder {
-  override type Lens[_, From, To]   = Selection[From, To]
+  override type Lens[_, From, To]   = Field[From, To]
   override type Prism[_, From, To]  = Unit
   override type Traversal[From, To] = Unit
 

@@ -3,7 +3,7 @@ package zio.elasticsearch
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
-object SelectionDSLSpec extends ZIOSpecDefault {
+object FieldDSLSpec extends ZIOSpecDefault {
 
   final case class Address(street: String, number: Int)
 
@@ -24,7 +24,7 @@ object SelectionDSLSpec extends ZIOSpecDefault {
   }
 
   override def spec: Spec[TestEnvironment, Any] =
-    suite("Selection DSL")(
+    suite("Field DSL")(
       test("properly encode single field path")(
         assertTrue(Field(None, "name").toString == "name")
       ),
@@ -32,7 +32,7 @@ object SelectionDSLSpec extends ZIOSpecDefault {
         assertTrue(Student.name.toString == "name")
       ),
       test("properly encode nested field path")(
-        assertTrue(Field(Some(Field(None, "address")), "number").toString == "address.number")
+        assertTrue(Field[Nothing, Nothing](Some(Field(None, "address")), "number").toString == "address.number")
       ),
       test("properly encode nested field path using accessors")(
         assertTrue((Student.address / Address.number).toString == "address.number")

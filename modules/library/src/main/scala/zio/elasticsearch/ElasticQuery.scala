@@ -55,7 +55,7 @@ object ElasticQuery {
   }
 
   def matches[S, A: ElasticPrimitive](
-    field: Selection[S, A],
+    field: Field[S, A],
     multiField: Option[String] = None,
     value: A
   ): ElasticQuery[Match] =
@@ -66,14 +66,14 @@ object ElasticQuery {
 
   def boolQuery(): BoolQuery = BoolQuery.empty
 
-  def exists(field: Selection[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
+  def exists(field: Field[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
 
   def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
 
   def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
 
   def range[A](
-    field: Selection[_, A],
+    field: Field[_, A],
     multiField: Option[String] = None
   ): RangeQuery[A, Unbounded.type, Unbounded.type] =
     RangeQuery.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
@@ -81,7 +81,7 @@ object ElasticQuery {
   def range(field: String): RangeQuery[Any, Unbounded.type, Unbounded.type] = RangeQuery.empty[Any](field)
 
   def term[S, A: ElasticPrimitive](
-    field: Selection[S, A],
+    field: Field[S, A],
     multiField: Option[String] = None,
     value: A
   ): ElasticQuery[Term[A]] =
