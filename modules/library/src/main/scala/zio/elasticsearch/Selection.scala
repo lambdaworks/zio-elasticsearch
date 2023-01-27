@@ -22,11 +22,11 @@ sealed trait Selection[-From, +To] { self =>
     @tailrec
     def loop(selection: Selection[_, _], acc: List[String]): List[String] =
       selection match {
-        case Field(None, name)         => acc :+ s"$name"
-        case Field(Some(parent), name) => loop(parent, acc :+ s".$name")
+        case Field(None, name)         => s"$name" +: acc
+        case Field(Some(parent), name) => loop(parent, s".$name" +: acc)
       }
 
-    loop(self, List.empty).reverse.mkString("")
+    loop(self, List.empty).mkString("")
   }
 }
 
