@@ -54,6 +54,16 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
+  def boolQuery(): BoolQuery = BoolQuery.empty
+
+  def contains(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, s"*$value*")
+
+  def exists(field: Field[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
+
+  def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
+
+  def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
+
   def matches[A: ElasticPrimitive](
     field: Field[_, A],
     multiField: Option[String] = None,
@@ -64,14 +74,6 @@ object ElasticQuery {
   def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Match] =
     MatchQuery(field, value)
 
-  def boolQuery(): BoolQuery = BoolQuery.empty
-
-  def exists(field: Field[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
-
-  def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
-
-  def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
-
   def range[A](
     field: Field[_, A],
     multiField: Option[String] = None
@@ -79,6 +81,8 @@ object ElasticQuery {
     RangeQuery.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
 
   def range(field: String): RangeQuery[Any, Unbounded.type, Unbounded.type] = RangeQuery.empty[Any](field)
+
+  def startsWith(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, s"$value*")
 
   def term[A: ElasticPrimitive](
     field: Field[_, A],

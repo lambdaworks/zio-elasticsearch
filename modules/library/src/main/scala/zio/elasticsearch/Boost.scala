@@ -15,15 +15,15 @@ object Boost {
         case q: MatchAllQuery => q.copy(boost = Some(value))
       }
 
-    implicit val wildcardWithBoost: WithBoost[Wildcard] = (query: ElasticQuery[Wildcard], value: Double) =>
-      query match {
-        case q: WildcardQuery => q.copy(boost = Some(value))
-      }
-
     implicit def termWithBoost[A: ElasticPrimitive]: WithBoost[Term[A]] =
       (query: ElasticQuery[Term[A]], value: Double) =>
         query match {
           case q: TermQuery[A] => q.copy(boost = Some(value))
         }
+
+    implicit val wildcardWithBoost: WithBoost[Wildcard] = (query: ElasticQuery[Wildcard], value: Double) =>
+      query match {
+        case q: WildcardQuery => q.copy(boost = Some(value))
+      }
   }
 }

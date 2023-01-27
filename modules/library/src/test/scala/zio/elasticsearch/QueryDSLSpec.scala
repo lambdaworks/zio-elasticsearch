@@ -291,27 +291,53 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create Wildcard Query") {
-          val wildcardQuery = wildcard(field = "day_of_week", value = "M*")
+          val wildcardQuery1 = contains(field = "day_of_week", value = "M")
+          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M")
+          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*")
 
-          assert(wildcardQuery)(equalTo(WildcardQuery(field = "day_of_week", value = "M*")))
+          assert(wildcardQuery1)(equalTo(WildcardQuery(field = "day_of_week", value = "*M*"))) &&
+          assert(wildcardQuery2)(equalTo(WildcardQuery(field = "day_of_week", value = "M*"))) &&
+          assert(wildcardQuery3)(equalTo(WildcardQuery(field = "day_of_week", value = "M*")))
         },
         test("successfully create Wildcard Query with boost") {
-          val wildcardQuery = wildcard(field = "day_of_week", value = "M*").boost(1.0)
+          val wildcardQuery1 = contains(field = "day_of_week", value = "M").boost(1.0)
+          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").boost(1.0)
+          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
 
-          assert(wildcardQuery)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0))))
+          assert(wildcardQuery1)(equalTo(WildcardQuery(field = "day_of_week", value = "*M*", boost = Some(1.0)))) &&
+          assert(wildcardQuery2)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0)))) &&
+          assert(wildcardQuery3)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0))))
         },
         test("successfully create case insensitive Wildcard Query") {
-          val wildcardQuery = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
+          val wildcardQuery1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
+          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").caseInsensitiveTrue
+          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
 
-          assert(wildcardQuery)(
-            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true)))
+          assert(wildcardQuery1)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "*M*", caseInsensitive = Some(true)))
+          ) &&
+          assert(wildcardQuery2)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", caseInsensitive = Some(true)))
+          ) &&
+          assert(wildcardQuery3)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", caseInsensitive = Some(true)))
           )
         },
         test("successfully create case insensitive Wildcard Query with boost") {
-          val wildcardQuery = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
+          val wildcardQuery1 = contains(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
+          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
+          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
 
-          assert(wildcardQuery)(
-            equalTo(WildcardQuery(field = "day_of_week", value = "M*", caseInsensitive = Some(true)))
+          assert(wildcardQuery1)(
+            equalTo(
+              WildcardQuery(field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = Some(true))
+            )
+          ) &&
+          assert(wildcardQuery2)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true)))
+          ) &&
+          assert(wildcardQuery3)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true)))
           )
         }
       ),
@@ -623,8 +649,22 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Wildcard query") {
-          val query = wildcard(field = "day_of_week", value = "M*")
-          val expected =
+          val query1 = contains(field = "day_of_week", value = "M")
+          val query2 = startsWith(field = "day_of_week", value = "M")
+          val query3 = wildcard(field = "day_of_week", value = "M*")
+          val expected1 =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "*M*"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expected23 =
             """
               |{
               |  "query": {
@@ -637,11 +677,28 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
+          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
+          assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode Wildcard query with boost") {
-          val query = wildcard(field = "day_of_week", value = "M*").boost(1.0)
-          val expected =
+          val query1 = contains(field = "day_of_week", value = "M").boost(1.0)
+          val query2 = startsWith(field = "day_of_week", value = "M").boost(1.0)
+          val query3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
+          val expected1 =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "*M*",
+              |        "boost": 1.0
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expected23 =
             """
               |{
               |  "query": {
@@ -655,11 +712,28 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson))
+          assert(query2.toJsonBody)(equalTo(expected23.toJson))
+          assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode case insensitive Wildcard query") {
-          val query = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
-          val expected =
+          val query1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
+          val query2 = startsWith(field = "day_of_week", value = "M").caseInsensitiveTrue
+          val query3 = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
+          val expected1 =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "*M*",
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expected23 =
             """
               |{
               |  "query": {
@@ -673,11 +747,29 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson))
+          assert(query2.toJsonBody)(equalTo(expected23.toJson))
+          assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode case insensitive Wildcard query with boost") {
-          val query = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
-          val expected =
+          val query1 = contains(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
+          val query2 = startsWith(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
+          val query3 = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
+          val expected1 =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "*M*",
+              |        "boost": 1.0,
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expected23 =
             """
               |{
               |  "query": {
@@ -692,7 +784,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson))
+          assert(query2.toJsonBody)(equalTo(expected23.toJson))
+          assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode Bulk request body") {
           val bulkQuery = IndexName.make("users").map { index =>
