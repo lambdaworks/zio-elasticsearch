@@ -54,8 +54,8 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
-  def matches[S, A: ElasticPrimitive](
-    field: Field[S, A],
+  def matches[A: ElasticPrimitive](
+    field: Field[_, A],
     multiField: Option[String] = None,
     value: A
   ): ElasticQuery[Match] =
@@ -80,8 +80,8 @@ object ElasticQuery {
 
   def range(field: String): RangeQuery[Any, Unbounded.type, Unbounded.type] = RangeQuery.empty[Any](field)
 
-  def term[S, A: ElasticPrimitive](
-    field: Field[S, A],
+  def term[A: ElasticPrimitive](
+    field: Field[_, A],
     multiField: Option[String] = None,
     value: A
   ): ElasticQuery[Term[A]] =
