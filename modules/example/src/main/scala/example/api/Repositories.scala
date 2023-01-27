@@ -44,7 +44,7 @@ object Repositories {
                 case CreationOutcome.Created =>
                   Response.json(repo.toJson).setStatus(Created)
                 case CreationOutcome.AlreadyExists =>
-                  Response.json("").setStatus(BadRequest)
+                  Response.json("Repository with given id already exists.").setStatus(BadRequest)
               }
           }
           .orDie
