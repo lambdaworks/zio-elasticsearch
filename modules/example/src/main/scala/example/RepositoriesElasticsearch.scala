@@ -1,10 +1,22 @@
 package example
 
 import zio._
-import zio.elasticsearch.{DeletionOutcome, DocumentId, ElasticExecutor, ElasticRequest, Routing}
+import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.{
+  CreationOutcome,
+  DeletionOutcome,
+  DocumentId,
+  ElasticExecutor,
+  ElasticQuery,
+  ElasticRequest,
+  Routing
+}
 import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
+
+  def findAll(): Task[List[GitHubRepo]] =
+    executor.execute(ElasticRequest.search[GitHubRepo](Index, matchAll()))
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
@@ -13,25 +25,20 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       res     <- executor.execute(req)
     } yield res
 
-  def create(repository: GitHubRepo): Task[DocumentId] =
+  def create(repository: GitHubRepo): Task[CreationOutcome] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, repository).routing(routing).refreshTrue
+      req      = ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
       res     <- executor.execute(req)
     } yield res
 
   def createAll(repositories: List[GitHubRepo]): Task[Unit] =
     for {
-      reqs <- ZIO.collectAllPar {
-                repositories.map { repository =>
-                  routingOf(repository.organization).map(
-                    ElasticRequest
-                      .create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
-                      .routing(_)
-                  )
-                }
-              }
-      bulkReq = ElasticRequest.bulk(reqs: _*)
+      routing <- routingOf(organization)
+      reqs = repositories.map { repository =>
+               ElasticRequest.create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+             }
+      bulkReq = ElasticRequest.bulk(reqs: _*).routing(routing)
       _      <- executor.execute(bulkReq)
     } yield ()
 
@@ -49,6 +56,9 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
       res     <- executor.execute(req)
     } yield res
 
+  def search(query: ElasticQuery[_]): Task[List[GitHubRepo]] =
+    executor.execute(ElasticRequest.search[GitHubRepo](Index, query))
+
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
     Routing.make(value).toZIO.mapError(e => new IllegalArgumentException(e))
 
@@ -56,10 +66,13 @@ final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
 object RepositoriesElasticsearch {
 
+  def findAll(): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findAll())
+
   def findById(organization: String, id: String): RIO[RepositoriesElasticsearch, Option[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findById(organization, id))
 
-  def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, DocumentId] =
+  def create(repository: GitHubRepo): RIO[RepositoriesElasticsearch, CreationOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.create(repository))
 
   def createAll(repositories: List[GitHubRepo]): RIO[RepositoriesElasticsearch, Unit] =
@@ -70,6 +83,9 @@ object RepositoriesElasticsearch {
 
   def remove(organization: String, id: String): RIO[RepositoriesElasticsearch, DeletionOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
+
+  def search(query: ElasticQuery[_]): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.search(query))
 
   lazy val live: URLayer[ElasticExecutor, RepositoriesElasticsearch] =
     ZLayer.fromFunction(RepositoriesElasticsearch(_))
