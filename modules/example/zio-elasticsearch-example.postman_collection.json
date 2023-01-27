@@ -84,7 +84,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scrul-detector\",\n    \"url\": \"https://github.com/lambdaworks/scurl-detector\",\n    \"description\": \"Scala library that detects and extracts URLs from text.\",\n    \"lastCommitAt\": \"2022-12-01T14:27:11.436\",\n    \"stars\": 14,\n    \"forks\": 1\n}",
+					"raw": "{\n    \"id\": \"1234567\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scrul-detector\",\n    \"url\": \"https://github.com/lambdaworks/scurl-detector\",\n    \"description\": \"Scala library that detects and extracts URLs from text.\",\n    \"lastCommitAt\": \"2022-12-01T14:27:11.436\",\n    \"stars\": 14,\n    \"forks\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -142,13 +142,33 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scountries\",\n    \"url\": \"https://github.com/lambdaworks/scountries\",\n    \"description\": \"Scala library that provides an enumeration of ISO 3166 codes for countries, along with their subdivisions.\",\n    \"lastCommitAt\": \"2022-12-08T19:10:46.016\",\n    \"stars\": 16,\n    \"forks\": 1\n}",
+					"raw": "{\n    \"id\": \"1234567\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scountries\",\n    \"url\": \"https://github.com/lambdaworks/scountries\",\n    \"description\": \"Scala library that provides an enumeration of ISO 3166 codes for countries, along with their subdivisions.\",\n    \"lastCommitAt\": \"2022-12-08T19:10:46.016\",\n    \"stars\": 16,\n    \"forks\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
 						}
 					}
 				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Retrieving all repositories",
+			"request": {
+				"method": "GET",
+				"header": [],
 				"url": {
 					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories",
 					"protocol": "http",
@@ -281,7 +301,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"organization\": \"lambdaworks\",\n    \"name\": \"zio-elasticsearch\",\n    \"url\": \"https://github.com/lambdaworks/zio-elasticsearch\",\n    \"description\": \"ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.\",\n    \"lastCommitAt\": \"2022-12-27T15:58:30.996\",\n    \"stars\": 21,\n    \"forks\": 5\n}",
+					"raw": "{\n    \"id\": \"1234567\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"zio-elasticsearch\",\n    \"url\": \"https://github.com/lambdaworks/zio-elasticsearch\",\n    \"description\": \"ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.\",\n    \"lastCommitAt\": \"2022-12-27T15:58:30.996\",\n    \"stars\": 21,\n    \"forks\": 5\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -359,6 +379,31 @@
 						"api",
 						"repositories",
 						"lw-zio-elasticsearch"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search for repositories with 4 forks and with latest commit after 2019-12-04",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": {\"And\": {}},\n        \"filters\": [\n            {\n                \"IntCriteria\": {\n                    \"field\": {\"Forks\": {}},\n                    \"operator\": {\"EqualTo\": {}},\n                    \"value\": 4\n                }\n            },\n            {\n                \"DateCriteria\": {\n                    \"field\": {\"LastCommitAt\": {}},\n                    \"operator\": {\"GreaterThan\": {}},\n                    \"value\": \"2019-12-04T18:38:04\"\n                }\n            }\n        ]\n    }\n}\n"
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"search"
 					]
 				}
 			},
