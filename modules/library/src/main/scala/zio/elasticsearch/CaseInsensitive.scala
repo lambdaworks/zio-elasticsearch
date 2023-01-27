@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticQuery.TermQuery
-import zio.elasticsearch.ElasticQueryType.Term
+import zio.elasticsearch.ElasticQuery.{TermQuery, WildcardQuery}
+import zio.elasticsearch.ElasticQueryType.{Term, Wildcard}
 
 object CaseInsensitive {
 
@@ -14,6 +14,12 @@ object CaseInsensitive {
       (query: ElasticQuery[Term[String]], value: Boolean) =>
         query match {
           case q: TermQuery[String] => q.copy(caseInsensitive = Some(value))
+        }
+
+    implicit val wildcardWithCaseInsensitiveString: WithCaseInsensitive[Wildcard] =
+      (query: ElasticQuery[Wildcard], value: Boolean) =>
+        query match {
+          case q: WildcardQuery => q.copy(caseInsensitive = Some(value))
         }
   }
 }

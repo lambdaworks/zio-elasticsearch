@@ -89,6 +89,8 @@ object ElasticQuery {
 
   def term[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Term[A]] = TermQuery(field, value)
 
+  def wildcard(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, value)
+
   private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery[_]], should: List[ElasticQuery[_]])
       extends ElasticQuery[Bool] { self =>
 
@@ -194,6 +196,22 @@ object ElasticQuery {
       Obj("term" -> Obj(field -> Obj(termFields.toList: _*)))
     }
   }
+
+  private[elasticsearch] final case class WildcardQuery(
+    field: String,
+    value: String,
+    boost: Option[Double] = None,
+    caseInsensitive: Option[Boolean] = None
+    // todo rewrite param???
+  ) extends ElasticQuery[Wildcard] { self =>
+    override def toJson: Json = {
+      val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
+        "case_insensitive" -> Json.Bool(_)
+      )
+      Obj("wildcard" -> Obj(field -> Obj(wildcardFields.toList: _*)))
+    }
+  }
+
 }
 
 sealed trait ElasticQueryType
@@ -205,4 +223,5 @@ object ElasticQueryType {
   trait MatchAll extends ElasticQueryType
   trait Range    extends ElasticQueryType
   trait Term[A]  extends ElasticQueryType
+  trait Wildcard extends ElasticQueryType
 }

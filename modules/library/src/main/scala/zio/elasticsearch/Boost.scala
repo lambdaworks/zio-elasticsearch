@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticQuery.{ElasticPrimitive, MatchAllQuery, TermQuery}
-import zio.elasticsearch.ElasticQueryType.{MatchAll, Term}
+import zio.elasticsearch.ElasticQuery.{ElasticPrimitive, MatchAllQuery, TermQuery, WildcardQuery}
+import zio.elasticsearch.ElasticQueryType.{MatchAll, Term, Wildcard}
 
 object Boost {
 
@@ -13,6 +13,11 @@ object Boost {
     implicit val matchAllWithBoost: WithBoost[MatchAll] = (query: ElasticQuery[MatchAll], value: Double) =>
       query match {
         case q: MatchAllQuery => q.copy(boost = Some(value))
+      }
+
+    implicit val wildcardWithBoost: WithBoost[Wildcard] = (query: ElasticQuery[Wildcard], value: Double) =>
+      query match {
+        case q: WildcardQuery => q.copy(boost = Some(value))
       }
 
     implicit def termWithBoost[A: ElasticPrimitive]: WithBoost[Term[A]] =

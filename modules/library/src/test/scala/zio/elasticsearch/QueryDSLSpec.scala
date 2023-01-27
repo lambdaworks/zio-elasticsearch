@@ -289,6 +289,30 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryString)(
             equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0), caseInsensitive = Some(true)))
           )
+        },
+        test("successfully create Wildcard Query") {
+          val wildcardQuery = wildcard(field = "day_of_week", value = "M*")
+
+          assert(wildcardQuery)(equalTo(WildcardQuery(field = "day_of_week", value = "M*")))
+        },
+        test("successfully create Wildcard Query with boost") {
+          val wildcardQuery = wildcard(field = "day_of_week", value = "M*").boost(1.0)
+
+          assert(wildcardQuery)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0))))
+        },
+        test("successfully create case sensitive Wildcard Query") {
+          val wildcardQuery = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
+
+          assert(wildcardQuery)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true)))
+          )
+        },
+        test("successfully create case sensitive Wildcard Query with boost") {
+          val wildcardQuery = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
+
+          assert(wildcardQuery)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", caseInsensitive = Some(true)))
+          )
         }
       ),
       suite("encoding ElasticQuery as JSON")(
@@ -588,6 +612,78 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |    "term": {
               |      "day_of_week": {
               |        "value": "Monday",
+              |        "boost": 1.0,
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Wildcard query") {
+          val query = wildcard(field = "day_of_week", value = "M*")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "M*"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode Wildcard query with boost") {
+          val query = wildcard(field = "day_of_week", value = "M*").boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "M*",
+              |        "boost": 1.0
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode case insensitive Wildcard query") {
+          val query = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "M*",
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
+        test("properly encode case insensitive Wildcard query with boost") {
+          val query = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "day_of_week": {
+              |        "value": "M*",
               |        "boost": 1.0,
               |        "case_insensitive": true
               |      }
