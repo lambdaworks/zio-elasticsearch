@@ -5,8 +5,9 @@ import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.BulkRequest
 import zio.elasticsearch.utils._
 import zio.prelude.Newtype.unsafeWrap
+import zio.prelude.Validation
 import zio.schema.{DeriveSchema, Schema}
-import zio.test.Assertion.{equalTo, isSome}
+import zio.test.Assertion.equalTo
 import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
@@ -493,23 +494,24 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bulk request body") {
-          val index = IndexName("users")
-          val user =
-            UserDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
-          val req1 =
-            ElasticRequest
-              .create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
-              .routing(unsafeWrap(Routing)(user.id))
-          val req2 = ElasticRequest.create[UserDocument](index, user).routing(unsafeWrap(Routing)(user.id))
-          val req3 =
-            ElasticRequest
-              .upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
-              .routing(unsafeWrap(Routing)(user.id))
-          val req4 =
-            ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(unsafeWrap(Routing)(user.id))
-          val bulkQuery = ElasticRequest.bulk(req1, req2, req3, req4) match {
-            case r: BulkRequest => Some(r.body)
-            case _              => None
+          val bulkQuery = IndexName.make("users").map { index =>
+            val user =
+              UserDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24)
+            val req1 =
+              ElasticRequest
+                .create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
+                .routing(unsafeWrap(Routing)(user.id))
+            val req2 = ElasticRequest.create[UserDocument](index, user).routing(unsafeWrap(Routing)(user.id))
+            val req3 =
+              ElasticRequest
+                .upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
+                .routing(unsafeWrap(Routing)(user.id))
+            val req4 =
+              ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(unsafeWrap(Routing)(user.id))
+            ElasticRequest.bulk(req1, req2, req3, req4) match {
+              case r: BulkRequest => Some(r.body)
+              case _              => None
+            }
           }
 
           val expectedBody =
@@ -522,7 +524,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "WeeMwR5d5" } }
                |""".stripMargin
 
-          assert(bulkQuery)(isSome(equalTo(expectedBody)))
+          assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
         }
       )
     )
