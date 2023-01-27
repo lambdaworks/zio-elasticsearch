@@ -300,14 +300,14 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(wildcardQuery)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0))))
         },
-        test("successfully create case sensitive Wildcard Query") {
+        test("successfully create case insensitive Wildcard Query") {
           val wildcardQuery = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
 
           assert(wildcardQuery)(
             equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true)))
           )
         },
-        test("successfully create case sensitive Wildcard Query with boost") {
+        test("successfully create case insensitive Wildcard Query with boost") {
           val wildcardQuery = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
 
           assert(wildcardQuery)(

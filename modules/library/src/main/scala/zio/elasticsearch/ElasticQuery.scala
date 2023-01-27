@@ -202,7 +202,6 @@ object ElasticQuery {
     value: String,
     boost: Option[Double] = None,
     caseInsensitive: Option[Boolean] = None
-    // todo rewrite param???
   ) extends ElasticQuery[Wildcard] { self =>
     override def toJson: Json = {
       val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
