@@ -44,7 +44,7 @@ object Repositories {
                 case CreationOutcome.Created =>
                   Response.json(repo.toJson).setStatus(Created)
                 case CreationOutcome.AlreadyExists =>
-                  Response.json("").setStatus(Conflict)
+                  Response.json("").setStatus(BadRequest)
               }
           }
           .orDie
