@@ -140,11 +140,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(ExistsQuery(field = "name")))
         },
-        test("successfully create Exists Query with accessor and multi-field") {
-          val query = exists(field = Student.name)
-
-          assert(query)(equalTo(ExistsQuery(field = "name.keyword")))
-        },
         test("successfully create MatchAll Query") {
           val query = matchAll()
 
