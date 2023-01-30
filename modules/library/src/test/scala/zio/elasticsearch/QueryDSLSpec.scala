@@ -57,7 +57,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   MatchQuery(field = "day_of_week", value = "Monday"),
                   MatchQuery(field = "customer_gender", value = "MALE")
                 ),
-                should = List.empty
+                should = Nil
               )
             )
           )
@@ -72,7 +72,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               BoolQuery(
-                must = List.empty,
+                must = Nil,
                 should = List(
                   MatchQuery(field = "day_of_week", value = "Monday"),
                   MatchQuery(field = "customer_gender", value = "MALE")
