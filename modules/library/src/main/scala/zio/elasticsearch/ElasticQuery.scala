@@ -54,6 +54,16 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
+  def boolQuery(): BoolQuery = BoolQuery.empty
+
+  def contains(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, s"*$value*")
+
+  def exists(field: Field[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
+
+  def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
+
+  def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
+
   def matches[A: ElasticPrimitive](
     field: Field[_, A],
     multiField: Option[String] = None,
@@ -64,14 +74,6 @@ object ElasticQuery {
   def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Match] =
     MatchQuery(field, value)
 
-  def boolQuery(): BoolQuery = BoolQuery.empty
-
-  def exists(field: Field[_, _]): ElasticQuery[Exists] = ExistsQuery(field.toString)
-
-  def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
-
-  def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
-
   def range[A](
     field: Field[_, A],
     multiField: Option[String] = None
@@ -79,6 +81,8 @@ object ElasticQuery {
     RangeQuery.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
 
   def range(field: String): RangeQuery[Any, Unbounded.type, Unbounded.type] = RangeQuery.empty[Any](field)
+
+  def startsWith(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, s"$value*")
 
   def term[A: ElasticPrimitive](
     field: Field[_, A],
@@ -88,6 +92,8 @@ object ElasticQuery {
     TermQuery(field.toString ++ multiField.map("." ++ _).getOrElse(""), value)
 
   def term[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Term[A]] = TermQuery(field, value)
+
+  def wildcard(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, value)
 
   private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery[_]], should: List[ElasticQuery[_]])
       extends ElasticQuery[Bool] { self =>
@@ -194,6 +200,21 @@ object ElasticQuery {
       Obj("term" -> Obj(field -> Obj(termFields.toList: _*)))
     }
   }
+
+  private[elasticsearch] final case class WildcardQuery(
+    field: String,
+    value: String,
+    boost: Option[Double] = None,
+    caseInsensitive: Option[Boolean] = None
+  ) extends ElasticQuery[Wildcard] { self =>
+    override def toJson: Json = {
+      val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
+        "case_insensitive" -> Json.Bool(_)
+      )
+      Obj("wildcard" -> Obj(field -> Obj(wildcardFields.toList: _*)))
+    }
+  }
+
 }
 
 sealed trait ElasticQueryType
@@ -205,4 +226,5 @@ object ElasticQueryType {
   trait MatchAll extends ElasticQueryType
   trait Range    extends ElasticQueryType
   trait Term[A]  extends ElasticQueryType
+  trait Wildcard extends ElasticQueryType
 }

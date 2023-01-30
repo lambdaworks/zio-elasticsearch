@@ -204,6 +204,73 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ before(ElasticRequest.createIndex(secondSearchIndex, None).execute) @@ after(
             ElasticRequest.deleteIndex(secondSearchIndex).execute.orDie
+          ),
+          test("search for a document which contains a term using a wildcard query") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                val result =
+                  for {
+                    _ <- ElasticRequest.deleteByQuery(firstSearchIndex, matchAll()).execute
+                    _ <-
+                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer).execute
+                    _ <-
+                      ElasticRequest
+                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                        .refreshTrue
+                        .execute
+                    query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
+                    res  <- ElasticRequest.search[CustomerDocument](firstSearchIndex, query).execute
+                  } yield res
+
+                assertZIO(result)(Assertion.contains(firstCustomer))
+            }
+          } @@ before(ElasticRequest.createIndex(firstSearchIndex, None).execute) @@ after(
+            ElasticRequest.deleteIndex(firstSearchIndex).execute.orDie
+          ),
+          test("search for a document which starts with a term using a wildcard query") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                val result =
+                  for {
+                    _ <- ElasticRequest.deleteByQuery(firstSearchIndex, matchAll()).execute
+                    _ <-
+                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer).execute
+                    _ <-
+                      ElasticRequest
+                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                        .refreshTrue
+                        .execute
+                    query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
+                    res  <- ElasticRequest.search[CustomerDocument](firstSearchIndex, query).execute
+                  } yield res
+
+                assertZIO(result)(Assertion.contains(firstCustomer))
+            }
+          } @@ before(ElasticRequest.createIndex(firstSearchIndex, None).execute) @@ after(
+            ElasticRequest.deleteIndex(firstSearchIndex).execute.orDie
+          ),
+          test("search for a document which conforms to a pattern using a wildcard query") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                val result =
+                  for {
+                    _ <- ElasticRequest.deleteByQuery(firstSearchIndex, matchAll()).execute
+                    _ <-
+                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer).execute
+                    _ <-
+                      ElasticRequest
+                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                        .refreshTrue
+                        .execute
+                    query =
+                      wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
+                    res <- ElasticRequest.search[CustomerDocument](firstSearchIndex, query).execute
+                  } yield res
+
+                assertZIO(result)(Assertion.contains(firstCustomer))
+            }
+          } @@ before(ElasticRequest.createIndex(firstSearchIndex, None).execute) @@ after(
+            ElasticRequest.deleteIndex(firstSearchIndex).execute.orDie
           )
         ) @@ shrinks(0),
         suite("deleting by query")(
