@@ -12,9 +12,9 @@ object Annotation {
     annotations.collect { case name(value) => value }.headOption
 }
 
-private[elasticsearch] final case class Field[From, To](parent: Option[Field[From, _]], name: String) { self =>
+private[elasticsearch] final case class Field[S, A](parent: Option[Field[S, _]], name: String) { self =>
 
-  def /[To2](that: Field[To, To2]): Field[From, To2] =
+  def /[B](that: Field[A, B]): Field[S, B] =
     Field(that.parent.map(self / _).orElse(Some(self)), that.name)
 
   override def toString: String = {
@@ -29,16 +29,16 @@ private[elasticsearch] final case class Field[From, To](parent: Option[Field[Fro
 }
 
 object ElasticQueryAccessorBuilder extends AccessorBuilder {
-  override type Lens[_, From, To]   = Field[From, To]
-  override type Prism[_, From, To]  = Unit
-  override type Traversal[From, To] = Unit
+  override type Lens[_, S, A]   = Field[S, A]
+  override type Prism[_, S, A]  = Unit
+  override type Traversal[S, A] = Unit
 
-  override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[F, S, A] = {
+  override def makeLens[_, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[_, S, A] = {
     val label = Annotation.maybeName(term.annotations).getOrElse(term.name)
     Field[S, A](None, label)
   }
 
-  override def makePrism[F, S, A](sum: Schema.Enum[S], term: Schema.Case[S, A]): Prism[F, S, A] = ()
+  override def makePrism[_, S, A](sum: Schema.Enum[S], term: Schema.Case[S, A]): Prism[_, S, A] = ()
 
   override def makeTraversal[S, A](collection: Schema.Collection[S, A], element: Schema[A]): Traversal[S, A] = ()
 }
