@@ -712,8 +712,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson))
-          assert(query2.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
+          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
           assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode case insensitive Wildcard query") {
@@ -747,8 +747,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson))
-          assert(query2.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
+          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
           assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode case insensitive Wildcard query with boost") {
@@ -784,8 +784,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson))
-          assert(query2.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
+          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
           assert(query3.toJsonBody)(equalTo(expected23.toJson))
         },
         test("properly encode Bulk request body") {
