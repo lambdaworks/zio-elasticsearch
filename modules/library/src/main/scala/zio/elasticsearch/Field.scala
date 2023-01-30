@@ -24,7 +24,7 @@ private[elasticsearch] final case class Field[S, A](parent: Option[Field[S, _]],
       case Field(Some(parent), name) => loop(parent, s".$name" +: acc)
     }
 
-    loop(self, List.empty).mkString("")
+    loop(self, Nil).mkString
   }
 }
 
