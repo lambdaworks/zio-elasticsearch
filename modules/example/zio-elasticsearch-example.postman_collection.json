@@ -1,9 +1,8 @@
 {
 	"info": {
-		"_postman_id": "7bf079a3-55fa-4833-9627-648026c5fda4",
+		"_postman_id": "056ad5a1-fa75-4ff1-a176-3c6f9dec5b7f",
 		"name": "zio-elasticsearch-example",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "1136886"
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
@@ -392,6 +391,31 @@
 				"body": {
 					"mode": "raw",
 					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": {\"And\": {}},\n        \"filters\": [\n            {\n                \"IntCriteria\": {\n                    \"field\": {\"Forks\": {}},\n                    \"operator\": {\"EqualTo\": {}},\n                    \"value\": 4\n                }\n            },\n            {\n                \"DateCriteria\": {\n                    \"field\": {\"LastCommitAt\": {}},\n                    \"operator\": {\"GreaterThan\": {}},\n                    \"value\": \"2019-12-04T18:38:04\"\n                }\n            }\n        ]\n    }\n}\n"
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"search"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search for documents in which name starts with term1 and contains term2",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": {\"And\": {}},\n        \"filters\": [\n            {\n                \"StringCriteria\": {\n                    \"field\": {\"Name\": {}},\n                    \"operator\": {\"StartsWith\": {}},\n                    \"value\": \"scrul\"\n                }\n            },\n            {\n                \"StringCriteria\": {\n                    \"field\": {\"Name\": {}},\n                    \"operator\": {\"Contains\": {}},\n                    \"value\": \"detector\"\n                }\n            }\n        ]\n    }\n}"
 				},
 				"url": {
 					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search",
