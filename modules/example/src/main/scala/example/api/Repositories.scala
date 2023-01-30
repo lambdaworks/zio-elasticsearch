@@ -99,11 +99,10 @@ object Repositories {
 
   private def createElasticQuery(query: Criteria): ElasticQuery[_] =
     query match {
-      case IntCriteria(field, operator, value) =>
+      case CompoundCriteria(operator, filters) =>
         operator match {
-          case GreaterThan => ElasticQuery.range(field.toString).gt(value)
-          case LessThan    => ElasticQuery.range(field.toString).lt(value)
-          case EqualTo     => ElasticQuery.matches(field.toString, value)
+          case And => boolQuery().must(filters.map(createElasticQuery): _*)
+          case Or  => boolQuery().should(filters.map(createElasticQuery): _*)
         }
       case DateCriteria(field, operator, value) =>
         operator match {
@@ -111,16 +110,17 @@ object Repositories {
           case LessThan    => ElasticQuery.range(field.toString).lt(value.toString)
           case EqualTo     => ElasticQuery.matches(field.toString, value.toString)
         }
+      case IntCriteria(field, operator, value) =>
+        operator match {
+          case GreaterThan => ElasticQuery.range(field.toString).gt(value)
+          case LessThan    => ElasticQuery.range(field.toString).lt(value)
+          case EqualTo     => ElasticQuery.matches(field.toString, value)
+        }
       case StringCriteria(field, operator, value) =>
         operator match {
           case StringFilterOperator.Contains   => ElasticQuery.contains(field.toString, value)
           case StringFilterOperator.StartsWith => ElasticQuery.startsWith(field.toString, value)
           case StringFilterOperator.Pattern    => ElasticQuery.wildcard(field.toString, value)
-        }
-      case CompoundCriteria(operator, filters) =>
-        operator match {
-          case And => boolQuery().must(filters.map(createElasticQuery): _*)
-          case Or  => boolQuery().should(filters.map(createElasticQuery): _*)
         }
     }
 
