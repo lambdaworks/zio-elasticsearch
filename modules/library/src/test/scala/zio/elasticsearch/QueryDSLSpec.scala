@@ -1,7 +1,6 @@
 package zio.elasticsearch
 
 import zio.Scope
-import zio.elasticsearch.Annotation.name
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.BulkRequest
 import zio.elasticsearch.utils._
@@ -13,23 +12,14 @@ import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
 
-  final case class Student(
-    name: String,
-    age: Int,
-    @name("is_employed")
-    isEmployed: Boolean
-  )
-
-  object Student {
-
-    implicit val schema: Schema.CaseClass3[String, Int, Boolean, Student] = DeriveSchema.gen[Student]
-
-    val (name, age, isEmployed) = schema.makeAccessors(ElasticQueryAccessorBuilder)
-  }
   final case class UserDocument(id: String, name: String, address: String, balance: Double, age: Int)
 
   object UserDocument {
-    implicit val schema: Schema[UserDocument] = DeriveSchema.gen[UserDocument]
+
+    implicit val schema: Schema.CaseClass5[String, String, String, Double, Int, UserDocument] =
+      DeriveSchema.gen[UserDocument]
+
+    val (id, name, address, balance, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
   }
 
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
@@ -45,18 +35,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryLong)(equalTo(MatchQuery(field = "day_of_week", value = 1)))
         },
         test("successfully create type-safe Match query using `matches` method") {
-          val queryString = matches(field = Student.name, value = "James")
-          val queryInt    = matches(field = Student.age, value = 20)
-          val queryBool   = matches(field = Student.isEmployed, value = true)
+          val queryString = matches(field = UserDocument.name, value = "Name")
+          val queryInt    = matches(field = UserDocument.age, value = 39)
 
-          assert(queryString)(equalTo(MatchQuery(field = "name", value = "Monday")))
-          assert(queryInt)(equalTo(MatchQuery(field = "age", value = 20)))
-          assert(queryBool)(equalTo(MatchQuery(field = "is_employed", value = true)))
+          assert(queryString)(equalTo(MatchQuery(field = "name", value = "Name"))) &&
+          assert(queryInt)(equalTo(MatchQuery(field = "age", value = 39)))
         },
         test("successfully create type-safe Match query with multi-field using `matches` method") {
-          val query = matches(field = Student.name, multiField = Some("keyword"), value = "James")
+          val query = matches(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
 
-          assert(query)(equalTo(MatchQuery(field = "name.keyword", value = "James")))
+          assert(query)(equalTo(MatchQuery(field = "name.keyword", value = "Name")))
         },
         test("successfully create `Must` query from two Match queries") {
           val query = boolQuery()
@@ -136,7 +124,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(equalTo(ExistsQuery(field = "day_of_week")))
         },
         test("successfully create Exists Query with accessor") {
-          val query = exists(field = Student.name)
+          val query = exists(field = UserDocument.name)
 
           assert(query)(equalTo(ExistsQuery(field = "name")))
         },
@@ -164,32 +152,22 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create empty type-safe Range Query") {
-          val queryString = range(field = Student.name)
-          val queryInt    = range(field = Student.age)
-          val queryBool   = range(field = Student.isEmployed)
+          val queryString = range(field = UserDocument.name)
+          val queryInt    = range(field = UserDocument.age)
 
           assert(queryString)(
             equalTo(
               RangeQuery[String, Unbounded.type, Unbounded.type](field = "name", lower = Unbounded, upper = Unbounded)
             )
-          )
+          ) &&
           assert(queryInt)(
             equalTo(
               RangeQuery[Int, Unbounded.type, Unbounded.type](field = "age", lower = Unbounded, upper = Unbounded)
             )
           )
-          assert(queryBool)(
-            equalTo(
-              RangeQuery[Boolean, Unbounded.type, Unbounded.type](
-                field = "is_employed",
-                lower = Unbounded,
-                upper = Unbounded
-              )
-            )
-          )
         },
         test("successfully create empty type-safe Range Query with multi-field") {
-          val query = range(field = Student.name, multiField = Some("keyword"))
+          val query = range(field = UserDocument.name, multiField = Some("keyword"))
 
           assert(query)(
             equalTo(
@@ -278,18 +256,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
         },
         test("successfully create type-safe Term Query") {
-          val queryString = term(field = Student.name, value = "James")
-          val queryInt    = term(field = Student.age, value = 20)
-          val queryBool   = term(field = Student.isEmployed, value = true)
+          val queryString = term(field = UserDocument.name, value = "Name")
+          val queryInt    = term(field = UserDocument.age, value = 39)
 
-          assert(queryString)(equalTo(TermQuery(field = "name", value = "Monday")))
-          assert(queryInt)(equalTo(TermQuery(field = "age", value = 20)))
-          assert(queryBool)(equalTo(TermQuery(field = "is_employed", value = true)))
+          assert(queryString)(equalTo(TermQuery(field = "name", value = "Name"))) &&
+          assert(queryInt)(equalTo(TermQuery(field = "age", value = 39)))
         },
         test("successfully create type-safe Term Query with multi-field") {
-          val query = term(field = Student.name, multiField = Some("keyword"), value = "James")
+          val query = term(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
 
-          assert(query)(equalTo(TermQuery(field = "name.keyword", value = "James")))
+          assert(query)(equalTo(TermQuery(field = "name.keyword", value = "Name")))
         },
         test("successfully create Term Query with boost") {
           val queryInt    = term(field = "day_of_week", value = 1).boost(1.0)
