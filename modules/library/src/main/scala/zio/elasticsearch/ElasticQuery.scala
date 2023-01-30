@@ -208,7 +208,7 @@ object ElasticQuery {
     caseInsensitive: Option[Boolean] = None
   ) extends ElasticQuery[Wildcard] { self =>
     override def toJson: Json = {
-      val wildcardFields = Some("wildcard" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
+      val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
         "case_insensitive" -> Json.Bool(_)
       )
       Obj("wildcard" -> Obj(field -> Obj(wildcardFields.toList: _*)))
