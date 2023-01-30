@@ -10,14 +10,20 @@ object Criteria {
   implicit val schema: Schema[Criteria] = DeriveSchema.gen[Criteria]
 }
 
-final case class IntCriteria(field: IntFilter, operator: FilterOperator, value: Int) extends Criteria
+final case class CompoundCriteria(operator: CompoundOperator, filters: List[Criteria]) extends Criteria
 
 final case class DateCriteria(field: DateFilter, operator: FilterOperator, value: LocalDateTime) extends Criteria
 
-final case class CompoundCriteria(
-  operator: CompoundOperator,
-  filters: List[Criteria]
-) extends Criteria
+final case class IntCriteria(field: IntFilter, operator: FilterOperator, value: Int) extends Criteria
+
+final case class StringCriteria(field: StringFilter, operator: StringFilterOperator, value: String) extends Criteria
+
+sealed trait CompoundOperator
+
+object CompoundOperator {
+  case object And extends CompoundOperator
+  case object Or  extends CompoundOperator
+}
 
 sealed trait FilterOperator
 
@@ -27,11 +33,18 @@ object FilterOperator {
   case object EqualTo     extends FilterOperator
 }
 
-sealed trait CompoundOperator
+sealed trait StringFilterOperator
 
-object CompoundOperator {
-  case object And extends CompoundOperator
-  case object Or  extends CompoundOperator
+object StringFilterOperator {
+  case object Contains   extends StringFilterOperator
+  case object StartsWith extends StringFilterOperator
+  case object Pattern    extends StringFilterOperator
+}
+
+sealed trait DateFilter
+
+case object LastCommitAt extends DateFilter {
+  override def toString: String = "lastCommitAt"
 }
 
 sealed trait IntFilter
@@ -46,8 +59,26 @@ object IntFilter {
   }
 }
 
-sealed trait DateFilter
+sealed trait StringFilter
 
-case object LastCommitAt extends DateFilter {
-  override def toString: String = "lastCommitAt"
+object StringFilter {
+  case object Id extends StringFilter {
+    override def toString: String = "id"
+  }
+
+  case object Organization extends StringFilter {
+    override def toString: String = "organization"
+  }
+
+  case object Name extends StringFilter {
+    override def toString: String = "name"
+  }
+
+  case object Url extends StringFilter {
+    override def toString: String = "url"
+  }
+
+  case object Description extends StringFilter {
+    override def toString: String = "description"
+  }
 }
