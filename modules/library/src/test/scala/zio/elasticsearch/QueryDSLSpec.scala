@@ -15,7 +15,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
   final case class UserDocument(id: String, name: String, address: String, balance: Double, age: Int)
 
   object UserDocument {
-    implicit val schema: Schema[UserDocument] = DeriveSchema.gen[UserDocument]
+
+    implicit val schema: Schema.CaseClass5[String, String, String, Double, Int, UserDocument] =
+      DeriveSchema.gen[UserDocument]
+
+    val (id, name, address, balance, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
   }
 
   override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
@@ -29,6 +33,18 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryString)(equalTo(MatchQuery(field = "day_of_week", value = "Monday"))) &&
           assert(queryBool)(equalTo(MatchQuery(field = "day_of_week", value = true))) &&
           assert(queryLong)(equalTo(MatchQuery(field = "day_of_week", value = 1)))
+        },
+        test("successfully create type-safe Match query using `matches` method") {
+          val queryString = matches(field = UserDocument.name, value = "Name")
+          val queryInt    = matches(field = UserDocument.age, value = 39)
+
+          assert(queryString)(equalTo(MatchQuery(field = "name", value = "Name"))) &&
+          assert(queryInt)(equalTo(MatchQuery(field = "age", value = 39)))
+        },
+        test("successfully create type-safe Match query with multi-field using `matches` method") {
+          val query = matches(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
+
+          assert(query)(equalTo(MatchQuery(field = "name.keyword", value = "Name")))
         },
         test("successfully create `Must` query from two Match queries") {
           val query = boolQuery()
@@ -107,6 +123,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(ExistsQuery(field = "day_of_week")))
         },
+        test("successfully create Exists Query with accessor") {
+          val query = exists(field = UserDocument.name)
+
+          assert(query)(equalTo(ExistsQuery(field = "name")))
+        },
         test("successfully create MatchAll Query") {
           val query = matchAll()
 
@@ -120,35 +141,107 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create empty Range Query") {
           val query = range(field = "customer_age")
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = Unbounded)))
+          assert(query)(
+            equalTo(
+              RangeQuery[Any, Unbounded.type, Unbounded.type](
+                field = "customer_age",
+                lower = Unbounded,
+                upper = Unbounded
+              )
+            )
+          )
+        },
+        test("successfully create empty type-safe Range Query") {
+          val queryString = range(field = UserDocument.name)
+          val queryInt    = range(field = UserDocument.age)
+
+          assert(queryString)(
+            equalTo(
+              RangeQuery[String, Unbounded.type, Unbounded.type](field = "name", lower = Unbounded, upper = Unbounded)
+            )
+          ) &&
+          assert(queryInt)(
+            equalTo(
+              RangeQuery[Int, Unbounded.type, Unbounded.type](field = "age", lower = Unbounded, upper = Unbounded)
+            )
+          )
+        },
+        test("successfully create empty type-safe Range Query with multi-field") {
+          val query = range(field = UserDocument.name, multiField = Some("keyword"))
+
+          assert(query)(
+            equalTo(
+              RangeQuery[String, Unbounded.type, Unbounded.type](
+                field = "name.keyword",
+                lower = Unbounded,
+                upper = Unbounded
+              )
+            )
+          )
         },
         test("successfully create Range Query with upper bound") {
           val query = range(field = "customer_age").lt(23)
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = LessThan(23))))
+          assert(query)(
+            equalTo(
+              RangeQuery[Int, Unbounded.type, LessThan[Int]](
+                field = "customer_age",
+                lower = Unbounded,
+                upper = LessThan(23)
+              )
+            )
+          )
         },
         test("successfully create Range Query with lower bound") {
           val query = range(field = "customer_age").gt(23)
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = GreaterThan(23), upper = Unbounded)))
+          assert(query)(
+            equalTo(
+              RangeQuery[Int, GreaterThan[Int], Unbounded.type](
+                field = "customer_age",
+                lower = GreaterThan(23),
+                upper = Unbounded
+              )
+            )
+          )
         },
         test("successfully create Range Query with inclusive upper bound") {
           val query = range(field = "customer_age").lte(23)
 
-          assert(query)(equalTo(RangeQuery(field = "customer_age", lower = Unbounded, upper = LessThanOrEqualTo(23))))
+          assert(query)(
+            equalTo(
+              RangeQuery[Int, Unbounded.type, LessThanOrEqualTo[Int]](
+                field = "customer_age",
+                lower = Unbounded,
+                upper = LessThanOrEqualTo(23)
+              )
+            )
+          )
         },
         test("successfully create Range Query with inclusive lower bound") {
           val query = range(field = "customer_age").gte(23)
 
           assert(query)(
-            equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = Unbounded))
+            equalTo(
+              RangeQuery[Int, GreaterThanOrEqualTo[Int], Unbounded.type](
+                field = "customer_age",
+                lower = GreaterThanOrEqualTo(23),
+                upper = Unbounded
+              )
+            )
           )
         },
         test("successfully create Range Query with both upper and lower bound") {
           val query = range(field = "customer_age").gte(23).lt(50)
 
           assert(query)(
-            equalTo(RangeQuery(field = "customer_age", lower = GreaterThanOrEqualTo(23), upper = LessThan(50)))
+            equalTo(
+              RangeQuery[Int, GreaterThanOrEqualTo[Int], LessThan[Int]](
+                field = "customer_age",
+                lower = GreaterThanOrEqualTo(23),
+                upper = LessThan(50)
+              )
+            )
           )
         },
         test("successfully create Term Query") {
@@ -161,6 +254,18 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday"))) &&
           assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true))) &&
           assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
+        },
+        test("successfully create type-safe Term Query") {
+          val queryString = term(field = UserDocument.name, value = "Name")
+          val queryInt    = term(field = UserDocument.age, value = 39)
+
+          assert(queryString)(equalTo(TermQuery(field = "name", value = "Name"))) &&
+          assert(queryInt)(equalTo(TermQuery(field = "age", value = 39)))
+        },
+        test("successfully create type-safe Term Query with multi-field") {
+          val query = term(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
+
+          assert(query)(equalTo(TermQuery(field = "name.keyword", value = "Name")))
         },
         test("successfully create Term Query with boost") {
           val queryInt    = term(field = "day_of_week", value = 1).boost(1.0)
