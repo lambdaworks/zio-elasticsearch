@@ -20,13 +20,13 @@ object IndexNameSpec extends ZIOSpecDefault {
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
       },
-      test("fail for string containing charachter '*'") {
+      test("fail for string containing character '*'") {
         check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
           val invalidName = s"$part1*$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
       },
-      test("fail for string containing charachter ':'") {
+      test("fail for string containing character ':'") {
         check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
           val invalidName = s"$part1:$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
@@ -36,7 +36,7 @@ object IndexNameSpec extends ZIOSpecDefault {
         val name = ""
         assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(IndexName)(name))))
       },
-      test("fail for string starting with charachter '-'") {
+      test("fail for string starting with character '-'") {
         check(genString(1, 255)) { name =>
           val invalidName = s"-$name"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
