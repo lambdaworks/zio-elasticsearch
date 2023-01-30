@@ -1,16 +1,8 @@
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.schema.{AccessorBuilder, Schema}
 
 import scala.annotation.tailrec
-
-object Annotation {
-  final case class name(value: String) extends scala.annotation.Annotation
-
-  def maybeName(annotations: Chunk[Any]): Option[String] =
-    annotations.collect { case name(value) => value }.headOption
-}
 
 private[elasticsearch] final case class Field[S, A](parent: Option[Field[S, _]], name: String) { self =>
 
@@ -33,10 +25,8 @@ object ElasticQueryAccessorBuilder extends AccessorBuilder {
   override type Prism[_, S, A]  = Unit
   override type Traversal[S, A] = Unit
 
-  override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[_, S, A] = {
-    val label = Annotation.maybeName(term.annotations).getOrElse(term.name)
-    Field[S, A](None, label)
-  }
+  override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[_, S, A] =
+    Field[S, A](None, term.name)
 
   override def makePrism[F, S, A](sum: Schema.Enum[S], term: Schema.Case[S, A]): Prism[_, S, A] = ()
 
