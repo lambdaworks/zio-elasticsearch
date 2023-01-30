@@ -101,21 +101,21 @@ object Repositories {
     query match {
       case IntCriteria(field, operator, value) =>
         operator match {
-          case GreaterThan =>
-            ElasticQuery.range(field.toString).gt(value)
-          case LessThan =>
-            ElasticQuery.range(field.toString).lt(value)
-          case EqualTo =>
-            ElasticQuery.matches(field.toString, value)
+          case GreaterThan => ElasticQuery.range(field.toString).gt(value)
+          case LessThan    => ElasticQuery.range(field.toString).lt(value)
+          case EqualTo     => ElasticQuery.matches(field.toString, value)
         }
       case DateCriteria(field, operator, value) =>
         operator match {
-          case GreaterThan =>
-            ElasticQuery.range(field.toString).gt(value.toString)
-          case LessThan =>
-            ElasticQuery.range(field.toString).lt(value.toString)
-          case EqualTo =>
-            ElasticQuery.matches(field.toString, value.toString)
+          case GreaterThan => ElasticQuery.range(field.toString).gt(value.toString)
+          case LessThan    => ElasticQuery.range(field.toString).lt(value.toString)
+          case EqualTo     => ElasticQuery.matches(field.toString, value.toString)
+        }
+      case StringCriteria(field, operator, value) =>
+        operator match {
+          case StringFilterOperator.Contains   => ElasticQuery.contains(field.toString, value)
+          case StringFilterOperator.StartsWith => ElasticQuery.startsWith(field.toString, value)
+          case StringFilterOperator.Pattern    => ElasticQuery.wildcard(field.toString, value)
         }
       case CompoundCriteria(operator, filters) =>
         operator match {
