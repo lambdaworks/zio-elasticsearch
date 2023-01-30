@@ -33,12 +33,12 @@ object ElasticQueryAccessorBuilder extends AccessorBuilder {
   override type Prism[_, S, A]  = Unit
   override type Traversal[S, A] = Unit
 
-  override def makeLens[_, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[_, S, A] = {
+  override def makeLens[F, S, A](product: Schema.Record[S], term: Schema.Field[S, A]): Lens[_, S, A] = {
     val label = Annotation.maybeName(term.annotations).getOrElse(term.name)
     Field[S, A](None, label)
   }
 
-  override def makePrism[_, S, A](sum: Schema.Enum[S], term: Schema.Case[S, A]): Prism[_, S, A] = ()
+  override def makePrism[F, S, A](sum: Schema.Enum[S], term: Schema.Case[S, A]): Prism[_, S, A] = ()
 
   override def makeTraversal[S, A](collection: Schema.Collection[S, A], element: Schema[A]): Traversal[S, A] = ()
 }
