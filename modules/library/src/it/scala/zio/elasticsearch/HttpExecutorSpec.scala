@@ -205,7 +205,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ before(ElasticRequest.createIndex(secondSearchIndex, None).execute) @@ after(
             ElasticRequest.deleteIndex(secondSearchIndex).execute.orDie
           ),
-          test("search for document using wildcard query - contains") {
+          test("search for a document which contains a term using a wildcard query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 val result =
@@ -227,7 +227,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ before(ElasticRequest.createIndex(firstSearchIndex, None).execute) @@ after(
             ElasticRequest.deleteIndex(firstSearchIndex).execute.orDie
           ),
-          test("search for document using wildcard query - starts with") {
+          test("search for a document which starts with a term using a wildcard query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 val result =
@@ -249,7 +249,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ before(ElasticRequest.createIndex(firstSearchIndex, None).execute) @@ after(
             ElasticRequest.deleteIndex(firstSearchIndex).execute.orDie
           ),
-          test("search for document using wildcard query") {
+          test("search for a document which conforms to a pattern using a wildcard query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 val result =
@@ -262,8 +262,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
                         .refreshTrue
                         .execute
-                    query = wildcard("name.keyword", s"*${firstCustomer.name.take(3)}*")
-                    res  <- ElasticRequest.search[CustomerDocument](firstSearchIndex, query).execute
+                    query =
+                      wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
+                    res <- ElasticRequest.search[CustomerDocument](firstSearchIndex, query).execute
                   } yield res
 
                 assertZIO(result)(Assertion.contains(firstCustomer))
