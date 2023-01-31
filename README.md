@@ -54,8 +54,6 @@ import EmployeeDocument._
 getById[EmployeeDocument](IndexName("index"), DocumentId("documentId"))
 ```
 
-You also don't have to model all fields from a type in an Elasticsearch index, but you can't have additional fields either.
-
 ### Elastic Query
 
 In order to execute Elasticsearch query requests, both for searching and deleting by query, you first must specify the type of the query along with the corresponding parameters for that type. Queries are described with the `ElasticQuery` data type, which can be constructed from the DSL methods found under the following import:
@@ -67,16 +65,25 @@ import zio.elasticsearch.ElasticQuery._
 Query DSL methods that require a field solely accept field types that are defined as Elasticsearch primitives. You can pass field names simply as strings, or you can use the type-safe query methods that make use of ZIO Schema's accessors. An example with a `term` query is shown below:
 
 ```scala
+term("name", "foo bar")
+
+// type-safe method
+term(EmployeeDocument.name, "foo bar")
+```
+
+You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors:
+
+```scala
 import zio.elasticsearch.ElasticQueryAccessorBuilder
 import zio.elasticsearch.ElasticQuery._
 import zio.schema.annotation.fieldName
 import zio.schema.{DeriveSchema, Schema}
 
 final case class Name(
- @fieldName("first_name")
- firstName: String,
- @fieldName("last_name")
- lastName: String
+  @fieldName("first_name")
+  firstName: String,
+  @fieldName("last_name")
+  lastName: String
 )
 
 object Name {
@@ -89,14 +96,23 @@ final case class EmployeeDocument(id: String, name: Name, degree: String, age: I
 
 object EmployeeDocument {
   implicit val schema = DeriveSchema.gen[EmployeeDocument]
-  
+
   val (id, name, degree, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
 }
 
-term("name.first_name.keyword", "foo")
+matches("name.first_name", "foo")
 
 // type-safe method
-term(EmployeeDocument.name / Name.firstName, multiField = Some("keyword"), "foo")
+matches(EmployeeDocument.name / Name.firstName, "foo bar")
+```
+
+Type-safe query methods also have a `multiField` parameter, in case you want to use one in queries:
+
+```scala
+term("degree.keyword", "baz")
+
+// type-sage method
+term(EmployeeDocument.degree, multiField = Some("keyword"), "baz")
 ```
 
 Now, after describing a query, you can pass it to the `search`/`deleteByQuery` method to obtain the Elastic request corresponding to that query:
@@ -107,13 +123,19 @@ search(IndexName("index"), term("name.first_name.keyword", "foo"))
 
 ### Fluent API
 
-Both Elastic requests and queries offer a fluent API, so that you can provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to `deleteById`:
+Both Elastic requests and queries offer a fluent API, so that you can provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
 
 ```scala
 deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
 ```
 
 Just like `IndexName`, `Routing` is a new type that mustn't be an empty string.
+
+And if we wanted to specify lower and upper bounds for a `range` query:
+
+```scala
+range(EmployeeDocument.age).gte(18).lt(100)
+```
 
 ### Elastic Executor
 
