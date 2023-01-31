@@ -111,7 +111,7 @@ Type-safe query methods also have a `multiField` parameter, in case you want to 
 ```scala
 term("degree.keyword", "baz")
 
-// type-sage method
+// type-safe method
 term(EmployeeDocument.degree, multiField = Some("keyword"), "baz")
 ```
 
