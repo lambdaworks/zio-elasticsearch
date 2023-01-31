@@ -1,0 +1,3 @@
+.github/workflows/ @drmarjanovic @mvelimir
+build.sbt @drmarjanovic @mvelimir
+project/BuildHelper.scala @drmarjanovic @mvelimir
