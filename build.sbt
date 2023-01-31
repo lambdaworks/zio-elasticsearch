@@ -9,9 +9,20 @@ inThisBuild(
     licenses         := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
     organization     := "io.lambdaworks",
     organizationName := "LambdaWorks",
-    startYear        := Some(2022)
+    startYear        := Some(2022),
+    developers := List(
+      Developer(
+        "lambdaworks",
+        "LambdaWorks' Team",
+        "admin@lambdaworks.io",
+        url("https://github.com/lambdaworks")
+      )
+    )
   )
 )
+
+sonatypeCredentialHost := "s01.oss.sonatype.org"
+sonatypeRepository     := "https://s01.oss.sonatype.org/service/local"
 
 addCommandAlias("check", "fixCheck; fmtCheck; headerCheck")
 addCommandAlias("fix", "scalafixAll")
@@ -23,7 +34,8 @@ addCommandAlias("prepare", "fix; fmt; headerCreate")
 lazy val root =
   project
     .in(file("."))
-    .aggregate(library, example)
+    .settings(publish / skip := true)
+    .aggregate(library, example, docs)
 
 lazy val library =
   project
@@ -55,6 +67,7 @@ lazy val example =
     .settings(stdSettings("example"))
     .settings(scalacOptions += "-language:higherKinds")
     .settings(
+      publish / skip := true,
       libraryDependencies ++= List(
         "dev.zio" %% "zio"                 % "2.0.5",
         "dev.zio" %% "zio-config"          % "3.0.6",
