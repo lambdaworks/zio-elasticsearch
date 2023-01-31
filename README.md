@@ -54,8 +54,6 @@ import EmployeeDocument._
 getById[EmployeeDocument](IndexName("index"), DocumentId("documentId"))
 ```
 
-You also don't have to model all fields from a type in an Elasticsearch index, but you can't have additional fields either.
-
 ### Elastic Query
 
 In order to execute Elasticsearch query requests, both for searching and deleting by query, you first must specify the type of the query along with the corresponding parameters for that type. Queries are described with the `ElasticQuery` data type, which can be constructed from the DSL methods found under the following import:
