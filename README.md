@@ -17,6 +17,18 @@ The following versions are supported:
 - Elasticsearch: 7
 - JVM 11+
 
+## Installation
+
+To use ZIO Elasticsearch in your project, add the following to your `build.sbt` file:
+
+```scala
+resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
+
+libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "<snapshot version>"
+```
+
+Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge above.
+
 ## Usage
 
 ### Elastic Request
