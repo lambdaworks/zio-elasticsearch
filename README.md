@@ -1,5 +1,6 @@
 ![scala-version][scala-version-badge]
 [![CI](https://github.com/lambdaworks/zio-elasticsearch/actions/workflows/ci.yml/badge.svg)](https://github.com/lambdaworks/zio-elasticsearch/actions/workflows/ci.yml)
+[![Sonatype Snapshots](https://img.shields.io/nexus/s/https/s01.oss.sonatype.org/io.lambdaworks/zio-elasticsearch_2.13.svg?label=Sonatype%20Snapshot)](https://s01.oss.sonatype.org/content/repositories/snapshots/io/lambdaworks/zio-elasticsearch_2.13/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # ZIO Elasticsearch
@@ -15,6 +16,18 @@ The following versions are supported:
 - ZIO: 2
 - Elasticsearch: 7
 - JVM 11+
+
+## Installation
+
+To use ZIO Elasticsearch in your project, add the following to your `build.sbt` file:
+
+```scala
+resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
+
+libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "<snapshot version>"
+```
+
+Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge above.
 
 ## Usage
 
