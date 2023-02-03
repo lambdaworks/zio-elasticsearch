@@ -87,7 +87,7 @@ const config = {
             items: [
               {
                 label: 'Scaladoc of ZIO Elasticsearch',
-                to: 'pathname:///zio-elasticsearch/api/'
+                to: 'pathname:///zio-elasticsearch/api/zio/elasticsearch'
               }
             ]
           }
