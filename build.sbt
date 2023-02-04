@@ -46,8 +46,8 @@ lazy val library =
     .settings(
       Defaults.itSettings,
       libraryDependencies ++= List(
-        "com.softwaremill.sttp.client3" %% "zio"             % "3.8.5",
-        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.5",
+        "com.softwaremill.sttp.client3" %% "zio"             % "3.8.10",
+        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.10",
         "dev.zio"                       %% "zio-json"        % "0.3.0",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC16",
         "dev.zio"                       %% "zio-schema"      % "0.4.1",
