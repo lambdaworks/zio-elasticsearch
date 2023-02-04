@@ -48,7 +48,7 @@ lazy val library =
       libraryDependencies ++= List(
         "com.softwaremill.sttp.client3" %% "zio"             % "3.8.5",
         "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.5",
-        "dev.zio"                       %% "zio-json"        % "0.3.0",
+        "dev.zio"                       %% "zio-json"        % "0.4.2",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC16",
         "dev.zio"                       %% "zio-schema"      % "0.4.1",
         "dev.zio"                       %% "zio-schema-json" % "0.4.1",
@@ -73,7 +73,7 @@ lazy val example =
         "dev.zio" %% "zio-config-magnolia" % "3.0.6",
         "dev.zio" %% "zio-config-typesafe" % "3.0.6",
         "dev.zio" %% "zio-http"            % "0.0.3",
-        "dev.zio" %% "zio-json"            % "0.3.0",
+        "dev.zio" %% "zio-json"            % "0.4.2",
         "dev.zio" %% "zio-schema"          % "0.4.1",
         "dev.zio" %% "zio-schema-json"     % "0.4.1"
       )
