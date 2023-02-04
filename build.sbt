@@ -53,8 +53,8 @@ lazy val library =
         "dev.zio"                       %% "zio-schema"      % "0.4.7",
         "dev.zio"                       %% "zio-schema-json" % "0.4.7",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.5"  % Tests,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.5"  % Tests,
+        "dev.zio"                       %% "zio-test"        % "2.0.6"  % Tests,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.6"  % Tests,
         "com.github.tomakehurst"         % "wiremock-jre8"   % "2.35.0" % Tests
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
@@ -68,7 +68,7 @@ lazy val example =
     .settings(
       publish / skip := true,
       libraryDependencies ++= List(
-        "dev.zio" %% "zio"                 % "2.0.5",
+        "dev.zio" %% "zio"                 % "2.0.6",
         "dev.zio" %% "zio-config"          % "3.0.6",
         "dev.zio" %% "zio-config-magnolia" % "3.0.6",
         "dev.zio" %% "zio-config-typesafe" % "3.0.6",
