@@ -3,4 +3,4 @@ id: about_index
 title: "About ZIO Elasticsearch"
 ---
 
-TBD
+ZIO Elasticsearch is a type-safe and streaming-friendly ZIO-native Elasticsearch client.

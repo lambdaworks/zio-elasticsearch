@@ -198,6 +198,14 @@ effect.provideLayer(ElasticExecutor.test)
 
 For a full-fledged example using this library, you can check out the [example](modules/example) module, which contains an application with both a description and instructions on how to run it.
 
+## Contributing
+
+For the general guidelines, see ZIO Elasticsearch [contributor's guide](https://lambdaworks.github.io/zio-elasticsearch/about/about_contributing).
+
+## Code of Conduct
+
+See the [Code of Conduct](https://lambdaworks.github.io/zio-elasticsearch/about/about_code_of_conduct).
+
 ## License
 [License](LICENSE)
 

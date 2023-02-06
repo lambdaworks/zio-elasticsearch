@@ -3,7 +3,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 
 const config = {
   title: 'ZIO Elasticsearch',
-  tagline: 'Elasticsearch client for ZIO',
+  tagline: 'Type-safe and streaming-friendly ZIO-native Elasticsearch client',
   url: 'https://lambdaworks.github.io',
   baseUrl: '/zio-elasticsearch/',
   onBrokenLinks: 'throw',
@@ -87,7 +87,7 @@ const config = {
             items: [
               {
                 label: 'Scaladoc of ZIO Elasticsearch',
-                to: 'pathname:///zio-elasticsearch/api/'
+                to: 'pathname:///zio-elasticsearch/api/zio/elasticsearch'
               }
             ]
           }
