@@ -160,7 +160,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       request
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.query.toJsonBody)
+        .body(r.query.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
@@ -213,7 +213,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .post(uri"${config.uri}/${r.index}/$Search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJsonBody)
+        .body(r.query.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>

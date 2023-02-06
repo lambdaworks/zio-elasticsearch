@@ -451,7 +451,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Filter containing `Match` leaf query") {
           val query = boolQuery.filter(matches(field = "day_of_week", value = "Monday"))
@@ -497,7 +497,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Should containing `Match` leaf query") {
           val query = boolQuery.should(matches(field = "day_of_week", value = "Monday"))
@@ -520,7 +520,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Filter, Must and Should containing `Match` leaf query") {
           val query = boolQuery
@@ -558,7 +558,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Exists Query") {
           val query = exists(field = "day_of_week")
@@ -573,7 +573,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode MatchAll Query") {
           val query = matchAll
@@ -586,7 +586,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode MatchAll Query with boost") {
           val query = matchAll.boost(1.0)
@@ -601,7 +601,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Unbounded Range Query") {
           val query = range(field = "field")
@@ -617,7 +617,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Lower Bound") {
           val query = range(field = "customer_age").gt(23)
@@ -634,7 +634,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Upper Bound") {
           val query = range(field = "customer_age").lt(23)
@@ -651,7 +651,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Inclusive Lower Bound") {
           val query = range(field = "expiry_date").gte("now")
@@ -668,7 +668,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with inclusive Upper Bound") {
           val query = range(field = "customer_age").lte(100L)
@@ -685,7 +685,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with both Upper and Lower Bound") {
           val query = range(field = "customer_age").gte(10).lt(100)
@@ -703,7 +703,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Term query") {
           val query = term(field = "day_of_week", value = true)
@@ -720,7 +720,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Term query with boost") {
           val query = term(field = "day_of_week", value = true).boost(1.0)
@@ -738,7 +738,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode case insensitive Term query") {
           val query = term(field = "day_of_week", value = "Monday").caseInsensitiveTrue
@@ -756,7 +756,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode case insensitive Term query with boost") {
           val query = term(field = "day_of_week", value = "Monday").boost(1.0).caseInsensitiveTrue
@@ -775,7 +775,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Wildcard query") {
           val query1 = contains(field = "day_of_week", value = "M")
@@ -806,9 +806,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
-          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
-          assert(query3.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJson)(equalTo(expected1.toJson)) &&
+          assert(query2.toJson)(equalTo(expected23.toJson)) &&
+          assert(query3.toJson)(equalTo(expected23.toJson))
         },
         test("properly encode Wildcard query with boost") {
           val query1 = contains(field = "day_of_week", value = "M").boost(1.0)
@@ -841,9 +841,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
-          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
-          assert(query3.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJson)(equalTo(expected1.toJson)) &&
+          assert(query2.toJson)(equalTo(expected23.toJson)) &&
+          assert(query3.toJson)(equalTo(expected23.toJson))
         },
         test("properly encode case insensitive Wildcard query") {
           val query1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
@@ -876,9 +876,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
-          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
-          assert(query3.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJson)(equalTo(expected1.toJson)) &&
+          assert(query2.toJson)(equalTo(expected23.toJson)) &&
+          assert(query3.toJson)(equalTo(expected23.toJson))
         },
         test("properly encode case insensitive Wildcard query with boost") {
           val query1 = contains(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
@@ -913,9 +913,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJsonBody)(equalTo(expected1.toJson)) &&
-          assert(query2.toJsonBody)(equalTo(expected23.toJson)) &&
-          assert(query3.toJsonBody)(equalTo(expected23.toJson))
+          assert(query1.toJson)(equalTo(expected1.toJson)) &&
+          assert(query2.toJson)(equalTo(expected23.toJson)) &&
+          assert(query3.toJson)(equalTo(expected23.toJson))
         },
         test("properly encode Bulk request body") {
           val bulkQuery = IndexName.make("users").map { index =>
