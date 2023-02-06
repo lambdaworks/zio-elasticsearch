@@ -46,15 +46,15 @@ lazy val library =
     .settings(
       Defaults.itSettings,
       libraryDependencies ++= List(
-        "com.softwaremill.sttp.client3" %% "zio"             % "3.8.5",
-        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.5",
+        "com.softwaremill.sttp.client3" %% "zio"             % "3.8.10",
+        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.10",
         "dev.zio"                       %% "zio-json"        % "0.4.2",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC16",
-        "dev.zio"                       %% "zio-schema"      % "0.4.1",
-        "dev.zio"                       %% "zio-schema-json" % "0.4.1",
+        "dev.zio"                       %% "zio-schema"      % "0.4.7",
+        "dev.zio"                       %% "zio-schema-json" % "0.4.7",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.5"  % Tests,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.5"  % Tests,
+        "dev.zio"                       %% "zio-test"        % "2.0.6"  % Tests,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.6"  % Tests,
         "com.github.tomakehurst"         % "wiremock-jre8"   % "2.35.0" % Tests
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
@@ -68,14 +68,14 @@ lazy val example =
     .settings(
       publish / skip := true,
       libraryDependencies ++= List(
-        "dev.zio" %% "zio"                 % "2.0.5",
+        "dev.zio" %% "zio"                 % "2.0.6",
         "dev.zio" %% "zio-config"          % "3.0.6",
         "dev.zio" %% "zio-config-magnolia" % "3.0.6",
         "dev.zio" %% "zio-config-typesafe" % "3.0.6",
-        "dev.zio" %% "zio-http"            % "0.0.3",
+        "dev.zio" %% "zio-http"            % "0.0.4",
         "dev.zio" %% "zio-json"            % "0.4.2",
-        "dev.zio" %% "zio-schema"          % "0.4.1",
-        "dev.zio" %% "zio-schema-json"     % "0.4.1"
+        "dev.zio" %% "zio-schema"          % "0.4.7",
+        "dev.zio" %% "zio-schema-json"     % "0.4.7"
       )
     )
     .dependsOn(library)
