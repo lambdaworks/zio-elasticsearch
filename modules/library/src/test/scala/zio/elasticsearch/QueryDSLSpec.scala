@@ -195,7 +195,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create MatchAll Query") {
           val query = matchAll
 
-          assert(query)(equalTo(MatchAllQuery()))
+          assert(query)(equalTo(MatchAllQuery(boost = None)))
         },
         test("successfully create MatchAll Query with boost") {
           val query = matchAll.boost(1.0)
@@ -314,22 +314,32 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = term(field = "day_of_week", value = true)
           val queryLong   = term(field = "day_of_week", value = 1L)
 
-          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1))) &&
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday"))) &&
-          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true))) &&
-          assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L)))
+          assert(queryInt)(
+            equalTo(TermQuery(field = "day_of_week", value = 1, boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryString)(
+            equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryBool)(
+            equalTo(TermQuery(field = "day_of_week", value = true, boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L, boost = None, caseInsensitive = None)))
         },
         test("successfully create type-safe Term Query") {
           val queryString = term(field = UserDocument.name, value = "Name")
           val queryInt    = term(field = UserDocument.age, value = 39)
 
-          assert(queryString)(equalTo(TermQuery(field = "name", value = "Name"))) &&
-          assert(queryInt)(equalTo(TermQuery(field = "age", value = 39)))
+          assert(queryString)(
+            equalTo(TermQuery(field = "name", value = "Name", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryInt)(equalTo(TermQuery(field = "age", value = 39, boost = None, caseInsensitive = None)))
         },
         test("successfully create type-safe Term Query with multi-field") {
           val query = term(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
 
-          assert(query)(equalTo(TermQuery(field = "name.keyword", value = "Name")))
+          assert(query)(
+            equalTo(TermQuery(field = "name.keyword", value = "Name", boost = None, caseInsensitive = None))
+          )
         },
         test("successfully create Term Query with boost") {
           val queryInt    = term(field = "day_of_week", value = 1).boost(1.0)
@@ -337,15 +347,25 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = term(field = "day_of_week", value = true).boost(1.0)
           val queryLong   = term(field = "day_of_week", value = 1L).boost(1.0)
 
-          assert(queryInt)(equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0)))) &&
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0)))) &&
-          assert(queryBool)(equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0)))) &&
-          assert(queryLong)(equalTo(TermQuery(field = "day_of_week", value = 1L, boost = Some(1.0))))
+          assert(queryInt)(
+            equalTo(TermQuery(field = "day_of_week", value = 1, boost = Some(1.0), caseInsensitive = None))
+          ) &&
+          assert(queryString)(
+            equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = Some(1.0), caseInsensitive = None))
+          ) &&
+          assert(queryBool)(
+            equalTo(TermQuery(field = "day_of_week", value = true, boost = Some(1.0), caseInsensitive = None))
+          ) &&
+          assert(queryLong)(
+            equalTo(TermQuery(field = "day_of_week", value = 1L, boost = Some(1.0), caseInsensitive = None))
+          )
         },
         test("successfully create case insensitive Term Query") {
           val queryString = term(field = "day_of_week", value = "Monday").caseInsensitiveTrue
 
-          assert(queryString)(equalTo(TermQuery(field = "day_of_week", value = "Monday", caseInsensitive = Some(true))))
+          assert(queryString)(
+            equalTo(TermQuery(field = "day_of_week", value = "Monday", boost = None, caseInsensitive = Some(true)))
+          )
         },
         test("successfully create case insensitive Term Query with boost") {
           val queryString = term(field = "day_of_week", value = "Monday").boost(1.0).caseInsensitiveTrue
@@ -359,18 +379,30 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val wildcardQuery2 = startsWith(field = "day_of_week", value = "M")
           val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*")
 
-          assert(wildcardQuery1)(equalTo(WildcardQuery(field = "day_of_week", value = "*M*"))) &&
-          assert(wildcardQuery2)(equalTo(WildcardQuery(field = "day_of_week", value = "M*"))) &&
-          assert(wildcardQuery3)(equalTo(WildcardQuery(field = "day_of_week", value = "M*")))
+          assert(wildcardQuery1)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "*M*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(wildcardQuery2)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(wildcardQuery3)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+          )
         },
         test("successfully create Wildcard Query with boost") {
           val wildcardQuery1 = contains(field = "day_of_week", value = "M").boost(1.0)
           val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").boost(1.0)
           val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
 
-          assert(wildcardQuery1)(equalTo(WildcardQuery(field = "day_of_week", value = "*M*", boost = Some(1.0)))) &&
-          assert(wildcardQuery2)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0)))) &&
-          assert(wildcardQuery3)(equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0))))
+          assert(wildcardQuery1)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = None))
+          ) &&
+          assert(wildcardQuery2)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
+          ) &&
+          assert(wildcardQuery3)(
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
+          )
         },
         test("successfully create case insensitive Wildcard Query") {
           val wildcardQuery1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
@@ -378,13 +410,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
 
           assert(wildcardQuery1)(
-            equalTo(WildcardQuery(field = "day_of_week", value = "*M*", caseInsensitive = Some(true)))
+            equalTo(WildcardQuery(field = "day_of_week", value = "*M*", boost = None, caseInsensitive = Some(true)))
           ) &&
           assert(wildcardQuery2)(
-            equalTo(WildcardQuery(field = "day_of_week", value = "M*", caseInsensitive = Some(true)))
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
           ) &&
           assert(wildcardQuery3)(
-            equalTo(WildcardQuery(field = "day_of_week", value = "M*", caseInsensitive = Some(true)))
+            equalTo(WildcardQuery(field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
           )
         },
         test("successfully create case insensitive Wildcard Query with boost") {
