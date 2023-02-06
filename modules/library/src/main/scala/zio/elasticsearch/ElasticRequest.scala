@@ -226,29 +226,25 @@ sealed trait ElasticRequestType
 sealed trait BulkableRequestType extends ElasticRequestType
 
 object ElasticRequestType {
-  trait Bulk          extends ElasticRequestType
-  trait CreateIndex   extends ElasticRequestType
-  trait Create        extends BulkableRequestType
-  trait CreateWithId  extends BulkableRequestType
-  trait DeleteById    extends BulkableRequestType
-  trait DeleteByQuery extends ElasticRequestType
-  trait DeleteIndex   extends ElasticRequestType
-  trait Exists        extends ElasticRequestType
-  trait GetById       extends ElasticRequestType
-  trait GetByQuery    extends ElasticRequestType
-  trait Upsert        extends BulkableRequestType
+  sealed trait Bulk          extends ElasticRequestType
+  sealed trait CreateIndex   extends ElasticRequestType
+  sealed trait Create        extends BulkableRequestType
+  sealed trait CreateWithId  extends BulkableRequestType
+  sealed trait DeleteById    extends BulkableRequestType
+  sealed trait DeleteByQuery extends ElasticRequestType
+  sealed trait DeleteIndex   extends ElasticRequestType
+  sealed trait Exists        extends ElasticRequestType
+  sealed trait GetById       extends ElasticRequestType
+  sealed trait GetByQuery    extends ElasticRequestType
+  sealed trait Upsert        extends BulkableRequestType
 }
 
 sealed abstract class CreationOutcome
 
-object CreationOutcome {
-  case object Created       extends CreationOutcome
-  case object AlreadyExists extends CreationOutcome
-}
+case object Created       extends CreationOutcome
+case object AlreadyExists extends CreationOutcome
 
 sealed abstract class DeletionOutcome
 
-object DeletionOutcome {
-  case object Deleted  extends DeletionOutcome
-  case object NotFound extends DeletionOutcome
-}
+case object Deleted  extends DeletionOutcome
+case object NotFound extends DeletionOutcome

@@ -39,7 +39,7 @@ object FieldDSLSpec extends ZIOSpecDefault {
     val (name, address) = schema.makeAccessors(ElasticQueryAccessorBuilder)
   }
 
-  override def spec: Spec[TestEnvironment, Any] =
+  def spec: Spec[TestEnvironment, Any] =
     suite("Field DSL")(
       test("properly encode single field path")(
         assertTrue(Field(None, "name").toString == "name")

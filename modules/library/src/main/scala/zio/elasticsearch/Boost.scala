@@ -17,7 +17,6 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticQuery.{ElasticPrimitive, MatchAllQuery, TermQuery, WildcardQuery}
-import zio.elasticsearch.ElasticQueryType.{MatchAll, Term, Wildcard}
 
 object Boost {
 

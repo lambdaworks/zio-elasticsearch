@@ -17,8 +17,6 @@
 package zio.elasticsearch
 
 import zio.Random.nextUUID
-import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
-import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
 import zio.stm.{STM, TMap, ZSTM}
@@ -28,7 +26,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
     extends ElasticExecutor {
   self =>
 
-  override def execute[A](request: ElasticRequest[A, _]): Task[A] =
+  def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
       case BulkRequest(requests, _, _, _) =>
         fakeBulk(requests)

@@ -17,7 +17,6 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticQuery.{TermQuery, WildcardQuery}
-import zio.elasticsearch.ElasticQueryType.{Term, Wildcard}
 
 object CaseInsensitive {
 

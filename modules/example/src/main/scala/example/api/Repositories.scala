@@ -19,13 +19,18 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.boolQuery
-import zio.elasticsearch.{CreationOutcome, DeletionOutcome, ElasticQuery}
+import zio.elasticsearch.ElasticQuery
+import zio.elasticsearch._
 import zio.http._
 import zio.http.model.Method
-import zio.http.model.Status._
+import zio.http.model.Status.{
+  BadRequest => HttpBadRequest,
+  Created => HttpCreated,
+  NoContent => HttpNoContent,
+  NotFound => HttpNotFound
+}
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
-
 import CompoundOperator._
 import FilterOperator._
 
@@ -45,7 +50,7 @@ object Repositories {
             case Some(r) =>
               Response.json(r.toJson)
             case None =>
-              Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(NotFound)
+              Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(HttpNotFound)
           }
           .orDie
 
@@ -54,13 +59,13 @@ object Repositories {
           .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
           .flatMap {
             case Left(e) =>
-              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(repo) =>
               RepositoriesElasticsearch.create(repo).map {
-                case CreationOutcome.Created =>
-                  Response.json(repo.toJson).setStatus(Created)
-                case CreationOutcome.AlreadyExists =>
-                  Response.json("A repository with a given ID already exists.").setStatus(BadRequest)
+                case Created =>
+                  Response.json(repo.toJson).setStatus(HttpCreated)
+                case AlreadyExists =>
+                  Response.json("A repository with a given ID already exists.").setStatus(HttpBadRequest)
               }
           }
           .orDie
@@ -70,7 +75,7 @@ object Repositories {
           .map(JsonCodec.JsonDecoder.decode[Criteria](Criteria.schema, _))
           .flatMap {
             case Left(e) =>
-              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(queryBody) =>
               RepositoriesElasticsearch
                 .search(createElasticQuery(queryBody))
@@ -83,20 +88,21 @@ object Repositories {
           .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
           .flatMap {
             case Left(e) =>
-              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(BadRequest))
+              ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(repo) if repo.id == id =>
               ZIO.succeed(
                 Response
                   .json(
                     ErrorResponse.fromReasons("The ID provided in the path does not match the ID from the body.").toJson
                   )
-                  .setStatus(BadRequest)
+                  .setStatus(HttpBadRequest)
               )
             case Right(repo) =>
               (RepositoriesElasticsearch
                 .upsert(id, repo.copy(id = id)) *> RepositoriesElasticsearch.findById(repo.organization, id)).map {
                 case Some(updated) => Response.json(updated.toJson)
-                case None          => Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).setStatus(BadRequest)
+                case None =>
+                  Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).setStatus(HttpBadRequest)
               }
           }
           .orDie
@@ -105,10 +111,10 @@ object Repositories {
         RepositoriesElasticsearch
           .remove(organization, id)
           .map {
-            case DeletionOutcome.Deleted =>
-              Response.status(NoContent)
-            case DeletionOutcome.NotFound =>
-              Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(NotFound)
+            case Deleted =>
+              Response.status(HttpNoContent)
+            case NotFound =>
+              Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(HttpNotFound)
           }
           .orDie
     }
@@ -117,8 +123,8 @@ object Repositories {
     query match {
       case CompoundCriteria(operator, filters) =>
         operator match {
-          case And => boolQuery().must(filters.map(createElasticQuery): _*)
-          case Or  => boolQuery().should(filters.map(createElasticQuery): _*)
+          case And => boolQuery.must(filters.map(createElasticQuery): _*)
+          case Or  => boolQuery.should(filters.map(createElasticQuery): _*)
         }
       case DateCriteria(field, operator, value) =>
         operator match {

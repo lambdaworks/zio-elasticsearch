@@ -23,7 +23,7 @@ import zio.test._
 
 object IndexNameSpec extends ZIOSpecDefault {
 
-  override def spec: Spec[TestEnvironment, Any] =
+  def spec: Spec[TestEnvironment, Any] =
     suite("IndexName validation")(
       test("succeed for valid string") {
         check(genString(1, 255)) { name =>

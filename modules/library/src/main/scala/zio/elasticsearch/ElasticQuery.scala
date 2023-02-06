@@ -51,26 +51,26 @@ object ElasticQuery {
   }
 
   implicit object ElasticInt extends ElasticPrimitive[Int] {
-    override def toJson(value: Int): Json = Num(value)
+    def toJson(value: Int): Json = Num(value)
   }
 
   implicit object ElasticString extends ElasticPrimitive[String] {
-    override def toJson(value: String): Json = Str(value)
+    def toJson(value: String): Json = Str(value)
   }
 
   implicit object ElasticBool extends ElasticPrimitive[Boolean] {
-    override def toJson(value: Boolean): Json = Json.Bool(value)
+    def toJson(value: Boolean): Json = Json.Bool(value)
   }
 
   implicit object ElasticLong extends ElasticPrimitive[Long] {
-    override def toJson(value: Long): Json = Num(value)
+    def toJson(value: Long): Json = Num(value)
   }
 
-  implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {
+  final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
-  def boolQuery(): BoolQuery = BoolQuery.empty
+  def boolQuery: BoolQuery = BoolQuery.empty
 
   def contains(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, s"*$value*")
 
@@ -78,7 +78,7 @@ object ElasticQuery {
 
   def exists(field: String): ElasticQuery[Exists] = ExistsQuery(field)
 
-  def matchAll(): ElasticQuery[MatchAll] = MatchAllQuery()
+  def matchAll: ElasticQuery[MatchAll] = MatchAllQuery()
 
   def matches[A: ElasticPrimitive](
     field: Field[_, A],
@@ -141,16 +141,16 @@ object ElasticQuery {
   }
 
   private[elasticsearch] final case class ExistsQuery private (field: String) extends ElasticQuery[Exists] {
-    override def toJson: Json = Obj("exists" -> Obj("field" -> field.toJson))
+    def toJson: Json = Obj("exists" -> Obj("field" -> field.toJson))
   }
 
   private[elasticsearch] final case class MatchQuery[A: ElasticPrimitive](field: String, value: A)
       extends ElasticQuery[Match] {
-    override def toJson: Json = Obj("match" -> Obj(field -> value.toJson))
+    def toJson: Json = Obj("match" -> Obj(field -> value.toJson))
   }
 
   private[elasticsearch] final case class MatchAllQuery(boost: Option[Double] = None) extends ElasticQuery[MatchAll] {
-    override def toJson: Json = Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
+    def toJson: Json = Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
   }
 
   sealed trait LowerBound {
@@ -158,7 +158,7 @@ object ElasticQuery {
   }
 
   private[elasticsearch] final case class GreaterThan[A: ElasticPrimitive](value: A) extends LowerBound {
-    override def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
+    def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
   }
 
   private[elasticsearch] final case class GreaterThanOrEqualTo[A: ElasticPrimitive](value: A) extends LowerBound {
@@ -170,15 +170,15 @@ object ElasticQuery {
   }
 
   private[elasticsearch] final case class LessThan[A: ElasticPrimitive](value: A) extends UpperBound {
-    override def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
+    def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
   }
 
   private[elasticsearch] final case class LessThanOrEqualTo[A: ElasticPrimitive](value: A) extends UpperBound {
-    override def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
+    def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
   }
 
   private[elasticsearch] final case object Unbounded extends LowerBound with UpperBound {
-    override def toJson: Option[(String, Json)] = None
+    def toJson: Option[(String, Json)] = None
   }
 
   private[elasticsearch] final case class RangeQuery[A, LB <: LowerBound, UB <: UpperBound] private (
@@ -207,7 +207,7 @@ object ElasticQuery {
     ): RangeQuery[B, LB, LessThanOrEqualTo[B]] =
       self.copy(upper = LessThanOrEqualTo(value))
 
-    override def toJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
+    def toJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
   }
 
   private[elasticsearch] object RangeQuery {
@@ -221,7 +221,7 @@ object ElasticQuery {
     boost: Option[Double] = None,
     caseInsensitive: Option[Boolean] = None
   ) extends ElasticQuery[Term[A]] { self =>
-    override def toJson: Json = {
+    def toJson: Json = {
       val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
         "case_insensitive" -> Json.Bool(_)
       )
@@ -235,7 +235,7 @@ object ElasticQuery {
     boost: Option[Double] = None,
     caseInsensitive: Option[Boolean] = None
   ) extends ElasticQuery[Wildcard] { self =>
-    override def toJson: Json = {
+    def toJson: Json = {
       val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
         "case_insensitive" -> Json.Bool(_)
       )
@@ -248,11 +248,11 @@ object ElasticQuery {
 sealed trait ElasticQueryType
 
 object ElasticQueryType {
-  trait Bool     extends ElasticQueryType
-  trait Exists   extends ElasticQueryType
-  trait Match    extends ElasticQueryType
-  trait MatchAll extends ElasticQueryType
-  trait Range    extends ElasticQueryType
-  trait Term[A]  extends ElasticQueryType
-  trait Wildcard extends ElasticQueryType
+  sealed trait Bool     extends ElasticQueryType
+  sealed trait Exists   extends ElasticQueryType
+  sealed trait Match    extends ElasticQueryType
+  sealed trait MatchAll extends ElasticQueryType
+  sealed trait Range    extends ElasticQueryType
+  sealed trait Term[A]  extends ElasticQueryType
+  sealed trait Wildcard extends ElasticQueryType
 }

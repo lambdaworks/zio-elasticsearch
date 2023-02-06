@@ -38,7 +38,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
     val (id, name, address, balance, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
   }
 
-  override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
+  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
         test("successfully create Match query using `matches` method") {
@@ -63,7 +63,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(equalTo(MatchQuery(field = "name.keyword", value = "Name")))
         },
         test("successfully create `Filter` query from two Match queries") {
-          val query = boolQuery()
+          val query = boolQuery
             .filter(
               matches(field = "day_of_week", value = "Monday"),
               matches(field = "customer_gender", value = "MALE")
@@ -83,7 +83,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create `Must` query from two Match queries") {
-          val query = boolQuery()
+          val query = boolQuery
             .must(matches(field = "day_of_week", value = "Monday"), matches(field = "customer_gender", value = "MALE"))
 
           assert(query)(
@@ -100,7 +100,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create `Should` query from two Match queries") {
-          val query = boolQuery()
+          val query = boolQuery
             .should(
               matches(field = "day_of_week", value = "Monday"),
               matches(field = "customer_gender", value = "MALE")
@@ -120,7 +120,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create `Filter/Must/Should` mixed query with Filter containing two Match queries") {
-          val query = boolQuery()
+          val query = boolQuery
             .filter(
               matches(field = "day_of_week", value = "Monday"),
               matches(field = "customer_gender", value = "MALE")
@@ -142,7 +142,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create `Filter/Must/Should` mixed query with Must containing two Match queries") {
-          val query = boolQuery()
+          val query = boolQuery
             .filter(matches(field = "customer_id", value = 1))
             .must(matches(field = "day_of_week", value = "Monday"), matches(field = "customer_gender", value = "MALE"))
             .should(matches(field = "customer_age", value = 23))
@@ -161,7 +161,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create `Filter/Must/Should` mixed query with Should containing two Match queries") {
-          val query = boolQuery()
+          val query = boolQuery
             .filter(matches(field = "customer_id", value = 1))
             .must(matches(field = "customer_age", value = 23))
             .should(
@@ -193,12 +193,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(equalTo(ExistsQuery(field = "name")))
         },
         test("successfully create MatchAll Query") {
-          val query = matchAll()
+          val query = matchAll
 
           assert(query)(equalTo(MatchAllQuery()))
         },
         test("successfully create MatchAll Query with boost") {
-          val query = matchAll().boost(1.0)
+          val query = matchAll.boost(1.0)
 
           assert(query)(equalTo(MatchAllQuery(boost = Some(1.0))))
         },
@@ -422,7 +422,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Filter containing `Match` leaf query") {
-          val query = boolQuery().filter(matches(field = "day_of_week", value = "Monday"))
+          val query = boolQuery.filter(matches(field = "day_of_week", value = "Monday"))
           val expected =
             """
               |{
@@ -445,7 +445,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Must containing `Match` leaf query") {
-          val query = boolQuery().must(matches(field = "day_of_week", value = "Monday"))
+          val query = boolQuery.must(matches(field = "day_of_week", value = "Monday"))
           val expected =
             """
               |{
@@ -468,7 +468,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Should containing `Match` leaf query") {
-          val query = boolQuery().should(matches(field = "day_of_week", value = "Monday"))
+          val query = boolQuery.should(matches(field = "day_of_week", value = "Monday"))
           val expected =
             """
               |{
@@ -491,7 +491,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Filter, Must and Should containing `Match` leaf query") {
-          val query = boolQuery()
+          val query = boolQuery
             .filter(matches(field = "customer_age", value = 23))
             .must(matches(field = "customer_id", value = 1))
             .should(matches(field = "day_of_week", value = "Monday"))
@@ -544,7 +544,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode MatchAll Query") {
-          val query = matchAll()
+          val query = matchAll
           val expected =
             """
               |{
@@ -557,7 +557,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode MatchAll Query with boost") {
-          val query = matchAll().boost(1.0)
+          val query = matchAll.boost(1.0)
           val expected =
             """
               |{
