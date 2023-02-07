@@ -19,8 +19,7 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.boolQuery
-import zio.elasticsearch.ElasticQuery
-import zio.elasticsearch._
+import zio.elasticsearch.{ElasticQuery, _}
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{
@@ -31,6 +30,7 @@ import zio.http.model.Status.{
 }
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
+
 import CompoundOperator._
 import FilterOperator._
 
