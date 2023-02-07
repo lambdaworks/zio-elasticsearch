@@ -21,7 +21,7 @@ import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.prelude._
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec.JsonDecoder
-import zio.{Chunk, RIO, ZIO}
+import zio.{RIO, ZIO}
 
 import scala.annotation.unused
 import scala.language.implicitConversions
@@ -116,7 +116,7 @@ object ElasticRequest {
   }
 
   private[elasticsearch] final case class BulkRequest(
-    requests: Chunk[BulkableRequest],
+    requests: List[BulkableRequest],
     index: Option[IndexName],
     refresh: Boolean,
     routing: Option[Routing]
@@ -145,7 +145,7 @@ object ElasticRequest {
 
   object BulkRequest {
     def of(requests: BulkableRequest*): BulkRequest =
-      BulkRequest(requests = Chunk.fromIterable(requests), index = None, refresh = false, routing = None)
+      BulkRequest(requests = requests.toList, index = None, refresh = false, routing = None)
   }
 
   private[elasticsearch] final case class CreateRequest(

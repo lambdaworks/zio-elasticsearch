@@ -20,7 +20,7 @@ import zio.Random.nextUUID
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
 import zio.stm.{STM, TMap, ZSTM}
-import zio.{Chunk, Task, ZIO}
+import zio.{Task, ZIO}
 
 private[elasticsearch] final case class TestExecutor private (data: TMap[IndexName, TMap[DocumentId, Document]])
     extends ElasticExecutor {
@@ -54,7 +54,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
         execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
 
-  private def fakeBulk(requests: Chunk[BulkableRequest]): Task[Unit] =
+  private def fakeBulk(requests: List[BulkableRequest]): Task[Unit] =
     ZIO.attempt {
       requests.map(_.request).map { r =>
         execute(r)
