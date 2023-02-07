@@ -19,7 +19,7 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.boolQuery
-import zio.elasticsearch.{ElasticQuery, _}
+import zio.elasticsearch._
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{
@@ -100,7 +100,8 @@ object Repositories {
             case Right(repo) =>
               (RepositoriesElasticsearch
                 .upsert(id, repo.copy(id = id)) *> RepositoriesElasticsearch.findById(repo.organization, id)).map {
-                case Some(updated) => Response.json(updated.toJson)
+                case Some(updated) =>
+                  Response.json(updated.toJson)
                 case None =>
                   Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).setStatus(HttpBadRequest)
               }
