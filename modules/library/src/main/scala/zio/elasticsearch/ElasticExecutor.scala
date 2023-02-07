@@ -17,7 +17,6 @@
 package zio.elasticsearch
 
 import sttp.client3.SttpBackend
-import sttp.client3.armeria.zio.ArmeriaZioBackend
 import zio.stm.TMap
 import zio.{Task, ULayer, ZIO, ZLayer}
 
@@ -30,7 +29,7 @@ object ElasticExecutor {
     ZLayer {
       for {
         conf <- ZIO.service[ElasticConfig]
-        sttp <- ArmeriaZioBackend.usingDefaultClient()
+        sttp <- ZIO.service[SttpBackend[Task, Any]]
       } yield HttpElasticExecutor(conf, sttp)
     }
 
