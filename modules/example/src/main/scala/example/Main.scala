@@ -67,7 +67,7 @@ object Main extends ZIOAppDefault {
   }
 
   private[this] def runServer: RIO[HttpConfig with ElasticExecutor, ExitCode] = {
-    val serverConfigLive = ZLayer(getConfig[HttpConfig].map(http => ServerConfig.default.port(http.port)))
+    val serverConfigLive = ZLayer.fromFunction((http: HttpConfig) => ServerConfig.default.port(http.port))
 
     (for {
       http  <- getConfig[HttpConfig]
