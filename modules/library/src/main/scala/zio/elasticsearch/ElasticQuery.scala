@@ -111,11 +111,23 @@ object ElasticQuery {
 
   def wildcard(field: String, value: String): ElasticQuery[Wildcard] = WildcardQuery(field, value)
 
-  private[elasticsearch] final case class BoolQuery(must: List[ElasticQuery[_]], should: List[ElasticQuery[_]])
-      extends ElasticQuery[Bool] { self =>
+  private[elasticsearch] final case class BoolQuery(
+    filter: List[ElasticQuery[_]],
+    must: List[ElasticQuery[_]],
+    should: List[ElasticQuery[_]]
+  ) extends ElasticQuery[Bool] { self =>
 
     override def toJson: Json =
-      Obj("bool" -> Obj("must" -> Arr(must.map(_.toJson): _*), "should" -> Arr(should.map(_.toJson): _*)))
+      Obj(
+        "bool" -> Obj(
+          "filter" -> Arr(filter.map(_.toJson): _*),
+          "must"   -> Arr(must.map(_.toJson): _*),
+          "should" -> Arr(should.map(_.toJson): _*)
+        )
+      )
+
+    def filter(queries: ElasticQuery[_]*): BoolQuery =
+      self.copy(filter = filter ++ queries)
 
     def must(queries: ElasticQuery[_]*): BoolQuery =
       self.copy(must = must ++ queries)
@@ -125,7 +137,7 @@ object ElasticQuery {
   }
 
   private[elasticsearch] object BoolQuery {
-    def empty: BoolQuery = BoolQuery(Nil, Nil)
+    def empty: BoolQuery = BoolQuery(Nil, Nil, Nil)
   }
 
   private[elasticsearch] final case class ExistsQuery private (field: String) extends ElasticQuery[Exists] {
