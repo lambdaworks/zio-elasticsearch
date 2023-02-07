@@ -20,7 +20,7 @@ import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import example.external.github.RepoFetcher
 import sttp.client3.SttpBackend
-import sttp.client3.httpclient.zio.HttpClientZioBackend
+import sttp.client3.armeria.zio.ArmeriaZioBackend
 import zio._
 import zio.config.getConfig
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
@@ -38,7 +38,7 @@ object Main extends ZIOAppDefault {
       AppConfig.live,
       elasticConfigLive,
       ElasticExecutor.live,
-      HttpClientZioBackend.layer()
+      ArmeriaZioBackend.layer()
     )
   }
 

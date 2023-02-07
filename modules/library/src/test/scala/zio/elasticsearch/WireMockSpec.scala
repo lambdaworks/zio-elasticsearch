@@ -17,7 +17,7 @@
 package zio.elasticsearch
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import sttp.client3.httpclient.zio.HttpClientZioBackend
+import sttp.client3.armeria.zio.ArmeriaZioBackend
 import zio.prelude.Newtype.unsafeWrap
 import zio.test.ZIOSpecDefault
 import zio.{TaskLayer, ZIO, ZLayer}
@@ -31,8 +31,7 @@ trait WireMockSpec extends ZIOSpecDefault {
   val port: Int = 9300
 
   val elasticsearchWireMockLayer: TaskLayer[ElasticExecutor] =
-    HttpClientZioBackend
-      .layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", port)) >>> ElasticExecutor.live)
+    ArmeriaZioBackend.layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", port)) >>> ElasticExecutor.live)
 
   val wireMockServerLayer: TaskLayer[WireMockServer] = {
     val server = ZIO.acquireRelease(
