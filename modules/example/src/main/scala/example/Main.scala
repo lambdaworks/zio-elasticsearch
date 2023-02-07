@@ -27,6 +27,7 @@ import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
 import zio.http.{Server, ServerConfig}
 
 import scala.io.Source
+import scala.util.Using
 
 object Main extends ZIOAppDefault {
 
@@ -51,7 +52,7 @@ object Main extends ZIOAppDefault {
     val createIndex: RIO[ElasticExecutor, Unit] =
       for {
         _       <- ZIO.logInfo(s"Creating index '$Index'...")
-        mapping <- ZIO.attempt(Source.fromURL(getClass.getResource("/mapping.json")).mkString)
+        mapping <- ZIO.fromTry(Using(Source.fromURL(getClass.getResource("/mapping.json")))(_.mkString))
         _       <- ElasticRequest.createIndex(Index, Some(mapping)).execute
       } yield ()
 
