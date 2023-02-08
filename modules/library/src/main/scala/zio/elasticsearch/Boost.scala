@@ -16,16 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticQuery.{
-  BoolQuery,
-  ElasticPrimitive,
-  LowerBound,
-  MatchAllQuery,
-  RangeQuery,
-  TermQuery,
-  UpperBound,
-  WildcardQuery
-}
+import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticQueryType.{Bool, MatchAll, Range, Term, Wildcard}
 
 object Boost {
