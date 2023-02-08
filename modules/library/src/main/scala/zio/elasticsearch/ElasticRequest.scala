@@ -21,7 +21,7 @@ import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.prelude._
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec.JsonDecoder
-import zio.{Chunk, RIO, ZIO}
+import zio.{RIO, ZIO}
 
 import scala.annotation.unused
 import scala.language.implicitConversions
@@ -54,28 +54,28 @@ object ElasticRequest {
     BulkRequest.of(requests: _*)
 
   def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
-    CreateRequest(index, Document.from(doc))
+    CreateRequest(index = index, document = Document.from(doc), refresh = false, routing = None)
 
   def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
-    CreateWithIdRequest(index, id, Document.from(doc))
+    CreateWithIdRequest(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
 
   def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex] =
     CreateIndexRequest(name, definition)
 
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
-    DeleteByIdRequest(index, id)
+    DeleteByIdRequest(index = index, id = id, refresh = false, routing = None)
 
   def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[DeletionOutcome, DeleteByQuery] =
-    DeleteByQueryRequest(index, query)
+    DeleteByQueryRequest(index = index, query = query, refresh = false, routing = None)
 
   def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex] =
     DeleteIndexRequest(name)
 
   def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean, Exists] =
-    ExistsRequest(index, id)
+    ExistsRequest(index = index, id = id, routing = None)
 
   def getById[A: Schema](index: IndexName, id: DocumentId): ElasticRequest[Option[A], GetById] =
-    GetByIdRequest(index, id).map {
+    GetByIdRequest(index = index, id = id, routing = None).map {
       case Some(document) =>
         document.decode match {
           case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
@@ -88,7 +88,7 @@ object ElasticRequest {
   def search[A](index: IndexName, query: ElasticQuery[_])(implicit
     schema: Schema[A]
   ): ElasticRequest[List[A], GetByQuery] =
-    GetByQueryRequest(index, query).map { response =>
+    GetByQueryRequest(index = index, query = query, routing = None).map { response =>
       Validation
         .validateAll(response.results.map { json =>
           ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))
@@ -99,7 +99,7 @@ object ElasticRequest {
     }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
-    CreateOrUpdateRequest(index, id, Document.from(doc))
+    CreateOrUpdateRequest(index, id, Document.from(doc), refresh = false, routing = None)
 
   private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
 
@@ -116,10 +116,10 @@ object ElasticRequest {
   }
 
   private[elasticsearch] final case class BulkRequest(
-    requests: Chunk[BulkableRequest],
-    index: Option[IndexName] = None,
-    refresh: Boolean = false,
-    routing: Option[Routing] = None
+    requests: List[BulkableRequest],
+    index: Option[IndexName],
+    refresh: Boolean,
+    routing: Option[Routing]
   ) extends ElasticRequest[Unit, Bulk] {
     lazy val body: String = requests.flatMap { r =>
       // We use @unchecked to ignore 'pattern match not exhaustive' error since we guarantee that it will not happen
@@ -144,22 +144,23 @@ object ElasticRequest {
   }
 
   object BulkRequest {
-    def of(requests: BulkableRequest*): BulkRequest = BulkRequest(Chunk.fromIterable(requests))
+    def of(requests: BulkableRequest*): BulkRequest =
+      BulkRequest(requests = requests.toList, index = None, refresh = false, routing = None)
   }
 
   private[elasticsearch] final case class CreateRequest(
     index: IndexName,
     document: Document,
-    refresh: Boolean = false,
-    routing: Option[Routing] = None
+    refresh: Boolean,
+    routing: Option[Routing]
   ) extends ElasticRequest[DocumentId, Create]
 
   private[elasticsearch] final case class CreateWithIdRequest(
     index: IndexName,
     id: DocumentId,
     document: Document,
-    refresh: Boolean = false,
-    routing: Option[Routing] = None
+    refresh: Boolean,
+    routing: Option[Routing]
   ) extends ElasticRequest[CreationOutcome, CreateWithId]
 
   private[elasticsearch] final case class CreateIndexRequest(
@@ -171,22 +172,22 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     document: Document,
-    refresh: Boolean = false,
-    routing: Option[Routing] = None
+    refresh: Boolean,
+    routing: Option[Routing]
   ) extends ElasticRequest[Unit, Upsert]
 
   private[elasticsearch] final case class DeleteByIdRequest(
     index: IndexName,
     id: DocumentId,
-    refresh: Boolean = false,
-    routing: Option[Routing] = None
+    refresh: Boolean,
+    routing: Option[Routing]
   ) extends ElasticRequest[DeletionOutcome, DeleteById]
 
   private[elasticsearch] final case class DeleteByQueryRequest(
     index: IndexName,
     query: ElasticQuery[_],
-    refresh: Boolean = false,
-    routing: Option[Routing] = None
+    refresh: Boolean,
+    routing: Option[Routing]
   ) extends ElasticRequest[DeletionOutcome, DeleteByQuery]
 
   private[elasticsearch] final case class DeleteIndexRequest(name: IndexName)
@@ -195,19 +196,19 @@ object ElasticRequest {
   private[elasticsearch] final case class ExistsRequest(
     index: IndexName,
     id: DocumentId,
-    routing: Option[Routing] = None
+    routing: Option[Routing]
   ) extends ElasticRequest[Boolean, Exists]
 
   private[elasticsearch] final case class GetByIdRequest(
     index: IndexName,
     id: DocumentId,
-    routing: Option[Routing] = None
+    routing: Option[Routing]
   ) extends ElasticRequest[Option[Document], GetById]
 
   private[elasticsearch] final case class GetByQueryRequest(
     index: IndexName,
     query: ElasticQuery[_],
-    routing: Option[Routing] = None
+    routing: Option[Routing]
   ) extends ElasticRequest[ElasticQueryResponse, GetByQuery]
 
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
@@ -226,29 +227,25 @@ sealed trait ElasticRequestType
 sealed trait BulkableRequestType extends ElasticRequestType
 
 object ElasticRequestType {
-  trait Bulk          extends ElasticRequestType
-  trait CreateIndex   extends ElasticRequestType
-  trait Create        extends BulkableRequestType
-  trait CreateWithId  extends BulkableRequestType
-  trait DeleteById    extends BulkableRequestType
-  trait DeleteByQuery extends ElasticRequestType
-  trait DeleteIndex   extends ElasticRequestType
-  trait Exists        extends ElasticRequestType
-  trait GetById       extends ElasticRequestType
-  trait GetByQuery    extends ElasticRequestType
-  trait Upsert        extends BulkableRequestType
+  sealed trait Bulk          extends ElasticRequestType
+  sealed trait CreateIndex   extends ElasticRequestType
+  sealed trait Create        extends BulkableRequestType
+  sealed trait CreateWithId  extends BulkableRequestType
+  sealed trait DeleteById    extends BulkableRequestType
+  sealed trait DeleteByQuery extends ElasticRequestType
+  sealed trait DeleteIndex   extends ElasticRequestType
+  sealed trait Exists        extends ElasticRequestType
+  sealed trait GetById       extends ElasticRequestType
+  sealed trait GetByQuery    extends ElasticRequestType
+  sealed trait Upsert        extends BulkableRequestType
 }
 
 sealed abstract class CreationOutcome
 
-object CreationOutcome {
-  case object Created       extends CreationOutcome
-  case object AlreadyExists extends CreationOutcome
-}
+case object Created       extends CreationOutcome
+case object AlreadyExists extends CreationOutcome
 
 sealed abstract class DeletionOutcome
 
-object DeletionOutcome {
-  case object Deleted  extends DeletionOutcome
-  case object NotFound extends DeletionOutcome
-}
+case object Deleted  extends DeletionOutcome
+case object NotFound extends DeletionOutcome

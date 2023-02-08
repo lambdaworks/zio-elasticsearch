@@ -26,7 +26,7 @@ import zio.test.{Spec, TestEnvironment, assertZIO}
 
 object HttpElasticExecutorSpec extends WireMockSpec {
 
-  override def spec: Spec[TestEnvironment, Any] =
+  def spec: Spec[TestEnvironment, Any] =
     suite("HttpElasticExecutor")(
       test("bulk request") {
         val addStubMapping = ZIO.serviceWith[WireMockServer](
@@ -111,7 +111,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
             .routing(Routing("routing"))
             .refreshTrue
             .execute
-        )(equalTo(CreationOutcome.Created))
+        )(equalTo(Created))
       },
       test("creating index request") {
         val addStubMapping = ZIO.serviceWith[WireMockServer](
@@ -121,7 +121,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(addStubMapping *> ElasticRequest.createIndex(name = index, definition = None).execute)(
-          equalTo(CreationOutcome.Created)
+          equalTo(Created)
         )
       },
       test("creating or updating request") {
@@ -156,7 +156,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
             .routing(Routing("routing"))
             .refreshTrue
             .execute
-        )(equalTo(DeletionOutcome.Deleted))
+        )(equalTo(Deleted))
       },
       test("deleting by query request") {
         val addStubMapping = ZIO.serviceWith[WireMockServer](
@@ -168,9 +168,9 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest.deleteByQuery(index = index, query = matchAll()).refreshTrue.execute
+          addStubMapping *> ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.execute
         )(
-          equalTo(DeletionOutcome.Deleted)
+          equalTo(Deleted)
         )
       },
       test("deleting index request") {
@@ -183,7 +183,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(addStubMapping *> ElasticRequest.deleteIndex(name = index).execute)(
-          equalTo(DeletionOutcome.Deleted)
+          equalTo(Deleted)
         )
       },
       test("exists request") {
@@ -280,7 +280,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> ElasticRequest.search[GitHubRepo](index = index, query = matchAll()).execute)(
+        assertZIO(addStubMapping *> ElasticRequest.search[GitHubRepo](index = index, query = matchAll).execute)(
           equalTo(List(repo))
         )
       }

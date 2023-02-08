@@ -32,7 +32,7 @@ import zio.prelude.Newtype.unsafeWrap
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    executor.execute(ElasticRequest.search[GitHubRepo](Index, matchAll()))
+    executor.execute(ElasticRequest.search[GitHubRepo](Index, matchAll))
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {

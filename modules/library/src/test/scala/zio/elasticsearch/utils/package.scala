@@ -21,7 +21,7 @@ import zio.json.ast.Json
 
 package object utils {
 
-  implicit class RichString(private val text: String) extends AnyVal {
+  final implicit class RichString(private val text: String) extends AnyVal {
     def toJson: Json = text.fromJson[Json].toOption.get
   }
 }

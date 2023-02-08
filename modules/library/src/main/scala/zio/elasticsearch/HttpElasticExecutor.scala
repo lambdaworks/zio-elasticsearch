@@ -27,8 +27,6 @@ import sttp.model.StatusCode.{
   Ok => HttpOk
 }
 import zio.ZIO.logDebug
-import zio.elasticsearch.CreationOutcome.{AlreadyExists, Created}
-import zio.elasticsearch.DeletionOutcome.{Deleted, NotFound}
 import zio.elasticsearch.ElasticRequest._
 import zio.{Task, ZIO}
 
@@ -39,7 +37,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   import HttpElasticExecutor._
 
-  override def execute[A](request: ElasticRequest[A, _]): Task[A] =
+  def execute[A](request: ElasticRequest[A, _]): Task[A] =
     request match {
       case r: BulkRequest           => executeBulk(r)
       case r: CreateRequest         => executeCreate(r)
@@ -162,7 +160,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       request
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.query.toJsonBody)
+        .body(r.query.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
@@ -215,7 +213,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .post(uri"${config.uri}/${r.index}/$Search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJsonBody)
+        .body(r.query.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
