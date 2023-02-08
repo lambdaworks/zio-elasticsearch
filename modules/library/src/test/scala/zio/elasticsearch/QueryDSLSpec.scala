@@ -38,7 +38,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
     val (id, name, address, balance, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
   }
 
-  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
+  override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
         test("successfully create Match query using `matches` method") {
@@ -195,7 +195,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create MatchAll Query") {
           val query = matchAll
 
-          assert(query)(equalTo(MatchAllQuery(boost = None)))
+          assert(query)(equalTo(MatchAllQuery(None)))
         },
         test("successfully create MatchAll Query with boost") {
           val query = matchAll.boost(1.0)
@@ -474,7 +474,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJsonBody)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Bool Query with Must containing `Match` leaf query") {
           val query = boolQuery.must(matches(field = "day_of_week", value = "Monday"))

@@ -129,6 +129,9 @@ object ElasticQuery {
     def filter(queries: ElasticQuery[_]*): BoolQuery =
       self.copy(filter = filter ++ queries)
 
+    def must(queries: ElasticQuery[_]*): BoolQuery =
+      self.copy(must = must ++ queries)
+
     def paramsToJson: Json = Obj(
       "bool" -> Obj(
         "filter" -> Arr(filter.map(_.toJson): _*),
@@ -136,9 +139,6 @@ object ElasticQuery {
         "should" -> Arr(should.map(_.toJson): _*)
       )
     )
-
-    def must(queries: ElasticQuery[_]*): BoolQuery =
-      self.copy(must = must ++ queries)
 
     def should(queries: ElasticQuery[_]*): BoolQuery =
       self.copy(should = should ++ queries)
