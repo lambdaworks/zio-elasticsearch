@@ -62,6 +62,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(MatchQuery(field = "name.keyword", value = "Name")))
         },
+        test("successfully create Bool Query with boost") {
+          val query = boolQuery().boost(1.0)
+
+          assert(query)(equalTo(BoolQuery(filter = Nil, must = Nil, should = Nil, boost = Some(1.0))))
+        },
         test("successfully create `Filter` query from two Match queries") {
           val query = boolQuery
             .filter(
@@ -178,6 +183,24 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   MatchQuery(field = "day_of_week", value = "Monday"),
                   MatchQuery(field = "customer_gender", value = "MALE")
                 )
+              )
+            )
+          )
+        },
+        test("successfully create `Filter/Must/Should` mixed query with boost") {
+          val query = boolQuery()
+            .filter(matches(field = "customer_id", value = 1))
+            .must(matches(field = "customer_age", value = 23))
+            .should(matches(field = "day_of_week", value = "Monday"))
+            .boost(1.0)
+
+          assert(query)(
+            equalTo(
+              BoolQuery(
+                filter = List(MatchQuery(field = "customer_id", value = 1)),
+                must = List(MatchQuery(field = "customer_age", value = 23)),
+                should = List(MatchQuery(field = "day_of_week", value = "Monday")),
+                boost = Some(1.0)
               )
             )
           )
@@ -453,6 +476,24 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
+        test("properly encode Bool Query with boost") {
+          val query = boolQuery().boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "bool": {
+              |      "filter": [],
+              |      "must": [],
+              |      "should": [],
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
         test("properly encode Bool Query with Filter containing `Match` leaf query") {
           val query = boolQuery.filter(matches(field = "day_of_week", value = "Monday"))
           val expected =
@@ -560,6 +601,46 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
+        test("properly encode Bool Query with Filter, Must and Should containing `Match` leaf query and with boost") {
+          val query = boolQuery()
+            .filter(matches(field = "customer_age", value = 23))
+            .must(matches(field = "customer_id", value = 1))
+            .should(matches(field = "day_of_week", value = "Monday"))
+            .boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "bool": {
+              |      "filter": [
+              |        {
+              |          "match": {
+              |            "customer_age": 23
+              |          }
+              |        }
+              |      ],
+              |      "must": [
+              |        {
+              |          "match": {
+              |            "customer_id": 1
+              |          }
+              |        }
+              |      ],
+              |      "should": [
+              |        {
+              |          "match": {
+              |            "day_of_week": "Monday"
+              |          }
+              |        }
+              |      ],
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
+        },
         test("properly encode Exists Query") {
           val query = exists(field = "day_of_week")
           val expected =
@@ -618,6 +699,23 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Unbounded Range Query with boost") {
+          val query = range(field = "field").boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |      },
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Range Query with Lower Bound") {
           val query = range(field = "customer_age").gt(23)
@@ -704,6 +802,25 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Range Query with both Upper and Lower Bound with boost") {
+          val query = range(field = "customer_age").gte(10).lt(100).boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "customer_age": {
+              |        "gte": 10,
+              |        "lt": 100
+              |      },
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJsonBody)(equalTo(expected.toJson))
         },
         test("properly encode Term query") {
           val query = term(field = "day_of_week", value = true)

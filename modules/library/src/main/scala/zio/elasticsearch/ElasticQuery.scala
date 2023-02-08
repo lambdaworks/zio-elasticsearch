@@ -123,7 +123,8 @@ object ElasticQuery {
   private[elasticsearch] final case class BoolQuery(
     filter: List[ElasticQuery[_]],
     must: List[ElasticQuery[_]],
-    should: List[ElasticQuery[_]]
+    should: List[ElasticQuery[_]],
+    boost: Option[Double]
   ) extends ElasticQuery[Bool] { self =>
 
     def filter(queries: ElasticQuery[_]*): BoolQuery =
@@ -132,20 +133,21 @@ object ElasticQuery {
     def must(queries: ElasticQuery[_]*): BoolQuery =
       self.copy(must = must ++ queries)
 
-    def paramsToJson: Json = Obj(
-      "bool" -> Obj(
-        "filter" -> Arr(filter.map(_.paramsToJson): _*),
-        "must"   -> Arr(must.map(_.paramsToJson): _*),
-        "should" -> Arr(should.map(_.paramsToJson): _*)
-      )
-    )
+    def paramsToJson: Json = {
+      val boolFields =
+        Some("filter" -> Arr(filter.map(_.paramsToJson): _*)) ++
+          Some("must" -> Arr(must.map(_.paramsToJson): _*)) ++
+          Some("should" -> Arr(should.map(_.paramsToJson): _*)) ++
+          boost.map("boost" -> Num(_))
+      Obj("bool" -> Obj(boolFields.toList: _*))
+    }
 
     def should(queries: ElasticQuery[_]*): BoolQuery =
       self.copy(should = should ++ queries)
   }
 
   private[elasticsearch] object BoolQuery {
-    def empty: BoolQuery = BoolQuery(Nil, Nil, Nil)
+    def empty: BoolQuery = BoolQuery(filter = Nil, must = Nil, should = Nil, boost = None)
   }
 
   private[elasticsearch] final case class ExistsQuery private (field: String) extends ElasticQuery[Exists] {
@@ -192,8 +194,9 @@ object ElasticQuery {
   private[elasticsearch] final case class RangeQuery[A, LB <: LowerBound, UB <: UpperBound] private (
     field: String,
     lower: LB,
-    upper: UB
-  ) extends ElasticQuery[Range] { self =>
+    upper: UB,
+    boost: Option[Double]
+  ) extends ElasticQuery[Range[A, LB, UB]] { self =>
 
     def gt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
@@ -215,12 +218,20 @@ object ElasticQuery {
     ): RangeQuery[B, LB, LessThanOrEqualTo[B]] =
       self.copy(upper = LessThanOrEqualTo(value))
 
-    def paramsToJson: Json = Obj("range" -> Obj(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)))
+    def paramsToJson: Json = {
+      val rangeFields = Some(field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)) ++ boost.map("boost" -> Num(_))
+      Obj("range" -> Obj(rangeFields.toList: _*))
+    }
   }
 
   private[elasticsearch] object RangeQuery {
     def empty[A](field: String): RangeQuery[A, Unbounded.type, Unbounded.type] =
-      RangeQuery[A, Unbounded.type, Unbounded.type](field, Unbounded, Unbounded)
+      RangeQuery[A, Unbounded.type, Unbounded.type](
+        field = field,
+        lower = Unbounded,
+        upper = Unbounded,
+        boost = None
+      )
   }
 
   private[elasticsearch] final case class TermQuery[A: ElasticPrimitive](
@@ -256,11 +267,11 @@ object ElasticQuery {
 sealed trait ElasticQueryType
 
 object ElasticQueryType {
-  sealed trait Bool     extends ElasticQueryType
-  sealed trait Exists   extends ElasticQueryType
-  sealed trait Match    extends ElasticQueryType
-  sealed trait MatchAll extends ElasticQueryType
-  sealed trait Range    extends ElasticQueryType
-  sealed trait Term[A]  extends ElasticQueryType
-  sealed trait Wildcard extends ElasticQueryType
+  sealed trait Bool             extends ElasticQueryType
+  sealed trait Exists           extends ElasticQueryType
+  sealed trait Match            extends ElasticQueryType
+  sealed trait MatchAll         extends ElasticQueryType
+  sealed trait Range[A, LB, UB] extends ElasticQueryType
+  sealed trait Term[A]          extends ElasticQueryType
+  sealed trait Wildcard         extends ElasticQueryType
 }
