@@ -134,9 +134,9 @@ object ElasticQuery {
 
     def paramsToJson: Json = Obj(
       "bool" -> Obj(
-        "filter" -> Arr(filter.map(_.toJson): _*),
-        "must"   -> Arr(must.map(_.toJson): _*),
-        "should" -> Arr(should.map(_.toJson): _*)
+        "filter" -> Arr(filter.map(_.paramsToJson): _*),
+        "must"   -> Arr(must.map(_.paramsToJson): _*),
+        "should" -> Arr(should.map(_.paramsToJson): _*)
       )
     )
 
