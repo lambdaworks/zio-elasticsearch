@@ -17,11 +17,35 @@
 package zio.elasticsearch
 
 import sttp.client3.SttpBackend
+import zio.elasticsearch.ElasticRequest.BulkableRequest
+import zio.elasticsearch.ElasticRequestType._
+import zio.schema.Schema
 import zio.stm.TMap
 import zio.{Task, ULayer, ZLayer}
 
 trait ElasticExecutor {
-  def execute[A](request: ElasticRequest[A, _]): Task[A]
+
+  def bulk(requests: BulkableRequest*): ElasticRequest[Unit, Bulk]
+
+  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create]
+
+  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId]
+
+  def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex]
+
+  def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById]
+
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[DeletionOutcome, DeleteByQuery]
+
+  def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex]
+
+  def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean, Exists]
+
+  def getById[A: Schema](index: IndexName, id: DocumentId): ElasticRequest[Option[A], GetById]
+
+  def search[A](index: IndexName, query: ElasticQuery[_])(implicit schema: Schema[A]): ElasticRequest[List[A], GetByQuery]
+
+  def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert]
 }
 
 object ElasticExecutor {

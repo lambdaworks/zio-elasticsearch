@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.Task
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticRequestType.{Bulk, Create, CreateWithId, DeleteById, Exists, GetById, Upsert}
 import zio.prelude.Assertion.isEmptyString
@@ -35,7 +36,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, Bulk], routing: Routing): ElasticRequest[A, Bulk] =
         request match {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
-          case r: BulkRequest => r.copy(routing = Some(routing))
+          case r: BulkRequest => new BulkRequest(r.requests, r.index, r.refresh, Some(routing)) {
+            def execute: Task[Unit] = r.execute
+          }
         }
     }
 
@@ -43,7 +46,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, Create], routing: Routing): ElasticRequest[A, Create] =
         request match {
           case Map(r, mapper)   => Map(withRouting(r, routing), mapper)
-          case r: CreateRequest => r.copy(routing = Some(routing))
+          case r: CreateRequest => new CreateRequest(r.index, r.document, r.refresh, Some(routing)) {
+            def execute: Task[DocumentId] = r.execute
+          }
         }
     }
 
@@ -51,7 +56,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, CreateWithId], routing: Routing): ElasticRequest[A, CreateWithId] =
         request match {
           case Map(r, mapper)         => Map(withRouting(r, routing), mapper)
-          case r: CreateWithIdRequest => r.copy(routing = Some(routing))
+          case r: CreateWithIdRequest => new CreateWithIdRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
+            def execute: Task[CreationOutcome] = r.execute
+          }
         }
     }
 
@@ -59,7 +66,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, DeleteById], routing: Routing): ElasticRequest[A, DeleteById] =
         request match {
           case Map(r, mapper)       => Map(withRouting(r, routing), mapper)
-          case r: DeleteByIdRequest => r.copy(routing = Some(routing))
+          case r: DeleteByIdRequest => new DeleteByIdRequest(r.index, r.id, r.refresh, Some(routing)) {
+            def execute: Task[DeletionOutcome] = r.execute
+          }
         }
     }
 
@@ -67,7 +76,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, Exists], routing: Routing): ElasticRequest[A, Exists] =
         request match {
           case Map(r, mapper)   => Map(withRouting(r, routing), mapper)
-          case r: ExistsRequest => r.copy(routing = Some(routing))
+          case r: ExistsRequest => new ExistsRequest(r.index, r.id, Some(routing)) {
+            def execute: Task[Boolean] = r.execute
+          }
         }
     }
 
@@ -75,7 +86,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, GetById], routing: Routing): ElasticRequest[A, GetById] =
         request match {
           case Map(r, mapper)    => Map(withRouting(r, routing), mapper)
-          case r: GetByIdRequest => r.copy(routing = Some(routing))
+          case r: GetByIdRequest => new GetByIdRequest(r.index, r.id, Some(routing)) {
+            def execute: Task[Option[Document]] = r.execute
+          }
         }
     }
 
@@ -83,7 +96,9 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, Upsert], routing: Routing): ElasticRequest[A, Upsert] =
         request match {
           case Map(r, mapper)           => Map(withRouting(r, routing), mapper)
-          case r: CreateOrUpdateRequest => r.copy(routing = Some(routing))
+          case r: CreateOrUpdateRequest => new CreateOrUpdateRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
+            def execute: Task[Unit] = r.execute
+          }
         }
     }
   }

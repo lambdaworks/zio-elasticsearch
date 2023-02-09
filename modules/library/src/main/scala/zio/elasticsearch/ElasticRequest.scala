@@ -18,18 +18,14 @@ package zio.elasticsearch
 
 import zio.elasticsearch.Refresh.WithRefresh
 import zio.elasticsearch.Routing.{Routing, WithRouting}
-import zio.prelude._
-import zio.schema.Schema
-import zio.schema.codec.JsonCodec.JsonDecoder
-import zio.{RIO, ZIO}
+import zio.{Task, ZIO}
 
 import scala.annotation.unused
 import scala.language.implicitConversions
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 
-  final def execute: RIO[ElasticExecutor, A] =
-    ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
+  def execute: Task[A]
 
   final def map[B](f: A => Either[DecodingException, B]): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
 
@@ -49,58 +45,6 @@ sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
 object ElasticRequest {
 
   import ElasticRequestType._
-
-  def bulk(requests: BulkableRequest*): ElasticRequest[Unit, Bulk] =
-    BulkRequest.of(requests: _*)
-
-  def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
-    CreateRequest(index = index, document = Document.from(doc), refresh = false, routing = None)
-
-  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
-    CreateWithIdRequest(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
-
-  def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex] =
-    CreateIndexRequest(name, definition)
-
-  def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
-    DeleteByIdRequest(index = index, id = id, refresh = false, routing = None)
-
-  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[DeletionOutcome, DeleteByQuery] =
-    DeleteByQueryRequest(index = index, query = query, refresh = false, routing = None)
-
-  def deleteIndex(name: IndexName): ElasticRequest[DeletionOutcome, DeleteIndex] =
-    DeleteIndexRequest(name)
-
-  def exists(index: IndexName, id: DocumentId): ElasticRequest[Boolean, Exists] =
-    ExistsRequest(index = index, id = id, routing = None)
-
-  def getById[A: Schema](index: IndexName, id: DocumentId): ElasticRequest[Option[A], GetById] =
-    GetByIdRequest(index = index, id = id, routing = None).map {
-      case Some(document) =>
-        document.decode match {
-          case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
-          case Right(doc) => Right(Some(doc))
-        }
-      case None =>
-        Right(None)
-    }
-
-  def search[A](index: IndexName, query: ElasticQuery[_])(implicit
-    schema: Schema[A]
-  ): ElasticRequest[List[A], GetByQuery] =
-    GetByQueryRequest(index = index, query = query, routing = None).map { response =>
-      Validation
-        .validateAll(response.results.map { json =>
-          ZValidation.fromEither(JsonDecoder.decode(schema, json.toString))
-        })
-        .toEitherWith { errors =>
-          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
-        }
-    }
-
-  def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
-    CreateOrUpdateRequest(index, id, Document.from(doc), refresh = false, routing = None)
-
   private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
 
   object BulkableRequest {
@@ -115,106 +59,103 @@ object ElasticRequest {
       requests.map(BulkableRequest(_))
   }
 
-  private[elasticsearch] final case class BulkRequest(
-    requests: List[BulkableRequest],
-    index: Option[IndexName],
-    refresh: Boolean,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class BulkRequest(
+    val requests: List[BulkableRequest],
+    val index: Option[IndexName],
+    val refresh: Boolean,
+    val routing: Option[Routing]
   ) extends ElasticRequest[Unit, Bulk] {
     lazy val body: String = requests.flatMap { r =>
       // We use @unchecked to ignore 'pattern match not exhaustive' error since we guarantee that it will not happen
       // because these are only Bulkable Requests and other matches will not occur.
       (r.request: @unchecked) match {
-        case CreateRequest(index, document, _, maybeRouting) =>
-          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", maybeRouting))), document.json)
-        case CreateWithIdRequest(index, id, document, _, maybeRouting) =>
+        case r: CreateRequest =>
+          List(getActionAndMeta("create", List(("_index", Some(r.index)), ("routing", r.routing))), r.document.json)
+        case r: CreateWithIdRequest =>
           List(
-            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
-            document.json
+            getActionAndMeta("create", List(("_index", Some(r.index)), ("_id", Some(r.id)), ("routing", r.routing))),
+            r.document.json
           )
-        case CreateOrUpdateRequest(index, id, document, _, maybeRouting) =>
+        case r: CreateOrUpdateRequest =>
           List(
-            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
-            document.json
+            getActionAndMeta("index", List(("_index", Some(r.index)), ("_id", Some(r.id)), ("routing", r.routing))),
+            r.document.json
           )
-        case DeleteByIdRequest(index, id, _, maybeRouting) =>
-          List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
+        case r: DeleteByIdRequest =>
+          List(getActionAndMeta("delete", List(("_index", Some(r.index)), ("_id", Some(r.id)), ("routing", r.routing))))
       }
     }.mkString(start = "", sep = "\n", end = "\n")
   }
 
-  object BulkRequest {
-    def of(requests: BulkableRequest*): BulkRequest =
-      BulkRequest(requests = requests.toList, index = None, refresh = false, routing = None)
-  }
-
-  private[elasticsearch] final case class CreateRequest(
-    index: IndexName,
-    document: Document,
-    refresh: Boolean,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class CreateRequest(
+    val index: IndexName,
+    val document: Document,
+    val refresh: Boolean,
+    val routing: Option[Routing]
   ) extends ElasticRequest[DocumentId, Create]
 
-  private[elasticsearch] final case class CreateWithIdRequest(
-    index: IndexName,
-    id: DocumentId,
-    document: Document,
-    refresh: Boolean,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class CreateWithIdRequest(
+    val index: IndexName,
+    val id: DocumentId,
+    val document: Document,
+    val refresh: Boolean,
+    val routing: Option[Routing]
   ) extends ElasticRequest[CreationOutcome, CreateWithId]
 
-  private[elasticsearch] final case class CreateIndexRequest(
-    name: IndexName,
-    definition: Option[String]
+  private[elasticsearch] abstract class CreateIndexRequest(
+    val name: IndexName,
+    val definition: Option[String]
   ) extends ElasticRequest[CreationOutcome, CreateIndex]
 
-  private[elasticsearch] final case class CreateOrUpdateRequest(
-    index: IndexName,
-    id: DocumentId,
-    document: Document,
-    refresh: Boolean,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class CreateOrUpdateRequest(
+    val index: IndexName,
+    val id: DocumentId,
+    val document: Document,
+    val refresh: Boolean,
+    val routing: Option[Routing]
   ) extends ElasticRequest[Unit, Upsert]
 
-  private[elasticsearch] final case class DeleteByIdRequest(
-    index: IndexName,
-    id: DocumentId,
-    refresh: Boolean,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class DeleteByIdRequest(
+    val index: IndexName,
+    val id: DocumentId,
+    val refresh: Boolean,
+    val routing: Option[Routing]
   ) extends ElasticRequest[DeletionOutcome, DeleteById]
 
-  private[elasticsearch] final case class DeleteByQueryRequest(
-    index: IndexName,
-    query: ElasticQuery[_],
-    refresh: Boolean,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class DeleteByQueryRequest(
+    val index: IndexName,
+    val query: ElasticQuery[_],
+    val refresh: Boolean,
+    val routing: Option[Routing]
   ) extends ElasticRequest[DeletionOutcome, DeleteByQuery]
 
-  private[elasticsearch] final case class DeleteIndexRequest(name: IndexName)
+  private[elasticsearch] abstract class DeleteIndexRequest(val name: IndexName)
       extends ElasticRequest[DeletionOutcome, DeleteIndex]
 
-  private[elasticsearch] final case class ExistsRequest(
-    index: IndexName,
-    id: DocumentId,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class ExistsRequest(
+    val index: IndexName,
+    val id: DocumentId,
+    val routing: Option[Routing]
   ) extends ElasticRequest[Boolean, Exists]
 
-  private[elasticsearch] final case class GetByIdRequest(
-    index: IndexName,
-    id: DocumentId,
-    routing: Option[Routing]
+  private[elasticsearch] abstract class GetByIdRequest(
+    val index: IndexName,
+    val id: DocumentId,
+    val routing: Option[Routing]
   ) extends ElasticRequest[Option[Document], GetById]
 
-  private[elasticsearch] final case class GetByQueryRequest(
-    index: IndexName,
-    query: ElasticQuery[_],
-    routing: Option[Routing]
+  private[elasticsearch] abstract class GetByQueryRequest(
+    val index: IndexName,
+    val query: ElasticQuery[_],
+    val routing: Option[Routing]
   ) extends ElasticRequest[ElasticQueryResponse, GetByQuery]
 
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
     request: ElasticRequest[A, ERT],
     mapper: A => Either[DecodingException, B]
-  ) extends ElasticRequest[B, ERT]
+  ) extends ElasticRequest[B, ERT] {
+    def execute: Task[B] = request.execute.flatMap(a => ZIO.fromEither(mapper(a)))
+  }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }
@@ -240,12 +181,12 @@ object ElasticRequestType {
   sealed trait Upsert        extends BulkableRequestType
 }
 
-sealed abstract class CreationOutcome
+sealed trait CreationOutcome
 
 case object Created       extends CreationOutcome
 case object AlreadyExists extends CreationOutcome
 
-sealed abstract class DeletionOutcome
+sealed trait DeletionOutcome
 
 case object Deleted  extends DeletionOutcome
 case object NotFound extends DeletionOutcome
