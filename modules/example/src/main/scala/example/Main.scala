@@ -23,7 +23,7 @@ import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.config.getConfig
-import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
+import zio.elasticsearch.{ElasticConfig, ElasticExecutor}
 import zio.http.{Server, ServerConfig}
 
 import scala.io.Source
@@ -46,14 +46,14 @@ object Main extends ZIOAppDefault {
     val deleteIndex: RIO[ElasticExecutor, Unit] =
       for {
         _ <- ZIO.logInfo(s"Deleting index '$Index'...")
-        _ <- ElasticRequest.deleteIndex(Index).execute
+        _ <- ZIO.serviceWithZIO[ElasticExecutor](_.deleteIndex(Index).execute)
       } yield ()
 
     val createIndex: RIO[ElasticExecutor, Unit] =
       for {
         _       <- ZIO.logInfo(s"Creating index '$Index'...")
         mapping <- ZIO.fromTry(Using(Source.fromURL(getClass.getResource("/mapping.json")))(_.mkString))
-        _       <- ElasticRequest.createIndex(Index, Some(mapping)).execute
+        _       <- ZIO.serviceWithZIO[ElasticExecutor](_.createIndex(Index, Some(mapping)).execute)
       } yield ()
 
     val populate: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] =

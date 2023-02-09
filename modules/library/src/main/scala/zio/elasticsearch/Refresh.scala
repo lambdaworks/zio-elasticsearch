@@ -31,59 +31,65 @@ object Refresh {
       def withRefresh[A](request: ElasticRequest[A, Bulk], value: Boolean): ElasticRequest[A, Bulk] =
         request match {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
-          case r: BulkRequest => new BulkRequest(r.requests, r.index, value, r.routing) {
-            def execute: Task[Unit] = r.execute
-          }
+          case r: BulkRequest =>
+            new BulkRequest(r.requests, r.index, value, r.routing) {
+              def execute: Task[Unit] = r.execute
+            }
         }
     }
 
     implicit val createWithRefresh: WithRefresh[Create] = new WithRefresh[Create] {
       def withRefresh[A](request: ElasticRequest[A, Create], value: Boolean): ElasticRequest[A, Create] =
         request match {
-          case Map(r, mapper)   => Map(withRefresh(r, value), mapper)
-          case r: CreateRequest => new CreateRequest(r.index, r.document, value, r.routing) {
-            def execute: Task[DocumentId] = r.execute
-          }
+          case Map(r, mapper) => Map(withRefresh(r, value), mapper)
+          case r: CreateRequest =>
+            new CreateRequest(r.index, r.document, value, r.routing) {
+              def execute: Task[DocumentId] = r.execute
+            }
         }
     }
 
     implicit val createWithIdWithRefresh: WithRefresh[CreateWithId] = new WithRefresh[CreateWithId] {
       def withRefresh[A](request: ElasticRequest[A, CreateWithId], value: Boolean): ElasticRequest[A, CreateWithId] =
         request match {
-          case Map(r, mapper)         => Map(withRefresh(r, value), mapper)
-          case r: CreateWithIdRequest => new CreateWithIdRequest(r.index, r.id, r.document, value, r.routing) {
-            def execute: Task[CreationOutcome] = r.execute
-          }
+          case Map(r, mapper) => Map(withRefresh(r, value), mapper)
+          case r: CreateWithIdRequest =>
+            new CreateWithIdRequest(r.index, r.id, r.document, value, r.routing) {
+              def execute: Task[CreationOutcome] = r.execute
+            }
         }
     }
 
     implicit val deleteByIdWithRefresh: WithRefresh[DeleteById] = new WithRefresh[DeleteById] {
       def withRefresh[A](request: ElasticRequest[A, DeleteById], value: Boolean): ElasticRequest[A, DeleteById] =
         request match {
-          case Map(r, mapper)       => Map(withRefresh(r, value), mapper)
-          case r: DeleteByIdRequest => new DeleteByIdRequest(r.index, r.id, value, r.routing) {
-            def execute: Task[DeletionOutcome] = r.execute
-          }
+          case Map(r, mapper) => Map(withRefresh(r, value), mapper)
+          case r: DeleteByIdRequest =>
+            new DeleteByIdRequest(r.index, r.id, value, r.routing) {
+              def execute: Task[DeletionOutcome] = r.execute
+            }
         }
     }
 
     implicit val deleteByQueryWithRefresh: WithRefresh[DeleteByQuery] = new WithRefresh[DeleteByQuery] {
       def withRefresh[A](request: ElasticRequest[A, DeleteByQuery], value: Boolean): ElasticRequest[A, DeleteByQuery] =
         request match {
-          case Map(r, mapper)          => Map(withRefresh(r, value), mapper)
-          case r: DeleteByQueryRequest => new DeleteByQueryRequest(r.index, r.query, value, r.routing) {
-            def execute: Task[DeletionOutcome] = r.execute
-          }
+          case Map(r, mapper) => Map(withRefresh(r, value), mapper)
+          case r: DeleteByQueryRequest =>
+            new DeleteByQueryRequest(r.index, r.query, value, r.routing) {
+              def execute: Task[DeletionOutcome] = r.execute
+            }
         }
     }
 
     implicit val upsertWithRefresh: WithRefresh[Upsert] = new WithRefresh[Upsert] {
       def withRefresh[A](request: ElasticRequest[A, Upsert], value: Boolean): ElasticRequest[A, Upsert] =
         request match {
-          case Map(r, mapper)           => Map(withRefresh(r, value), mapper)
-          case r: CreateOrUpdateRequest => new CreateOrUpdateRequest(r.index, r.id, r.document, value, r.routing) {
-            def execute: Task[Unit] = r.execute
-          }
+          case Map(r, mapper) => Map(withRefresh(r, value), mapper)
+          case r: CreateOrUpdateRequest =>
+            new CreateOrUpdateRequest(r.index, r.id, r.document, value, r.routing) {
+              def execute: Task[Unit] = r.execute
+            }
         }
     }
   }

@@ -18,62 +18,49 @@ package example
 
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
-import zio.elasticsearch.{
-  CreationOutcome,
-  DeletionOutcome,
-  DocumentId,
-  ElasticExecutor,
-  ElasticQuery,
-  ElasticRequest,
-  Routing
-}
+import zio.elasticsearch.{CreationOutcome, DeletionOutcome, DocumentId, ElasticExecutor, ElasticQuery, Routing}
 import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(executor: ElasticExecutor) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    executor.execute(ElasticRequest.search[GitHubRepo](Index, matchAll))
+    executor.search[GitHubRepo](Index, matchAll).execute
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.getById[GitHubRepo](Index, DocumentId(id)).routing(routing)
-      res     <- executor.execute(req)
+      res     <- executor.getById[GitHubRepo](Index, DocumentId(id)).routing(routing).execute
     } yield res
 
   def create(repository: GitHubRepo): Task[CreationOutcome] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
-      res     <- executor.execute(req)
+      res     <- executor.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue.execute
     } yield res
 
   def createAll(repositories: List[GitHubRepo]): Task[Unit] =
     for {
       routing <- routingOf(organization)
       reqs = repositories.map { repository =>
-               ElasticRequest.create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+               executor.create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
              }
-      bulkReq = ElasticRequest.bulk(reqs: _*).routing(routing)
-      _      <- executor.execute(bulkReq)
+      _ <- executor.bulk(reqs: _*).routing(routing).execute
     } yield ()
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
-      _       <- executor.execute(req)
+      _       <- executor.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true).execute
     } yield ()
 
   def remove(organization: String, id: String): Task[DeletionOutcome] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse
-      res     <- executor.execute(req)
+      res     <- executor.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse.execute
     } yield res
 
   def search(query: ElasticQuery[_]): Task[List[GitHubRepo]] =
-    executor.execute(ElasticRequest.search[GitHubRepo](Index, query))
+    executor.search[GitHubRepo](Index, query).execute
 
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
     Routing.make(value).toZIO.mapError(e => new IllegalArgumentException(e))

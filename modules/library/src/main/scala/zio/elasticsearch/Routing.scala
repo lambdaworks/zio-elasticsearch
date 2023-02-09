@@ -36,69 +36,76 @@ object Routing extends Newtype[String] {
       def withRouting[A](request: ElasticRequest[A, Bulk], routing: Routing): ElasticRequest[A, Bulk] =
         request match {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
-          case r: BulkRequest => new BulkRequest(r.requests, r.index, r.refresh, Some(routing)) {
-            def execute: Task[Unit] = r.execute
-          }
+          case r: BulkRequest =>
+            new BulkRequest(r.requests, r.index, r.refresh, Some(routing)) {
+              def execute: Task[Unit] = r.execute
+            }
         }
     }
 
     implicit val createWithRouting: WithRouting[Create] = new WithRouting[Create] {
       def withRouting[A](request: ElasticRequest[A, Create], routing: Routing): ElasticRequest[A, Create] =
         request match {
-          case Map(r, mapper)   => Map(withRouting(r, routing), mapper)
-          case r: CreateRequest => new CreateRequest(r.index, r.document, r.refresh, Some(routing)) {
-            def execute: Task[DocumentId] = r.execute
-          }
+          case Map(r, mapper) => Map(withRouting(r, routing), mapper)
+          case r: CreateRequest =>
+            new CreateRequest(r.index, r.document, r.refresh, Some(routing)) {
+              def execute: Task[DocumentId] = r.execute
+            }
         }
     }
 
     implicit val createWithIdWithRouting: WithRouting[CreateWithId] = new WithRouting[CreateWithId] {
       def withRouting[A](request: ElasticRequest[A, CreateWithId], routing: Routing): ElasticRequest[A, CreateWithId] =
         request match {
-          case Map(r, mapper)         => Map(withRouting(r, routing), mapper)
-          case r: CreateWithIdRequest => new CreateWithIdRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
-            def execute: Task[CreationOutcome] = r.execute
-          }
+          case Map(r, mapper) => Map(withRouting(r, routing), mapper)
+          case r: CreateWithIdRequest =>
+            new CreateWithIdRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
+              def execute: Task[CreationOutcome] = r.execute
+            }
         }
     }
 
     implicit val deleteByIdWithRouting: WithRouting[DeleteById] = new WithRouting[DeleteById] {
       def withRouting[A](request: ElasticRequest[A, DeleteById], routing: Routing): ElasticRequest[A, DeleteById] =
         request match {
-          case Map(r, mapper)       => Map(withRouting(r, routing), mapper)
-          case r: DeleteByIdRequest => new DeleteByIdRequest(r.index, r.id, r.refresh, Some(routing)) {
-            def execute: Task[DeletionOutcome] = r.execute
-          }
+          case Map(r, mapper) => Map(withRouting(r, routing), mapper)
+          case r: DeleteByIdRequest =>
+            new DeleteByIdRequest(r.index, r.id, r.refresh, Some(routing)) {
+              def execute: Task[DeletionOutcome] = r.execute
+            }
         }
     }
 
     implicit val existsWithRouting: WithRouting[Exists] = new WithRouting[Exists] {
       def withRouting[A](request: ElasticRequest[A, Exists], routing: Routing): ElasticRequest[A, Exists] =
         request match {
-          case Map(r, mapper)   => Map(withRouting(r, routing), mapper)
-          case r: ExistsRequest => new ExistsRequest(r.index, r.id, Some(routing)) {
-            def execute: Task[Boolean] = r.execute
-          }
+          case Map(r, mapper) => Map(withRouting(r, routing), mapper)
+          case r: ExistsRequest =>
+            new ExistsRequest(r.index, r.id, Some(routing)) {
+              def execute: Task[Boolean] = r.execute
+            }
         }
     }
 
     implicit val getByIdWithRouting: WithRouting[GetById] = new WithRouting[GetById] {
       def withRouting[A](request: ElasticRequest[A, GetById], routing: Routing): ElasticRequest[A, GetById] =
         request match {
-          case Map(r, mapper)    => Map(withRouting(r, routing), mapper)
-          case r: GetByIdRequest => new GetByIdRequest(r.index, r.id, Some(routing)) {
-            def execute: Task[Option[Document]] = r.execute
-          }
+          case Map(r, mapper) => Map(withRouting(r, routing), mapper)
+          case r: GetByIdRequest =>
+            new GetByIdRequest(r.index, r.id, Some(routing)) {
+              def execute: Task[Option[Document]] = r.execute
+            }
         }
     }
 
     implicit val upsertWithRouting: WithRouting[Upsert] = new WithRouting[Upsert] {
       def withRouting[A](request: ElasticRequest[A, Upsert], routing: Routing): ElasticRequest[A, Upsert] =
         request match {
-          case Map(r, mapper)           => Map(withRouting(r, routing), mapper)
-          case r: CreateOrUpdateRequest => new CreateOrUpdateRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
-            def execute: Task[Unit] = r.execute
-          }
+          case Map(r, mapper) => Map(withRouting(r, routing), mapper)
+          case r: CreateOrUpdateRequest =>
+            new CreateOrUpdateRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
+              def execute: Task[Unit] = r.execute
+            }
         }
     }
   }

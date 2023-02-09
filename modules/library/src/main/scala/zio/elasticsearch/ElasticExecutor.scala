@@ -20,8 +20,7 @@ import sttp.client3.SttpBackend
 import zio.elasticsearch.ElasticRequest.BulkableRequest
 import zio.elasticsearch.ElasticRequestType._
 import zio.schema.Schema
-import zio.stm.TMap
-import zio.{Task, ULayer, ZLayer}
+import zio.{Task, ZLayer}
 
 trait ElasticExecutor {
 
@@ -43,7 +42,9 @@ trait ElasticExecutor {
 
   def getById[A: Schema](index: IndexName, id: DocumentId): ElasticRequest[Option[A], GetById]
 
-  def search[A](index: IndexName, query: ElasticQuery[_])(implicit schema: Schema[A]): ElasticRequest[List[A], GetByQuery]
+  def search[A](index: IndexName, query: ElasticQuery[_])(implicit
+    schema: Schema[A]
+  ): ElasticRequest[List[A], GetByQuery]
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert]
 }
@@ -54,7 +55,4 @@ object ElasticExecutor {
 
   lazy val local: ZLayer[SttpBackend[Task, Any], Throwable, ElasticExecutor] =
     ZLayer.succeed(ElasticConfig.Default) >>> live
-
-  lazy val test: ULayer[TestExecutor] =
-    ZLayer(TMap.empty[IndexName, TMap[DocumentId, Document]].map(TestExecutor).commit)
 }
