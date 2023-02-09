@@ -85,6 +85,10 @@ object ElasticRequest {
           List(getActionAndMeta("delete", List(("_index", Some(r.index)), ("_id", Some(r.id)), ("routing", r.routing))))
       }
     }.mkString(start = "", sep = "\n", end = "\n")
+
+    def execute: Task[Unit] = execute(requests, index, refresh, routing)
+
+    private[elasticsearch] def execute(requests: List[BulkableRequest], index: Option[IndexName], refresh: Boolean, routing: Option[Routing]): Task[Unit]
   }
 
   private[elasticsearch] abstract class CreateRequest(
@@ -92,7 +96,11 @@ object ElasticRequest {
     val document: Document,
     val refresh: Boolean,
     val routing: Option[Routing]
-  ) extends ElasticRequest[DocumentId, Create]
+  ) extends ElasticRequest[DocumentId, Create] {
+    def execute: Task[DocumentId] = execute(index, document, refresh, routing)
+
+    private[elasticsearch] def execute(index: IndexName, document: Document, refresh: Boolean, routing: Option[Routing]): Task[DocumentId]
+  }
 
   private[elasticsearch] abstract class CreateWithIdRequest(
     val index: IndexName,
@@ -100,12 +108,20 @@ object ElasticRequest {
     val document: Document,
     val refresh: Boolean,
     val routing: Option[Routing]
-  ) extends ElasticRequest[CreationOutcome, CreateWithId]
+  ) extends ElasticRequest[CreationOutcome, CreateWithId] {
+    def execute: Task[CreationOutcome] = execute(index, id, document, refresh, routing)
+
+    private[elasticsearch] def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[CreationOutcome]
+  }
 
   private[elasticsearch] abstract class CreateIndexRequest(
-    val name: IndexName,
+    val index: IndexName,
     val definition: Option[String]
-  ) extends ElasticRequest[CreationOutcome, CreateIndex]
+  ) extends ElasticRequest[CreationOutcome, CreateIndex] {
+    def execute: Task[CreationOutcome] = execute(index, definition)
+
+    private[elasticsearch] def execute(index: IndexName, definition: Option[String]): Task[CreationOutcome]
+  }
 
   private[elasticsearch] abstract class CreateOrUpdateRequest(
     val index: IndexName,
@@ -113,42 +129,69 @@ object ElasticRequest {
     val document: Document,
     val refresh: Boolean,
     val routing: Option[Routing]
-  ) extends ElasticRequest[Unit, Upsert]
+  ) extends ElasticRequest[Unit, Upsert] {
+    def execute: Task[Unit] = execute(index, id, document, refresh, routing)
+
+    private[elasticsearch] def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[Unit]
+  }
 
   private[elasticsearch] abstract class DeleteByIdRequest(
     val index: IndexName,
     val id: DocumentId,
     val refresh: Boolean,
     val routing: Option[Routing]
-  ) extends ElasticRequest[DeletionOutcome, DeleteById]
+  ) extends ElasticRequest[DeletionOutcome, DeleteById] {
+    def execute: Task[DeletionOutcome] = execute(index, id, refresh, routing)
+
+    private[elasticsearch] def execute(index: IndexName, id: DocumentId, refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome]
+  }
 
   private[elasticsearch] abstract class DeleteByQueryRequest(
     val index: IndexName,
     val query: ElasticQuery[_],
     val refresh: Boolean,
     val routing: Option[Routing]
-  ) extends ElasticRequest[DeletionOutcome, DeleteByQuery]
+  ) extends ElasticRequest[DeletionOutcome, DeleteByQuery] {
+    def execute: Task[DeletionOutcome] = execute(index, query, refresh, routing)
 
-  private[elasticsearch] abstract class DeleteIndexRequest(val name: IndexName)
-      extends ElasticRequest[DeletionOutcome, DeleteIndex]
+    private[elasticsearch] def execute(index: IndexName, query: ElasticQuery[_], refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome]
+  }
+
+  private[elasticsearch] abstract class DeleteIndexRequest(val index: IndexName)
+      extends ElasticRequest[DeletionOutcome, DeleteIndex] {
+    def execute: Task[DeletionOutcome] = execute(index)
+
+    private[elasticsearch] def execute(index: IndexName): Task[DeletionOutcome]
+  }
 
   private[elasticsearch] abstract class ExistsRequest(
     val index: IndexName,
     val id: DocumentId,
     val routing: Option[Routing]
-  ) extends ElasticRequest[Boolean, Exists]
+  ) extends ElasticRequest[Boolean, Exists] {
+    def execute: Task[Boolean] = execute(index, id, routing)
+
+    private[elasticsearch] def execute(index: IndexName, id: DocumentId, routing: Option[Routing]): Task[Boolean]
+  }
 
   private[elasticsearch] abstract class GetByIdRequest(
     val index: IndexName,
     val id: DocumentId,
     val routing: Option[Routing]
-  ) extends ElasticRequest[Option[Document], GetById]
+  ) extends ElasticRequest[Option[Document], GetById] {
+    def execute: Task[Option[Document]] = execute(index, id, routing)
+
+    private[elasticsearch] def execute(index: IndexName, id: DocumentId, routing: Option[Routing]): Task[Option[Document]]
+  }
 
   private[elasticsearch] abstract class GetByQueryRequest(
     val index: IndexName,
     val query: ElasticQuery[_],
     val routing: Option[Routing]
-  ) extends ElasticRequest[ElasticQueryResponse, GetByQuery]
+  ) extends ElasticRequest[ElasticQueryResponse, GetByQuery] {
+    def execute: Task[ElasticQueryResponse] = execute(index, query, routing)
+    private[elasticsearch] def execute(index: IndexName, query: ElasticQuery[_], routing: Option[Routing]): Task[ElasticQueryResponse]
+  }
 
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](
     request: ElasticRequest[A, ERT],
@@ -160,7 +203,6 @@ object ElasticRequest {
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }
       .mkString(s"""{ "$requestType" : { """, ", ", " } }")
-
 }
 
 sealed trait ElasticRequestType

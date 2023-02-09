@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Task
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticRequestType._
+import zio.elasticsearch.Routing.Routing
 
 object Refresh {
 
@@ -33,7 +34,8 @@ object Refresh {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
           case r: BulkRequest =>
             new BulkRequest(r.requests, r.index, value, r.routing) {
-              def execute: Task[Unit] = r.execute
+              def execute(requests: List[BulkableRequest], index: Option[IndexName], refresh: Boolean, routing: Option[Routing]): Task[Unit] =
+                r.execute(requests, index, refresh, routing)
             }
         }
     }
@@ -44,7 +46,8 @@ object Refresh {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
           case r: CreateRequest =>
             new CreateRequest(r.index, r.document, value, r.routing) {
-              def execute: Task[DocumentId] = r.execute
+              def execute(index: IndexName, document: Document, refresh: Boolean, routing: Option[Routing]): Task[DocumentId] =
+                r.execute(index, document, refresh, routing)
             }
         }
     }
@@ -55,7 +58,8 @@ object Refresh {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
           case r: CreateWithIdRequest =>
             new CreateWithIdRequest(r.index, r.id, r.document, value, r.routing) {
-              def execute: Task[CreationOutcome] = r.execute
+              def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[CreationOutcome] =
+                r.execute(index, id, document, refresh, routing)
             }
         }
     }
@@ -66,7 +70,8 @@ object Refresh {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
           case r: DeleteByIdRequest =>
             new DeleteByIdRequest(r.index, r.id, value, r.routing) {
-              def execute: Task[DeletionOutcome] = r.execute
+              def execute(index: IndexName, id: DocumentId, refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome] =
+                r.execute(index, id, refresh, routing)
             }
         }
     }
@@ -77,7 +82,8 @@ object Refresh {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
           case r: DeleteByQueryRequest =>
             new DeleteByQueryRequest(r.index, r.query, value, r.routing) {
-              def execute: Task[DeletionOutcome] = r.execute
+              def execute(index: IndexName, query: ElasticQuery[_], refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome] =
+                r.execute(index, query, refresh, routing)
             }
         }
     }
@@ -88,7 +94,8 @@ object Refresh {
           case Map(r, mapper) => Map(withRefresh(r, value), mapper)
           case r: CreateOrUpdateRequest =>
             new CreateOrUpdateRequest(r.index, r.id, r.document, value, r.routing) {
-              def execute: Task[Unit] = r.execute
+              def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[Unit] =
+                r.execute(index, id, document, refresh, routing)
             }
         }
     }
