@@ -38,7 +38,12 @@ object Routing extends Newtype[String] {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
           case r: BulkRequest =>
             new BulkRequest(r.requests, r.index, r.refresh, Some(routing)) {
-              def execute(requests: List[BulkableRequest], index: Option[IndexName], refresh: Boolean, routing: Option[Routing]): Task[Unit] =
+              def execute(
+                requests: List[BulkableRequest],
+                index: Option[IndexName],
+                refresh: Boolean,
+                routing: Option[Routing]
+              ): Task[Unit] =
                 r.execute(requests, index, refresh, routing)
             }
         }
@@ -50,7 +55,12 @@ object Routing extends Newtype[String] {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
           case r: CreateRequest =>
             new CreateRequest(r.index, r.document, r.refresh, Some(routing)) {
-              def execute(index: IndexName, document: Document, refresh: Boolean, routing: Option[Routing]): Task[DocumentId] =
+              def execute(
+                index: IndexName,
+                document: Document,
+                refresh: Boolean,
+                routing: Option[Routing]
+              ): Task[DocumentId] =
                 r.execute(index, document, refresh, routing)
             }
         }
@@ -62,7 +72,13 @@ object Routing extends Newtype[String] {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
           case r: CreateWithIdRequest =>
             new CreateWithIdRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
-              def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[CreationOutcome] =
+              def execute(
+                index: IndexName,
+                id: DocumentId,
+                document: Document,
+                refresh: Boolean,
+                routing: Option[Routing]
+              ): Task[CreationOutcome] =
                 r.execute(index, id, document, refresh, routing)
             }
         }
@@ -74,7 +90,12 @@ object Routing extends Newtype[String] {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
           case r: DeleteByIdRequest =>
             new DeleteByIdRequest(r.index, r.id, r.refresh, Some(routing)) {
-              def execute(index: IndexName, id: DocumentId, refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome] =
+              def execute(
+                index: IndexName,
+                id: DocumentId,
+                refresh: Boolean,
+                routing: Option[Routing]
+              ): Task[DeletionOutcome] =
                 r.execute(index, id, refresh, routing)
             }
         }
@@ -110,7 +131,13 @@ object Routing extends Newtype[String] {
           case Map(r, mapper) => Map(withRouting(r, routing), mapper)
           case r: CreateOrUpdateRequest =>
             new CreateOrUpdateRequest(r.index, r.id, r.document, r.refresh, Some(routing)) {
-              def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[Unit] =
+              def execute(
+                index: IndexName,
+                id: DocumentId,
+                document: Document,
+                refresh: Boolean,
+                routing: Option[Routing]
+              ): Task[Unit] =
                 r.execute(index, id, document, refresh, routing)
             }
         }

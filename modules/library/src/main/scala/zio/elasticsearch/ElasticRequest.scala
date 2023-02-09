@@ -88,7 +88,12 @@ object ElasticRequest {
 
     def execute: Task[Unit] = execute(requests, index, refresh, routing)
 
-    private[elasticsearch] def execute(requests: List[BulkableRequest], index: Option[IndexName], refresh: Boolean, routing: Option[Routing]): Task[Unit]
+    private[elasticsearch] def execute(
+      requests: List[BulkableRequest],
+      index: Option[IndexName],
+      refresh: Boolean,
+      routing: Option[Routing]
+    ): Task[Unit]
   }
 
   private[elasticsearch] abstract class CreateRequest(
@@ -99,7 +104,12 @@ object ElasticRequest {
   ) extends ElasticRequest[DocumentId, Create] {
     def execute: Task[DocumentId] = execute(index, document, refresh, routing)
 
-    private[elasticsearch] def execute(index: IndexName, document: Document, refresh: Boolean, routing: Option[Routing]): Task[DocumentId]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      document: Document,
+      refresh: Boolean,
+      routing: Option[Routing]
+    ): Task[DocumentId]
   }
 
   private[elasticsearch] abstract class CreateWithIdRequest(
@@ -111,7 +121,13 @@ object ElasticRequest {
   ) extends ElasticRequest[CreationOutcome, CreateWithId] {
     def execute: Task[CreationOutcome] = execute(index, id, document, refresh, routing)
 
-    private[elasticsearch] def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[CreationOutcome]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      id: DocumentId,
+      document: Document,
+      refresh: Boolean,
+      routing: Option[Routing]
+    ): Task[CreationOutcome]
   }
 
   private[elasticsearch] abstract class CreateIndexRequest(
@@ -132,7 +148,13 @@ object ElasticRequest {
   ) extends ElasticRequest[Unit, Upsert] {
     def execute: Task[Unit] = execute(index, id, document, refresh, routing)
 
-    private[elasticsearch] def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[Unit]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      id: DocumentId,
+      document: Document,
+      refresh: Boolean,
+      routing: Option[Routing]
+    ): Task[Unit]
   }
 
   private[elasticsearch] abstract class DeleteByIdRequest(
@@ -143,7 +165,12 @@ object ElasticRequest {
   ) extends ElasticRequest[DeletionOutcome, DeleteById] {
     def execute: Task[DeletionOutcome] = execute(index, id, refresh, routing)
 
-    private[elasticsearch] def execute(index: IndexName, id: DocumentId, refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      id: DocumentId,
+      refresh: Boolean,
+      routing: Option[Routing]
+    ): Task[DeletionOutcome]
   }
 
   private[elasticsearch] abstract class DeleteByQueryRequest(
@@ -154,7 +181,12 @@ object ElasticRequest {
   ) extends ElasticRequest[DeletionOutcome, DeleteByQuery] {
     def execute: Task[DeletionOutcome] = execute(index, query, refresh, routing)
 
-    private[elasticsearch] def execute(index: IndexName, query: ElasticQuery[_], refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      query: ElasticQuery[_],
+      refresh: Boolean,
+      routing: Option[Routing]
+    ): Task[DeletionOutcome]
   }
 
   private[elasticsearch] abstract class DeleteIndexRequest(val index: IndexName)
@@ -181,7 +213,11 @@ object ElasticRequest {
   ) extends ElasticRequest[Option[Document], GetById] {
     def execute: Task[Option[Document]] = execute(index, id, routing)
 
-    private[elasticsearch] def execute(index: IndexName, id: DocumentId, routing: Option[Routing]): Task[Option[Document]]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      id: DocumentId,
+      routing: Option[Routing]
+    ): Task[Option[Document]]
   }
 
   private[elasticsearch] abstract class GetByQueryRequest(
@@ -190,7 +226,11 @@ object ElasticRequest {
     val routing: Option[Routing]
   ) extends ElasticRequest[ElasticQueryResponse, GetByQuery] {
     def execute: Task[ElasticQueryResponse] = execute(index, query, routing)
-    private[elasticsearch] def execute(index: IndexName, query: ElasticQuery[_], routing: Option[Routing]): Task[ElasticQueryResponse]
+    private[elasticsearch] def execute(
+      index: IndexName,
+      query: ElasticQuery[_],
+      routing: Option[Routing]
+    ): Task[ElasticQueryResponse]
   }
 
   private[elasticsearch] final case class Map[A, B, ERT <: ElasticRequestType](

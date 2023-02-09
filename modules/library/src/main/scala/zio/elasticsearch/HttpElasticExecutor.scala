@@ -19,10 +19,28 @@ package zio.elasticsearch
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
-import sttp.model.StatusCode.{BadRequest => HttpBadRequest, Conflict => HttpConflict, Created => HttpCreated, NotFound => HttpNotFound, Ok => HttpOk}
+import sttp.model.StatusCode.{
+  BadRequest => HttpBadRequest,
+  Conflict => HttpConflict,
+  Created => HttpCreated,
+  NotFound => HttpNotFound,
+  Ok => HttpOk
+}
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
-import zio.elasticsearch.ElasticRequestType.{Bulk, Create, CreateIndex, CreateWithId, DeleteById, DeleteByQuery, DeleteIndex, Exists, GetById, GetByQuery, Upsert}
+import zio.elasticsearch.ElasticRequestType.{
+  Bulk,
+  Create,
+  CreateIndex,
+  CreateWithId,
+  DeleteById,
+  DeleteByQuery,
+  DeleteIndex,
+  Exists,
+  GetById,
+  GetByQuery,
+  Upsert
+}
 import zio.elasticsearch.Routing.Routing
 import zio.prelude.{Validation, ZValidation}
 import zio.schema.Schema
@@ -38,7 +56,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def bulk(requests: BulkableRequest*): ElasticRequest[Unit, Bulk] =
     new BulkRequest(requests = requests.toList, index = None, refresh = false, routing = None) {
-      def execute(requests: List[BulkableRequest], index: Option[IndexName], refresh: Boolean, routing: Option[Routing]): Task[Unit] = {
+      def execute(
+        requests: List[BulkableRequest],
+        index: Option[IndexName],
+        refresh: Boolean,
+        routing: Option[Routing]
+      ): Task[Unit] = {
         val uri = (index match {
           case Some(index) => uri"${config.uri}/$index/$Bulk"
           case None        => uri"${config.uri}/$Bulk"
@@ -57,7 +80,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def create[A: Schema](index: IndexName, doc: A): ElasticRequest[DocumentId, Create] =
     new CreateRequest(index = index, document = Document.from(doc), refresh = false, routing = None) {
-      def execute(index: IndexName, document: Document, refresh: Boolean, routing: Option[Routing]): Task[DocumentId] = {
+      def execute(
+        index: IndexName,
+        document: Document,
+        refresh: Boolean,
+        routing: Option[Routing]
+      ): Task[DocumentId] = {
         val uri = uri"${config.uri}/$index/$Doc"
           .withParams(getQueryParams(List(("refresh", Some(refresh)), ("routing", routing))))
 
@@ -85,7 +113,13 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
     new CreateWithIdRequest(index = index, id = id, document = Document.from(doc), refresh = false, routing = None) {
-      def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[CreationOutcome] = {
+      def execute(
+        index: IndexName,
+        id: DocumentId,
+        document: Document,
+        refresh: Boolean,
+        routing: Option[Routing]
+      ): Task[CreationOutcome] = {
         val uri = uri"${config.uri}/$index/$Create/$id"
           .withParams(getQueryParams(List(("refresh", Some(refresh)), ("routing", routing))))
 
@@ -123,7 +157,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
     new DeleteByIdRequest(index = index, id = id, refresh = false, routing = None) {
-      def execute(index: IndexName, id: DocumentId, refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome] = {
+      def execute(
+        index: IndexName,
+        id: DocumentId,
+        refresh: Boolean,
+        routing: Option[Routing]
+      ): Task[DeletionOutcome] = {
         val uri = uri"${config.uri}/$index/$Doc/$id"
           .withParams(getQueryParams(List(("refresh", Some(refresh)), ("routing", routing))))
 
@@ -139,7 +178,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def deleteByQuery(index: IndexName, query: ElasticQuery[_]): ElasticRequest[DeletionOutcome, DeleteByQuery] =
     new DeleteByQueryRequest(index = index, query = query, refresh = false, routing = None) {
-      def execute(index: IndexName, query: ElasticQuery[_], refresh: Boolean, routing: Option[Routing]): Task[DeletionOutcome] = {
+      def execute(
+        index: IndexName,
+        query: ElasticQuery[_],
+        refresh: Boolean,
+        routing: Option[Routing]
+      ): Task[DeletionOutcome] = {
         val uri =
           uri"${config.uri}/$index/$DeleteByQuery".withParams(getQueryParams(List(("refresh", Some(refresh)))))
 
@@ -216,7 +260,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     schema: Schema[A]
   ): ElasticRequest[List[A], GetByQuery] =
     new GetByQueryRequest(index = index, query = query, routing = None) {
-      def execute(index: IndexName, query: ElasticQuery[_], routing: Option[Routing]): Task[ElasticQueryResponse] = {
+      def execute(index: IndexName, query: ElasticQuery[_], routing: Option[Routing]): Task[ElasticQueryResponse] =
         sendRequestWithCustomResponse(
           request
             .post(uri"${config.uri}/$index/$Search")
@@ -234,7 +278,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
               ZIO.fail(createElasticExceptionFromCustomResponse(response))
           }
         }
-      }
     }.map { response =>
       Validation
         .validateAll(response.results.map { json =>
@@ -247,7 +290,13 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
     new CreateOrUpdateRequest(index, id, Document.from(doc), refresh = false, routing = None) {
-      def execute(index: IndexName, id: DocumentId, document: Document, refresh: Boolean, routing: Option[Routing]): Task[Unit] = {
+      def execute(
+        index: IndexName,
+        id: DocumentId,
+        document: Document,
+        refresh: Boolean,
+        routing: Option[Routing]
+      ): Task[Unit] = {
         val uri = uri"${config.uri}/$index/$Doc/$id"
           .withParams(getQueryParams(List(("refresh", Some(refresh)), ("routing", routing))))
 
