@@ -113,9 +113,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
             .body(document.json)
         ).flatMap { response =>
           response.code match {
-            case HttpCreated => ZIO.succeed(Created)
+            case HttpCreated  => ZIO.succeed(Created)
             case HttpConflict => ZIO.succeed(AlreadyExists)
-            case _ => ZIO.fail(createElasticException(response))
+            case _            => ZIO.fail(createElasticException(response))
           }
         }
       }
