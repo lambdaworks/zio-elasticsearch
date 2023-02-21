@@ -21,15 +21,11 @@ import zio.elasticsearch.Routing.{Routing, WithRouting}
 import zio.prelude._
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec.JsonDecoder
-import zio.{RIO, ZIO}
 
 import scala.annotation.unused
 import scala.language.implicitConversions
 
 sealed trait ElasticRequest[+A, ERT <: ElasticRequestType] { self =>
-
-  final def execute: RIO[ElasticExecutor, A] =
-    ZIO.serviceWithZIO[ElasticExecutor](_.execute(self))
 
   final def map[B](f: A => Either[DecodingException, B]): ElasticRequest[B, ERT] = ElasticRequest.Map(self, f)
 
