@@ -67,7 +67,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
+          addStubMapping *> ElasticExecutor.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
         )(
           isUnit
         )
@@ -91,7 +91,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
+          addStubMapping *> ElasticExecutor.execute(
             ElasticRequest
               .create[GitHubRepo](index = index, doc = repo)
               .routing(Routing("routing"))
@@ -109,7 +109,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
+          addStubMapping *> ElasticExecutor.execute(
             ElasticRequest
               .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
@@ -124,7 +124,9 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> Elasticsearch.execute(ElasticRequest.createIndex(name = index, definition = None)))(
+        assertZIO(
+          addStubMapping *> ElasticExecutor.execute(ElasticRequest.createIndex(name = index, definition = None))
+        )(
           equalTo(Created)
         )
       },
@@ -138,7 +140,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
+          addStubMapping *> ElasticExecutor.execute(
             ElasticRequest
               .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
@@ -156,7 +158,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
+          addStubMapping *> ElasticExecutor.execute(
             ElasticRequest
               .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
               .routing(Routing("routing"))
@@ -174,11 +176,8 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
-            ElasticRequest
-              .deleteByQuery(index = index, query = matchAll)
-              .refreshTrue
-              .routing(Routing("routing"))
+          addStubMapping *> ElasticExecutor.execute(
+            ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.routing(Routing("routing"))
           )
         )(
           equalTo(Deleted)
@@ -193,7 +192,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> Elasticsearch.execute(ElasticRequest.deleteIndex(name = index)))(
+        assertZIO(addStubMapping *> ElasticExecutor.execute(ElasticRequest.deleteIndex(name = index)))(
           equalTo(Deleted)
         )
       },
@@ -207,7 +206,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
+          addStubMapping *> ElasticExecutor.execute(
             ElasticRequest
               .exists(index = index, id = DocumentId("example-id"))
               .routing(Routing("routing"))
@@ -239,7 +238,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(
+          addStubMapping *> ElasticExecutor.execute(
             ElasticRequest
               .getById[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
               .routing(Routing("routing"))
@@ -294,7 +293,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> Elasticsearch.execute(ElasticRequest.search[GitHubRepo](index = index, query = matchAll))
+          addStubMapping *> ElasticExecutor.execute(ElasticRequest.search[GitHubRepo](index = index, query = matchAll))
         )(
           equalTo(List(repo))
         )

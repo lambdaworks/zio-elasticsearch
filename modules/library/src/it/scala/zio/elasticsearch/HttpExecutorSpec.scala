@@ -30,14 +30,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("successfully create document") {
             checkOnce(genCustomer) { customer =>
               for {
-                docId <- Elasticsearch.execute(ElasticRequest.create[CustomerDocument](index, customer))
-                res   <- Elasticsearch.execute(ElasticRequest.getById[CustomerDocument](index, docId))
+                docId <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, customer))
+                res   <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, docId))
               } yield assert(res)(isSome(equalTo(customer)))
             }
           },
           test("successfully create document with ID given") {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
-              assertZIO(Elasticsearch.execute(ElasticRequest.create[CustomerDocument](index, documentId, customer)))(
+              assertZIO(ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, customer)))(
                 equalTo(Created)
               )
             }
@@ -45,38 +45,38 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("return 'AlreadyExists' if document with given ID already exists") {
             checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, customer1, customer2) =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer1))
-                res <- Elasticsearch.execute(ElasticRequest.create[CustomerDocument](index, documentId, customer2))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer1))
+                res <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, customer2))
               } yield assert(res)(equalTo(AlreadyExists))
             }
           }
         ),
         suite("creating index")(
           test("successfully create index") {
-            assertZIO(Elasticsearch.execute(ElasticRequest.createIndex(createIndexTestName, None)))(equalTo(Created))
+            assertZIO(ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName, None)))(equalTo(Created))
           },
           test("return 'AlreadyExists' if index already exists") {
             for {
-              _   <- Elasticsearch.execute(ElasticRequest.createIndex(createIndexTestName, None))
-              res <- Elasticsearch.execute(ElasticRequest.createIndex(createIndexTestName, None))
+              _   <- ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName, None))
+              res <- ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName, None))
             } yield assert(res)(equalTo(AlreadyExists))
           }
-        ) @@ after(Elasticsearch.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
+        ) @@ after(ElasticExecutor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
         suite("creating or updating document")(
           test("successfully create document") {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                doc <- Elasticsearch.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
+                doc <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
               } yield assert(doc)(isSome(equalTo(customer)))
             }
           },
           test("successfully update document") {
             checkOnce(genDocumentId, genCustomer, genCustomer) { (documentId, firstCustomer, secondCustomer) =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.create[CustomerDocument](index, documentId, firstCustomer))
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, secondCustomer))
-                doc <- Elasticsearch.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                _   <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, firstCustomer))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, secondCustomer))
+                doc <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
               } yield assert(doc)(isSome(equalTo(secondCustomer)))
             }
           }
@@ -85,14 +85,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("successfully delete existing document") {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                res <- Elasticsearch.execute(ElasticRequest.deleteById(index, documentId))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
+                res <- ElasticExecutor.execute(ElasticRequest.deleteById(index, documentId))
               } yield assert(res)(equalTo(Deleted))
             }
           },
           test("return 'NotFound' if the document does not exist") {
             checkOnce(genDocumentId) { documentId =>
-              assertZIO(Elasticsearch.execute(ElasticRequest.deleteById(index, documentId)))(equalTo(NotFound))
+              assertZIO(ElasticExecutor.execute(ElasticRequest.deleteById(index, documentId)))(equalTo(NotFound))
             }
           }
         ),
@@ -100,14 +100,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("successfully delete existing index") {
             checkOnce(genIndexName) { name =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.createIndex(name, None))
-                res <- Elasticsearch.execute(ElasticRequest.deleteIndex(name))
+                _   <- ElasticExecutor.execute(ElasticRequest.createIndex(name, None))
+                res <- ElasticExecutor.execute(ElasticRequest.deleteIndex(name))
               } yield assert(res)(equalTo(Deleted))
             }
           },
           test("return 'NotFound' if index does not exists") {
             checkOnce(genIndexName) { name =>
-              assertZIO(Elasticsearch.execute(ElasticRequest.deleteIndex(name)))(equalTo(NotFound))
+              assertZIO(ElasticExecutor.execute(ElasticRequest.deleteIndex(name)))(equalTo(NotFound))
             }
           }
         ),
@@ -115,14 +115,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("return true if the document exists") {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                res <- Elasticsearch.execute(ElasticRequest.exists(index, documentId))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
+                res <- ElasticExecutor.execute(ElasticRequest.exists(index, documentId))
               } yield assert(res)(isTrue)
             }
           },
           test("return false if the document does not exist") {
             checkOnce(genDocumentId) { documentId =>
-              assertZIO(Elasticsearch.execute(ElasticRequest.exists(index, documentId)))(isFalse)
+              assertZIO(ElasticExecutor.execute(ElasticRequest.exists(index, documentId)))(isFalse)
             }
           }
         ),
@@ -130,21 +130,21 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("successfully return document") {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                res <- Elasticsearch.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
+                res <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
               } yield assert(res)(isSome(equalTo(customer)))
             }
           },
           test("return None if the document does not exist") {
             checkOnce(genDocumentId) { documentId =>
-              assertZIO(Elasticsearch.execute(ElasticRequest.getById[CustomerDocument](index, documentId)))(isNone)
+              assertZIO(ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId)))(isNone)
             }
           },
           test("fail with throwable if decoding fails") {
             checkOnce(genDocumentId, genEmployee) { (documentId, employee) =>
               val result = for {
-                _   <- Elasticsearch.execute(ElasticRequest.upsert[EmployeeDocument](index, documentId, employee))
-                res <- Elasticsearch.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                _   <- ElasticExecutor.execute(ElasticRequest.upsert[EmployeeDocument](index, documentId, employee))
+                res <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
               } yield res
 
               assertZIO(result.exit)(
@@ -158,42 +158,42 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
-                  _ <- Elasticsearch.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
                     )
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest
                         .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
                         .refreshTrue
                     )
                   query = range("balance").gte(100)
-                  res  <- Elasticsearch.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
                 } yield assert(res)(isNonEmpty)
             }
           } @@ around(
-            Elasticsearch.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
-            Elasticsearch.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("fail if any of results cannot be decoded") {
             checkOnce(genDocumentId, genDocumentId, genEmployee, genCustomer) {
               (employeeDocumentId, customerDocumentId, employee, customer) =>
                 val result =
                   for {
-                    _ <- Elasticsearch.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                    _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                     _ <-
-                      Elasticsearch.execute(
+                      ElasticExecutor.execute(
                         ElasticRequest.upsert[CustomerDocument](secondSearchIndex, customerDocumentId, customer)
                       )
-                    _ <- Elasticsearch.execute(
+                    _ <- ElasticExecutor.execute(
                            ElasticRequest
                              .upsert[EmployeeDocument](secondSearchIndex, employeeDocumentId, employee)
                              .refreshTrue
                          )
                     query = range("age").gte(0)
-                    res  <- Elasticsearch.execute(ElasticRequest.search[CustomerDocument](secondSearchIndex, query))
+                    res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](secondSearchIndex, query))
                   } yield res
 
                 assertZIO(result.exit)(
@@ -205,78 +205,78 @@ object HttpExecutorSpec extends IntegrationSpec {
                 )
             }
           } @@ around(
-            Elasticsearch.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
-            Elasticsearch.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("search for a document which contains a term using a wildcard query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
-                  _ <- Elasticsearch.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
                     )
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest
                         .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
                         .refreshTrue
                     )
                   query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
-                  res  <- Elasticsearch.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
-            Elasticsearch.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
-            Elasticsearch.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("search for a document which starts with a term using a wildcard query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
-                  _ <- Elasticsearch.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
                     )
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest
                         .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
                         .refreshTrue
                     )
                   query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
-                  res  <- Elasticsearch.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
-            Elasticsearch.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
-            Elasticsearch.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("search for a document which conforms to a pattern using a wildcard query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
-                  _ <- Elasticsearch.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
                     )
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest
                         .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
                         .refreshTrue
                     )
                   query =
                     wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
-                  res <- Elasticsearch.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
-            Elasticsearch.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
-            Elasticsearch.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
         suite("deleting by query")(
@@ -284,7 +284,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer, thirdDocumentId, thirdCustomer) =>
                 for {
-                  _ <- Elasticsearch.execute(
+                  _ <- ElasticExecutor.execute(
                          ElasticRequest
                            .upsert[CustomerDocument](
                              deleteByQueryIndex,
@@ -293,7 +293,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                        )
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest
                         .upsert[CustomerDocument](
                           deleteByQueryIndex,
@@ -302,7 +302,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                         )
                     )
                   _ <-
-                    Elasticsearch.execute(
+                    ElasticExecutor.execute(
                       ElasticRequest
                         .upsert[CustomerDocument](
                           deleteByQueryIndex,
@@ -312,17 +312,20 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   deleteQuery = range("balance").gte(300)
-                  _          <- Elasticsearch.execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
-                  res        <- Elasticsearch.execute(ElasticRequest.search[CustomerDocument](deleteByQueryIndex, matchAll))
+                  _ <-
+                    ElasticExecutor.execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
+                  res <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](deleteByQueryIndex, matchAll))
                 } yield assert(res)(hasSameElements(List(firstCustomer.copy(balance = 150))))
             }
           } @@ around(
-            Elasticsearch.execute(ElasticRequest.createIndex(deleteByQueryIndex, None)),
-            Elasticsearch.execute(ElasticRequest.deleteIndex(deleteByQueryIndex)).orDie
+            ElasticExecutor.execute(ElasticRequest.createIndex(deleteByQueryIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(deleteByQueryIndex)).orDie
           ),
           test("returns NotFound when provided index is missing") {
             checkOnce(genIndexName) { missingIndex =>
-              assertZIO(Elasticsearch.execute(ElasticRequest.deleteByQuery(missingIndex, matchAll)))(equalTo(NotFound))
+              assertZIO(ElasticExecutor.execute(ElasticRequest.deleteByQuery(missingIndex, matchAll)))(
+                equalTo(NotFound)
+              )
             }
           }
         ),
@@ -331,11 +334,11 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genDocumentId, genDocumentId, genCustomer) {
               (firstDocId, secondDocId, thirdDocId, customer) =>
                 for {
-                  _ <- Elasticsearch.execute(
+                  _ <- ElasticExecutor.execute(
                          ElasticRequest
                            .create[CustomerDocument](index, firstDocId, customer.copy(id = "randomIdString"))
                        )
-                  _ <- Elasticsearch.execute(
+                  _ <- ElasticExecutor.execute(
                          ElasticRequest
                            .create[CustomerDocument](index, secondDocId, customer.copy(id = "randomIdString2"))
                            .refreshTrue
@@ -344,13 +347,13 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req2 = ElasticRequest.create[CustomerDocument](index, customer.copy(id = "randomIdString3"))
                   req3 = ElasticRequest.upsert[CustomerDocument](index, firstDocId, customer.copy(balance = 3000))
                   req4 = ElasticRequest.deleteById(index, secondDocId)
-                  res <- Elasticsearch.execute(ElasticRequest.bulk(req1, req2, req3, req4))
+                  res <- ElasticExecutor.execute(ElasticRequest.bulk(req1, req2, req3, req4))
                 } yield assert(res)(isUnit)
             }
           }
         )
       ) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests @@ afterAll(
-        Elasticsearch.execute(ElasticRequest.deleteIndex(index)).orDie
+        ElasticExecutor.execute(ElasticRequest.deleteIndex(index)).orDie
       )
     ).provideShared(
       elasticsearchLayer
