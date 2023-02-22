@@ -37,39 +37,41 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.getById[GitHubRepo](Index, DocumentId(id)).routing(routing)
-      res     <- elasticsearch.execute(req)
+      res     <- elasticsearch.execute(ElasticRequest.getById[GitHubRepo](Index, DocumentId(id)).routing(routing))
     } yield res
 
   def create(repository: GitHubRepo): Task[CreationOutcome] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
-      res     <- elasticsearch.execute(req)
+      res <- elasticsearch.execute(
+               ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
+             )
     } yield res
 
   def createAll(repositories: List[GitHubRepo]): Task[Unit] =
     for {
       routing <- routingOf(organization)
-      reqs = repositories.map { repository =>
-               ElasticRequest.create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
-             }
-      bulkReq = ElasticRequest.bulk(reqs: _*).routing(routing)
-      _      <- elasticsearch.execute(bulkReq)
+      _ <- elasticsearch.execute(
+             ElasticRequest
+               .bulk(repositories.map { repository =>
+                 ElasticRequest.create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+               }: _*)
+               .routing(routing)
+           )
     } yield ()
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
-      req      = ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
-      _       <- elasticsearch.execute(req)
+      _ <- elasticsearch.execute(
+             ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
+           )
     } yield ()
 
   def remove(organization: String, id: String): Task[DeletionOutcome] =
     for {
       routing <- routingOf(organization)
-      req      = ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse
-      res     <- elasticsearch.execute(req)
+      res     <- elasticsearch.execute(ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse)
     } yield res
 
   def search(query: ElasticQuery[_]): Task[List[GitHubRepo]] =
