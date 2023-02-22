@@ -27,7 +27,7 @@ import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
 
 trait IntegrationSpec extends ZIOSpecDefault {
 
-  val elasticsearchLayer: ZLayer[Any, Throwable, Elasticsearch] =
+  val elasticsearchLayer: TaskLayer[Elasticsearch] =
     HttpClientZioBackend.layer() >>> ElasticExecutor.local >>> Elasticsearch.layer
 
   val index: IndexName = IndexName("users")
