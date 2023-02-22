@@ -29,7 +29,7 @@ object Elasticsearch {
   lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
     ZLayer.fromFunction { executor: ElasticExecutor =>
       new Elasticsearch {
-        override def execute[A](request: ElasticRequest[A, _]): Task[A] = executor.execute(request)
+        def execute[A](request: ElasticRequest[A, _]): Task[A] = executor.execute(request)
       }
     }
 }
