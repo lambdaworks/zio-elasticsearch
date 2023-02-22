@@ -161,14 +161,18 @@ object HttpElasticExecutorSpec extends WireMockSpec {
       test("deleting by query request") {
         val addStubMapping = ZIO.serviceWith[WireMockServer](
           _.addStubMapping(
-            post(urlEqualTo("/repositories/_delete_by_query?refresh=true"))
+            post(urlEqualTo("/repositories/_delete_by_query?refresh=true&routing=routing"))
               .willReturn(aResponse.withStatus(StatusCode.Ok.code))
               .build
           )
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.execute
+          addStubMapping *> ElasticRequest
+            .deleteByQuery(index = index, query = matchAll)
+            .refreshTrue
+            .routing(Routing("routing"))
+            .execute
         )(
           equalTo(Deleted)
         )

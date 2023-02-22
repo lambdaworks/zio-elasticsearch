@@ -17,7 +17,16 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticRequest._
-import zio.elasticsearch.ElasticRequestType.{Bulk, Create, CreateWithId, DeleteById, Exists, GetById, Upsert}
+import zio.elasticsearch.ElasticRequestType.{
+  Bulk,
+  Create,
+  CreateWithId,
+  DeleteById,
+  DeleteByQuery,
+  Exists,
+  GetById,
+  Upsert
+}
 import zio.prelude.Assertion.isEmptyString
 import zio.prelude.Newtype
 
@@ -60,6 +69,17 @@ object Routing extends Newtype[String] {
         request match {
           case Map(r, mapper)       => Map(withRouting(r, routing), mapper)
           case r: DeleteByIdRequest => r.copy(routing = Some(routing))
+        }
+    }
+
+    implicit val deleteByQueryWithRouting: WithRouting[DeleteByQuery] = new WithRouting[DeleteByQuery] {
+      def withRouting[A](
+        request: ElasticRequest[A, DeleteByQuery],
+        routing: Routing
+      ): ElasticRequest[A, DeleteByQuery] =
+        request match {
+          case Map(r, mapper)          => Map(withRouting(r, routing), mapper)
+          case r: DeleteByQueryRequest => r.copy(routing = Some(routing))
         }
     }
 
