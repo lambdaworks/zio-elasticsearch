@@ -27,8 +27,8 @@ import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
 
 trait IntegrationSpec extends ZIOSpecDefault {
 
-  val elasticsearchLayer: ZLayer[Any, Throwable, ElasticExecutor] =
-    HttpClientZioBackend.layer() >>> ElasticExecutor.local
+  val elasticsearchLayer: ZLayer[Any, Throwable, Elasticsearch] =
+    HttpClientZioBackend.layer() >>> ElasticExecutor.local >>> Elasticsearch.layer
 
   val index: IndexName = IndexName("users")
 
@@ -41,8 +41,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
   val createIndexTestName: IndexName = IndexName("create-index-test-name")
 
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
-    _ <- ElasticRequest.createIndex(index, None).execute
-    _ <- ElasticRequest.deleteByQuery(index, matchAll).refreshTrue.execute
+    _ <- Elasticsearch.execute(ElasticRequest.createIndex(index, None))
+    _ <- Elasticsearch.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
   } yield ()).provide(elasticsearchLayer))
 
   def genIndexName: Gen[Any, IndexName] =

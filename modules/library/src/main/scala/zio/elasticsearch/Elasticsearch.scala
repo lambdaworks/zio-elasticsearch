@@ -16,21 +16,20 @@
 
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
-import zio.stm.TMap
-import zio.{Task, ULayer, ZLayer}
+import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
-private[elasticsearch] trait ElasticExecutor {
+trait Elasticsearch {
   def execute[A](request: ElasticRequest[A, _]): Task[A]
 }
 
-object ElasticExecutor {
-  lazy val live: ZLayer[ElasticConfig with SttpBackend[Task, Any], Throwable, ElasticExecutor] =
-    ZLayer.fromFunction(HttpElasticExecutor.apply _)
+object Elasticsearch {
+  def execute[A](request: ElasticRequest[A, _]): RIO[Elasticsearch, A] =
+    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
-  lazy val local: ZLayer[SttpBackend[Task, Any], Throwable, ElasticExecutor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
-
-  lazy val test: ULayer[TestExecutor] =
-    ZLayer(TMap.empty[IndexName, TMap[DocumentId, Document]].map(TestExecutor).commit)
+  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
+    ZLayer.fromFunction { executor: ElasticExecutor =>
+      new Elasticsearch {
+        override def execute[A](request: ElasticRequest[A, _]): Task[A] = executor.execute(request)
+      }
+    }
 }

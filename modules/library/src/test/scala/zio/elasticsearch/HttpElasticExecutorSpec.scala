@@ -66,7 +66,9 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue.execute)(
+        assertZIO(
+          addStubMapping *> Elasticsearch.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
+        )(
           isUnit
         )
       },
@@ -89,11 +91,12 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .create[GitHubRepo](index = index, doc = repo)
-            .routing(Routing("routing"))
-            .refreshTrue
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .create[GitHubRepo](index = index, doc = repo)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
         )(equalTo(DocumentId("V4x8q4UB3agN0z75fv5r")))
       },
       test("creating request with given ID") {
@@ -106,11 +109,12 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
-            .routing(Routing("routing"))
-            .refreshTrue
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
         )(equalTo(Created))
       },
       test("creating index request") {
@@ -120,7 +124,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> ElasticRequest.createIndex(name = index, definition = None).execute)(
+        assertZIO(addStubMapping *> Elasticsearch.execute(ElasticRequest.createIndex(name = index, definition = None)))(
           equalTo(Created)
         )
       },
@@ -134,11 +138,12 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
-            .routing(Routing("routing"))
-            .refreshTrue
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
         )(isUnit)
       },
       test("deleting by ID request") {
@@ -151,11 +156,12 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
-            .routing(Routing("routing"))
-            .refreshTrue
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
         )(equalTo(Deleted))
       },
       test("deleting by query request") {
@@ -168,11 +174,12 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .deleteByQuery(index = index, query = matchAll)
-            .refreshTrue
-            .routing(Routing("routing"))
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .deleteByQuery(index = index, query = matchAll)
+              .refreshTrue
+              .routing(Routing("routing"))
+          )
         )(
           equalTo(Deleted)
         )
@@ -186,7 +193,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> ElasticRequest.deleteIndex(name = index).execute)(
+        assertZIO(addStubMapping *> Elasticsearch.execute(ElasticRequest.deleteIndex(name = index)))(
           equalTo(Deleted)
         )
       },
@@ -200,10 +207,11 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .exists(index = index, id = DocumentId("example-id"))
-            .routing(Routing("routing"))
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .exists(index = index, id = DocumentId("example-id"))
+              .routing(Routing("routing"))
+          )
         )(isTrue)
       },
       test("getting by ID request") {
@@ -231,10 +239,11 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticRequest
-            .getById[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
-            .routing(Routing("routing"))
-            .execute
+          addStubMapping *> Elasticsearch.execute(
+            ElasticRequest
+              .getById[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
+              .routing(Routing("routing"))
+          )
         )(isSome(equalTo(repo)))
       },
       test("getting by query request") {
@@ -284,7 +293,9 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )
 
-        assertZIO(addStubMapping *> ElasticRequest.search[GitHubRepo](index = index, query = matchAll).execute)(
+        assertZIO(
+          addStubMapping *> Elasticsearch.execute(ElasticRequest.search[GitHubRepo](index = index, query = matchAll))
+        )(
           equalTo(List(repo))
         )
       }

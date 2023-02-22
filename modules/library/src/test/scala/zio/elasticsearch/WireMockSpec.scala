@@ -30,9 +30,11 @@ trait WireMockSpec extends ZIOSpecDefault {
 
   val port: Int = 9300
 
-  val elasticsearchWireMockLayer: TaskLayer[ElasticExecutor] =
+  val elasticsearchWireMockLayer: TaskLayer[Elasticsearch] =
     HttpClientZioBackend
-      .layer() >>> (ZLayer.succeed(ElasticConfig.apply("localhost", port)) >>> ElasticExecutor.live)
+      .layer() >>> (ZLayer.succeed(
+      ElasticConfig.apply("localhost", port)
+    ) >>> ElasticExecutor.live) >>> Elasticsearch.layer
 
   val wireMockServerLayer: TaskLayer[WireMockServer] = {
     val server = ZIO.acquireRelease(
