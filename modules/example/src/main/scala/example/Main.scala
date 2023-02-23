@@ -23,7 +23,7 @@ import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.config.getConfig
-import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest}
+import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
 import zio.http.{Server, ServerConfig}
 
 import scala.io.Source
@@ -38,25 +38,26 @@ object Main extends ZIOAppDefault {
       AppConfig.live,
       elasticConfigLive,
       ElasticExecutor.live,
+      Elasticsearch.layer,
       HttpClientZioBackend.layer()
     )
   }
 
-  private[this] def prepare: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] = {
-    val deleteIndex: RIO[ElasticExecutor, Unit] =
+  private[this] def prepare: RIO[SttpBackend[Task, Any] with Elasticsearch, Unit] = {
+    val deleteIndex: RIO[Elasticsearch, Unit] =
       for {
         _ <- ZIO.logInfo(s"Deleting index '$Index'...")
-        _ <- ElasticRequest.deleteIndex(Index).execute
+        _ <- Elasticsearch.execute(ElasticRequest.deleteIndex(Index))
       } yield ()
 
-    val createIndex: RIO[ElasticExecutor, Unit] =
+    val createIndex: RIO[Elasticsearch, Unit] =
       for {
         _       <- ZIO.logInfo(s"Creating index '$Index'...")
         mapping <- ZIO.fromTry(Using(Source.fromURL(getClass.getResource("/mapping.json")))(_.mkString))
-        _       <- ElasticRequest.createIndex(Index, Some(mapping)).execute
+        _       <- Elasticsearch.execute(ElasticRequest.createIndex(Index, Some(mapping)))
       } yield ()
 
-    val populate: RIO[SttpBackend[Task, Any] with ElasticExecutor, Unit] =
+    val populate: RIO[SttpBackend[Task, Any] with Elasticsearch, Unit] =
       (for {
         repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
@@ -66,7 +67,7 @@ object Main extends ZIOAppDefault {
     deleteIndex *> createIndex *> populate
   }
 
-  private[this] def runServer: RIO[HttpConfig with ElasticExecutor, ExitCode] = {
+  private[this] def runServer: RIO[HttpConfig with Elasticsearch, ExitCode] = {
     val serverConfigLive = ZLayer.fromFunction((http: HttpConfig) => ServerConfig.default.port(http.port))
 
     (for {
