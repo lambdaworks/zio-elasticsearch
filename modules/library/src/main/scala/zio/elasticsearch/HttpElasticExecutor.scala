@@ -152,9 +152,11 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
-  def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
+  private def executeDeleteByQuery(r: DeleteByQueryRequest): Task[DeletionOutcome] = {
     val uri =
-      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(getQueryParams(List(("refresh", Some(r.refresh)))))
+      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(
+        getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing)))
+      )
 
     sendRequest(
       request
