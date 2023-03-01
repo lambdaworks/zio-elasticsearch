@@ -28,27 +28,27 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case BulkRequest(requests, _, _, _) =>
+      case Bulk(requests, _, _, _) =>
         fakeBulk(requests)
-      case CreateRequest(index, document, _, _) =>
+      case Create(index, document, _, _) =>
         fakeCreate(index, document)
-      case CreateWithIdRequest(index, id, document, _, _) =>
+      case CreateWithId(index, id, document, _, _) =>
         fakeCreateWithId(index, id, document)
-      case CreateIndexRequest(name, _) =>
+      case CreateIndex(name, _) =>
         fakeCreateIndex(name)
-      case CreateOrUpdateRequest(index, id, document, _, _) =>
+      case CreateOrUpdate(index, id, document, _, _) =>
         fakeCreateOrUpdate(index, id, document)
-      case DeleteByIdRequest(index, id, _, _) =>
+      case DeleteById(index, id, _, _) =>
         fakeDeleteById(index, id)
-      case DeleteByQueryRequest(index, _, _, _) =>
+      case DeleteByQuery(index, _, _, _) =>
         fakeDeleteByQuery(index)
-      case DeleteIndexRequest(name) =>
+      case DeleteIndex(name) =>
         fakeDeleteIndex(name)
-      case ExistsRequest(index, id, _) =>
+      case Exists(index, id, _) =>
         fakeExists(index, id)
-      case GetByIdRequest(index, id, _) =>
+      case GetById(index, id, _) =>
         fakeGetById(index, id)
-      case GetByQueryRequest(index, _, _) =>
+      case GetByQuery(index, _, _) =>
         fakeGetByQuery(index)
     }
 
@@ -122,7 +122,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
     def createSearchResult(
       index: IndexName,
       documents: TMap[DocumentId, Document]
-    ): ZSTM[Any, Nothing, SearchResult] = {
+    ): ZSTM[Any, Nothing, SearchResult] =
       for {
         items <-
           documents.toList.map(
@@ -137,7 +137,6 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
             }
           )
       } yield new SearchResult(items.map(_.source.toString).map(Document(_)))
-    }
 
     (for {
       documents <- getDocumentsFromIndex(index)

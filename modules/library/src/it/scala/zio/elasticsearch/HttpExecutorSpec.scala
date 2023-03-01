@@ -31,7 +31,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genCustomer) { customer =>
               for {
                 docId <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, customer))
-                res   <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, docId))
+                res   <- ElasticExecutor.execute(ElasticRequest.getById(index, docId)).result[CustomerDocument]
               } yield assert(res)(isSome(equalTo(customer)))
             }
           },
@@ -67,7 +67,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                doc <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                doc <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).result[CustomerDocument]
               } yield assert(doc)(isSome(equalTo(customer)))
             }
           },
@@ -76,7 +76,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               for {
                 _   <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, firstCustomer))
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, secondCustomer))
-                doc <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                doc <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).result[CustomerDocument]
               } yield assert(doc)(isSome(equalTo(secondCustomer)))
             }
           }
@@ -131,20 +131,22 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                res <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                res <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).result[CustomerDocument]
               } yield assert(res)(isSome(equalTo(customer)))
             }
           },
           test("return None if the document does not exist") {
             checkOnce(genDocumentId) { documentId =>
-              assertZIO(ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId)))(isNone)
+              assertZIO(ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).result[CustomerDocument])(
+                isNone
+              )
             }
           },
           test("fail with throwable if decoding fails") {
             checkOnce(genDocumentId, genEmployee) { (documentId, employee) =>
               val result = for {
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[EmployeeDocument](index, documentId, employee))
-                res <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                res <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).result[CustomerDocument]
               } yield res
 
               assertZIO(result.exit)(
@@ -170,7 +172,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = range("balance").gte(100)
-                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).result[CustomerDocument]
                 } yield assert(res)(isNonEmpty)
             }
           } @@ around(
@@ -193,7 +196,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                              .refreshTrue
                          )
                     query = range("age").gte(0)
-                    res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](secondSearchIndex, query))
+                    res <-
+                      ElasticExecutor.execute(ElasticRequest.search(secondSearchIndex, query)).result[CustomerDocument]
                   } yield res
 
                 assertZIO(result.exit)(
@@ -224,7 +228,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
-                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).result[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -247,7 +252,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
-                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).result[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -271,7 +277,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                     )
                   query =
                     wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
-                  res <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).result[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -314,7 +321,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                   deleteQuery = range("balance").gte(300)
                   _ <-
                     ElasticExecutor.execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
-                  res <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](deleteByQueryIndex, matchAll))
+                  res <- ElasticExecutor
+                           .execute(ElasticRequest.search(deleteByQueryIndex, matchAll))
+                           .result[CustomerDocument]
                 } yield assert(res)(hasSameElements(List(firstCustomer.copy(balance = 150))))
             }
           } @@ around(
