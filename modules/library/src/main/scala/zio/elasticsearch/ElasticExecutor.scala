@@ -20,7 +20,7 @@ import sttp.client3.SttpBackend
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 private[elasticsearch] trait ElasticExecutor {
-  def execute[A](request: ElasticRequest[A, _]): Task[A]
+  def execute[A](request: ElasticRequest[A]): Task[A]
 }
 
 object ElasticExecutor {
@@ -30,6 +30,6 @@ object ElasticExecutor {
   lazy val local: URLayer[SttpBackend[Task, Any], ElasticExecutor] =
     ZLayer.succeed(ElasticConfig.Default) >>> live
 
-  private[elasticsearch] def execute[A](request: ElasticRequest[A, _]): RIO[ElasticExecutor, A] =
+  private[elasticsearch] def execute[A](request: ElasticRequest[A]): RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(request))
 }

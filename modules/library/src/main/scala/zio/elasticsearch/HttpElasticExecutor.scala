@@ -37,7 +37,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   import HttpElasticExecutor._
 
-  def execute[A](request: ElasticRequest[A, _]): Task[A] =
+  def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
       case r: BulkRequest           => executeBulk(r)
       case r: CreateRequest         => executeCreate(r)
@@ -50,7 +50,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: ExistsRequest         => executeExists(r)
       case r: GetByIdRequest        => executeGetById(r)
       case r: GetByQueryRequest     => executeGetByQuery(r)
-      case map @ Map(_, _)          => execute(map.request).flatMap(a => ZIO.fromEither(map.mapper(a)))
     }
 
   private def executeBulk(r: BulkRequest): Task[Unit] = {
@@ -193,7 +192,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
-  private def executeGetById(r: GetByIdRequest): Task[Option[Document]] = {
+  private def executeGetById(r: GetByIdRequest): Task[GetResult] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticGetResponse](
@@ -202,14 +201,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .response(asJson[ElasticGetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(response.body.toOption.map(d => Document.from(d.source)))
-        case HttpNotFound => ZIO.succeed(None)
+        case HttpOk       => ZIO.attempt(new GetResult(response.body.toOption.map(d => Document.from(d.source))))
+        case HttpNotFound => ZIO.succeed(new GetResult(None))
         case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
   }
 
-  private def executeGetByQuery(r: GetByQueryRequest): Task[ElasticQueryResponse] =
+  private def executeGetByQuery(r: GetByQueryRequest): Task[SearchResult] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${config.uri}/${r.index}/$Search")
@@ -221,7 +220,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(value)
+            value => ZIO.succeed(new SearchResult(value.results.map(_.toString).map(Document(_)))) // TODO have Json in Document instead of String???
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
