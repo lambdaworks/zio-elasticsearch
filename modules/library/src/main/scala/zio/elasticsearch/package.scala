@@ -62,7 +62,7 @@ package object elasticsearch {
   def containsAny(name: String, params: List[String]): Boolean =
     params.exists(StringUtils.contains(name, _))
 
-  // TODO decide if this extension is favorable to avoid having an additional flatMap in user code
+  /*// TODO decide if this extension is favorable to avoid having an additional flatMap in user code
   final implicit class ResultRIO[R, F[_]](zio: RIO[R, ElasticResult[F]]) {
     def result[A: Schema]: RIO[R, F[A]] = zio.flatMap(_.result[A])
   }
@@ -70,6 +70,9 @@ package object elasticsearch {
   // TODO decide if this extension is favorable to avoid having an additional flatMap in user code
   final implicit class ResultTask[F[_]](zio: Task[ElasticResult[F]]) {
     def result[A: Schema]: Task[F[A]] = zio.flatMap(_.result[A])
-  }
+  }*/
 
+  final implicit class Result[R, F[_]](zio: ZIO[R, Throwable, ElasticResult[F]]) {
+    def result[A: Schema]: ZIO[R, Throwable, F[A]] = zio.flatMap(_.result[A])
+  }
 }
