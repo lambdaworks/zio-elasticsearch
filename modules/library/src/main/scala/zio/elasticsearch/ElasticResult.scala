@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.prelude.{ForEachOps, ZValidation}
+import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{Task, ZIO}
 
@@ -27,9 +27,18 @@ sealed trait ElasticResult[F[_]] {
 final class GetResult(private val doc: Option[Document]) extends ElasticResult[Option] {
   override def result[A: Schema]: Task[Option[A]] =
     ZIO
-      .fromEither(doc.forEach(_.decode))
+      .fromEither(doc match {
+        case Some(document) =>
+          document.decode match {
+            case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
+            case Right(doc) => Right(Some(doc))
+          }
+        case None =>
+          Right(None)
+      })
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
+
 final class SearchResult(private val hits: List[Document]) extends ElasticResult[List] {
   override def result[A: Schema]: Task[List[A]] =
     ZIO.fromEither {

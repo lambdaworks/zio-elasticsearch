@@ -81,13 +81,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends BulkRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
 
-    override def refresh(value: Boolean) = self.copy(refresh = value)
+    def refresh(value: Boolean) = self.copy(refresh = value)
 
-    override def refreshFalse = refresh(false)
+    def refreshFalse = refresh(false)
 
-    override def refreshTrue = refresh(true)
+    def refreshTrue = refresh(true)
 
     lazy val body: String = requests.flatMap { r =>
       // We use @unchecked to ignore 'pattern match not exhaustive' error since we guarantee that it will not happen
@@ -124,13 +124,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends CreateRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
 
-    override def refresh(value: Boolean) = self.copy(refresh = value)
+    def refresh(value: Boolean) = self.copy(refresh = value)
 
-    override def refreshFalse = refresh(false)
+    def refreshFalse = refresh(false)
 
-    override def refreshTrue = refresh(true)
+    def refreshTrue = refresh(true)
   }
 
   sealed trait CreateWithIdRequest
@@ -145,13 +145,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends CreateWithIdRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
 
-    override def refresh(value: Boolean) = self.copy(refresh = value)
+    def refresh(value: Boolean) = self.copy(refresh = value)
 
-    override def refreshFalse = refresh(false)
+    def refreshFalse = refresh(false)
 
-    override def refreshTrue = refresh(true)
+    def refreshTrue = refresh(true)
   }
 
   sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome]
@@ -170,13 +170,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends CreateOrUpdateRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
 
-    override def refresh(value: Boolean) = self.copy(refresh = value)
+    def refresh(value: Boolean) = self.copy(refresh = value)
 
-    override def refreshFalse = refresh(false)
+    def refreshFalse = refresh(false)
 
-    override def refreshTrue = refresh(true)
+    def refreshTrue = refresh(true)
   }
 
   sealed trait DeleteByIdRequest
@@ -190,13 +190,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends DeleteByIdRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
 
-    override def refresh(value: Boolean) = self.copy(refresh = value)
+    def refresh(value: Boolean) = self.copy(refresh = value)
 
-    override def refreshFalse = refresh(false)
+    def refreshFalse = refresh(false)
 
-    override def refreshTrue = refresh(true)
+    def refreshTrue = refresh(true)
   }
 
   sealed trait DeleteByQueryRequest
@@ -210,13 +210,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends DeleteByQueryRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
 
-    override def refresh(value: Boolean) = self.copy(refresh = value)
+    def refresh(value: Boolean) = self.copy(refresh = value)
 
-    override def refreshFalse = refresh(false)
+    def refreshFalse = refresh(false)
 
-    override def refreshTrue = refresh(true)
+    def refreshTrue = refresh(true)
   }
 
   sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
@@ -230,7 +230,7 @@ object ElasticRequest {
     id: DocumentId,
     routing: Option[Routing]
   ) extends ExistRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
   }
 
   sealed trait GetByIdRequest extends ElasticRequest[GetResult] with HasRouting[GetResult]
@@ -240,7 +240,7 @@ object ElasticRequest {
     id: DocumentId,
     routing: Option[Routing]
   ) extends GetByIdRequest { self =>
-    override def routing(value: Routing) = self.copy(routing = Some(value))
+    def routing(value: Routing) = self.copy(routing = Some(value))
   }
 
   sealed trait GetByQueryRequest extends ElasticRequest[SearchResult]

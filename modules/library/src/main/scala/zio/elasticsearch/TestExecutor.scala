@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.Random.nextUUID
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
-import zio.stm.{STM, TMap, ZSTM}
+import zio.stm.{STM, TMap, USTM, ZSTM}
 import zio.{Task, ZIO}
 
 private[elasticsearch] final case class TestExecutor private (data: TMap[IndexName, TMap[DocumentId, Document]])
@@ -122,7 +122,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
     def createSearchResult(
       index: IndexName,
       documents: TMap[DocumentId, Document]
-    ): ZSTM[Any, Nothing, SearchResult] =
+    ): USTM[SearchResult] =
       for {
         items <-
           documents.toList.map(
