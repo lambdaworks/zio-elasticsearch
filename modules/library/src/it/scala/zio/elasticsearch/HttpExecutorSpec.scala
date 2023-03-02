@@ -53,12 +53,12 @@ object HttpExecutorSpec extends IntegrationSpec {
         ),
         suite("creating index")(
           test("successfully create index") {
-            assertZIO(ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName, None)))(equalTo(Created))
+            assertZIO(ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName)))(equalTo(Created))
           },
           test("return 'AlreadyExists' if index already exists") {
             for {
-              _   <- ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName, None))
-              res <- ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName, None))
+              _   <- ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName))
+              res <- ElasticExecutor.execute(ElasticRequest.createIndex(createIndexTestName))
             } yield assert(res)(equalTo(AlreadyExists))
           }
         ) @@ after(ElasticExecutor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
@@ -100,7 +100,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("successfully delete existing index") {
             checkOnce(genIndexName) { name =>
               for {
-                _   <- ElasticExecutor.execute(ElasticRequest.createIndex(name, None))
+                _   <- ElasticExecutor.execute(ElasticRequest.createIndex(name))
                 res <- ElasticExecutor.execute(ElasticRequest.deleteIndex(name))
               } yield assert(res)(equalTo(Deleted))
             }
@@ -174,7 +174,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 } yield assert(res)(isNonEmpty)
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("fail if any of results cannot be decoded") {
@@ -205,7 +205,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 )
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("search for a document which contains a term using a wildcard query") {
@@ -228,7 +228,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("search for a document which starts with a term using a wildcard query") {
@@ -251,7 +251,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("search for a document which conforms to a pattern using a wildcard query") {
@@ -275,7 +275,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
@@ -318,7 +318,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 } yield assert(res)(hasSameElements(List(firstCustomer.copy(balance = 150))))
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(deleteByQueryIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(deleteByQueryIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(deleteByQueryIndex)).orDie
           ),
           test("returns NotFound when provided index is missing") {

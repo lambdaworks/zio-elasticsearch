@@ -17,7 +17,16 @@
 package zio.elasticsearch
 
 import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, delete, get, head, post, put, urlEqualTo}
+import com.github.tomakehurst.wiremock.client.WireMock.{
+  aResponse,
+  delete,
+  equalToJson,
+  get,
+  head,
+  post,
+  put,
+  urlEqualTo
+}
 import sttp.model.StatusCode
 import zio.ZIO
 import zio.elasticsearch.ElasticQuery.matchAll
@@ -117,7 +126,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
           )
         )(equalTo(Created))
       },
-      test("creating index request") {
+      test("creating index request without mapping") {
         val addStubMapping = ZIO.serviceWith[WireMockServer](
           _.addStubMapping(
             put(urlEqualTo("/repositories")).willReturn(aResponse.withStatus(StatusCode.Ok.code)).build
@@ -125,7 +134,66 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         )
 
         assertZIO(
-          addStubMapping *> ElasticExecutor.execute(ElasticRequest.createIndex(name = index, definition = None))
+          addStubMapping *> ElasticExecutor.execute(ElasticRequest.createIndex(name = index))
+        )(
+          equalTo(Created)
+        )
+      },
+      test("creating index request with mapping") {
+        val mapping =
+          """
+            |{
+            |  "settings": {
+            |    "index": {
+            |      "number_of_shards": 1
+            |    }
+            |  },
+            |  "mappings": {
+            |    "_routing": {
+            |      "required": true
+            |    },
+            |    "properties": {
+            |      "id": {
+            |        "type": "keyword"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val addStubMapping = ZIO.serviceWith[WireMockServer](
+          _.addStubMapping(
+            put(urlEqualTo("/repositories"))
+              .withRequestBody(
+                equalToJson(
+                  """
+                    |{
+                    |  "settings": {
+                    |    "index": {
+                    |      "number_of_shards": 1
+                    |    }
+                    |  },
+                    |  "mappings": {
+                    |    "_routing": {
+                    |      "required": true
+                    |    },
+                    |    "properties": {
+                    |      "id": {
+                    |        "type": "keyword"
+                    |      }
+                    |    }
+                    |  }
+                    |}
+                    |""".stripMargin
+                )
+              )
+              .willReturn(aResponse.withStatus(StatusCode.Ok.code))
+              .build
+          )
+        )
+
+        assertZIO(
+          addStubMapping *> ElasticExecutor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
         )(
           equalTo(Created)
         )

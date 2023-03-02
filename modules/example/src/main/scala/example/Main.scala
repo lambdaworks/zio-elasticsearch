@@ -54,7 +54,7 @@ object Main extends ZIOAppDefault {
       for {
         _       <- ZIO.logInfo(s"Creating index '$Index'...")
         mapping <- ZIO.fromTry(Using(Source.fromURL(getClass.getResource("/mapping.json")))(_.mkString))
-        _       <- Elasticsearch.execute(ElasticRequest.createIndex(Index, Some(mapping)))
+        _       <- Elasticsearch.execute(ElasticRequest.createIndex(Index, mapping))
       } yield ()
 
     val populate: RIO[SttpBackend[Task, Any] with Elasticsearch, Unit] =
