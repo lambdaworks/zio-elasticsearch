@@ -55,45 +55,15 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: GetByQuery     => executeGetByQuery(r)
     }
 
-  def executeGetByQueryWithScroll(r: GetByQuery): ZIO[Any, Throwable, (Chunk[Json], Option[String])] =
-    sendRequestWithCustomResponse(
-      request
-        .post(
-          uri"${config.uri}/${r.index}/$Search".withParams(("scroll", "1m"))
-        )
-        .response(asJson[ElasticQueryResponse])
-        .contentType(ApplicationJson)
-        .body(r.query.toJson)
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk =>
-          response.body.fold(
-            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results), value.scrollId))
-          )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
-      }
-    }
-
-  def executeGetByScroll(scrollId: String): ZIO[Any, Throwable, (Chunk[Json], Option[String])] =
-    sendRequestWithCustomResponse(
-      request
-        .post(uri"${config.uri}/$Search/scroll")
-        .response(asJson[ElasticQueryResponse])
-        .contentType(ApplicationJson)
-        .body(Obj("scroll_id" -> Str(scrollId)))
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk =>
-          response.body.fold(
-            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results), value.scrollId))
-          )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
-      }
-    }
+//  def stream[A: Schema](r: GetByQuery): ZStream[Any, Throwable, A] = {
+//    val pipeline: ZPipeline[Any, Nothing, Json, Document]                    = ZPipeline.map(Document.from)
+//    val pipeline2: ZPipeline[Any, Nothing, Document, Either[DecodeError, A]] = ZPipeline.map(_.decode)
+//    val pipeline3: ZPipeline[Any, Nothing, Either[DecodeError, A], A]        = ZPipeline.collectWhileRight
+//
+//    ZStream.paginateChunkZIO("") { s =>
+//      if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
+//    } >>> pipeline >>> pipeline2 >>> pipeline3
+//  }
 
   def stream(r: GetByQuery): ZStream[Any, Throwable, Json] =
     ZStream.paginateChunkZIO("") { s =>
@@ -272,6 +242,48 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
               ZIO.succeed(
                 new SearchResult(value.results.map(_.toString).map(Document(_)))
               ) // TODO have Json in Document instead of String???
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
+  private def executeGetByQueryWithScroll(r: GetByQuery): ZIO[Any, Throwable, (Chunk[Json], Option[String])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(
+          uri"${config.uri}/${r.index}/$Search".withParams(("scroll", "1m"))
+        )
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(r.query.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed((Chunk.fromIterable(value.results), value.scrollId))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
+  private def executeGetByScroll(scrollId: String): ZIO[Any, Throwable, (Chunk[Json], Option[String])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${config.uri}/$Search/scroll".withParams(("scroll", "1m")))
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(Obj("scroll_id" -> Str(scrollId)))
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value =>
+              if (value.results.isEmpty) ZIO.succeed((Chunk.empty, None))
+              else ZIO.succeed((Chunk.fromIterable(value.results), Some(scrollId)))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))

@@ -19,10 +19,14 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
 import zio.json.ast.Json
-import zio.stream.ZSink
+import zio.schema.Schema
+import zio.schema.codec.DecodeError
+import zio.stream.{ZPipeline, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+
+import scala.util.Random
 
 object HttpExecutorSpec extends IntegrationSpec {
 
@@ -289,7 +293,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching documents")(
+        suite("searching documents and returning them as ZStream")(
           test("search for document using range query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
@@ -315,6 +319,38 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for document using range query with multiple pages") {
+            checkOnce(genCustomer) { customer =>
+              def sink: ZSink[Any, Throwable, CustomerDocument, Nothing, Chunk[CustomerDocument]] =
+                ZSink.collectAll[CustomerDocument]
+
+              val pipeline: ZPipeline[Any, Nothing, Json, Document] = ZPipeline.map(Document.from)
+              def pipeline2[A: Schema]: ZPipeline[Any, Nothing, Document, Either[DecodeError, A]] =
+                ZPipeline.map(_.decode)
+              def pipeline3[A]: ZPipeline[Any, Nothing, Either[DecodeError, A], A] = ZPipeline.collectWhileRight
+
+              for {
+                _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                reqs = (0 to 50).map { _ =>
+                         ElasticRequest.create[CustomerDocument](
+                           secondSearchIndex,
+                           customer.copy(id = Random.alphanumeric.take(5).mkString, balance = 150)
+                         )
+                       }
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query = range("balance").gte(100)
+                res <- (ElasticExecutor.stream(
+                         ElasticRequest.search(secondSearchIndex, query)
+                       ) >>> pipeline >>> pipeline2[CustomerDocument] >>> pipeline3[CustomerDocument]).run(sink)
+              } yield assert(res)(hasSize(Assertion.equalTo(204)))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           )
         ) @@ shrinks(0),
         suite("deleting by query")(
