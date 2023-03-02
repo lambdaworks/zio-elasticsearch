@@ -28,7 +28,6 @@ import sttp.model.StatusCode.{
 }
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
-import zio.json.ast.Json
 import zio.json.ast.Json.{Obj, Str}
 import zio.stream.ZStream
 import zio.{Chunk, Task, ZIO}
@@ -65,7 +64,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 //    } >>> pipeline >>> pipeline2 >>> pipeline3
 //  }
 
-  def stream(r: GetByQuery): ZStream[Any, Throwable, Json] =
+  def stream(r: GetByQuery): ZStream[Any, Throwable, RawItem] =
     ZStream.paginateChunkZIO("") { s =>
       if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
     }
@@ -248,7 +247,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       }
     }
 
-  private def executeGetByQueryWithScroll(r: GetByQuery): ZIO[Any, Throwable, (Chunk[Json], Option[String])] =
+  private def executeGetByQueryWithScroll(r: GetByQuery): ZIO[Any, Throwable, (Chunk[RawItem], Option[String])] =
     sendRequestWithCustomResponse(
       request
         .post(
@@ -262,14 +261,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results), value.scrollId))
+            value => ZIO.succeed((Chunk.fromIterable(value.results).map(RawItem), value.scrollId))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
 
-  private def executeGetByScroll(scrollId: String): ZIO[Any, Throwable, (Chunk[Json], Option[String])] =
+  private def executeGetByScroll(scrollId: String): ZIO[Any, Throwable, (Chunk[RawItem], Option[String])] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${config.uri}/$Search/scroll".withParams(("scroll", "1m")))
@@ -283,7 +282,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
               if (value.results.isEmpty) ZIO.succeed((Chunk.empty, None))
-              else ZIO.succeed((Chunk.fromIterable(value.results), Some(scrollId)))
+              else ZIO.succeed((Chunk.fromIterable(value.results).map(RawItem), Some(scrollId)))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))

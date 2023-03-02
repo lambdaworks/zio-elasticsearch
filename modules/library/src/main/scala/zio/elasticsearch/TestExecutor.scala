@@ -53,7 +53,7 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
         fakeGetByQuery(index)
     }
 
-  override def stream(request: GetByQuery): ZStream[Any, Throwable, Json] = ???
+  override def stream(request: GetByQuery): ZStream[Any, Throwable, RawItem] = ???
 
   private def fakeBulk(requests: List[BulkableRequest[_]]): Task[Unit] =
     ZIO.attempt {

@@ -18,7 +18,6 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
-import zio.json.ast.Json
 import zio.schema.Schema
 import zio.schema.codec.DecodeError
 import zio.stream.{ZPipeline, ZSink}
@@ -297,7 +296,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("search for document using range query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
-                val sink: ZSink[Any, Throwable, Json, Nothing, Chunk[Json]] = ZSink.collectAll[Json]
+                val sink: ZSink[Any, Throwable, RawItem, Nothing, Chunk[RawItem]] = ZSink.collectAll[RawItem]
 
                 for {
                   _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
@@ -325,10 +324,9 @@ object HttpExecutorSpec extends IntegrationSpec {
               def sink: ZSink[Any, Throwable, CustomerDocument, Nothing, Chunk[CustomerDocument]] =
                 ZSink.collectAll[CustomerDocument]
 
-              val pipeline: ZPipeline[Any, Nothing, Json, Document] = ZPipeline.map(Document.from)
-              def pipeline2[A: Schema]: ZPipeline[Any, Nothing, Document, Either[DecodeError, A]] =
-                ZPipeline.map(_.decode)
-              def pipeline3[A]: ZPipeline[Any, Nothing, Either[DecodeError, A], A] = ZPipeline.collectWhileRight
+              def pipeline[A: Schema]: ZPipeline[Any, Nothing, RawItem, Either[DecodeError, A]] =
+                ZPipeline.map(_.documentAs[A])
+              def pipeline_2[A]: ZPipeline[Any, Nothing, Either[DecodeError, A], A] = ZPipeline.collectWhileRight
 
               for {
                 _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
@@ -345,7 +343,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 query = range("balance").gte(100)
                 res <- (ElasticExecutor.stream(
                          ElasticRequest.search(secondSearchIndex, query)
-                       ) >>> pipeline >>> pipeline2[CustomerDocument] >>> pipeline3[CustomerDocument]).run(sink)
+                       ) >>> pipeline[CustomerDocument] >>> pipeline_2[CustomerDocument]).run(sink)
               } yield assert(res)(hasSize(Assertion.equalTo(204)))
             }
           } @@ around(
