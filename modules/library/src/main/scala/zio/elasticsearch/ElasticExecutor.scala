@@ -17,8 +17,7 @@
 package zio.elasticsearch
 
 import sttp.client3.SttpBackend
-import zio.stm.TMap
-import zio.{RIO, Task, ULayer, URLayer, ZIO, ZLayer}
+import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 private[elasticsearch] trait ElasticExecutor {
   def execute[A](request: ElasticRequest[A, _]): Task[A]
@@ -30,9 +29,6 @@ object ElasticExecutor {
 
   lazy val local: URLayer[SttpBackend[Task, Any], ElasticExecutor] =
     ZLayer.succeed(ElasticConfig.Default) >>> live
-
-  lazy val test: ULayer[TestExecutor] =
-    ZLayer(TMap.empty[IndexName, TMap[DocumentId, Document]].map(TestExecutor).commit)
 
   private[elasticsearch] def execute[A](request: ElasticRequest[A, _]): RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(request))
