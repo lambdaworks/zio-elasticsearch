@@ -20,6 +20,7 @@ import zio.Random.nextUUID
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
 import zio.stm.{STM, TMap, USTM, ZSTM}
+import zio.stream.ZStream
 import zio.{Task, ZIO}
 
 private[elasticsearch] final case class TestExecutor private (data: TMap[IndexName, TMap[DocumentId, Document]])
@@ -51,6 +52,8 @@ private[elasticsearch] final case class TestExecutor private (data: TMap[IndexNa
       case GetByQuery(index, _, _) =>
         fakeGetByQuery(index)
     }
+
+  override def stream(request: GetByQuery): ZStream[Any, Throwable, Json] = ???
 
   private def fakeBulk(requests: List[BulkableRequest[_]]): Task[Unit] =
     ZIO.attempt {

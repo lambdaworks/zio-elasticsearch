@@ -20,6 +20,8 @@ import zio.json.ast.Json
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class ElasticQueryResponse(
+  @jsonField("_scroll_id")
+  scrollId: Option[String],
   took: Int,
   @jsonField("timed_out")
   timedOut: Boolean,

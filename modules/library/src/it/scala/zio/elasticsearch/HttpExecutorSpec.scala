@@ -16,7 +16,10 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
+import zio.json.ast.Json
+import zio.stream.ZSink
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
@@ -283,6 +286,34 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ) @@ shrinks(0),
+        suite("searching documents")(
+          test("search for document using range query") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                val sink: ZSink[Any, Throwable, Json, Nothing, Chunk[Json]] = ZSink.collectAll[Json]
+
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    ElasticExecutor.execute(
+                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                    )
+                  _ <-
+                    ElasticExecutor.execute(
+                      ElasticRequest
+                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                        .refreshTrue
+                    )
+                  query = range("balance").gte(100)
+                  res <-
+                    ElasticExecutor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
+                } yield assert(res)(isNonEmpty)
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
