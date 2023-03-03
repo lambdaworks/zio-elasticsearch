@@ -29,6 +29,7 @@ import sttp.model.StatusCode.{
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json.{Obj, Str}
+import zio.schema.Schema
 import zio.stream.ZStream
 import zio.{Chunk, Task, ZIO}
 
@@ -54,20 +55,18 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: GetByQuery     => executeGetByQuery(r)
     }
 
-//  def stream[A: Schema](r: GetByQuery): ZStream[Any, Throwable, A] = {
-//    val pipeline: ZPipeline[Any, Nothing, Json, Document]                    = ZPipeline.map(Document.from)
-//    val pipeline2: ZPipeline[Any, Nothing, Document, Either[DecodeError, A]] = ZPipeline.map(_.decode)
-//    val pipeline3: ZPipeline[Any, Nothing, Either[DecodeError, A], A]        = ZPipeline.collectWhileRight
-//
-//    ZStream.paginateChunkZIO("") { s =>
-//      if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
-//    } >>> pipeline >>> pipeline2 >>> pipeline3
-//  }
-
-  def stream(r: GetByQuery): ZStream[Any, Throwable, RawItem] =
+  def stream(r: GetByQuery): ZStream[Any, Throwable, Item] =
     ZStream.paginateChunkZIO("") { s =>
       if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
     }
+
+  def streamAs[A: Schema](r: GetByQuery): ZStream[Any, Throwable, A] =
+    ZStream
+      .paginateChunkZIO("") { s =>
+        if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
+      }
+      .map(_.documentAs[A])
+      .collectWhileRight
 
   private def executeBulk(r: Bulk): Task[Unit] = {
     val uri = (r.index match {
@@ -218,7 +217,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         .response(asJson[ElasticGetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(new GetResult(response.body.toOption.map(d => Document.from(d.source))))
+        case HttpOk       => ZIO.attempt(new GetResult(response.body.toOption.map(r => Item(r.source))))
         case HttpNotFound => ZIO.succeed(new GetResult(None))
         case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
@@ -239,19 +238,19 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
               ZIO.succeed(
-                new SearchResult(value.results.map(_.toString).map(Document(_)))
-              ) // TODO have Json in Document instead of String???
+                new SearchResult(value.results.map(Item))
+              )
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
 
-  private def executeGetByQueryWithScroll(r: GetByQuery): ZIO[Any, Throwable, (Chunk[RawItem], Option[String])] =
+  private def executeGetByQueryWithScroll(r: GetByQuery): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
       request
         .post(
-          uri"${config.uri}/${r.index}/$Search".withParams(("scroll", "1m"))
+          uri"${config.uri}/${r.index}/$Search".withParams((Scroll, ScrollDefaultDuration))
         )
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
@@ -261,20 +260,20 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results).map(RawItem), value.scrollId))
+            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
 
-  private def executeGetByScroll(scrollId: String): ZIO[Any, Throwable, (Chunk[RawItem], Option[String])] =
+  private def executeGetByScroll(scrollId: String): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/$Search/scroll".withParams(("scroll", "1m")))
+        .post(uri"${config.uri}/$Search/$Scroll".withParams((Scroll, ScrollDefaultDuration)))
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
-        .body(Obj("scroll_id" -> Str(scrollId)))
+        .body(Obj(ScrollId -> Str(scrollId)))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -282,7 +281,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
               if (value.results.isEmpty) ZIO.succeed((Chunk.empty, None))
-              else ZIO.succeed((Chunk.fromIterable(value.results).map(RawItem), Some(scrollId)))
+              else ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId.orElse(Some(scrollId))))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -326,11 +325,14 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
 private[elasticsearch] object HttpElasticExecutor {
 
-  private final val Bulk          = "_bulk"
-  private final val Create        = "_create"
-  private final val DeleteByQuery = "_delete_by_query"
-  private final val Doc           = "_doc"
-  private final val Search        = "_search"
+  private final val Bulk                  = "_bulk"
+  private final val Create                = "_create"
+  private final val DeleteByQuery         = "_delete_by_query"
+  private final val Doc                   = "_doc"
+  private final val Search                = "_search"
+  private final val Scroll                = "scroll"
+  private final val ScrollId              = "scroll_id"
+  private final val ScrollDefaultDuration = "1m"
 
   def apply(config: ElasticConfig, client: SttpBackend[Task, Any]) =
     new HttpElasticExecutor(config, client)

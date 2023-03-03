@@ -16,13 +16,11 @@
 
 package zio.elasticsearch
 
+import zio.json.ast.Json
 import zio.schema.Schema
-import zio.schema.codec.JsonCodec
+import zio.schema.codec.DecodeError
+import zio.schema.codec.JsonCodec.JsonDecoder
 
-private[elasticsearch] final case class Document(json: String)
-
-private[elasticsearch] object Document {
-  def from[A](doc: A)(implicit schema: Schema[A]): Document = Document(
-    JsonCodec.jsonEncoder(schema).encodeJson(doc, indent = None).toString
-  )
+final case class Item(raw: Json) {
+  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 }

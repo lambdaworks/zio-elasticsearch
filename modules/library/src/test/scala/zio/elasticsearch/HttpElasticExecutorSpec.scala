@@ -312,7 +312,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
                 .getById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
                 .routing(Routing("routing"))
             )
-            .result[GitHubRepo]
+            .documentAs[GitHubRepo]
         )(isSome(equalTo(repo)))
       },
       test("getting by query request") {
@@ -365,7 +365,7 @@ object HttpElasticExecutorSpec extends WireMockSpec {
         assertZIO(
           addStubMapping *> ElasticExecutor
             .execute(ElasticRequest.search(index = index, query = matchAll))
-            .result[GitHubRepo]
+            .documentAs[GitHubRepo]
         )(
           equalTo(List(repo))
         )

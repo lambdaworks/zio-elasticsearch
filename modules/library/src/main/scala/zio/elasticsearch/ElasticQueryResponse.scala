@@ -52,7 +52,7 @@ private[elasticsearch] final case class Hits(
   total: Total,
   @jsonField("max_score")
   maxScore: Option[Double] = None,
-  hits: List[Item]
+  hits: List[Hit]
 )
 
 private[elasticsearch] object Hits {
@@ -65,7 +65,7 @@ private[elasticsearch] object Total {
   implicit val decoder: JsonDecoder[Total] = DeriveJsonDecoder.gen[Total]
 }
 
-private[elasticsearch] final case class Item(
+private[elasticsearch] final case class Hit(
   @jsonField("_index")
   index: String,
   @jsonField("_type")
@@ -78,6 +78,6 @@ private[elasticsearch] final case class Item(
   source: Json
 )
 
-private[elasticsearch] object Item {
-  implicit val decoder: JsonDecoder[Item] = DeriveJsonDecoder.gen[Item]
+private[elasticsearch] object Hit {
+  implicit val decoder: JsonDecoder[Hit] = DeriveJsonDecoder.gen[Hit]
 }

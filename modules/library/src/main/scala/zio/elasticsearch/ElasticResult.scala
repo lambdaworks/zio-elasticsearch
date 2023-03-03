@@ -18,18 +18,18 @@ package zio.elasticsearch
 
 import zio.prelude.ZValidation
 import zio.schema.Schema
-import zio.{Task, ZIO}
+import zio.{IO, Task, ZIO}
 
 sealed trait ElasticResult[F[_]] {
-  def result[A: Schema]: Task[F[A]]
+  def documentAs[A: Schema]: Task[F[A]]
 }
 
-final class GetResult private[elasticsearch] (private val doc: Option[Document]) extends ElasticResult[Option] {
-  override def result[A: Schema]: Task[Option[A]] =
+final class GetResult private[elasticsearch] (private val doc: Option[Item]) extends ElasticResult[Option] {
+  override def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
     ZIO
       .fromEither(doc match {
-        case Some(document) =>
-          document.decode match {
+        case Some(item) =>
+          item.documentAs match {
             case Left(e)    => Left(DecodingException(s"Could not parse the document: ${e.message}"))
             case Right(doc) => Right(Some(doc))
           }
@@ -39,10 +39,10 @@ final class GetResult private[elasticsearch] (private val doc: Option[Document])
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-final class SearchResult private[elasticsearch] (private val hits: List[Document]) extends ElasticResult[List] {
-  override def result[A: Schema]: Task[List[A]] =
+final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends ElasticResult[List] {
+  override def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
-      ZValidation.validateAll(hits.map(d => ZValidation.fromEither(d.decode))).toEitherWith { errors =>
+      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
         DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
       }
     }

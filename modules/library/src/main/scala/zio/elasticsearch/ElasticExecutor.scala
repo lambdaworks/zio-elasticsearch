@@ -19,12 +19,15 @@ package zio.elasticsearch
 import sttp.client3.SttpBackend
 import zio.elasticsearch.ElasticRequest.GetByQuery
 import zio.stream.ZStream
+import zio.schema.Schema
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 private[elasticsearch] trait ElasticExecutor {
   def execute[A](request: ElasticRequest[A]): Task[A]
 
-  def stream(request: GetByQuery): ZStream[Any, Throwable, RawItem]
+  def stream(request: GetByQuery): ZStream[Any, Throwable, Item]
+
+  def streamAs[A: Schema](request: GetByQuery): ZStream[Any, Throwable, A]
 }
 
 object ElasticExecutor {
@@ -37,6 +40,9 @@ object ElasticExecutor {
   private[elasticsearch] def execute[A](request: ElasticRequest[A]): RIO[ElasticExecutor, A] =
     ZIO.serviceWithZIO[ElasticExecutor](_.execute(request))
 
-  private[elasticsearch] def stream(request: GetByQuery): ZStream[ElasticExecutor, Throwable, RawItem] =
+  private[elasticsearch] def stream(request: GetByQuery): ZStream[ElasticExecutor, Throwable, Item] =
     ZStream.serviceWithStream[ElasticExecutor](_.stream(request))
+
+  private[elasticsearch] def streamAs[A: Schema](request: GetByQuery): ZStream[ElasticExecutor, Throwable, A] =
+    ZStream.serviceWithStream[ElasticExecutor](_.streamAs[A](request))
 }
