@@ -25,7 +25,7 @@ sealed trait ElasticResult[F[_]] {
 }
 
 final class GetResult private[elasticsearch] (private val doc: Option[Item]) extends ElasticResult[Option] {
-  override def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
+  def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
     ZIO
       .fromEither(doc match {
         case Some(item) =>
@@ -40,7 +40,7 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
 }
 
 final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends ElasticResult[List] {
-  override def documentAs[A: Schema]: IO[DecodingException, List[A]] =
+  def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
         DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")

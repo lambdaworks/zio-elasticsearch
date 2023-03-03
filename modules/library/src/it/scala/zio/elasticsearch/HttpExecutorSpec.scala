@@ -18,9 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
-import zio.schema.Schema
-import zio.schema.codec.DecodeError
-import zio.stream.{Sink, ZPipeline, ZSink}
+import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
@@ -240,7 +238,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(Assertion.contains(firstCustomer))
+                } yield assert(res)(contains(firstCustomer))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -264,7 +262,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(Assertion.contains(firstCustomer))
+                } yield assert(res)(contains(firstCustomer))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -289,7 +287,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(Assertion.contains(firstCustomer))
+                } yield assert(res)(contains(firstCustomer))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -325,30 +323,25 @@ object HttpExecutorSpec extends IntegrationSpec {
           ),
           test("search for documents using range query with multiple pages") {
             checkOnce(genCustomer) { customer =>
-              def sink: Sink[Throwable, CustomerDocument, Nothing, Chunk[CustomerDocument]] =
-                ZSink.collectAll[CustomerDocument]
-
-              def pipeline[A: Schema]: ZPipeline[Any, Nothing, Item, Either[DecodeError, A]] =
-                ZPipeline.map(_.documentAs[A])
-              def pipeline_2[A]: ZPipeline[Any, Nothing, Either[DecodeError, A], A] = ZPipeline.collectWhileRight
+              def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
+                ZSink.collectAll[Item]
 
               for {
                 _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                reqs = (0 to 50).map { _ =>
+                reqs = (0 to 203).map { _ =>
                          ElasticRequest.create[CustomerDocument](
                            secondSearchIndex,
                            customer.copy(id = Random.alphanumeric.take(5).mkString, balance = 150)
                          )
                        }
-                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
-                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
-                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
                 _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range("balance").gte(100)
-                res <- (ElasticExecutor.stream(
-                         ElasticRequest.search(secondSearchIndex, query)
-                       ) >>> pipeline[CustomerDocument] >>> pipeline_2[CustomerDocument]).run(sink)
-              } yield assert(res)(hasSize(Assertion.equalTo(204)))
+                res <- ElasticExecutor
+                         .stream(
+                           ElasticRequest.search(secondSearchIndex, query)
+                         )
+                         .run(sink)
+              } yield assert(res)(hasSize(equalTo(204)))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
@@ -361,15 +354,12 @@ object HttpExecutorSpec extends IntegrationSpec {
 
               for {
                 _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                reqs = (1 to 50).map { _ =>
+                reqs = (0 to 200).map { _ =>
                          ElasticRequest.create[CustomerDocument](
                            secondSearchIndex,
                            customer.copy(id = Random.alphanumeric.take(5).mkString, balance = 150)
                          )
                        }
-                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
-                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
-                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*))
                 _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range("balance").gte(100)
                 res <- ElasticExecutor
@@ -377,7 +367,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            ElasticRequest.search(secondSearchIndex, query)
                          )
                          .run(sink)
-              } yield assert(res)(hasSize(Assertion.equalTo(200)))
+              } yield assert(res)(hasSize(equalTo(201)))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),

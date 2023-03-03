@@ -30,7 +30,7 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json.{Obj, Str}
 import zio.schema.Schema
-import zio.stream.ZStream
+import zio.stream.{Stream, ZStream}
 import zio.{Chunk, Task, ZIO}
 
 import scala.collection.immutable.{Map => ScalaMap}
@@ -55,12 +55,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: GetByQuery     => executeGetByQuery(r)
     }
 
-  def stream(r: GetByQuery): ZStream[Any, Throwable, Item] =
+  def stream(r: GetByQuery): Stream[Throwable, Item] =
     ZStream.paginateChunkZIO("") { s =>
       if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
     }
 
-  def streamAs[A: Schema](r: GetByQuery): ZStream[Any, Throwable, A] =
+  def streamAs[A: Schema](r: GetByQuery): Stream[Throwable, A] =
     ZStream
       .paginateChunkZIO("") { s =>
         if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
@@ -236,10 +236,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value =>
-              ZIO.succeed(
-                new SearchResult(value.results.map(Item))
-              )
+            value => ZIO.succeed(new SearchResult(value.results.map(Item)))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -331,8 +328,8 @@ private[elasticsearch] object HttpElasticExecutor {
   private final val Doc                   = "_doc"
   private final val Search                = "_search"
   private final val Scroll                = "scroll"
-  private final val ScrollId              = "scroll_id"
   private final val ScrollDefaultDuration = "1m"
+  private final val ScrollId              = "scroll_id"
 
   def apply(config: ElasticConfig, client: SttpBackend[Task, Any]) =
     new HttpElasticExecutor(config, client)

@@ -19,15 +19,15 @@ package zio.elasticsearch
 import sttp.client3.SttpBackend
 import zio.elasticsearch.ElasticRequest.GetByQuery
 import zio.schema.Schema
-import zio.stream.ZStream
+import zio.stream.{Stream, ZStream}
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 private[elasticsearch] trait ElasticExecutor {
   def execute[A](request: ElasticRequest[A]): Task[A]
 
-  def stream(request: GetByQuery): ZStream[Any, Throwable, Item]
+  def stream(request: GetByQuery): Stream[Throwable, Item]
 
-  def streamAs[A: Schema](request: GetByQuery): ZStream[Any, Throwable, A]
+  def streamAs[A: Schema](request: GetByQuery): Stream[Throwable, A]
 }
 
 object ElasticExecutor {

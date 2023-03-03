@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.elasticsearch.Routing.Routing
 import zio.schema.Schema
 
-trait HasRefresh[A] { // TODO extend this on all appropritate requests
+trait HasRefresh[A] {
   def refresh(value: Boolean): ElasticRequest[A]
 
   def refreshFalse: ElasticRequest[A]
@@ -27,7 +27,7 @@ trait HasRefresh[A] { // TODO extend this on all appropritate requests
   def refreshTrue: ElasticRequest[A]
 }
 
-trait HasRouting[A] { // TODO extend this on all appropritate requests
+trait HasRouting[A] {
   def routing(value: Routing): ElasticRequest[A]
 }
 
@@ -38,7 +38,7 @@ sealed trait BulkableRequest[A] extends ElasticRequest[A]
 object ElasticRequest {
 
   def bulk(requests: BulkableRequest[_]*): Bulk =
-    Bulk.of(requests: _*)
+    Bulk.of(requests = requests: _*)
 
   def create[A: Schema](index: IndexName, doc: A): Create =
     Create(index = index, document = Document.from(doc), refresh = false, routing = None)
@@ -59,7 +59,7 @@ object ElasticRequest {
     DeleteByQuery(index = index, query = query, refresh = false, routing = None)
 
   def deleteIndex(name: IndexName): DeleteIndex =
-    DeleteIndex(name)
+    DeleteIndex(name = name)
 
   def exists(index: IndexName, id: DocumentId): Exists =
     Exists(index = index, id = id, routing = None)
@@ -73,7 +73,7 @@ object ElasticRequest {
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdate =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
 
-  sealed trait BulkRequest extends ElasticRequest[Unit] with HasRouting[Unit] with HasRefresh[Unit]
+  sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[Unit] with HasRouting[Unit]
 
   private[elasticsearch] final case class Bulk(
     requests: List[BulkableRequest[_]],
@@ -81,17 +81,15 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends BulkRequest { self =>
-    def routing(value: Routing): Bulk = self.copy(routing = Some(value))
-
     def refresh(value: Boolean): Bulk = self.copy(refresh = value)
 
     def refreshFalse: Bulk = refresh(false)
 
     def refreshTrue: Bulk = refresh(true)
 
+    def routing(value: Routing): Bulk = self.copy(routing = Some(value))
+
     lazy val body: String = requests.flatMap { r =>
-      // We use @unchecked to ignore 'pattern match not exhaustive' error since we guarantee that it will not happen
-      // because these are only Bulkable Requests and other matches will not occur.
       r match {
         case Create(index, document, _, maybeRouting) =>
           List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", maybeRouting))), document.json)
@@ -116,7 +114,7 @@ object ElasticRequest {
       Bulk(requests = requests.toList, index = None, refresh = false, routing = None)
   }
 
-  sealed trait CreateRequest extends BulkableRequest[DocumentId] with HasRouting[DocumentId] with HasRefresh[DocumentId]
+  sealed trait CreateRequest extends BulkableRequest[DocumentId] with HasRefresh[DocumentId] with HasRouting[DocumentId]
 
   private[elasticsearch] final case class Create(
     index: IndexName,
@@ -124,19 +122,19 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends CreateRequest { self =>
-    def routing(value: Routing): Create = self.copy(routing = Some(value))
-
     def refresh(value: Boolean): Create = self.copy(refresh = value)
 
     def refreshFalse: Create = refresh(false)
 
     def refreshTrue: Create = refresh(true)
+
+    def routing(value: Routing): Create = self.copy(routing = Some(value))
   }
 
   sealed trait CreateWithIdRequest
       extends BulkableRequest[CreationOutcome]
-      with HasRouting[CreationOutcome]
       with HasRefresh[CreationOutcome]
+      with HasRouting[CreationOutcome]
 
   private[elasticsearch] final case class CreateWithId(
     index: IndexName,
@@ -145,13 +143,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends CreateWithIdRequest { self =>
-    def routing(value: Routing): CreateWithId = self.copy(routing = Some(value))
-
     def refresh(value: Boolean): CreateWithId = self.copy(refresh = value)
 
     def refreshFalse: CreateWithId = refresh(false)
 
     def refreshTrue: CreateWithId = refresh(true)
+
+    def routing(value: Routing): CreateWithId = self.copy(routing = Some(value))
   }
 
   sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome]
@@ -161,7 +159,7 @@ object ElasticRequest {
     definition: Option[String]
   ) extends ElasticRequest[CreationOutcome]
 
-  sealed trait CreateOrUpdateRequest extends BulkableRequest[Unit] with HasRouting[Unit] with HasRefresh[Unit]
+  sealed trait CreateOrUpdateRequest extends BulkableRequest[Unit] with HasRefresh[Unit] with HasRouting[Unit]
 
   private[elasticsearch] final case class CreateOrUpdate(
     index: IndexName,
@@ -170,19 +168,19 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends CreateOrUpdateRequest { self =>
-    def routing(value: Routing): CreateOrUpdate = self.copy(routing = Some(value))
-
     def refresh(value: Boolean): CreateOrUpdate = self.copy(refresh = value)
 
     def refreshFalse: CreateOrUpdate = refresh(false)
 
     def refreshTrue: CreateOrUpdate = refresh(true)
+
+    def routing(value: Routing): CreateOrUpdate = self.copy(routing = Some(value))
   }
 
   sealed trait DeleteByIdRequest
       extends BulkableRequest[DeletionOutcome]
-      with HasRouting[DeletionOutcome]
       with HasRefresh[DeletionOutcome]
+      with HasRouting[DeletionOutcome]
 
   private[elasticsearch] final case class DeleteById(
     index: IndexName,
@@ -190,19 +188,19 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends DeleteByIdRequest { self =>
-    def routing(value: Routing): DeleteById = self.copy(routing = Some(value))
-
     def refresh(value: Boolean): DeleteById = self.copy(refresh = value)
 
     def refreshFalse: DeleteById = refresh(false)
 
     def refreshTrue: DeleteById = refresh(true)
+
+    def routing(value: Routing): DeleteById = self.copy(routing = Some(value))
   }
 
   sealed trait DeleteByQueryRequest
       extends ElasticRequest[DeletionOutcome]
-      with HasRouting[DeletionOutcome]
       with HasRefresh[DeletionOutcome]
+      with HasRouting[DeletionOutcome]
 
   private[elasticsearch] final case class DeleteByQuery(
     index: IndexName,
@@ -210,13 +208,13 @@ object ElasticRequest {
     refresh: Boolean,
     routing: Option[Routing]
   ) extends DeleteByQueryRequest { self =>
-    def routing(value: Routing): DeleteByQuery = self.copy(routing = Some(value))
-
     def refresh(value: Boolean): DeleteByQuery = self.copy(refresh = value)
 
     def refreshFalse: DeleteByQuery = refresh(false)
 
     def refreshTrue: DeleteByQuery = refresh(true)
+
+    def routing(value: Routing): DeleteByQuery = self.copy(routing = Some(value))
   }
 
   sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
@@ -259,8 +257,8 @@ object ElasticRequest {
 
 sealed abstract class CreationOutcome
 
-case object Created       extends CreationOutcome
 case object AlreadyExists extends CreationOutcome
+case object Created       extends CreationOutcome
 
 sealed abstract class DeletionOutcome
 
