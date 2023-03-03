@@ -55,8 +55,11 @@ object ElasticRequest {
   def create[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[CreationOutcome, CreateWithId] =
     CreateWithIdRequest(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
 
-  def createIndex(name: IndexName, definition: Option[String]): ElasticRequest[CreationOutcome, CreateIndex] =
-    CreateIndexRequest(name, definition)
+  def createIndex(name: IndexName): ElasticRequest[CreationOutcome, CreateIndex] =
+    CreateIndexRequest(name = name, definition = None)
+
+  def createIndex(name: IndexName, definition: String): ElasticRequest[CreationOutcome, CreateIndex] =
+    CreateIndexRequest(name = name, definition = Some(definition))
 
   def deleteById(index: IndexName, id: DocumentId): ElasticRequest[DeletionOutcome, DeleteById] =
     DeleteByIdRequest(index = index, id = id, refresh = false, routing = None)
@@ -95,7 +98,7 @@ object ElasticRequest {
     }
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): ElasticRequest[Unit, Upsert] =
-    CreateOrUpdateRequest(index, id, Document.from(doc), refresh = false, routing = None)
+    CreateOrUpdateRequest(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
 
   private[elasticsearch] final case class BulkableRequest private (request: ElasticRequest[_, _])
 

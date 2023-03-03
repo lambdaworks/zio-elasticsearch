@@ -40,7 +40,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
   val createIndexTestName: IndexName = IndexName("create-index-test-name")
 
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
-    _ <- ElasticExecutor.execute(ElasticRequest.createIndex(index, None))
+    _ <- ElasticExecutor.execute(ElasticRequest.createIndex(index))
     _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
   } yield ()).provide(elasticsearchLayer))
 
