@@ -238,7 +238,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(contains(firstCustomer))
+                } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -262,7 +262,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(contains(firstCustomer))
+                } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -287,7 +287,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(contains(firstCustomer))
+                } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -318,7 +318,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 } yield assert(res)(isNonEmpty)
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("search for documents using range query with multiple pages") {
@@ -344,7 +344,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(res)(hasSize(equalTo(204)))
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("search for documents using range query with multiple pages and return type") {
@@ -370,7 +370,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(res)(hasSize(equalTo(201)))
             }
           } @@ around(
-            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex, None)),
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           )
         ) @@ shrinks(0),
