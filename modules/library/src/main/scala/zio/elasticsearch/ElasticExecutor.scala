@@ -18,8 +18,8 @@ package zio.elasticsearch
 
 import sttp.client3.SttpBackend
 import zio.elasticsearch.ElasticRequest.GetByQuery
-import zio.stream.ZStream
 import zio.schema.Schema
+import zio.stream.ZStream
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 private[elasticsearch] trait ElasticExecutor {
