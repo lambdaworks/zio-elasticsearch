@@ -231,6 +231,120 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(MatchAllQuery(boost = Some(1.0))))
         },
+        test("successfully create Nested Query with MatchAll Query") {
+          val query = nested(path = "customer", query = matchAll)
+
+          assert(query)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = None,
+                ignoreUnmapped = None
+              )
+            )
+          )
+        },
+        test("successfully create type-safe Nested Query with MatchAll Query") {
+          val query = nested(path = UserDocument.address, query = matchAll)
+
+          assert(query)(
+            equalTo(
+              NestedQuery(
+                path = "address",
+                query = MatchAllQuery(boost = None),
+                scoreMode = None,
+                ignoreUnmapped = None
+              )
+            )
+          )
+        },
+        test("successfully create Nested Query with MatchAll Query and score_mode") {
+          val queryAvg  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
+          val queryMax  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Max)
+          val queryMin  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Min)
+          val queryNone = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.None)
+          val querySum  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Sum)
+
+          assert(queryAvg)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = Some(ScoreMode.Avg),
+                ignoreUnmapped = None
+              )
+            )
+          ) &&
+          assert(queryMax)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = Some(ScoreMode.Max),
+                ignoreUnmapped = None
+              )
+            )
+          ) &&
+          assert(queryMin)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = Some(ScoreMode.Min),
+                ignoreUnmapped = None
+              )
+            )
+          ) &&
+          assert(queryNone)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = Some(ScoreMode.None),
+                ignoreUnmapped = None
+              )
+            )
+          ) &&
+          assert(querySum)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = Some(ScoreMode.Sum),
+                ignoreUnmapped = None
+              )
+            )
+          )
+        },
+        test("successfully create Nested Query with MatchAll Query and ignore_unmapped") {
+          val query = nested(path = "customer", query = matchAll).ignoreUnmappedTrue
+
+          assert(query)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = None,
+                ignoreUnmapped = Some(true)
+              )
+            )
+          )
+        },
+        test("successfully create Nested Query with MatchAll Query, score_mode and ignore_unmapped") {
+          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg).ignoreUnmappedFalse
+
+          assert(query)(
+            equalTo(
+              NestedQuery(
+                path = "customer",
+                query = MatchAllQuery(boost = None),
+                scoreMode = Some(ScoreMode.Avg),
+                ignoreUnmapped = Some(false)
+              )
+            )
+          )
+        },
         test("successfully create empty Range Query") {
           val query = range(field = "customer_age")
 
@@ -700,6 +814,82 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |  "query": {
               |    "match_all": {
               |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Nested Query with MatchAll Query") {
+          val query = nested(path = "customer", query = matchAll)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Nested Query with MatchAll Query and score_mode") {
+          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "score_mode": "avg"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Nested Query with MatchAll Query and ignore_unmapped") {
+          val query = nested(path = "customer", query = matchAll).ignoreUnmappedFalse
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "ignore_unmapped": false
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Nested Query with MatchAll Query, score_mode and ignore_unmapped") {
+          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg).ignoreUnmappedFalse
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "score_mode": "avg",
+              |      "ignore_unmapped": false
               |    }
               |  }
               |}
