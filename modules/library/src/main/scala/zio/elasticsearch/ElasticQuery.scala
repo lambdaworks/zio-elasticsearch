@@ -16,8 +16,11 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.Boost.WithBoost
 import zio.elasticsearch.CaseInsensitive.WithCaseInsensitive
+import zio.elasticsearch.IgnoreUnmapped.WithIgnoreUnmapped
+import zio.elasticsearch.ScoreMode.WithScoreMode
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
@@ -35,11 +38,23 @@ sealed trait ElasticQuery[EQT <: ElasticQueryType] { self =>
   final def caseInsensitive(value: Boolean)(implicit wci: WithCaseInsensitive[EQT]): ElasticQuery[EQT] =
     wci.withCaseInsensitive(query = self, value = value)
 
-  final def caseInsensitiveTrue(implicit wci: WithCaseInsensitive[EQT]): ElasticQuery[EQT] =
-    wci.withCaseInsensitive(query = self, value = true)
-
   final def caseInsensitiveFalse(implicit wci: WithCaseInsensitive[EQT]): ElasticQuery[EQT] =
-    wci.withCaseInsensitive(query = self, value = false)
+    caseInsensitive(value = false)
+
+  final def caseInsensitiveTrue(implicit wci: WithCaseInsensitive[EQT]): ElasticQuery[EQT] =
+    caseInsensitive(value = true)
+
+  final def ignoreUnmapped(value: Boolean)(implicit wiu: WithIgnoreUnmapped[EQT]): ElasticQuery[EQT] =
+    wiu.withIgnoreUnmapped(query = self, value = value)
+
+  final def ignoreUnmappedFalse(implicit wiu: WithIgnoreUnmapped[EQT]): ElasticQuery[EQT] =
+    ignoreUnmapped(value = false)
+
+  final def ignoreUnmappedTrue(implicit wiu: WithIgnoreUnmapped[EQT]): ElasticQuery[EQT] =
+    ignoreUnmapped(value = true)
+
+  final def scoreMode(scoreMode: ScoreMode)(implicit wsm: WithScoreMode[EQT]): ElasticQuery[EQT] =
+    wsm.withScoreMode(query = self, scoreMode = scoreMode)
 }
 
 object ElasticQuery {
@@ -90,6 +105,12 @@ object ElasticQuery {
 
   def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Match] =
     MatchQuery(field, value)
+
+  def nested(path: Field[_, _], query: ElasticQuery[_]): ElasticQuery[Nested] =
+    NestedQuery(path.toString, query, None, None)
+
+  def nested(path: String, query: ElasticQuery[_]): ElasticQuery[Nested] =
+    NestedQuery(path, query, None, None)
 
   def range[A](
     field: Field[_, A],
@@ -161,6 +182,21 @@ object ElasticQuery {
 
   private[elasticsearch] final case class MatchAllQuery(boost: Option[Double]) extends ElasticQuery[MatchAll] {
     def paramsToJson: Json = Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
+  }
+
+  private[elasticsearch] final case class NestedQuery(
+    path: String,
+    query: ElasticQuery[_],
+    scoreMode: Option[ScoreMode],
+    ignoreUnmapped: Option[Boolean]
+  ) extends ElasticQuery[Nested] {
+    def paramsToJson: Json = Obj(
+      "nested" -> Obj(
+        Chunk("path" -> Str(path), "query" -> query.paramsToJson) ++ scoreMode.map(scoreMode =>
+          "score_mode" -> Str(scoreMode.toString.toLowerCase)
+        ) ++ ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_))
+      )
+    )
   }
 
   sealed trait LowerBound {
@@ -271,6 +307,7 @@ object ElasticQueryType {
   sealed trait Exists           extends ElasticQueryType
   sealed trait Match            extends ElasticQueryType
   sealed trait MatchAll         extends ElasticQueryType
+  sealed trait Nested           extends ElasticQueryType
   sealed trait Range[A, LB, UB] extends ElasticQueryType
   sealed trait Term[A]          extends ElasticQueryType
   sealed trait Wildcard         extends ElasticQueryType
