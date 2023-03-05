@@ -53,8 +53,8 @@ lazy val library =
         "dev.zio"                       %% "zio-schema"      % "0.4.8",
         "dev.zio"                       %% "zio-schema-json" % "0.4.8",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.9"  % Tests,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.9"  % Tests
+        "dev.zio"                       %% "zio-test"        % "2.0.9" % Tests,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.9" % Tests
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
