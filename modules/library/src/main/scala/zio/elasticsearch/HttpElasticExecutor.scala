@@ -52,15 +52,15 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: DeleteIndex    => executeDeleteIndex(r)
       case r: Exists         => executeExists(r)
       case r: GetById        => executeGetById(r)
-      case r: GetByQuery     => executeGetByQuery(r)
+      case r: Search         => executeSearch(r)
     }
 
-  def stream(r: GetByQuery): Stream[Throwable, Item] =
+  def stream(r: Search): Stream[Throwable, Item] =
     ZStream.paginateChunkZIO("") { s =>
       if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
     }
 
-  def streamAs[A: Schema](r: GetByQuery): Stream[Throwable, A] =
+  def streamAs[A: Schema](r: Search): Stream[Throwable, A] =
     ZStream
       .paginateChunkZIO("") { s =>
         if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
@@ -224,7 +224,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
-  private def executeGetByQuery(r: GetByQuery): Task[SearchResult] =
+  private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${config.uri}/${r.index}/$Search")
@@ -243,7 +243,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       }
     }
 
-  private def executeGetByQueryWithScroll(r: GetByQuery): Task[(Chunk[Item], Option[String])] =
+  private def executeGetByQueryWithScroll(r: Search): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
       request
         .post(

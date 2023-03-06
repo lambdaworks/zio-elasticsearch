@@ -31,9 +31,9 @@ trait HasRouting[A] {
   def routing(value: Routing): ElasticRequest[A]
 }
 
-sealed trait ElasticRequest[A]
-
 sealed trait BulkableRequest[A] extends ElasticRequest[A]
+
+sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
@@ -67,8 +67,8 @@ object ElasticRequest {
   def getById(index: IndexName, id: DocumentId): GetById =
     GetById(index = index, id = id, routing = None)
 
-  def search(index: IndexName, query: ElasticQuery[_]): GetByQuery =
-    GetByQuery(index = index, query = query, routing = None)
+  def search(index: IndexName, query: ElasticQuery[_]): Search =
+    Search(index = index, query = query, routing = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdate =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
@@ -157,7 +157,7 @@ object ElasticRequest {
   private[elasticsearch] final case class CreateIndex(
     name: IndexName,
     definition: Option[String]
-  ) extends ElasticRequest[CreationOutcome]
+  ) extends CreateIndexRequest
 
   sealed trait CreateOrUpdateRequest extends BulkableRequest[Unit] with HasRefresh[Unit] with HasRouting[Unit]
 
@@ -243,7 +243,7 @@ object ElasticRequest {
 
   sealed trait GetByQueryRequest extends ElasticRequest[SearchResult]
 
-  private[elasticsearch] final case class GetByQuery(
+  private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
     routing: Option[Routing]

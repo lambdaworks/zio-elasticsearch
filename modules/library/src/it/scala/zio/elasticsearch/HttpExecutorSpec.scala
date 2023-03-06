@@ -143,9 +143,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId) { documentId =>
               assertZIO(
                 ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).documentAs[CustomerDocument]
-              )(
-                isNone
-              )
+              )(isNone)
             }
           },
           test("fail with throwable if decoding fails") {
@@ -202,10 +200,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                              .refreshTrue
                          )
                     query = range("age").gte(0)
-                    res <-
-                      ElasticExecutor
-                        .execute(ElasticRequest.search(secondSearchIndex, query))
-                        .documentAs[CustomerDocument]
+                    res <- ElasticExecutor
+                             .execute(ElasticRequest.search(secondSearchIndex, query))
+                             .documentAs[CustomerDocument]
                   } yield res
 
                 assertZIO(result.exit)(
@@ -302,19 +299,16 @@ object HttpExecutorSpec extends IntegrationSpec {
 
                 for {
                   _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
-                    )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
-                        .refreshTrue
-                    )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
                   query = range("balance").gte(100)
-                  res <-
-                    ElasticExecutor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
+                  res  <- ElasticExecutor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
                 } yield assert(res)(isNonEmpty)
             }
           } @@ around(
@@ -323,8 +317,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           ),
           test("search for documents using range query with multiple pages") {
             checkOnce(genCustomer) { customer =>
-              def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
-                ZSink.collectAll[Item]
+              def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
 
               for {
                 _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
@@ -363,15 +356,25 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range("balance").gte(100)
                 res <- ElasticExecutor
-                         .streamAs[CustomerDocument](
-                           ElasticRequest.search(secondSearchIndex, query)
-                         )
+                         .streamAs[CustomerDocument](ElasticRequest.search(secondSearchIndex, query))
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
+          test("search for documents using range query - empty stream") {
+            val sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
+
+            for {
+              _    <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+              query = range("balance").gte(100)
+              res  <- ElasticExecutor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
+            } yield assert(res)(hasSize(equalTo(0)))
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
         suite("deleting by query")(
