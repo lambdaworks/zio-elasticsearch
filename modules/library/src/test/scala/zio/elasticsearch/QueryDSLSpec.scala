@@ -18,7 +18,7 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
-import zio.elasticsearch.ElasticRequest.BulkRequest
+import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.utils._
 import zio.prelude.Newtype.unsafeWrap
 import zio.prelude.Validation
@@ -1073,8 +1073,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
             val req4 =
               ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(unsafeWrap(Routing)(user.id))
             ElasticRequest.bulk(req1, req2, req3, req4) match {
-              case r: BulkRequest => Some(r.body)
-              case _              => None
+              case r: Bulk => Some(r.body)
+              case _       => None
             }
           }
 

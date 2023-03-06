@@ -16,10 +16,14 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
+import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+
+import scala.util.Random
 
 object HttpExecutorSpec extends IntegrationSpec {
 
@@ -31,7 +35,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genCustomer) { customer =>
               for {
                 docId <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, customer))
-                res   <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, docId))
+                res   <- ElasticExecutor.execute(ElasticRequest.getById(index, docId)).documentAs[CustomerDocument]
               } yield assert(res)(isSome(equalTo(customer)))
             }
           },
@@ -67,7 +71,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                doc <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                doc <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).documentAs[CustomerDocument]
               } yield assert(doc)(isSome(equalTo(customer)))
             }
           },
@@ -76,7 +80,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               for {
                 _   <- ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, firstCustomer))
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, secondCustomer))
-                doc <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                doc <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).documentAs[CustomerDocument]
               } yield assert(doc)(isSome(equalTo(secondCustomer)))
             }
           }
@@ -131,20 +135,22 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
               for {
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[CustomerDocument](index, documentId, customer))
-                res <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                res <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).documentAs[CustomerDocument]
               } yield assert(res)(isSome(equalTo(customer)))
             }
           },
           test("return None if the document does not exist") {
             checkOnce(genDocumentId) { documentId =>
-              assertZIO(ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId)))(isNone)
+              assertZIO(
+                ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).documentAs[CustomerDocument]
+              )(isNone)
             }
           },
           test("fail with throwable if decoding fails") {
             checkOnce(genDocumentId, genEmployee) { (documentId, employee) =>
               val result = for {
                 _   <- ElasticExecutor.execute(ElasticRequest.upsert[EmployeeDocument](index, documentId, employee))
-                res <- ElasticExecutor.execute(ElasticRequest.getById[CustomerDocument](index, documentId))
+                res <- ElasticExecutor.execute(ElasticRequest.getById(index, documentId)).documentAs[CustomerDocument]
               } yield res
 
               assertZIO(result.exit)(
@@ -170,7 +176,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = range("balance").gte(100)
-                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
                 } yield assert(res)(isNonEmpty)
             }
           } @@ around(
@@ -193,7 +200,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                              .refreshTrue
                          )
                     query = range("age").gte(0)
-                    res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](secondSearchIndex, query))
+                    res <- ElasticExecutor
+                             .execute(ElasticRequest.search(secondSearchIndex, query))
+                             .documentAs[CustomerDocument]
                   } yield res
 
                 assertZIO(result.exit)(
@@ -224,7 +233,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
-                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -247,7 +257,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
-                  res  <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -271,9 +282,96 @@ object HttpExecutorSpec extends IntegrationSpec {
                     )
                   query =
                     wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
-                  res <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](firstSearchIndex, query))
+                  res <-
+                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ) @@ shrinks(0),
+        suite("searching documents and returning them as a stream")(
+          test("search for documents using range query") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                val sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
+
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  query = range("balance").gte(100)
+                  res  <- ElasticExecutor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
+                } yield assert(res)(isNonEmpty)
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for documents using range query with multiple pages") {
+            checkOnce(genCustomer) { customer =>
+              def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
+
+              for {
+                _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                reqs = (0 to 203).map { _ =>
+                         ElasticRequest.create[CustomerDocument](
+                           secondSearchIndex,
+                           customer.copy(id = Random.alphanumeric.take(5).mkString, balance = 150)
+                         )
+                       }
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query = range("balance").gte(100)
+                res <- ElasticExecutor
+                         .stream(
+                           ElasticRequest.search(secondSearchIndex, query)
+                         )
+                         .run(sink)
+              } yield assert(res)(hasSize(equalTo(204)))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
+          test("search for documents using range query with multiple pages and return type") {
+            checkOnce(genCustomer) { customer =>
+              def sink: Sink[Throwable, CustomerDocument, Nothing, Chunk[CustomerDocument]] =
+                ZSink.collectAll[CustomerDocument]
+
+              for {
+                _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                reqs = (0 to 200).map { _ =>
+                         ElasticRequest.create[CustomerDocument](
+                           secondSearchIndex,
+                           customer.copy(id = Random.alphanumeric.take(5).mkString, balance = 150)
+                         )
+                       }
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query = range("balance").gte(100)
+                res <- ElasticExecutor
+                         .streamAs[CustomerDocument](ElasticRequest.search(secondSearchIndex, query))
+                         .run(sink)
+              } yield assert(res)(hasSize(equalTo(201)))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
+          test("search for documents using range query - empty stream") {
+            val sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
+
+            for {
+              _    <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+              query = range("balance").gte(100)
+              res  <- ElasticExecutor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
+            } yield assert(res)(hasSize(equalTo(0)))
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
@@ -314,7 +412,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                   deleteQuery = range("balance").gte(300)
                   _ <-
                     ElasticExecutor.execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
-                  res <- ElasticExecutor.execute(ElasticRequest.search[CustomerDocument](deleteByQueryIndex, matchAll))
+                  res <- ElasticExecutor
+                           .execute(ElasticRequest.search(deleteByQueryIndex, matchAll))
+                           .documentAs[CustomerDocument]
                 } yield assert(res)(hasSameElements(List(firstCustomer.copy(balance = 150))))
             }
           } @@ around(

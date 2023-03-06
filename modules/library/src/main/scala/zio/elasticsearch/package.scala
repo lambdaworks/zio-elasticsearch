@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
+import zio.schema.Schema
 
 package object elasticsearch {
   private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
@@ -61,4 +62,7 @@ package object elasticsearch {
   def containsAny(name: String, params: List[String]): Boolean =
     params.exists(StringUtils.contains(name, _))
 
+  final implicit class ZIOResultOps[R, F[_]](zio: RIO[R, ElasticResult[F]]) {
+    def documentAs[A: Schema]: RIO[R, F[A]] = zio.flatMap(_.documentAs[A])
+  }
 }

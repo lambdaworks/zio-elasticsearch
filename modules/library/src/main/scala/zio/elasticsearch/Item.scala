@@ -16,11 +16,11 @@
 
 package zio.elasticsearch
 
-import zio.prelude.Assertion.isEmptyString
-import zio.prelude.Newtype
+import zio.json.ast.Json
+import zio.schema.Schema
+import zio.schema.codec.DecodeError
+import zio.schema.codec.JsonCodec.JsonDecoder
 
-object Routing extends Newtype[String] {
-  override def assertion = assert(!isEmptyString) // scalafix:ok
-
-  type Routing = Routing.Type
+final case class Item(raw: Json) {
+  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 }

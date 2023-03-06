@@ -32,12 +32,13 @@ import zio.prelude.Newtype.unsafeWrap
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search[GitHubRepo](Index, matchAll))
+    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
       routing <- routingOf(organization)
-      res     <- elasticsearch.execute(ElasticRequest.getById[GitHubRepo](Index, DocumentId(id)).routing(routing))
+      res <-
+        elasticsearch.execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing)).documentAs[GitHubRepo]
     } yield res
 
   def create(repository: GitHubRepo): Task[CreationOutcome] =
@@ -75,7 +76,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
     } yield res
 
   def search(query: ElasticQuery[_]): Task[List[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search[GitHubRepo](Index, query))
+    elasticsearch.execute(ElasticRequest.search(Index, query)).documentAs[GitHubRepo]
 
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
     Routing.make(value).toZIO.mapError(e => new IllegalArgumentException(e))

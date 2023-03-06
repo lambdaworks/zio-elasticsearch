@@ -19,17 +19,17 @@ package zio.elasticsearch
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A, _]): Task[A]
+  def execute[A](request: ElasticRequest[A]): Task[A]
 }
 
 object Elasticsearch {
-  def execute[A](request: ElasticRequest[A, _]): RIO[Elasticsearch, A] =
+  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
     ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
   lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
     ZLayer.fromFunction { executor: ElasticExecutor =>
       new Elasticsearch {
-        def execute[A](request: ElasticRequest[A, _]): Task[A] = executor.execute(request)
+        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
       }
     }
 }
