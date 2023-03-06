@@ -131,16 +131,20 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("getting by ID request") {
         assertZIO(
-          ElasticExecutor.execute(
-            ElasticRequest
-              .getById[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
-              .routing(Routing("routing"))
-          )
+          ElasticExecutor
+            .execute(
+              ElasticRequest
+                .getById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
+                .routing(Routing("routing"))
+            )
+            .documentAs[GitHubRepo]
         )(isSome(equalTo(repo)))
       },
       test("getting by query request") {
         assertZIO(
-          ElasticExecutor.execute(ElasticRequest.search[GitHubRepo](index = index, query = matchAll))
+          ElasticExecutor
+            .execute(ElasticRequest.search(index = index, query = matchAll))
+            .documentAs[GitHubRepo]
         )(
           equalTo(List(repo))
         )
