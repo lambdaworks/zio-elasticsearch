@@ -209,7 +209,9 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeGetById(r: GetById): Task[GetResult] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
+    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(
+      getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing)))
+    )
 
     sendRequestWithCustomResponse[ElasticGetResponse](
       request

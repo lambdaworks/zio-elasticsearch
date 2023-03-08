@@ -39,7 +39,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
       routing <- routingOf(organization)
       res <-
         elasticsearch
-          .execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing).refreshTrue)
+          .execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing))
           .documentAs[GitHubRepo]
     } yield res
 
