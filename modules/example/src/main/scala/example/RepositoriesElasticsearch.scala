@@ -37,10 +37,9 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
       routing <- routingOf(organization)
-      res <-
-        elasticsearch
-          .execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing))
-          .documentAs[GitHubRepo]
+      res <- elasticsearch
+               .execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing))
+               .documentAs[GitHubRepo]
     } yield res
 
   def create(repository: GitHubRepo): Task[CreationOutcome] =
