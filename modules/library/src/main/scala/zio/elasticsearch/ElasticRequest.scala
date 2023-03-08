@@ -65,7 +65,7 @@ object ElasticRequest {
     Exists(index = index, id = id, routing = None)
 
   def getById(index: IndexName, id: DocumentId): GetById =
-    GetById(index = index, id = id, routing = None)
+    GetById(index = index, id = id, refresh = false, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): Search =
     Search(index = index, query = query, routing = None)
@@ -231,13 +231,20 @@ object ElasticRequest {
     def routing(value: Routing): Exists = self.copy(routing = Some(value))
   }
 
-  sealed trait GetByIdRequest extends ElasticRequest[GetResult] with HasRouting[GetResult]
+  sealed trait GetByIdRequest extends ElasticRequest[GetResult] with HasRefresh[GetResult] with HasRouting[GetResult]
 
   private[elasticsearch] final case class GetById(
     index: IndexName,
     id: DocumentId,
+    refresh: Boolean,
     routing: Option[Routing]
   ) extends GetByIdRequest { self =>
+    def refresh(value: Boolean): GetById = self.copy(refresh = value)
+
+    def refreshFalse: GetById = refresh(false)
+
+    def refreshTrue: GetById = refresh(true)
+
     def routing(value: Routing): GetById = self.copy(routing = Some(value))
   }
 
