@@ -41,10 +41,10 @@ object ElasticRequest {
     Bulk.of(requests = requests: _*)
 
   def create[A: Schema](index: IndexName, doc: A): Create =
-    Create(index = index, document = Document.from(doc), refresh = false, routing = None)
+    Create(index = index, document = Document.from(doc), refresh = None, routing = None)
 
   def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithId =
-    CreateWithId(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
+    CreateWithId(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
   def createIndex(name: IndexName): CreateIndex =
     CreateIndex(name = name, definition = None)
@@ -53,10 +53,10 @@ object ElasticRequest {
     CreateIndex(name = name, definition = Some(definition))
 
   def deleteById(index: IndexName, id: DocumentId): DeleteById =
-    DeleteById(index = index, id = id, refresh = false, routing = None)
+    DeleteById(index = index, id = id, refresh = None, routing = None)
 
   def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQuery =
-    DeleteByQuery(index = index, query = query, refresh = false, routing = None)
+    DeleteByQuery(index = index, query = query, refresh = None, routing = None)
 
   def deleteIndex(name: IndexName): DeleteIndex =
     DeleteIndex(name = name)
@@ -65,23 +65,23 @@ object ElasticRequest {
     Exists(index = index, id = id, routing = None)
 
   def getById(index: IndexName, id: DocumentId): GetById =
-    GetById(index = index, id = id, refresh = false, routing = None)
+    GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): Search =
     Search(index = index, query = query, routing = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdate =
-    CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = false, routing = None)
+    CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
   sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[Unit] with HasRouting[Unit]
 
   private[elasticsearch] final case class Bulk(
     requests: List[BulkableRequest[_]],
     index: Option[IndexName],
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends BulkRequest { self =>
-    def refresh(value: Boolean): Bulk = self.copy(refresh = value)
+    def refresh(value: Boolean): Bulk = self.copy(refresh = Some(value))
 
     def refreshFalse: Bulk = refresh(false)
 
@@ -111,7 +111,7 @@ object ElasticRequest {
 
   object Bulk {
     def of(requests: BulkableRequest[_]*): Bulk =
-      Bulk(requests = requests.toList, index = None, refresh = false, routing = None)
+      Bulk(requests = requests.toList, index = None, refresh = None, routing = None)
   }
 
   sealed trait CreateRequest extends BulkableRequest[DocumentId] with HasRefresh[DocumentId] with HasRouting[DocumentId]
@@ -119,10 +119,10 @@ object ElasticRequest {
   private[elasticsearch] final case class Create(
     index: IndexName,
     document: Document,
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateRequest { self =>
-    def refresh(value: Boolean): Create = self.copy(refresh = value)
+    def refresh(value: Boolean): Create = self.copy(refresh = Option(value))
 
     def refreshFalse: Create = refresh(false)
 
@@ -140,10 +140,10 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     document: Document,
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateWithIdRequest { self =>
-    def refresh(value: Boolean): CreateWithId = self.copy(refresh = value)
+    def refresh(value: Boolean): CreateWithId = self.copy(refresh = Some(value))
 
     def refreshFalse: CreateWithId = refresh(false)
 
@@ -165,10 +165,10 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     document: Document,
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateOrUpdateRequest { self =>
-    def refresh(value: Boolean): CreateOrUpdate = self.copy(refresh = value)
+    def refresh(value: Boolean): CreateOrUpdate = self.copy(refresh = Some(value))
 
     def refreshFalse: CreateOrUpdate = refresh(false)
 
@@ -185,10 +185,10 @@ object ElasticRequest {
   private[elasticsearch] final case class DeleteById(
     index: IndexName,
     id: DocumentId,
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends DeleteByIdRequest { self =>
-    def refresh(value: Boolean): DeleteById = self.copy(refresh = value)
+    def refresh(value: Boolean): DeleteById = self.copy(refresh = Some(value))
 
     def refreshFalse: DeleteById = refresh(false)
 
@@ -205,10 +205,10 @@ object ElasticRequest {
   private[elasticsearch] final case class DeleteByQuery(
     index: IndexName,
     query: ElasticQuery[_],
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends DeleteByQueryRequest { self =>
-    def refresh(value: Boolean): DeleteByQuery = self.copy(refresh = value)
+    def refresh(value: Boolean): DeleteByQuery = self.copy(refresh = Some(value))
 
     def refreshFalse: DeleteByQuery = refresh(false)
 
@@ -236,10 +236,10 @@ object ElasticRequest {
   private[elasticsearch] final case class GetById(
     index: IndexName,
     id: DocumentId,
-    refresh: Boolean,
+    refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends GetByIdRequest { self =>
-    def refresh(value: Boolean): GetById = self.copy(refresh = value)
+    def refresh(value: Boolean): GetById = self.copy(refresh = Some(value))
 
     def refreshFalse: GetById = refresh(false)
 

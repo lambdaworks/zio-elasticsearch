@@ -72,7 +72,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     val uri = (r.index match {
       case Some(index) => uri"${config.uri}/$index/$Bulk"
       case None        => uri"${config.uri}/$Bulk"
-    }).withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
+    }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
       request.post(uri).contentType(ApplicationJson).body(r.body)
@@ -86,7 +86,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreate(r: Create): Task[DocumentId] = {
     val uri = uri"${config.uri}/${r.index}/$Doc"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
+      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
       request
@@ -112,7 +112,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateWithId(r: CreateWithId): Task[CreationOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
+      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
       request
@@ -144,7 +144,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
+      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -156,7 +156,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeDeleteById(r: DeleteById): Task[DeletionOutcome] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing))))
+      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(request.delete(uri)).flatMap { response =>
       response.code match {
@@ -170,7 +170,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeDeleteByQuery(r: DeleteByQuery): Task[DeletionOutcome] = {
     val uri =
       uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(
-        getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing)))
+        getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
       )
 
     sendRequest(
@@ -210,7 +210,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeGetById(r: GetById): Task[GetResult] = {
     val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(
-      getQueryParams(List(("refresh", Some(r.refresh)), ("routing", r.routing)))
+      getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
     )
 
     sendRequestWithCustomResponse[ElasticGetResponse](
