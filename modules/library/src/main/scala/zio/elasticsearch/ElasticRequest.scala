@@ -122,7 +122,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateRequest { self =>
-    def refresh(value: Boolean): Create = self.copy(refresh = Option(value))
+    def refresh(value: Boolean): Create = self.copy(refresh = Some(value))
 
     def refreshFalse: Create = refresh(false)
 
