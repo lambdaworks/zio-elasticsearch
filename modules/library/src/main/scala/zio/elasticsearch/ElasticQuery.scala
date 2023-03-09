@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.Boost.WithBoost
 import zio.elasticsearch.CaseInsensitive.WithCaseInsensitive
 import zio.elasticsearch.IgnoreUnmapped.WithIgnoreUnmapped
@@ -199,12 +198,12 @@ object ElasticQuery {
   ) extends ElasticQuery[S, Nested] {
     def paramsToJson(fieldPath: Option[String]): Json = Obj(
       "nested" -> Obj(
-        Chunk(
+        List(
           "path"  -> Str(path),
           "query" -> query.paramsToJson(fieldPath.map(_ + path).orElse(Some(path)))
         ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
           "ignore_unmapped" -> Json.Bool(_)
-        )
+        ): _*
       )
     )
   }
