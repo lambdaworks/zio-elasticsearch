@@ -175,14 +175,14 @@ object ElasticQuery {
 
   private[elasticsearch] final case class ExistsQuery[S](field: String) extends ElasticQuery[S, Exists] {
     def paramsToJson(fieldPath: Option[String]): Json = Obj(
-      "exists" -> Obj("field" -> (fieldPath.getOrElse("") ++ field).toJson)
+      "exists" -> Obj("field" -> (fieldPath.map(_ + ".").getOrElse("") + field).toJson)
     )
   }
 
   private[elasticsearch] final case class MatchQuery[S, A: ElasticPrimitive](field: String, value: A)
       extends ElasticQuery[S, Match] {
     def paramsToJson(fieldPath: Option[String]): Json = Obj(
-      "match" -> Obj(fieldPath.getOrElse("") ++ field -> value.toJson)
+      "match" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> value.toJson)
     )
   }
 
@@ -196,16 +196,17 @@ object ElasticQuery {
     scoreMode: Option[ScoreMode],
     ignoreUnmapped: Option[Boolean]
   ) extends ElasticQuery[S, Nested] {
-    def paramsToJson(fieldPath: Option[String]): Json = Obj(
-      "nested" -> Obj(
-        List(
-          "path"  -> Str(path),
-          "query" -> query.paramsToJson(fieldPath.map(_ + path).orElse(Some(path)))
-        ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
-          "ignore_unmapped" -> Json.Bool(_)
-        ): _*
+    def paramsToJson(fieldPath: Option[String]): Json =
+      Obj(
+        "nested" -> Obj(
+          List(
+            "path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path)),
+            "query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))
+          ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
+            "ignore_unmapped" -> Json.Bool(_)
+          ): _*
+        )
       )
-    )
   }
 
   sealed trait LowerBound {
@@ -265,7 +266,7 @@ object ElasticQuery {
 
     def paramsToJson(fieldPath: Option[String]): Json = {
       val rangeFields = Some(
-        fieldPath.getOrElse("") ++ field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)
+        fieldPath.map(_ + ".").getOrElse("") + field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)
       ) ++ boost.map("boost" -> Num(_))
       Obj("range" -> Obj(rangeFields.toList: _*))
     }
@@ -291,7 +292,7 @@ object ElasticQuery {
       val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
         "case_insensitive" -> Json.Bool(_)
       )
-      Obj("term" -> Obj(fieldPath.getOrElse("") ++ field -> Obj(termFields.toList: _*)))
+      Obj("term" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> Obj(termFields.toList: _*)))
     }
   }
 
@@ -305,7 +306,7 @@ object ElasticQuery {
       val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
         "case_insensitive" -> Json.Bool(_)
       )
-      Obj("wildcard" -> Obj(fieldPath.getOrElse("") ++ field -> Obj(wildcardFields.toList: _*)))
+      Obj("wildcard" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> Obj(wildcardFields.toList: _*)))
     }
   }
 

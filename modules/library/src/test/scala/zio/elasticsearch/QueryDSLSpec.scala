@@ -898,6 +898,33 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
+        test("properly encode nested Nested Queries with Term Query") {
+          val query = nested(path = "customer", query = nested(path = "items", query = term("type", "clothing")))
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "nested": {
+              |          "path": "customer.items",
+              |          "query": {
+              |            "term": {
+              |              "customer.items.type": {
+              |                "value": "clothing"
+              |              }
+              |            }
+              |          }
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
         test("properly encode Nested Query with MatchAll Query and score_mode") {
           val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
           val expected =
