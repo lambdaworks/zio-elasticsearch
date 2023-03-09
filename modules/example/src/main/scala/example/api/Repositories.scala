@@ -18,7 +18,6 @@ package example.api
 
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
-import zio.elasticsearch.ElasticQuery.boolQuery
 import zio.elasticsearch._
 import zio.http._
 import zio.http.model.Method
@@ -120,12 +119,12 @@ object Repositories {
           .orDie
     }
 
-  private def createElasticQuery(query: Criteria): ElasticQuery[_] =
+  private def createElasticQuery(query: Criteria): ElasticQuery[_, _] =
     query match {
       case CompoundCriteria(operator, filters) =>
         operator match {
-          case And => boolQuery.must(filters.map(createElasticQuery): _*)
-          case Or  => boolQuery.should(filters.map(createElasticQuery): _*)
+          case And => ElasticQuery.must(filters.map(createElasticQuery): _*)
+          case Or  => ElasticQuery.should(filters.map(createElasticQuery): _*)
         }
       case DateCriteria(field, operator, value) =>
         operator match {

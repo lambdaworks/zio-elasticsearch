@@ -30,14 +30,16 @@ object ScoreMode {
   final case object Sum  extends ScoreMode
 
   trait WithScoreMode[EQT <: ElasticQueryType] {
-    def withScoreMode(query: ElasticQuery[EQT], scoreMode: ScoreMode): ElasticQuery[EQT]
+    def withScoreMode[S](query: ElasticQuery[S, EQT], scoreMode: ScoreMode): ElasticQuery[S, EQT]
   }
 
   object WithScoreMode {
     implicit val nestedWithScoreMode: WithScoreMode[Nested] =
-      (query: ElasticQuery[Nested], scoreMode: ScoreMode) =>
-        query match {
-          case q: NestedQuery => q.copy(scoreMode = Some(scoreMode))
-        }
+      new WithScoreMode[Nested] {
+        def withScoreMode[S](query: ElasticQuery[S, Nested], scoreMode: ScoreMode): ElasticQuery[S, Nested] =
+          query match {
+            case q: NestedQuery[S] => q.copy(scoreMode = Some(scoreMode))
+          }
+      }
   }
 }

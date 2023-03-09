@@ -55,7 +55,7 @@ object ElasticRequest {
   def deleteById(index: IndexName, id: DocumentId): DeleteById =
     DeleteById(index = index, id = id, refresh = None, routing = None)
 
-  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQuery =
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_, _]): DeleteByQuery =
     DeleteByQuery(index = index, query = query, refresh = None, routing = None)
 
   def deleteIndex(name: IndexName): DeleteIndex =
@@ -67,7 +67,7 @@ object ElasticRequest {
   def getById(index: IndexName, id: DocumentId): GetById =
     GetById(index = index, id = id, refresh = None, routing = None)
 
-  def search(index: IndexName, query: ElasticQuery[_]): Search =
+  def search(index: IndexName, query: ElasticQuery[_, _]): Search =
     Search(index = index, query = query, routing = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdate =
@@ -204,7 +204,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class DeleteByQuery(
     index: IndexName,
-    query: ElasticQuery[_],
+    query: ElasticQuery[_, _],
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends DeleteByQueryRequest { self =>
@@ -252,7 +252,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Search(
     index: IndexName,
-    query: ElasticQuery[_],
+    query: ElasticQuery[_, _],
     routing: Option[Routing]
   ) extends GetByQueryRequest
 

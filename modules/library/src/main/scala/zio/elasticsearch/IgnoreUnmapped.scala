@@ -22,14 +22,16 @@ import zio.elasticsearch.ElasticQueryType.Nested
 object IgnoreUnmapped {
 
   trait WithIgnoreUnmapped[EQT <: ElasticQueryType] {
-    def withIgnoreUnmapped(query: ElasticQuery[EQT], value: Boolean): ElasticQuery[EQT]
+    def withIgnoreUnmapped[S](query: ElasticQuery[S, EQT], value: Boolean): ElasticQuery[S, EQT]
   }
 
   object WithIgnoreUnmapped {
     implicit val nestedWithIgnoreUnmapped: WithIgnoreUnmapped[Nested] =
-      (query: ElasticQuery[Nested], value: Boolean) =>
-        query match {
-          case q: NestedQuery => q.copy(ignoreUnmapped = Some(value))
-        }
+      new WithIgnoreUnmapped[Nested] {
+        def withIgnoreUnmapped[S](query: ElasticQuery[S, Nested], value: Boolean): ElasticQuery[S, Nested] =
+          query match {
+            case q: NestedQuery[S] => q.copy(ignoreUnmapped = Some(value))
+          }
+      }
   }
 }
