@@ -84,6 +84,9 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
+  def contains[S](field: Field[S, _], value: String): ElasticQuery[S, Wildcard] =
+    WildcardQuery(field = field.toString, value = s"*$value*", boost = None, caseInsensitive = None)
+
   def contains(field: String, value: String): ElasticQuery[Any, Wildcard] =
     WildcardQuery(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
 
@@ -143,6 +146,9 @@ object ElasticQuery {
 
   def term[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Any, Term[A]] =
     TermQuery(field = field, value = value, boost = None, caseInsensitive = None)
+
+  def wildcard[S](field: Field[S, _], value: String): ElasticQuery[S, Wildcard] =
+    WildcardQuery(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   def wildcard(field: String, value: String): ElasticQuery[Any, Wildcard] =
     WildcardQuery(field = field, value = value, boost = None, caseInsensitive = None)
