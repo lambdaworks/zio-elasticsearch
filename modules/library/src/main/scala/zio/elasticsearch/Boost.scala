@@ -22,35 +22,48 @@ import zio.elasticsearch.ElasticQueryType.{Bool, MatchAll, Range, Term, Wildcard
 object Boost {
 
   trait WithBoost[EQT <: ElasticQueryType] {
-    def withBoost(query: ElasticQuery[EQT], value: Double): ElasticQuery[EQT]
+    def withBoost[S](query: ElasticQuery[S, EQT], value: Double): ElasticQuery[S, EQT]
   }
 
   object WithBoost {
-    implicit val boolWithBoost: WithBoost[Bool] = (query: ElasticQuery[Bool], value: Double) =>
-      query match {
-        case q: BoolQuery => q.copy(boost = Some(value))
+    implicit val boolWithBoost: WithBoost[Bool] =
+      new WithBoost[Bool] {
+        def withBoost[S](query: ElasticQuery[S, Bool], value: Double): ElasticQuery[S, Bool] =
+          query match {
+            case q: BoolQuery[S] => q.copy(boost = Some(value))
+          }
       }
 
-    implicit val matchAllWithBoost: WithBoost[MatchAll] = (query: ElasticQuery[MatchAll], value: Double) =>
-      query match {
-        case q: MatchAllQuery => q.copy(boost = Some(value))
+    implicit val matchAllWithBoost: WithBoost[MatchAll] =
+      new WithBoost[MatchAll] {
+        def withBoost[S](query: ElasticQuery[S, MatchAll], value: Double): ElasticQuery[S, MatchAll] =
+          query match {
+            case q: MatchAllQuery => q.copy(boost = Some(value))
+          }
       }
 
     implicit def rangeWithBoost[A, LB <: LowerBound, UB <: UpperBound]: WithBoost[Range[A, LB, UB]] =
-      (query: ElasticQuery[Range[A, LB, UB]], value: Double) =>
-        query match {
-          case q: RangeQuery[A, LB, UB] => q.copy(boost = Some(value))
-        }
+      new WithBoost[Range[A, LB, UB]] {
+        def withBoost[S](query: ElasticQuery[S, Range[A, LB, UB]], value: Double): ElasticQuery[S, Range[A, LB, UB]] =
+          query match {
+            case q: RangeQuery[_, A, LB, UB] => q.copy(boost = Some(value))
+          }
+      }
 
     implicit def termWithBoost[A: ElasticPrimitive]: WithBoost[Term[A]] =
-      (query: ElasticQuery[Term[A]], value: Double) =>
-        query match {
-          case q: TermQuery[A] => q.copy(boost = Some(value))
-        }
+      new WithBoost[Term[A]] {
+        def withBoost[S](query: ElasticQuery[S, Term[A]], value: Double): ElasticQuery[S, Term[A]] =
+          query match {
+            case q: TermQuery[_, A] => q.copy(boost = Some(value))
+          }
+      }
 
-    implicit val wildcardWithBoost: WithBoost[Wildcard] = (query: ElasticQuery[Wildcard], value: Double) =>
-      query match {
-        case q: WildcardQuery => q.copy(boost = Some(value))
+    implicit val wildcardWithBoost: WithBoost[Wildcard] =
+      new WithBoost[Wildcard] {
+        def withBoost[S](query: ElasticQuery[S, Wildcard], value: Double): ElasticQuery[S, Wildcard] =
+          query match {
+            case q: WildcardQuery[_] => q.copy(boost = Some(value))
+          }
       }
   }
 }

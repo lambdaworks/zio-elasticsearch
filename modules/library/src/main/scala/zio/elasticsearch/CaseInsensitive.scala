@@ -22,20 +22,26 @@ import zio.elasticsearch.ElasticQueryType.{Term, Wildcard}
 object CaseInsensitive {
 
   trait WithCaseInsensitive[EQT <: ElasticQueryType] {
-    def withCaseInsensitive(query: ElasticQuery[EQT], value: Boolean): ElasticQuery[EQT]
+    def withCaseInsensitive[S](query: ElasticQuery[S, EQT], value: Boolean): ElasticQuery[S, EQT]
   }
 
   object WithCaseInsensitive {
     implicit val termWithCaseInsensitiveString: WithCaseInsensitive[Term[String]] =
-      (query: ElasticQuery[Term[String]], value: Boolean) =>
-        query match {
-          case q: TermQuery[String] => q.copy(caseInsensitive = Some(value))
-        }
-
+      new WithCaseInsensitive[Term[String]] {
+        def withCaseInsensitive[S](
+          query: ElasticQuery[S, Term[String]],
+          value: Boolean
+        ): ElasticQuery[S, Term[String]] =
+          query match {
+            case q: TermQuery[S, String] => q.copy(caseInsensitive = Some(value))
+          }
+      }
     implicit val wildcardWithCaseInsensitiveString: WithCaseInsensitive[Wildcard] =
-      (query: ElasticQuery[Wildcard], value: Boolean) =>
-        query match {
-          case q: WildcardQuery => q.copy(caseInsensitive = Some(value))
-        }
+      new WithCaseInsensitive[Wildcard] {
+        def withCaseInsensitive[S](query: ElasticQuery[S, Wildcard], value: Boolean): ElasticQuery[S, Wildcard] =
+          query match {
+            case q: WildcardQuery[S] => q.copy(caseInsensitive = Some(value))
+          }
+      }
   }
 }

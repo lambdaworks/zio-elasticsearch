@@ -20,7 +20,7 @@ import zio.schema.{AccessorBuilder, Schema}
 
 import scala.annotation.tailrec
 
-private[elasticsearch] final case class Field[S, A](parent: Option[Field[S, _]], name: String) { self =>
+private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]], name: String) { self =>
 
   def /[B](that: Field[A, B]): Field[S, B] =
     Field(that.parent.map(self / _).orElse(Some(self)), that.name)
