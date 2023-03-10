@@ -90,9 +90,9 @@ object ElasticQuery {
   def contains(field: String, value: String): ElasticQuery[Any, Wildcard] =
     WildcardQuery(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
 
-  def exists[S](field: Field[S, _]): ElasticQuery[S, Exists] = ExistsQuery(field.toString)
+  def exists[S](field: Field[S, _]): ElasticQuery[S, Exists] = ExistsQuery(field = field.toString)
 
-  def exists(field: String): ElasticQuery[Any, Exists] = ExistsQuery(field)
+  def exists(field: String): ElasticQuery[Any, Exists] = ExistsQuery(field = field)
 
   def filter[S](queries: ElasticQuery[S, _]*): BoolQuery[S] =
     BoolQuery[S](filter = queries.toList, must = Nil, should = Nil, boost = None)
@@ -104,19 +104,19 @@ object ElasticQuery {
     multiField: Option[String] = None,
     value: A
   ): ElasticQuery[S, Match] =
-    MatchQuery(field.toString ++ multiField.map("." ++ _).getOrElse(""), value)
+    MatchQuery(field = field.toString ++ multiField.map("." ++ _).getOrElse(""), value = value)
 
   def matches[A: ElasticPrimitive](field: String, value: A): ElasticQuery[Any, Match] =
-    MatchQuery(field, value)
+    MatchQuery(field = field, value = value)
 
   def must[S](queries: ElasticQuery[S, _]*): BoolQuery[S] =
     BoolQuery[S](filter = Nil, must = queries.toList, should = Nil, boost = None)
 
   def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A, _]): ElasticQuery[S, Nested] =
-    NestedQuery(path.toString, query, None, None)
+    NestedQuery(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None)
 
   def nested(path: String, query: ElasticQuery[_, _]): ElasticQuery[Any, Nested] =
-    NestedQuery(path, query, None, None)
+    NestedQuery(path = path, query = query, scoreMode = None, ignoreUnmapped = None)
 
   def range[S, A](
     field: Field[S, A],
@@ -124,7 +124,8 @@ object ElasticQuery {
   ): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
     RangeQuery.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
 
-  def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] = RangeQuery.empty[Any, Any](field)
+  def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
+    RangeQuery.empty[Any, Any](field = field)
 
   def should[S](queries: ElasticQuery[S, _]*): BoolQuery[S] =
     BoolQuery[S](filter = Nil, must = Nil, should = queries.toList, boost = None)
