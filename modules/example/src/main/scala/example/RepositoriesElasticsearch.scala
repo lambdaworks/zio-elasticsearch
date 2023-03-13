@@ -76,7 +76,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
       res     <- elasticsearch.execute(ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse)
     } yield res
 
-  def search(query: ElasticQuery[_, _]): Task[List[GitHubRepo]] =
+  def search(query: ElasticQuery[_]): Task[List[GitHubRepo]] =
     elasticsearch.execute(ElasticRequest.search(Index, query)).documentAs[GitHubRepo]
 
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
@@ -104,7 +104,7 @@ object RepositoriesElasticsearch {
   def remove(organization: String, id: String): RIO[RepositoriesElasticsearch, DeletionOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
 
-  def search(query: ElasticQuery[_, _]): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
+  def search(query: ElasticQuery[_]): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.search(query))
 
   lazy val live: URLayer[Elasticsearch, RepositoriesElasticsearch] =

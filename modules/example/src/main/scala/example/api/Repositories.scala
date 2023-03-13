@@ -119,7 +119,7 @@ object Repositories {
           .orDie
     }
 
-  private def createElasticQuery(query: Criteria): ElasticQuery[_, _] =
+  private def createElasticQuery(query: Criteria): ElasticQuery[_] =
     query match {
       case CompoundCriteria(operator, filters) =>
         operator match {

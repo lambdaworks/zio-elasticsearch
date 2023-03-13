@@ -53,21 +53,21 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = matches(field = "day_of_week", value = true)
           val queryLong   = matches(field = "day_of_week", value = 1L)
 
-          assert(queryString)(equalTo(MatchQuery[Any, String](field = "day_of_week", value = "Monday"))) &&
-          assert(queryBool)(equalTo(MatchQuery[Any, Boolean](field = "day_of_week", value = true))) &&
-          assert(queryLong)(equalTo(MatchQuery[Any, Long](field = "day_of_week", value = 1)))
+          assert(queryString)(equalTo(Match[Any, String](field = "day_of_week", value = "Monday"))) &&
+          assert(queryBool)(equalTo(Match[Any, Boolean](field = "day_of_week", value = true))) &&
+          assert(queryLong)(equalTo(Match[Any, Long](field = "day_of_week", value = 1)))
         },
         test("successfully create type-safe Match query using `matches` method") {
           val queryString = matches(field = UserDocument.name, value = "Name")
           val queryInt    = matches(field = UserDocument.age, value = 39)
 
-          assert(queryString)(equalTo(MatchQuery[Any, String](field = "name", value = "Name"))) &&
-          assert(queryInt)(equalTo(MatchQuery[Any, Int](field = "age", value = 39)))
+          assert(queryString)(equalTo(Match[UserDocument, String](field = "name", value = "Name"))) &&
+          assert(queryInt)(equalTo(Match[UserDocument, Int](field = "age", value = 39)))
         },
         test("successfully create type-safe Match query with multi-field using `matches` method") {
           val query = matches(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
 
-          assert(query)(equalTo(MatchQuery[UserDocument, String](field = "name.keyword", value = "Name")))
+          assert(query)(equalTo(Match[UserDocument, String](field = "name.keyword", value = "Name")))
         },
         test("successfully create `Filter` query from two Match queries") {
           val query = filter(
@@ -77,10 +77,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
+              Bool[Any](
                 filter = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
                 must = Nil,
                 should = Nil,
@@ -97,10 +97,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
+              Bool[Any](
                 filter = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
                 must = Nil,
                 should = Nil,
@@ -115,11 +115,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
+              Bool[Any](
                 filter = Nil,
                 must = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
                 should = Nil,
                 boost = None
@@ -135,12 +135,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
+              Bool[Any](
                 filter = Nil,
                 must = Nil,
                 should = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
                 boost = None
               )
@@ -157,13 +157,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
+              Bool[Any](
                 filter = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
-                must = List(MatchQuery(field = "customer_age", value = 23)),
-                should = List(MatchQuery(field = "customer_id", value = 1)),
+                must = List(Match(field = "customer_age", value = 23)),
+                should = List(Match(field = "customer_id", value = 1)),
                 boost = None
               )
             )
@@ -176,13 +176,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
-                filter = List(MatchQuery(field = "customer_id", value = 1)),
+              Bool[Any](
+                filter = List(Match(field = "customer_id", value = 1)),
                 must = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
-                should = List(MatchQuery(field = "customer_age", value = 23)),
+                should = List(Match(field = "customer_age", value = 23)),
                 boost = None
               )
             )
@@ -198,12 +198,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
-                filter = List(MatchQuery(field = "customer_id", value = 1)),
-                must = List(MatchQuery(field = "customer_age", value = 23)),
+              Bool[Any](
+                filter = List(Match(field = "customer_id", value = 1)),
+                must = List(Match(field = "customer_age", value = 23)),
                 should = List(
-                  MatchQuery(field = "day_of_week", value = "Monday"),
-                  MatchQuery(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "customer_gender", value = "MALE")
                 ),
                 boost = None
               )
@@ -218,10 +218,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              BoolQuery[Any](
-                filter = List(MatchQuery(field = "customer_id", value = 1)),
-                must = List(MatchQuery(field = "customer_age", value = 23)),
-                should = List(MatchQuery(field = "day_of_week", value = "Monday")),
+              Bool[Any](
+                filter = List(Match(field = "customer_id", value = 1)),
+                must = List(Match(field = "customer_age", value = 23)),
+                should = List(Match(field = "day_of_week", value = "Monday")),
                 boost = Some(1.0)
               )
             )
@@ -230,31 +230,31 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create Exists Query") {
           val query = exists(field = "day_of_week")
 
-          assert(query)(equalTo(ExistsQuery[Any](field = "day_of_week")))
+          assert(query)(equalTo(Exists[Any](field = "day_of_week")))
         },
         test("successfully create Exists Query with accessor") {
           val query = exists(field = UserDocument.name)
 
-          assert(query)(equalTo(ExistsQuery[Any](field = "name")))
+          assert(query)(equalTo(Exists[UserDocument](field = "name")))
         },
         test("successfully create MatchAll Query") {
           val query = matchAll
 
-          assert(query)(equalTo(MatchAllQuery(None)))
+          assert(query)(equalTo(MatchAll(None)))
         },
         test("successfully create MatchAll Query with boost") {
           val query = matchAll.boost(1.0)
 
-          assert(query)(equalTo(MatchAllQuery(boost = Some(1.0))))
+          assert(query)(equalTo(MatchAll(boost = Some(1.0))))
         },
         test("successfully create Nested Query with MatchAll Query") {
           val query = nested(path = "customer", query = matchAll)
 
           assert(query)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None
               )
@@ -266,9 +266,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              NestedQuery[UserDocument](
+              Nested[UserDocument](
                 path = "items",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None
               )
@@ -284,9 +284,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryAvg)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = None
               )
@@ -294,9 +294,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) &&
           assert(queryMax)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Max),
                 ignoreUnmapped = None
               )
@@ -304,9 +304,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) &&
           assert(queryMin)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Min),
                 ignoreUnmapped = None
               )
@@ -314,9 +314,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) &&
           assert(queryNone)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.None),
                 ignoreUnmapped = None
               )
@@ -324,9 +324,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) &&
           assert(querySum)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Sum),
                 ignoreUnmapped = None
               )
@@ -338,9 +338,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = Some(true)
               )
@@ -352,9 +352,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              NestedQuery[Any](
+              Nested[Any](
                 path = "customer",
-                query = MatchAllQuery(boost = None),
+                query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = Some(false)
               )
@@ -366,7 +366,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[Any, Any, Unbounded.type, Unbounded.type](
+              Range[Any, Any, Unbounded.type, Unbounded.type](
                 field = "customer_age",
                 lower = Unbounded,
                 upper = Unbounded,
@@ -381,7 +381,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryString)(
             equalTo(
-              RangeQuery[UserDocument, String, Unbounded.type, Unbounded.type](
+              Range[UserDocument, String, Unbounded.type, Unbounded.type](
                 field = "name",
                 lower = Unbounded,
                 upper = Unbounded,
@@ -391,7 +391,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) &&
           assert(queryInt)(
             equalTo(
-              RangeQuery[UserDocument, Int, Unbounded.type, Unbounded.type](
+              Range[UserDocument, Int, Unbounded.type, Unbounded.type](
                 field = "age",
                 lower = Unbounded,
                 upper = Unbounded,
@@ -405,7 +405,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[UserDocument, String, Unbounded.type, Unbounded.type](
+              Range[UserDocument, String, Unbounded.type, Unbounded.type](
                 field = "name.keyword",
                 lower = Unbounded,
                 upper = Unbounded,
@@ -419,7 +419,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[Any, Int, Unbounded.type, LessThan[Int]](
+              Range[Any, Int, Unbounded.type, LessThan[Int]](
                 field = "customer_age",
                 lower = Unbounded,
                 upper = LessThan(23),
@@ -433,7 +433,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[Any, Int, GreaterThan[Int], Unbounded.type](
+              Range[Any, Int, GreaterThan[Int], Unbounded.type](
                 field = "customer_age",
                 lower = GreaterThan(23),
                 upper = Unbounded,
@@ -447,7 +447,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[Any, Int, Unbounded.type, LessThanOrEqualTo[Int]](
+              Range[Any, Int, Unbounded.type, LessThanOrEqualTo[Int]](
                 field = "customer_age",
                 lower = Unbounded,
                 upper = LessThanOrEqualTo(23),
@@ -461,7 +461,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[Any, Int, GreaterThanOrEqualTo[Int], Unbounded.type](
+              Range[Any, Int, GreaterThanOrEqualTo[Int], Unbounded.type](
                 field = "customer_age",
                 lower = GreaterThanOrEqualTo(23),
                 upper = Unbounded,
@@ -475,7 +475,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              RangeQuery[Any, Int, GreaterThanOrEqualTo[Int], LessThan[Int]](
+              Range[Any, Int, GreaterThanOrEqualTo[Int], LessThan[Int]](
                 field = "customer_age",
                 lower = GreaterThanOrEqualTo(23),
                 upper = LessThan(50),
@@ -491,18 +491,18 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryLong   = term(field = "day_of_week", value = 1L)
 
           assert(queryInt)(
-            equalTo(TermQuery[Any, Int](field = "day_of_week", value = 1, boost = None, caseInsensitive = None))
+            equalTo(Term[Any, Int](field = "day_of_week", value = 1, boost = None, caseInsensitive = None))
           ) &&
           assert(queryString)(
             equalTo(
-              TermQuery[Any, String](field = "day_of_week", value = "Monday", boost = None, caseInsensitive = None)
+              Term[Any, String](field = "day_of_week", value = "Monday", boost = None, caseInsensitive = None)
             )
           ) &&
           assert(queryBool)(
-            equalTo(TermQuery[Any, Boolean](field = "day_of_week", value = true, boost = None, caseInsensitive = None))
+            equalTo(Term[Any, Boolean](field = "day_of_week", value = true, boost = None, caseInsensitive = None))
           ) &&
           assert(queryLong)(
-            equalTo(TermQuery[Any, Long](field = "day_of_week", value = 1L, boost = None, caseInsensitive = None))
+            equalTo(Term[Any, Long](field = "day_of_week", value = 1L, boost = None, caseInsensitive = None))
           )
         },
         test("successfully create type-safe Term Query") {
@@ -511,11 +511,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryString)(
             equalTo(
-              TermQuery[UserDocument, String](field = "name", value = "Name", boost = None, caseInsensitive = None)
+              Term[UserDocument, String](field = "name", value = "Name", boost = None, caseInsensitive = None)
             )
           ) &&
           assert(queryInt)(
-            equalTo(TermQuery[UserDocument, Int](field = "age", value = 39, boost = None, caseInsensitive = None))
+            equalTo(Term[UserDocument, Int](field = "age", value = 39, boost = None, caseInsensitive = None))
           )
         },
         test("successfully create type-safe Term Query with multi-field") {
@@ -523,7 +523,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              TermQuery[UserDocument, String](
+              Term[UserDocument, String](
                 field = "name.keyword",
                 value = "Name",
                 boost = None,
@@ -539,20 +539,20 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryLong   = term(field = "day_of_week", value = 1L).boost(1.0)
 
           assert(queryInt)(
-            equalTo(TermQuery[Any, Int](field = "day_of_week", value = 1, boost = Some(1.0), caseInsensitive = None))
+            equalTo(Term[Any, Int](field = "day_of_week", value = 1, boost = Some(1.0), caseInsensitive = None))
           ) &&
           assert(queryString)(
             equalTo(
-              TermQuery[Any, String](field = "day_of_week", value = "Monday", boost = Some(1.0), caseInsensitive = None)
+              Term[Any, String](field = "day_of_week", value = "Monday", boost = Some(1.0), caseInsensitive = None)
             )
           ) &&
           assert(queryBool)(
             equalTo(
-              TermQuery[Any, Boolean](field = "day_of_week", value = true, boost = Some(1.0), caseInsensitive = None)
+              Term[Any, Boolean](field = "day_of_week", value = true, boost = Some(1.0), caseInsensitive = None)
             )
           ) &&
           assert(queryLong)(
-            equalTo(TermQuery[Any, Long](field = "day_of_week", value = 1L, boost = Some(1.0), caseInsensitive = None))
+            equalTo(Term[Any, Long](field = "day_of_week", value = 1L, boost = Some(1.0), caseInsensitive = None))
           )
         },
         test("successfully create case insensitive Term Query") {
@@ -560,7 +560,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryString)(
             equalTo(
-              TermQuery[Any, String](
+              Term[Any, String](
                 field = "day_of_week",
                 value = "Monday",
                 boost = None,
@@ -574,7 +574,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(queryString)(
             equalTo(
-              TermQuery[Any, String](
+              Term[Any, String](
                 field = "day_of_week",
                 value = "Monday",
                 boost = Some(1.0),
@@ -589,13 +589,28 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*")
 
           assert(wildcardQuery1)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "*M*", boost = None, caseInsensitive = None))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "*M*", boost = None, caseInsensitive = None))
           ) &&
           assert(wildcardQuery2)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
           ) &&
           assert(wildcardQuery3)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+          )
+        },
+        test("successfully create type-safe Wildcard Query") {
+          val wildcardQuery1 = contains(field = UserDocument.name, value = "M")
+          val wildcardQuery2 = startsWith(field = UserDocument.name, value = "M")
+          val wildcardQuery3 = wildcard(field = UserDocument.name, value = "M*")
+
+          assert(wildcardQuery1)(
+            equalTo(Wildcard[UserDocument](field = "name", value = "*M*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(wildcardQuery2)(
+            equalTo(Wildcard[UserDocument](field = "name", value = "M*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(wildcardQuery3)(
+            equalTo(Wildcard[UserDocument](field = "name", value = "M*", boost = None, caseInsensitive = None))
           )
         },
         test("successfully create Wildcard Query with boost") {
@@ -604,13 +619,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
 
           assert(wildcardQuery1)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = None))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = None))
           ) &&
           assert(wildcardQuery2)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
           ) &&
           assert(wildcardQuery3)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
           )
         },
         test("successfully create case insensitive Wildcard Query") {
@@ -620,14 +635,14 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(wildcardQuery1)(
             equalTo(
-              WildcardQuery[Any](field = "day_of_week", value = "*M*", boost = None, caseInsensitive = Some(true))
+              Wildcard[Any](field = "day_of_week", value = "*M*", boost = None, caseInsensitive = Some(true))
             )
           ) &&
           assert(wildcardQuery2)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
           ) &&
           assert(wildcardQuery3)(
-            equalTo(WildcardQuery[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
+            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
           )
         },
         test("successfully create case insensitive Wildcard Query with boost") {
@@ -637,17 +652,17 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(wildcardQuery1)(
             equalTo(
-              WildcardQuery[Any](field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = Some(true))
+              Wildcard[Any](field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = Some(true))
             )
           ) &&
           assert(wildcardQuery2)(
             equalTo(
-              WildcardQuery[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
+              Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
             )
           ) &&
           assert(wildcardQuery3)(
             equalTo(
-              WildcardQuery[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
+              Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
             )
           )
         }

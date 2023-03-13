@@ -16,30 +16,12 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticQuery.NestedQuery
-import zio.elasticsearch.ElasticQueryType.Nested
-
 sealed trait ScoreMode
 
 object ScoreMode {
-
   final case object Avg  extends ScoreMode
   final case object Max  extends ScoreMode
   final case object Min  extends ScoreMode
   final case object None extends ScoreMode
   final case object Sum  extends ScoreMode
-
-  trait WithScoreMode[EQT <: ElasticQueryType] {
-    def withScoreMode[S](query: ElasticQuery[S, EQT], scoreMode: ScoreMode): ElasticQuery[S, EQT]
-  }
-
-  object WithScoreMode {
-    implicit val nestedWithScoreMode: WithScoreMode[Nested] =
-      new WithScoreMode[Nested] {
-        def withScoreMode[S](query: ElasticQuery[S, Nested], scoreMode: ScoreMode): ElasticQuery[S, Nested] =
-          query match {
-            case q: NestedQuery[S] => q.copy(scoreMode = Some(scoreMode))
-          }
-      }
-  }
 }
