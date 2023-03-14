@@ -20,6 +20,8 @@ import zio.json.ast.Json
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class ElasticQueryResponse(
+  @jsonField("pit_id")
+  pitId: Option[String],
   @jsonField("_scroll_id")
   scrollId: Option[String],
   took: Int,
@@ -31,6 +33,8 @@ private[elasticsearch] final case class ElasticQueryResponse(
 ) {
 
   lazy val results: List[Json] = hits.hits.map(_.source)
+
+  lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 }
 
 private[elasticsearch] object ElasticQueryResponse {
@@ -73,9 +77,10 @@ private[elasticsearch] final case class Hit(
   @jsonField("_id")
   id: String,
   @jsonField("_score")
-  score: Double,
+  score: Option[Double] = None,
   @jsonField("_source")
-  source: Json
+  source: Json,
+  sort: Option[Json]
 )
 
 private[elasticsearch] object Hit {
