@@ -30,7 +30,7 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Obj, Str}
-import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
 import zio.{Chunk, Task, ZIO}
@@ -170,24 +170,20 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreatePointInTime(index: IndexName): Task[(Chunk[Item], Option[(String, Option[Json])])] =
-    sendRequest(
+    sendRequestWithCustomResponse(
       request
         .post(uri"${config.uri}/$index/$PointInTime".withParams((KeepAlive, KeepAliveDefaultDuration)))
+        .response(asJson[PointInTimeResponse])
         .contentType(ApplicationJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
-          response.body match {
-            case Left(_) => ZIO.fail(new ElasticException("failure"))
-            case Right(responseJson) =>
-              responseJson.fromJson[PointInTimeResponse] match {
-                case Left(e) => ZIO.fail(new ElasticException(s"Failed with $e"))
-                case Right(pit) =>
-                  ZIO.succeed((Chunk(), Some(pit.id, None)))
-              }
-          }
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            pit => ZIO.succeed((Chunk(), Some(pit.id, None)))
+          )
         case _ =>
-          ZIO.fail(createElasticException(response))
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
 
@@ -399,7 +395,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     )
 
   private lazy val defaultSortField =
-    Json.Obj("sort" -> Json.Arr(Json.Str(Doc)))
+    Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
 
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
@@ -433,10 +429,11 @@ private[elasticsearch] object HttpElasticExecutor {
   private final val KeepAlive                = "keep_alive"
   private final val KeepAliveDefaultDuration = "1m"
   private final val PointInTime              = "_pit"
-  private final val Search                   = "_search"
   private final val Scroll                   = "scroll"
   private final val ScrollDefaultDuration    = "1m"
   private final val ScrollId                 = "scroll_id"
+  private final val Search                   = "_search"
+  private final val ShardDoc                 = "_shard_doc"
 
   private[elasticsearch] final case class PointInTimeResponse(id: String)
   object PointInTimeResponse {
