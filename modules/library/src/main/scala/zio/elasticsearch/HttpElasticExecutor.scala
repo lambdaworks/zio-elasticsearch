@@ -55,12 +55,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: Search         => executeSearch(r)
     }
 
-  def stream(r: Search): Stream[Throwable, Item] =
+  def stream(r: SearchRequest): Stream[Throwable, Item] =
     ZStream.paginateChunkZIO("") { s =>
       if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
     }
 
-  def streamAs[A: Schema](r: Search): Stream[Throwable, A] =
+  def streamAs[A: Schema](r: SearchRequest): Stream[Throwable, A] =
     ZStream
       .paginateChunkZIO("") { s =>
         if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
@@ -245,25 +245,30 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       }
     }
 
-  private def executeGetByQueryWithScroll(r: Search): Task[(Chunk[Item], Option[String])] =
-    sendRequestWithCustomResponse(
-      request
-        .post(
-          uri"${config.uri}/${r.index}/$Search".withParams((Scroll, ScrollDefaultDuration))
-        )
-        .response(asJson[ElasticQueryResponse])
-        .contentType(ApplicationJson)
-        .body(r.query.toJson)
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk =>
-          response.body.fold(
-            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
-          )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
-      }
+  private def executeGetByQueryWithScroll(r: SearchRequest): Task[(Chunk[Item], Option[String])] =
+    r match {
+      case s: Search =>
+        sendRequestWithCustomResponse(
+          request
+            .post(
+              uri"${config.uri}/${s.index}/$Search".withParams(
+                getQueryParams(List((Scroll, Some(ScrollDefaultDuration)), ("routing", s.routing)))
+              )
+            )
+            .response(asJson[ElasticQueryResponse])
+            .contentType(ApplicationJson)
+            .body(s.query.toJson)
+        ).flatMap { response =>
+          response.code match {
+            case HttpOk =>
+              response.body.fold(
+                e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+                value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
+              )
+            case _ =>
+              ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          }
+        }
     }
 
   private def executeGetByScroll(scrollId: String): Task[(Chunk[Item], Option[String])] =
