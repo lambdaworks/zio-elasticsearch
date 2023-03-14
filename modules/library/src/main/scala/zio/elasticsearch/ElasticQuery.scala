@@ -143,11 +143,11 @@ object ElasticQuery {
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)
 
   sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] {
-    def filter(queries: ElasticQuery[S]*): Bool[S]
+    def filter(queries: ElasticQuery[S]*): BoolQuery[S]
 
-    def must(queries: ElasticQuery[S]*): Bool[S]
+    def must(queries: ElasticQuery[S]*): BoolQuery[S]
 
-    def should(queries: ElasticQuery[S]*): Bool[S]
+    def should(queries: ElasticQuery[S]*): BoolQuery[S]
   }
 
   private[elasticsearch] final case class Bool[S](
@@ -158,10 +158,10 @@ object ElasticQuery {
   ) extends BoolQuery[S] { self =>
     def boost(value: Double): BoolQuery[S] = self.copy(boost = Some(value))
 
-    def filter(queries: ElasticQuery[S]*): Bool[S] =
+    def filter(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(filter = filter ++ queries)
 
-    def must(queries: ElasticQuery[S]*): Bool[S] =
+    def must(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(must = must ++ queries)
 
     def paramsToJson(fieldPath: Option[String]): Json = {
@@ -173,7 +173,7 @@ object ElasticQuery {
       Obj("bool" -> Obj(boolFields.toList: _*))
     }
 
-    def should(queries: ElasticQuery[S]*): Bool[S] =
+    def should(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(should = should ++ queries)
   }
 
@@ -266,20 +266,19 @@ object ElasticQuery {
       with HasBoost[RangeQuery[S, A, LB, UB]] {
     def gt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[S, B, GreaterThan[B], UB]
+    ): RangeQuery[S, B, GreaterThan[B], UB]
 
     def gte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[S, B, GreaterThanOrEqualTo[B], UB]
+    ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB]
 
     def lt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): Range[S, B, LB, LessThan[B]]
+    ): RangeQuery[S, B, LB, LessThan[B]]
 
     def lte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): Range[S, B, LB, LessThanOrEqualTo[B]]
-
+    ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]]
   }
 
   private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: UpperBound] private (
@@ -293,22 +292,22 @@ object ElasticQuery {
 
     def gt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[S, B, GreaterThan[B], UB] =
+    ): RangeQuery[S, B, GreaterThan[B], UB] =
       self.copy(lower = GreaterThan(value))
 
     def gte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[S, B, GreaterThanOrEqualTo[B], UB] =
+    ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB] =
       self.copy(lower = GreaterThanOrEqualTo(value))
 
     def lt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): Range[S, B, LB, LessThan[B]] =
+    ): RangeQuery[S, B, LB, LessThan[B]] =
       self.copy(upper = LessThan(value))
 
     def lte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): Range[S, B, LB, LessThanOrEqualTo[B]] =
+    ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]] =
       self.copy(upper = LessThanOrEqualTo(value))
 
     def paramsToJson(fieldPath: Option[String]): Json = {
