@@ -21,34 +21,35 @@ import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
 import scala.annotation.unused
 
-trait HasBoost[S] {
-  def boost(value: Double): ElasticQuery[S]
+trait HasBoost[Q <: HasBoost[Q]] {
+  def boost(value: Double): Q
 }
 
-sealed trait HasCaseInsensitive[S] {
-  def caseInsensitive(value: Boolean): ElasticQuery[S]
+sealed trait HasCaseInsensitive[Q <: HasCaseInsensitive[Q]] {
+  def caseInsensitive(value: Boolean): Q
 
-  def caseInsensitiveFalse: ElasticQuery[S]
+  def caseInsensitiveFalse: Q
 
-  def caseInsensitiveTrue: ElasticQuery[S]
+  def caseInsensitiveTrue: Q
 }
 
-sealed trait HasIgnoreUnmapped[S] {
-  def ignoreUnmapped(value: Boolean): ElasticQuery[S]
+sealed trait HasIgnoreUnmapped[Q <: HasIgnoreUnmapped[Q]] {
+  def ignoreUnmapped(value: Boolean): Q
 
-  def ignoreUnmappedFalse: ElasticQuery[S]
+  def ignoreUnmappedFalse: Q
 
-  def ignoreUnmappedTrue: ElasticQuery[S]
+  def ignoreUnmappedTrue: Q
 }
 
-sealed trait HasScoreMode[S] {
-  def scoreMode(scoreMode: ScoreMode): ElasticQuery[S]
+sealed trait HasScoreMode[Q <: HasScoreMode[Q]] {
+  def scoreMode(scoreMode: ScoreMode): Q
 }
 
 sealed trait ElasticQuery[-S] { self =>
   def paramsToJson(fieldPath: Option[String]): Json
 
-  final def toJson: Json = Obj("query" -> self.paramsToJson(None))
+  final def toJson: Json =
+    Obj("query" -> self.paramsToJson(None))
 }
 
 object ElasticQuery {
@@ -77,52 +78,58 @@ object ElasticQuery {
     def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
   }
 
-  def contains[S](field: Field[S, _], value: String): Wildcard[S] =
+  def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(field = field.toString, value = s"*$value*", boost = None, caseInsensitive = None)
 
-  def contains(field: String, value: String): Wildcard[Any] =
+  def contains(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
 
-  def exists[S](field: Field[S, _]): Exists[S] = Exists(field = field.toString)
+  def exists[S](field: Field[S, _]): ExistsQuery[S] =
+    Exists(field = field.toString)
 
-  def exists(field: String): Exists[Any] = Exists(field = field)
+  def exists(field: String): ExistsQuery[Any] =
+    Exists(field = field)
 
-  def filter[S](queries: ElasticQuery[S]*): Bool[S] =
+  def filter[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = queries.toList, must = Nil, should = Nil, boost = None)
 
-  def matchAll: MatchAll = MatchAll(boost = None)
+  def matchAll: MatchAllQuery =
+    MatchAll(boost = None)
 
-  def matches[S, A: ElasticPrimitive](field: Field[S, A], multiField: Option[String] = None, value: A): Match[S, A] =
+  def matches[S, A: ElasticPrimitive](field: Field[S, A], multiField: Option[String] = None, value: A): MatchQuery[S] =
     Match(field = field.toString ++ multiField.map("." ++ _).getOrElse(""), value = value)
 
-  def matches[A: ElasticPrimitive](field: String, value: A): Match[Any, A] =
+  def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
-  def must[S](queries: ElasticQuery[S]*): Bool[S] =
+  def must[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = queries.toList, should = Nil, boost = None)
 
-  def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): Nested[S] =
+  def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
     Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None)
 
-  def nested(path: String, query: ElasticQuery[_]): Nested[Any] =
+  def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None)
 
-  def range[S, A](field: Field[S, A], multiField: Option[String] = None): Range[S, A, Unbounded.type, Unbounded.type] =
+  def range[S, A](
+    field: Field[S, A],
+    multiField: Option[String] = None
+  ): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
     Range.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
 
-  def range(field: String): Range[Any, Any, Unbounded.type, Unbounded.type] =
+  def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
 
-  def should[S](queries: ElasticQuery[S]*): Bool[S] =
+  def should[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, should = queries.toList, boost = None)
 
-  def startsWith[S](field: Field[S, _], value: String): Wildcard[S] =
+  def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(field = field.toString, value = s"$value*", boost = None, caseInsensitive = None)
 
-  def startsWith(field: String, value: String): Wildcard[Any] =
+  def startsWith(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"$value*", boost = None, caseInsensitive = None)
 
-  def term[S, A: ElasticPrimitive](field: Field[S, A], multiField: Option[String] = None, value: A): Term[S, A] =
+  def term[S, A: ElasticPrimitive](field: Field[S, A], multiField: Option[String] = None, value: A): TermQuery[S] =
     Term(
       field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
       value = value,
@@ -139,7 +146,13 @@ object ElasticQuery {
   def wildcard(field: String, value: String): Wildcard[Any] =
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)
 
-  sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[S]
+  sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] {
+    def filter(queries: ElasticQuery[S]*): BoolQuery[S]
+
+    def must(queries: ElasticQuery[S]*): BoolQuery[S]
+
+    def should(queries: ElasticQuery[S]*): BoolQuery[S]
+  }
 
   private[elasticsearch] final case class Bool[S](
     filter: List[ElasticQuery[S]],
@@ -147,12 +160,13 @@ object ElasticQuery {
     should: List[ElasticQuery[S]],
     boost: Option[Double]
   ) extends BoolQuery[S] { self =>
-    def boost(value: Double): Bool[S] = self.copy(boost = Some(value))
+    def boost(value: Double): BoolQuery[S] =
+      self.copy(boost = Some(value))
 
-    def filter(queries: ElasticQuery[S]*): Bool[S] =
+    def filter(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(filter = filter ++ queries)
 
-    def must(queries: ElasticQuery[S]*): Bool[S] =
+    def must(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(must = must ++ queries)
 
     def paramsToJson(fieldPath: Option[String]): Json = {
@@ -164,35 +178,42 @@ object ElasticQuery {
       Obj("bool" -> Obj(boolFields.toList: _*))
     }
 
-    def should(queries: ElasticQuery[S]*): Bool[S] =
+    def should(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(should = should ++ queries)
   }
 
   sealed trait ExistsQuery[S] extends ElasticQuery[S]
 
   private[elasticsearch] final case class Exists[S](field: String) extends ExistsQuery[S] {
-    def paramsToJson(fieldPath: Option[String]): Json = Obj(
-      "exists" -> Obj("field" -> (fieldPath.map(_ + ".").getOrElse("") + field).toJson)
-    )
+    def paramsToJson(fieldPath: Option[String]): Json =
+      Obj(
+        "exists" -> Obj("field" -> (fieldPath.map(_ + ".").getOrElse("") + field).toJson)
+      )
   }
 
   sealed trait MatchQuery[S] extends ElasticQuery[S]
 
   private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
-    def paramsToJson(fieldPath: Option[String]): Json = Obj(
-      "match" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> value.toJson)
-    )
+    def paramsToJson(fieldPath: Option[String]): Json =
+      Obj(
+        "match" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> value.toJson)
+      )
   }
 
-  sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[Any]
+  sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
 
   private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends MatchAllQuery { self =>
-    def boost(value: Double): MatchAll = self.copy(boost = Some(value))
+    def boost(value: Double): MatchAllQuery =
+      self.copy(boost = Some(value))
 
-    def paramsToJson(fieldPath: Option[String]): Json = Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
+    def paramsToJson(fieldPath: Option[String]): Json =
+      Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
   }
 
-  sealed trait NestedQuery[S] extends ElasticQuery[S] with HasIgnoreUnmapped[S] with HasScoreMode[S]
+  sealed trait NestedQuery[S]
+      extends ElasticQuery[S]
+      with HasIgnoreUnmapped[NestedQuery[S]]
+      with HasScoreMode[NestedQuery[S]]
 
   private[elasticsearch] final case class Nested[S](
     path: String,
@@ -200,11 +221,14 @@ object ElasticQuery {
     scoreMode: Option[ScoreMode],
     ignoreUnmapped: Option[Boolean]
   ) extends NestedQuery[S] { self =>
-    def ignoreUnmapped(value: Boolean): Nested[S] = self.copy(ignoreUnmapped = Some(value))
+    def ignoreUnmapped(value: Boolean): NestedQuery[S] =
+      self.copy(ignoreUnmapped = Some(value))
 
-    def ignoreUnmappedFalse: Nested[S] = ignoreUnmapped(false)
+    def ignoreUnmappedFalse: NestedQuery[S] =
+      ignoreUnmapped(false)
 
-    def ignoreUnmappedTrue: Nested[S] = ignoreUnmapped(true)
+    def ignoreUnmappedTrue: NestedQuery[S] =
+      ignoreUnmapped(true)
 
     def paramsToJson(fieldPath: Option[String]): Json =
       Obj(
@@ -218,7 +242,8 @@ object ElasticQuery {
         )
       )
 
-    def scoreMode(scoreMode: ScoreMode): Nested[S] = self.copy(scoreMode = Some(scoreMode))
+    def scoreMode(scoreMode: ScoreMode): NestedQuery[S] =
+      self.copy(scoreMode = Some(scoreMode))
   }
 
   sealed trait LowerBound {
@@ -249,35 +274,54 @@ object ElasticQuery {
     def toJson: Option[(String, Json)] = None
   }
 
-  sealed trait RangeQuery[S] extends ElasticQuery[S] with HasBoost[S]
+  sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
+      extends ElasticQuery[S]
+      with HasBoost[RangeQuery[S, A, LB, UB]] {
+    def gt[B <: A: ElasticPrimitive](value: B)(implicit
+      @unused ev: LB =:= Unbounded.type
+    ): RangeQuery[S, B, GreaterThan[B], UB]
+
+    def gte[B <: A: ElasticPrimitive](value: B)(implicit
+      @unused ev: LB =:= Unbounded.type
+    ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB]
+
+    def lt[B <: A: ElasticPrimitive](value: B)(implicit
+      @unused ev: UB =:= Unbounded.type
+    ): RangeQuery[S, B, LB, LessThan[B]]
+
+    def lte[B <: A: ElasticPrimitive](value: B)(implicit
+      @unused ev: UB =:= Unbounded.type
+    ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]]
+  }
 
   private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: UpperBound] private (
     field: String,
     lower: LB,
     upper: UB,
     boost: Option[Double]
-  ) extends RangeQuery[S] { self =>
+  ) extends RangeQuery[S, A, LB, UB] { self =>
 
-    def boost(value: Double): Range[S, A, LB, UB] = self.copy(boost = Some(value))
+    def boost(value: Double): RangeQuery[S, A, LB, UB] =
+      self.copy(boost = Some(value))
 
     def gt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[S, B, GreaterThan[B], UB] =
+    ): RangeQuery[S, B, GreaterThan[B], UB] =
       self.copy(lower = GreaterThan(value))
 
     def gte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: LB =:= Unbounded.type
-    ): Range[S, B, GreaterThanOrEqualTo[B], UB] =
+    ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB] =
       self.copy(lower = GreaterThanOrEqualTo(value))
 
     def lt[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): Range[S, B, LB, LessThan[B]] =
+    ): RangeQuery[S, B, LB, LessThan[B]] =
       self.copy(upper = LessThan(value))
 
     def lte[B <: A: ElasticPrimitive](value: B)(implicit
       @unused ev: UB =:= Unbounded.type
-    ): Range[S, B, LB, LessThanOrEqualTo[B]] =
+    ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]] =
       self.copy(upper = LessThanOrEqualTo(value))
 
     def paramsToJson(fieldPath: Option[String]): Json = {
@@ -298,7 +342,7 @@ object ElasticQuery {
       )
   }
 
-  sealed trait TermQuery[S] extends ElasticQuery[S] with HasBoost[S] with HasCaseInsensitive[S]
+  sealed trait TermQuery[S] extends ElasticQuery[S] with HasBoost[TermQuery[S]] with HasCaseInsensitive[TermQuery[S]]
 
   private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
     field: String,
@@ -306,13 +350,17 @@ object ElasticQuery {
     boost: Option[Double],
     caseInsensitive: Option[Boolean]
   ) extends TermQuery[S] { self =>
-    def boost(value: Double): Term[S, A] = self.copy(boost = Some(value))
+    def boost(value: Double): TermQuery[S] =
+      self.copy(boost = Some(value))
 
-    def caseInsensitive(value: Boolean): Term[S, A] = self.copy(caseInsensitive = Some(value))
+    def caseInsensitive(value: Boolean): TermQuery[S] =
+      self.copy(caseInsensitive = Some(value))
 
-    def caseInsensitiveFalse: Term[S, A] = caseInsensitive(false)
+    def caseInsensitiveFalse: TermQuery[S] =
+      caseInsensitive(false)
 
-    def caseInsensitiveTrue: Term[S, A] = caseInsensitive(true)
+    def caseInsensitiveTrue: TermQuery[S] =
+      caseInsensitive(true)
 
     def paramsToJson(fieldPath: Option[String]): Json = {
       val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
@@ -322,7 +370,10 @@ object ElasticQuery {
     }
   }
 
-  sealed trait WildcardQuery[S] extends ElasticQuery[S] with HasBoost[S] with HasCaseInsensitive[S]
+  sealed trait WildcardQuery[S]
+      extends ElasticQuery[S]
+      with HasBoost[WildcardQuery[S]]
+      with HasCaseInsensitive[WildcardQuery[S]]
 
   private[elasticsearch] final case class Wildcard[S](
     field: String,
@@ -330,13 +381,17 @@ object ElasticQuery {
     boost: Option[Double],
     caseInsensitive: Option[Boolean]
   ) extends WildcardQuery[S] { self =>
-    def boost(value: Double): Wildcard[S] = self.copy(boost = Some(value))
+    def boost(value: Double): WildcardQuery[S] =
+      self.copy(boost = Some(value))
 
-    def caseInsensitive(value: Boolean): Wildcard[S] = self.copy(caseInsensitive = Some(value))
+    def caseInsensitive(value: Boolean): WildcardQuery[S] =
+      self.copy(caseInsensitive = Some(value))
 
-    def caseInsensitiveFalse: Wildcard[S] = caseInsensitive(false)
+    def caseInsensitiveFalse: WildcardQuery[S] =
+      caseInsensitive(false)
 
-    def caseInsensitiveTrue: Wildcard[S] = caseInsensitive(true)
+    def caseInsensitiveTrue: WildcardQuery[S] =
+      caseInsensitive(true)
 
     def paramsToJson(fieldPath: Option[String]): Json = {
       val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
