@@ -399,7 +399,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     )
 
   private lazy val defaultSortField =
-    Json.Obj("sort" -> Json.Arr(Json.Obj("_id" -> Json.Obj("order" -> Json.Str("desc")))))
+    Json.Obj("sort" -> Json.Arr(Json.Str(Doc)))
 
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
