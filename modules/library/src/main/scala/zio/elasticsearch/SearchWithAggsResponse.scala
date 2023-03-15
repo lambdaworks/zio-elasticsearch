@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class ElasticQueryResponse(
+private[elasticsearch] final case class SearchWithAggsResponse(
   @jsonField("pit_id")
   pitId: Option[String],
   @jsonField("_scroll_id")
@@ -29,7 +29,8 @@ private[elasticsearch] final case class ElasticQueryResponse(
   timedOut: Boolean,
   @jsonField("_shards")
   shards: Shards,
-  hits: Hits
+  hits: Hits,
+  aggregations: Option[Json]
 ) {
 
   lazy val results: List[Json] = hits.hits.map(_.source)
@@ -37,8 +38,8 @@ private[elasticsearch] final case class ElasticQueryResponse(
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 }
 
-private[elasticsearch] object ElasticQueryResponse {
-  implicit val decoder: JsonDecoder[ElasticQueryResponse] = DeriveJsonDecoder.gen[ElasticQueryResponse]
+private[elasticsearch] object SearchWithAggsResponse {
+  implicit val decoder: JsonDecoder[SearchWithAggsResponse] = DeriveJsonDecoder.gen[SearchWithAggsResponse]
 }
 
 private[elasticsearch] final case class Shards(

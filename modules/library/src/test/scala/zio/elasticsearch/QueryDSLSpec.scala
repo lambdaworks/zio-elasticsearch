@@ -22,30 +22,12 @@ import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.utils._
 import zio.prelude.Newtype.unsafeWrap
 import zio.prelude.Validation
-import zio.schema.{DeriveSchema, Schema}
 import zio.test.Assertion.equalTo
 import zio.test._
 
 object QueryDSLSpec extends ZIOSpecDefault {
 
-  final case class UserDocument(
-    id: String,
-    name: String,
-    address: String,
-    balance: Double,
-    age: Int,
-    items: List[String]
-  )
-
-  object UserDocument {
-
-    implicit val schema: Schema.CaseClass6[String, String, String, Double, Int, List[String], UserDocument] =
-      DeriveSchema.gen[UserDocument]
-
-    val (id, name, address, balance, age, items) = schema.makeAccessors(ElasticQueryAccessorBuilder)
-  }
-
-  override def spec: Spec[Environment with TestEnvironment with Scope, Any] =
+  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
         test("successfully create Match query using `matches` method") {

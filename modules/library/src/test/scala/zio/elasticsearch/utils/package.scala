@@ -18,10 +18,28 @@ package zio.elasticsearch
 
 import zio.json.DecoderOps
 import zio.json.ast.Json
+import zio.schema.{DeriveSchema, Schema}
 
 package object utils {
 
   final implicit class RichString(private val text: String) extends AnyVal {
     def toJson: Json = text.fromJson[Json].toOption.get
+  }
+
+  final case class UserDocument(
+    id: String,
+    name: String,
+    address: String,
+    balance: Double,
+    age: Int,
+    items: List[String]
+  )
+
+  object UserDocument {
+
+    implicit val schema: Schema.CaseClass6[String, String, String, Double, Int, List[String], UserDocument] =
+      DeriveSchema.gen[UserDocument]
+
+    val (id, name, address, balance, age, items) = schema.makeAccessors(ElasticQueryAccessorBuilder)
   }
 }

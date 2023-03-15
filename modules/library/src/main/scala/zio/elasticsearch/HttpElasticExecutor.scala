@@ -44,17 +44,19 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case r: Bulk           => executeBulk(r)
-      case r: Create         => executeCreate(r)
-      case r: CreateWithId   => executeCreateWithId(r)
-      case r: CreateIndex    => executeCreateIndex(r)
-      case r: CreateOrUpdate => executeCreateOrUpdate(r)
-      case r: DeleteById     => executeDeleteById(r)
-      case r: DeleteByQuery  => executeDeleteByQuery(r)
-      case r: DeleteIndex    => executeDeleteIndex(r)
-      case r: Exists         => executeExists(r)
-      case r: GetById        => executeGetById(r)
-      case r: Search         => executeSearch(r)
+      case r: Aggregation           => executeAggregation(r)
+      case r: Bulk                  => executeBulk(r)
+      case r: Create                => executeCreate(r)
+      case r: CreateWithId          => executeCreateWithId(r)
+      case r: CreateIndex           => executeCreateIndex(r)
+      case r: CreateOrUpdate        => executeCreateOrUpdate(r)
+      case r: DeleteById            => executeDeleteById(r)
+      case r: DeleteByQuery         => executeDeleteByQuery(r)
+      case r: DeleteIndex           => executeDeleteIndex(r)
+      case r: Exists                => executeExists(r)
+      case r: GetById               => executeGetById(r)
+      case r: Search                => executeSearch(r)
+      case r: SearchWithAggregation => executeSearchWithAggregation(r)
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
@@ -72,7 +74,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
           }
         } else {
           ZStream.paginateChunkZIO("") { s =>
-            if (s.isEmpty) executeGetByQueryWithScroll(r, config) else executeGetByScroll(s, config)
+            if (s.isEmpty) executeSearchWithScroll(r, config) else executeGetByScroll(s, config)
           }
         }
     }
@@ -82,6 +84,25 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
   def streamAs[A: Schema](r: SearchRequest, config: StreamConfig): Stream[Throwable, A] =
     stream(r, config).map(_.documentAs[A]).collectWhileRight
+
+  private def executeAggregation(r: Aggregation): Task[AggregationResult] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
+        .response(asJson[SearchWithAggsResponse])
+        .contentType(ApplicationJson)
+        .body(r.aggregation.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(new AggregationResult(value.aggregations))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
 
   private def executeBulk(r: Bulk): Task[Unit] = {
     val uri = (r.index match {
@@ -262,34 +283,11 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
   }
 
-  private def executeGetByQueryWithScroll(r: Search, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
-    sendRequestWithCustomResponse(
-      request
-        .post(
-          uri"${esConfig.uri}/${r.index}/$Search".withParams(
-            getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
-          )
-        )
-        .response(asJson[ElasticQueryResponse])
-        .contentType(ApplicationJson)
-        .body(r.query.toJson)
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk =>
-          response.body.fold(
-            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
-          )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
-      }
-    }
-
   private def executeGetByScroll(scrollId: String, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
-        .response(asJson[ElasticQueryResponse])
+        .response(asJson[SearchWithAggsResponse])
         .contentType(ApplicationJson)
         .body(Obj(ScrollId -> Str(scrollId)))
     ).flatMap { response =>
@@ -314,7 +312,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search")
-        .response(asJson[ElasticQueryResponse])
+        .response(asJson[SearchWithAggsResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJson)
     ).flatMap { response =>
@@ -348,7 +346,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     sendRequestWithCustomResponse(
       request
         .get(uri"${esConfig.uri}/$Search")
-        .response(asJson[ElasticQueryResponse])
+        .response(asJson[SearchWithAggsResponse])
         .contentType(ApplicationJson)
         .body(searchAfterJson.map(_ merge requestBody).getOrElse(requestBody))
     ).flatMap { response =>
@@ -389,6 +387,48 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
       }
     }
   }
+
+  private def executeSearchWithAggregation(r: SearchWithAggregation): Task[SearchWithAggregationsResult] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
+        .response(asJson[SearchWithAggsResponse])
+        .contentType(ApplicationJson)
+        .body(Obj(List("query" -> r.query.paramsToJson(None), "aggs" -> r.aggregation.paramsToJson): _*))
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(new SearchWithAggregationsResult(value.results.map(Item), value.aggregations))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
+  private def executeSearchWithScroll(r: Search, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(
+          uri"${esConfig.uri}/${r.index}/$Search".withParams(
+            getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
+          )
+        )
+        .response(asJson[SearchWithAggsResponse])
+        .contentType(ApplicationJson)
+        .body(r.query.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
 
   private def createElasticException(response: Response[Either[String, String]]): ElasticException =
     new ElasticException(

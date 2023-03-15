@@ -62,7 +62,21 @@ package object elasticsearch {
   def containsAny(name: String, params: List[String]): Boolean =
     params.exists(StringUtils.contains(name, _))
 
-  final implicit class ZIOResultOps[R, F[_]](zio: RIO[R, ElasticResult[F]]) {
+  final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
+    def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] = zio.flatMap(_.aggregation(name))
+
+    def aggregations: RIO[R, Map[String, ElasticAggregationResponse]] = zio.flatMap(_.aggregations)
+  }
+
+  final implicit class ZIODocumentOps[R, F[_]](zio: RIO[R, DocumentResult[F]]) {
     def documentAs[A: Schema]: RIO[R, F[A]] = zio.flatMap(_.documentAs[A])
+  }
+
+  final implicit class ZIODocumentWithAggregationsOps[R](zio: RIO[R, DocumentsWithAggregationsResult]) {
+    def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] = zio.flatMap(_.aggregation(name))
+
+    def aggregations: RIO[R, Map[String, ElasticAggregationResponse]] = zio.flatMap(_.aggregations)
+
+    def documentAs[A: Schema]: RIO[R, List[A]] = zio.flatMap(_.documentAs[A])
   }
 }
