@@ -57,31 +57,31 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       case r: Search         => executeSearch(r)
     }
 
-  def stream(request: SearchRequest): Stream[Throwable, Item] =
+  def stream(r: SearchRequest): Stream[Throwable, Item] =
+    stream(r, StreamConfig.defaultStreamConfig)
+
+  def stream(request: SearchRequest, streamConfig: StreamConfig): Stream[Throwable, Item] =
     request match {
-      case r: SearchRequest =>
-        ZStream.paginateChunkZIO("") { s =>
-          if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
+      case r: Search =>
+        if (streamConfig.searchAfter) {
+          ZStream.paginateChunkZIO[Any, Throwable, Item, (String, Option[Json])](("", None)) {
+            case ("", _) =>
+              executeCreatePointInTime(r.index, streamConfig)
+            case (pitId, searchAfter) =>
+              executeSearchAfterRequest(r = r, pitId = pitId, streamConfig = streamConfig, searchAfter = searchAfter)
+          }
+        } else {
+          ZStream.paginateChunkZIO("") { s =>
+            if (s.isEmpty) executeGetByQueryWithScroll(r, streamConfig) else executeGetByScroll(s, streamConfig)
+          }
         }
     }
 
   def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A] =
     stream(request).map(_.documentAs[A]).collectWhileRight
 
-  // todo considering similarities and implementation with stream and large stream
-  // we can consider creating one method with flags or build properties where user
-  // can say what type he wants returned and whether there will be more than 10000 results
-  def largeStream(request: SearchRequest): Stream[Throwable, Item] =
-    request match {
-      case r: Search =>
-        ZStream.paginateChunkZIO[Any, Throwable, Item, (String, Option[Json])](("", None)) {
-          case ("", _)              => executeCreatePointInTime(r.index)
-          case (pitId, searchAfter) => executeSearchAfterRequest(r = r, pitId = pitId, searchAfter = searchAfter)
-        }
-    }
-
-  def largeStreamAs[A: Schema](request: SearchRequest): Stream[Throwable, A] =
-    largeStream(request).map(_.documentAs[A]).collectWhileRight
+  def streamAs[A: Schema](r: SearchRequest, streamConfig: StreamConfig): Stream[Throwable, A] =
+    stream(r, streamConfig).map(_.documentAs[A]).collectWhileRight
 
   private def executeBulk(r: Bulk): Task[Unit] = {
     val uri = (r.index match {
@@ -169,10 +169,13 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
-  private def executeCreatePointInTime(index: IndexName): Task[(Chunk[Item], Option[(String, Option[Json])])] =
+  private def executeCreatePointInTime(
+    index: IndexName,
+    streamConfig: StreamConfig
+  ): Task[(Chunk[Item], Option[(String, Option[Json])])] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/$index/$PointInTime".withParams((KeepAlive, KeepAliveDefaultDuration)))
+        .post(uri"${config.uri}/$index/$PointInTime".withParams((KeepAlive, streamConfig.keepAlive)))
         .response(asJson[PointInTimeResponse])
         .contentType(ApplicationJson)
     ).flatMap { response =>
@@ -259,36 +262,33 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
-  private def executeGetByQueryWithScroll(r: SearchRequest): Task[(Chunk[Item], Option[String])] =
-    r match {
-      case s: Search =>
-        sendRequestWithCustomResponse(
-          request
-            .post(
-              uri"${config.uri}/${s.index}/$Search".withParams(
-                getQueryParams(List((Scroll, Some(ScrollDefaultDuration)), ("routing", s.routing)))
-              )
-            )
-            .response(asJson[ElasticQueryResponse])
-            .contentType(ApplicationJson)
-            .body(s.query.toJson)
-        ).flatMap { response =>
-          response.code match {
-            case HttpOk =>
-              response.body.fold(
-                e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-                value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
-              )
-            case _ =>
-              ZIO.fail(createElasticExceptionFromCustomResponse(response))
-          }
-        }
-    }
-
-  private def executeGetByScroll(scrollId: String): Task[(Chunk[Item], Option[String])] =
+  private def executeGetByQueryWithScroll(r: Search, streamConfig: StreamConfig): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/$Search/$Scroll".withParams((Scroll, ScrollDefaultDuration)))
+        .post(
+          uri"${config.uri}/${r.index}/$Search".withParams(
+            getQueryParams(List((Scroll, Some(streamConfig.keepAlive)), ("routing", r.routing)))
+          )
+        )
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(r.query.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
+  private def executeGetByScroll(scrollId: String, streamConfig: StreamConfig): Task[(Chunk[Item], Option[String])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${config.uri}/$Search/$Scroll".withParams((Scroll, streamConfig.keepAlive)))
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(Obj(ScrollId -> Str(scrollId)))
@@ -298,8 +298,12 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              if (value.results.isEmpty) ZIO.succeed((Chunk.empty, None))
-              else ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId.orElse(Some(scrollId))))
+              value.results match {
+                case Nil =>
+                  ZIO.succeed((Chunk.empty, None))
+                case _ =>
+                  ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId.orElse(Some(scrollId))))
+              }
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -328,10 +332,19 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeSearchAfterRequest(
     r: Search,
     pitId: String,
+    streamConfig: StreamConfig,
     searchAfter: Option[Json]
   ): Task[(Chunk[Item], Option[(String, Option[Json])])] = {
-    val searchAfterJson = searchAfter.map(sa => Json.Obj("search_after" -> sa))
-    val requestBody     = r.query.toJson merge createPointInTimeJson(pitId) merge defaultSortField
+    val pointInTimeJson =
+      Json.Obj(
+        "pit" -> Json.Obj(
+          "id"      -> Json.Str(pitId),
+          KeepAlive -> Json.Str(streamConfig.keepAlive)
+        )
+      )
+    val defaultSortField = Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
+    val searchAfterJson  = searchAfter.map(sa => Json.Obj("search_after" -> sa))
+    val requestBody      = r.query.toJson merge pointInTimeJson merge defaultSortField
     sendRequestWithCustomResponse(
       request
         .get(uri"${config.uri}/$Search")
@@ -344,28 +357,31 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             body => {
-              if (body.results.isEmpty)
-                ZIO.succeed((Chunk.empty, None))
-              else
-                body.pitId match {
-                  case Some(newPitId) =>
-                    body.lastSortField match {
-                      case Some(newSearchAfter) =>
-                        ZIO.succeed((Chunk.fromIterable(body.results.map(Item)), Some(newPitId, Some(newSearchAfter))))
-                      case None =>
-                        ZIO.fail(
-                          new ElasticException(
-                            s"Unexpected response from Elasticsearch, search_after field is missing."
+              body.results match {
+                case Nil => ZIO.succeed((Chunk.empty, None))
+                case _ =>
+                  body.pitId match {
+                    case Some(newPitId) =>
+                      body.lastSortField match {
+                        case Some(newSearchAfter) =>
+                          ZIO.succeed(
+                            (Chunk.fromIterable(body.results.map(Item)), Some(newPitId, Some(newSearchAfter)))
                           )
+                        case None =>
+                          ZIO.fail(
+                            new ElasticException(
+                              s"Unexpected response from Elasticsearch, search_after field is missing."
+                            )
+                          )
+                      }
+                    case None =>
+                      ZIO.fail(
+                        new ElasticException(
+                          s"Unexpected response from Elasticsearch, pid.id field is missing."
                         )
-                    }
-                  case None =>
-                    ZIO.fail(
-                      new ElasticException(
-                        s"Unexpected response from Elasticsearch, pid.id field is missing."
                       )
-                    )
-                }
+                  }
+              }
             }
           )
         case _ =>
@@ -373,14 +389,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       }
     }
   }
-
-  private def createPointInTimeJson(pitId: String, keepAliveDuration: Option[String] = None) =
-    Json.Obj(
-      "pit" -> Json.Obj(
-        "id"      -> Json.Str(pitId),
-        KeepAlive -> Json.Str(keepAliveDuration.getOrElse(KeepAliveDefaultDuration))
-      )
-    )
 
   private def createElasticException(response: Response[Either[String, String]]): ElasticException =
     new ElasticException(
@@ -393,9 +401,6 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     new ElasticException(
       s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
     )
-
-  private lazy val defaultSortField =
-    Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
 
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
@@ -422,18 +427,16 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
 private[elasticsearch] object HttpElasticExecutor {
 
-  private final val Bulk                     = "_bulk"
-  private final val Create                   = "_create"
-  private final val DeleteByQuery            = "_delete_by_query"
-  private final val Doc                      = "_doc"
-  private final val KeepAlive                = "keep_alive"
-  private final val KeepAliveDefaultDuration = "1m"
-  private final val PointInTime              = "_pit"
-  private final val Scroll                   = "scroll"
-  private final val ScrollDefaultDuration    = "1m"
-  private final val ScrollId                 = "scroll_id"
-  private final val Search                   = "_search"
-  private final val ShardDoc                 = "_shard_doc"
+  private final val Bulk          = "_bulk"
+  private final val Create        = "_create"
+  private final val DeleteByQuery = "_delete_by_query"
+  private final val Doc           = "_doc"
+  private final val KeepAlive     = "keep_alive"
+  private final val PointInTime   = "_pit"
+  private final val Scroll        = "scroll"
+  private final val ScrollId      = "scroll_id"
+  private final val Search        = "_search"
+  private final val ShardDoc      = "_shard_doc"
 
   private[elasticsearch] final case class PointInTimeResponse(id: String)
   object PointInTimeResponse {

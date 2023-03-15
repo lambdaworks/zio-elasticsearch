@@ -27,11 +27,11 @@ private[elasticsearch] trait ElasticExecutor {
 
   def stream(request: SearchRequest): Stream[Throwable, Item]
 
+  def stream(request: SearchRequest, streamConfig: StreamConfig): Stream[Throwable, Item]
+
   def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
 
-  def largeStream(request: SearchRequest): Stream[Throwable, Item]
-
-  def largeStreamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
+  def streamAs[A: Schema](request: SearchRequest, streamConfig: StreamConfig): Stream[Throwable, A]
 }
 
 object ElasticExecutor {
@@ -47,12 +47,18 @@ object ElasticExecutor {
   private[elasticsearch] def stream(request: SearchRequest): ZStream[ElasticExecutor, Throwable, Item] =
     ZStream.serviceWithStream[ElasticExecutor](_.stream(request))
 
+  private[elasticsearch] def stream(
+    request: SearchRequest,
+    streamConfig: StreamConfig
+  ): ZStream[ElasticExecutor, Throwable, Item] =
+    ZStream.serviceWithStream[ElasticExecutor](_.stream(request, streamConfig))
+
   private[elasticsearch] def streamAs[A: Schema](request: SearchRequest): ZStream[ElasticExecutor, Throwable, A] =
     ZStream.serviceWithStream[ElasticExecutor](_.streamAs[A](request))
 
-  private[elasticsearch] def largeStream(request: SearchRequest): ZStream[ElasticExecutor, Throwable, Item] =
-    ZStream.serviceWithStream[ElasticExecutor](_.largeStream(request))
-
-  private[elasticsearch] def largeStreamAs[A: Schema](request: SearchRequest): ZStream[ElasticExecutor, Throwable, A] =
-    ZStream.serviceWithStream[ElasticExecutor](_.largeStreamAs[A](request))
+  private[elasticsearch] def streamAs[A: Schema](
+    request: SearchRequest,
+    streamConfig: StreamConfig
+  ): ZStream[ElasticExecutor, Throwable, A] =
+    ZStream.serviceWithStream[ElasticExecutor](_.streamAs[A](request, streamConfig))
 }

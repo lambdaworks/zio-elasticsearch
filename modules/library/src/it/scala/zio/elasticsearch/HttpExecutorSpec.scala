@@ -159,7 +159,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
-        suite("searching documents")(
+        suite("searching for documents")(
           test("search for document using range query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
@@ -291,7 +291,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching documents using scroll API and returning them as a stream")(
+        suite("searching for documents using scroll API and returning them as a stream")(
           test("search for documents using range query") {
             checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
@@ -377,8 +377,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching documents using PIT and returning them as a stream")(
-          test("successfully create point in time and return stream results") {
+        suite("searching for documents using PIT(point in time) and returning them as a stream")(
+          test("successfully create PIT and return stream results") {
             checkOnce(genCustomer) { customer =>
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
                 ZSink.collectAll[Item]
@@ -394,7 +394,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range("balance").gte(100)
                 res <- ElasticExecutor
-                         .largeStream(ElasticRequest.search(secondSearchIndex, query))
+                         .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.searchAfter)
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
             }
@@ -402,7 +402,36 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("successfully create point in time and return stream results as specific Type") {
+          test(
+            "successfully create PIT and return stream results with changed page size and different keep alive parameters"
+          ) {
+            checkOnce(genCustomer) { customer =>
+              def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
+                ZSink.collectAll[Item]
+
+              for {
+                _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                reqs = (0 to 200).map { _ =>
+                         ElasticRequest.create[CustomerDocument](
+                           secondSearchIndex,
+                           customer.copy(id = Random.alphanumeric.take(5).mkString, balance = 150)
+                         )
+                       }
+                _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query = range("balance").gte(100)
+                res <- ElasticExecutor
+                         .stream(
+                           ElasticRequest.search(secondSearchIndex, query),
+                           StreamConfig.searchAfter.withPageSize(40).keepAliveFor("2m")
+                         )
+                         .run(sink)
+              } yield assert(res)(hasSize(equalTo(201)))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
+          test("successfully create PIT(point in time) and return stream results as specific type") {
             checkOnce(genCustomer) { customer =>
               def sink: Sink[Throwable, CustomerDocument, Nothing, Chunk[CustomerDocument]] =
                 ZSink.collectAll[CustomerDocument]
@@ -418,7 +447,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range("balance").gte(100)
                 res <- ElasticExecutor
-                         .largeStreamAs[CustomerDocument](ElasticRequest.search(secondSearchIndex, query))
+                         .streamAs[CustomerDocument](
+                           ElasticRequest.search(secondSearchIndex, query),
+                           StreamConfig.searchAfter
+                         )
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
             }
@@ -443,7 +475,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                      )
                 query = range("balance").gte(200)
                 res <- ElasticExecutor
-                         .largeStream(ElasticRequest.search(secondSearchIndex, query))
+                         .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.searchAfter)
                          .run(sink)
               } yield assert(res)(isEmpty)
             }
