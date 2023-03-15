@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-case class StreamConfig(searchAfter: Boolean, keepAlive: String, pageSize: Option[Int] = None) { self =>
+final case class StreamConfig(searchAfter: Boolean, keepAlive: String, pageSize: Option[Int] = None) { self =>
 
   def withPageSize(n: Int): StreamConfig = self.copy(pageSize = Some(n))
 
@@ -24,11 +24,11 @@ case class StreamConfig(searchAfter: Boolean, keepAlive: String, pageSize: Optio
 }
 
 object StreamConfig {
-  def scroll: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
+  lazy val defaultStreamConfig: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
 
-  def searchAfter: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
+  lazy val scroll: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
 
-  def defaultStreamConfig: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
+  lazy val searchAfter: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
 
   private val DefaultKeepAlive = "1m"
 }

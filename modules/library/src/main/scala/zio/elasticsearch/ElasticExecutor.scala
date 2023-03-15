@@ -27,11 +27,11 @@ private[elasticsearch] trait ElasticExecutor {
 
   def stream(request: SearchRequest): Stream[Throwable, Item]
 
-  def stream(request: SearchRequest, streamConfig: StreamConfig): Stream[Throwable, Item]
+  def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item]
 
   def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
 
-  def streamAs[A: Schema](request: SearchRequest, streamConfig: StreamConfig): Stream[Throwable, A]
+  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A]
 }
 
 object ElasticExecutor {
@@ -49,16 +49,16 @@ object ElasticExecutor {
 
   private[elasticsearch] def stream(
     request: SearchRequest,
-    streamConfig: StreamConfig
+    config: StreamConfig
   ): ZStream[ElasticExecutor, Throwable, Item] =
-    ZStream.serviceWithStream[ElasticExecutor](_.stream(request, streamConfig))
+    ZStream.serviceWithStream[ElasticExecutor](_.stream(request, config))
 
   private[elasticsearch] def streamAs[A: Schema](request: SearchRequest): ZStream[ElasticExecutor, Throwable, A] =
     ZStream.serviceWithStream[ElasticExecutor](_.streamAs[A](request))
 
   private[elasticsearch] def streamAs[A: Schema](
     request: SearchRequest,
-    streamConfig: StreamConfig
+    config: StreamConfig
   ): ZStream[ElasticExecutor, Throwable, A] =
-    ZStream.serviceWithStream[ElasticExecutor](_.streamAs[A](request, streamConfig))
+    ZStream.serviceWithStream[ElasticExecutor](_.streamAs[A](request, config))
 }

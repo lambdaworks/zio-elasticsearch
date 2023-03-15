@@ -377,7 +377,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents using PIT(point in time) and returning them as a stream")(
+        suite("searching for documents using PIT (point in time) and returning them as a stream")(
           test("successfully create PIT and return stream results") {
             checkOnce(genCustomer) { customer =>
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
