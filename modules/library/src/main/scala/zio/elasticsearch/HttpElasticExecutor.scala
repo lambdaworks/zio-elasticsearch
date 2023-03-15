@@ -28,14 +28,16 @@ import sttp.model.StatusCode.{
 }
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
+import zio.json.ast.Json
 import zio.json.ast.Json.{Obj, Str}
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
 import zio.{Chunk, Task, ZIO}
 
 import scala.collection.immutable.{Map => ScalaMap}
 
-private[elasticsearch] final class HttpElasticExecutor private (config: ElasticConfig, client: SttpBackend[Task, Any])
+private[elasticsearch] final class HttpElasticExecutor private (esConfig: ElasticConfig, client: SttpBackend[Task, Any])
     extends ElasticExecutor {
 
   import HttpElasticExecutor._
@@ -56,22 +58,35 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
-    ZStream.paginateChunkZIO("") { s =>
-      if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
+    stream(r, StreamConfig.defaultStreamConfig)
+
+  def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item] =
+    request match {
+      case r: Search =>
+        if (config.searchAfter) {
+          ZStream.paginateChunkZIO[Any, Throwable, Item, (String, Option[Json])](("", None)) {
+            case ("", _) =>
+              executeCreatePointInTime(r.index, config)
+            case (pitId, searchAfter) =>
+              executeSearchAfterRequest(r = r, pitId = pitId, config = config, searchAfter = searchAfter)
+          }
+        } else {
+          ZStream.paginateChunkZIO("") { s =>
+            if (s.isEmpty) executeGetByQueryWithScroll(r, config) else executeGetByScroll(s, config)
+          }
+        }
     }
 
-  def streamAs[A: Schema](r: SearchRequest): Stream[Throwable, A] =
-    ZStream
-      .paginateChunkZIO("") { s =>
-        if (s.isEmpty) executeGetByQueryWithScroll(r) else executeGetByScroll(s)
-      }
-      .map(_.documentAs[A])
-      .collectWhileRight
+  def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A] =
+    stream(request).map(_.documentAs[A]).collectWhileRight
+
+  def streamAs[A: Schema](r: SearchRequest, config: StreamConfig): Stream[Throwable, A] =
+    stream(r, config).map(_.documentAs[A]).collectWhileRight
 
   private def executeBulk(r: Bulk): Task[Unit] = {
     val uri = (r.index match {
-      case Some(index) => uri"${config.uri}/$index/$Bulk"
-      case None        => uri"${config.uri}/$Bulk"
+      case Some(index) => uri"${esConfig.uri}/$index/$Bulk"
+      case None        => uri"${esConfig.uri}/$Bulk"
     }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
@@ -85,7 +100,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreate(r: Create): Task[DocumentId] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc"
+    val uri = uri"${esConfig.uri}/${r.index}/$Doc"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequestWithCustomResponse[ElasticCreateResponse](
@@ -111,7 +126,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeCreateWithId(r: CreateWithId): Task[CreationOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$Create/${r.id}"
+    val uri = uri"${esConfig.uri}/${r.index}/$Create/${r.id}"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
@@ -131,7 +146,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   private def executeCreateIndex(createIndex: CreateIndex): Task[CreationOutcome] =
     sendRequest(
       request
-        .put(uri"${config.uri}/${createIndex.name}")
+        .put(uri"${esConfig.uri}/${createIndex.name}")
         .contentType(ApplicationJson)
         .body(createIndex.definition.getOrElse(""))
     ).flatMap { response =>
@@ -143,7 +158,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+    val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
@@ -154,8 +169,29 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
+  private def executeCreatePointInTime(
+    index: IndexName,
+    config: StreamConfig
+  ): Task[(Chunk[Item], Option[(String, Option[Json])])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${esConfig.uri}/$index/$PointInTime".withParams((KeepAlive, config.keepAlive)))
+        .response(asJson[PointInTimeResponse])
+        .contentType(ApplicationJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            pit => ZIO.succeed((Chunk(), Some(pit.id, None)))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
   private def executeDeleteById(r: DeleteById): Task[DeletionOutcome] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}"
+    val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(request.delete(uri)).flatMap { response =>
@@ -169,7 +205,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
 
   private def executeDeleteByQuery(r: DeleteByQuery): Task[DeletionOutcome] = {
     val uri =
-      uri"${config.uri}/${r.index}/$DeleteByQuery".withParams(
+      uri"${esConfig.uri}/${r.index}/$DeleteByQuery".withParams(
         getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
       )
 
@@ -188,7 +224,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[DeletionOutcome] =
-    sendRequest(request.delete(uri"${config.uri}/${r.name}")).flatMap { response =>
+    sendRequest(request.delete(uri"${esConfig.uri}/${r.name}")).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
@@ -197,7 +233,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
 
   private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
+    val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
     sendRequest(request.head(uri)).flatMap { response =>
       response.code match {
@@ -209,7 +245,7 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
   }
 
   private def executeGetById(r: GetById): Task[GetResult] = {
-    val uri = uri"${config.uri}/${r.index}/$Doc/${r.id}".withParams(
+    val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}".withParams(
       getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
     )
 
@@ -226,10 +262,58 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
     }
   }
 
+  private def executeGetByQueryWithScroll(r: Search, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(
+          uri"${esConfig.uri}/${r.index}/$Search".withParams(
+            getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
+          )
+        )
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(r.query.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
+  private def executeGetByScroll(scrollId: String, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
+    sendRequestWithCustomResponse(
+      request
+        .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
+        .response(asJson[ElasticQueryResponse])
+        .contentType(ApplicationJson)
+        .body(Obj(ScrollId -> Str(scrollId)))
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value =>
+              value.results match {
+                case Nil =>
+                  ZIO.succeed((Chunk.empty, None))
+                case _ =>
+                  ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId.orElse(Some(scrollId))))
+              }
+          )
+        case _ =>
+          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+      }
+    }
+
   private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/${r.index}/$Search")
+        .post(uri"${esConfig.uri}/${r.index}/$Search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJson)
@@ -245,52 +329,81 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       }
     }
 
-  private def executeGetByQueryWithScroll(r: SearchRequest): Task[(Chunk[Item], Option[String])] =
-    r match {
-      case s: Search =>
-        sendRequestWithCustomResponse(
-          request
-            .post(
-              uri"${config.uri}/${s.index}/$Search".withParams(
-                getQueryParams(List((Scroll, Some(ScrollDefaultDuration)), ("routing", s.routing)))
-              )
-            )
-            .response(asJson[ElasticQueryResponse])
-            .contentType(ApplicationJson)
-            .body(s.query.toJson)
-        ).flatMap { response =>
-          response.code match {
-            case HttpOk =>
-              response.body.fold(
-                e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-                value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId))
-              )
-            case _ =>
-              ZIO.fail(createElasticExceptionFromCustomResponse(response))
-          }
-        }
-    }
-
-  private def executeGetByScroll(scrollId: String): Task[(Chunk[Item], Option[String])] =
+  private def executeSearchAfterRequest(
+    r: Search,
+    pitId: String,
+    config: StreamConfig,
+    searchAfter: Option[Json]
+  ): Task[(Chunk[Item], Option[(String, Option[Json])])] = {
+    val pointInTimeJson =
+      Json.Obj(
+        "pit" -> Json.Obj(
+          "id"      -> Json.Str(pitId),
+          KeepAlive -> Json.Str(config.keepAlive)
+        )
+      )
+    val defaultSortField = Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
+    val searchAfterJson  = searchAfter.map(sa => Json.Obj("search_after" -> sa))
+    val requestBody      = r.query.toJson merge pointInTimeJson merge defaultSortField
     sendRequestWithCustomResponse(
       request
-        .post(uri"${config.uri}/$Search/$Scroll".withParams((Scroll, ScrollDefaultDuration)))
+        .get(uri"${esConfig.uri}/$Search")
         .response(asJson[ElasticQueryResponse])
         .contentType(ApplicationJson)
-        .body(Obj(ScrollId -> Str(scrollId)))
+        .body(searchAfterJson.map(_ merge requestBody).getOrElse(requestBody))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value =>
-              if (value.results.isEmpty) ZIO.succeed((Chunk.empty, None))
-              else ZIO.succeed((Chunk.fromIterable(value.results).map(Item), value.scrollId.orElse(Some(scrollId))))
+            body => {
+              body.results match {
+                case Nil => ZIO.succeed((Chunk.empty, None))
+                case _ =>
+                  body.pitId match {
+                    case Some(newPitId) =>
+                      body.lastSortField match {
+                        case Some(newSearchAfter) =>
+                          ZIO.succeed(
+                            (Chunk.fromIterable(body.results.map(Item)), Some(newPitId, Some(newSearchAfter)))
+                          )
+                        case None =>
+                          ZIO.fail(
+                            new ElasticException(
+                              s"Unexpected response from Elasticsearch, search_after field is missing."
+                            )
+                          )
+                      }
+                    case None =>
+                      ZIO.fail(
+                        new ElasticException(
+                          s"Unexpected response from Elasticsearch, pid.id field is missing."
+                        )
+                      )
+                  }
+              }
+            }
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
+  }
+
+  private def createElasticException(response: Response[Either[String, String]]): ElasticException =
+    new ElasticException(
+      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+    )
+
+  private def createElasticExceptionFromCustomResponse[A](
+    response: Response[Either[ResponseException[String, String], A]]
+  ): ElasticException =
+    new ElasticException(
+      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+    )
+
+  private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
+    parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
@@ -310,34 +423,27 @@ private[elasticsearch] final class HttpElasticExecutor private (config: ElasticC
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
-  private def createElasticException(response: Response[Either[String, String]]): ElasticException =
-    new ElasticException(
-      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
-    )
-
-  private def createElasticExceptionFromCustomResponse[A](
-    response: Response[Either[ResponseException[String, String], A]]
-  ): ElasticException =
-    new ElasticException(
-      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
-    )
-
-  private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
-    parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
-
 }
 
 private[elasticsearch] object HttpElasticExecutor {
 
-  private final val Bulk                  = "_bulk"
-  private final val Create                = "_create"
-  private final val DeleteByQuery         = "_delete_by_query"
-  private final val Doc                   = "_doc"
-  private final val Search                = "_search"
-  private final val Scroll                = "scroll"
-  private final val ScrollDefaultDuration = "1m"
-  private final val ScrollId              = "scroll_id"
+  private final val Bulk          = "_bulk"
+  private final val Create        = "_create"
+  private final val DeleteByQuery = "_delete_by_query"
+  private final val Doc           = "_doc"
+  private final val KeepAlive     = "keep_alive"
+  private final val PointInTime   = "_pit"
+  private final val Scroll        = "scroll"
+  private final val ScrollId      = "scroll_id"
+  private final val Search        = "_search"
+  private final val ShardDoc      = "_shard_doc"
 
-  def apply(config: ElasticConfig, client: SttpBackend[Task, Any]) =
-    new HttpElasticExecutor(config, client)
+  private[elasticsearch] final case class PointInTimeResponse(id: String)
+  object PointInTimeResponse {
+    implicit val decoder: JsonDecoder[PointInTimeResponse] =
+      DeriveJsonDecoder.gen[PointInTimeResponse]
+  }
+
+  def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) =
+    new HttpElasticExecutor(esConfig, client)
 }
