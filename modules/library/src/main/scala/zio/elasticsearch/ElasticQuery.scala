@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticPrimitive.{ElasticPrimitive, ElasticPrimitiveOps}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
@@ -53,31 +54,6 @@ sealed trait ElasticQuery[-S] { self =>
 }
 
 object ElasticQuery {
-
-  sealed trait ElasticPrimitive[A] {
-    def toJson(value: A): Json
-  }
-
-  implicit object ElasticInt extends ElasticPrimitive[Int] {
-    def toJson(value: Int): Json = Num(value)
-  }
-
-  implicit object ElasticString extends ElasticPrimitive[String] {
-    def toJson(value: String): Json = Str(value)
-  }
-
-  implicit object ElasticBool extends ElasticPrimitive[Boolean] {
-    def toJson(value: Boolean): Json = Json.Bool(value)
-  }
-
-  implicit object ElasticLong extends ElasticPrimitive[Long] {
-    def toJson(value: Long): Json = Num(value)
-  }
-
-  final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {
-    def toJson(implicit EP: ElasticPrimitive[A]): Json = EP.toJson(value)
-  }
-
   def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(field = field.toString, value = s"*$value*", boost = None, caseInsensitive = None)
 

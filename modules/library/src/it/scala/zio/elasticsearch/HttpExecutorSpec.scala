@@ -17,6 +17,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
+import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
@@ -30,6 +31,164 @@ object HttpExecutorSpec extends IntegrationSpec {
   def spec: Spec[TestEnvironment, Any] = {
     suite("Executor")(
       suite("HTTP Executor")(
+        suite("aggregation")(
+          test("aggregate using terms aggregation") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  aggregation = termsAggregation(name = "aggregationName", field = "name.keyword")
+                  aggsRes <- ElasticExecutor
+                               .execute(
+                                 ElasticRequest
+                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                               )
+                               .aggregations
+                } yield assert(aggsRes)(isNonEmpty)
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using multiple terms aggregations") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  aggregation = multipleAggregations.aggregations(
+                                  termsAggregation(name = "aggregationName", field = "name.keyword"),
+                                  termsAggregation(name = "aggregationAge", field = "age.keyword")
+                                )
+                  aggsRes <- ElasticExecutor
+                               .execute(
+                                 ElasticRequest
+                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                               )
+                               .aggregations
+                } yield assert(aggsRes)(isNonEmpty)
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using terms aggregation with nested terms aggregation") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  aggregation = termsAggregation(name = "aggregationName", field = "name.keyword")
+                                  .withSubAgg(termsAggregation(name = "aggregationAge", field = "age.keyword"))
+                  aggsRes <- ElasticExecutor
+                               .execute(
+                                 ElasticRequest
+                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                               )
+                               .aggregations
+                } yield assert(aggsRes)(isNonEmpty)
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ),
+        suite("search with aggregation")(
+          test("search using match all query with multiple terms aggregations") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  query = matchAll
+                  aggregation =
+                    termsAggregation("aggregationName", "name.keyword").withAgg(
+                      termsAggregation("aggregationAge", "age.keyword")
+                    )
+                  res <- ElasticExecutor.execute(
+                           ElasticRequest
+                             .searchWithAggregation(
+                               index = firstSearchIndex,
+                               query = query,
+                               aggregation = aggregation
+                             )
+                         )
+                  docs <- res.documentAs[CustomerDocument]
+                  aggs <- res.aggregations
+                } yield assert(docs)(isNonEmpty) && assert(aggs)(
+                  isNonEmpty
+                )
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search using match all query with terms aggregations with nested terms aggregation") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  query = matchAll
+                  aggregation =
+                    termsAggregation("aggregationName", "name.keyword").withSubAgg(
+                      termsAggregation("aggregationAge", "age.keyword")
+                    )
+                  res <- ElasticExecutor.execute(
+                           ElasticRequest
+                             .searchWithAggregation(
+                               index = firstSearchIndex,
+                               query = query,
+                               aggregation = aggregation
+                             )
+                         )
+                  docs <- res.documentAs[CustomerDocument]
+                  aggs <- res.aggregations
+                } yield assert(docs)(isNonEmpty) && assert(aggs)(
+                  isNonEmpty
+                )
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ),
         suite("creating document")(
           test("successfully create document") {
             checkOnce(genCustomer) { customer =>
@@ -165,16 +324,14 @@ object HttpExecutorSpec extends IntegrationSpec {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
                   _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
-                    )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
-                        .refreshTrue
-                    )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
                   query = range("balance").gte(100)
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
@@ -190,10 +347,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                 val result =
                   for {
                     _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                    _ <-
-                      ElasticExecutor.execute(
-                        ElasticRequest.upsert[CustomerDocument](secondSearchIndex, customerDocumentId, customer)
-                      )
+                    _ <- ElasticExecutor.execute(
+                           ElasticRequest.upsert[CustomerDocument](secondSearchIndex, customerDocumentId, customer)
+                         )
                     _ <- ElasticExecutor.execute(
                            ElasticRequest
                              .upsert[EmployeeDocument](secondSearchIndex, employeeDocumentId, employee)
@@ -222,19 +378,18 @@ object HttpExecutorSpec extends IntegrationSpec {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
                   _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
-                    )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
-                        .refreshTrue
-                    )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
                   query = ElasticQuery.contains("name.keyword", firstCustomer.name.take(3))
-                  res <-
-                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
+                  res <- ElasticExecutor
+                           .execute(ElasticRequest.search(firstSearchIndex, query))
+                           .documentAs[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -246,19 +401,18 @@ object HttpExecutorSpec extends IntegrationSpec {
               (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
                 for {
                   _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
-                    )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
-                        .refreshTrue
-                    )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
                   query = ElasticQuery.startsWith("name.keyword", firstCustomer.name.take(3))
-                  res <-
-                    ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
+                  res <- ElasticExecutor
+                           .execute(ElasticRequest.search(firstSearchIndex, query))
+                           .documentAs[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
             }
           } @@ around(
@@ -274,12 +428,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                     ElasticExecutor.execute(
                       ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
                     )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
-                        .refreshTrue
-                    )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
                   query =
                     wildcard("name.keyword", s"${firstCustomer.name.take(2)}*${firstCustomer.name.takeRight(2)}")
                   res <-
@@ -497,28 +650,26 @@ object HttpExecutorSpec extends IntegrationSpec {
                              firstCustomer.copy(balance = 150)
                            )
                        )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](
-                          deleteByQueryIndex,
-                          secondDocumentId,
-                          secondCustomer.copy(balance = 350)
-                        )
-                    )
-                  _ <-
-                    ElasticExecutor.execute(
-                      ElasticRequest
-                        .upsert[CustomerDocument](
-                          deleteByQueryIndex,
-                          thirdDocumentId,
-                          thirdCustomer.copy(balance = 400)
-                        )
-                        .refreshTrue
-                    )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](
+                             deleteByQueryIndex,
+                             secondDocumentId,
+                             secondCustomer.copy(balance = 350)
+                           )
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](
+                             deleteByQueryIndex,
+                             thirdDocumentId,
+                             thirdCustomer.copy(balance = 400)
+                           )
+                           .refreshTrue
+                       )
                   deleteQuery = range("balance").gte(300)
-                  _ <-
-                    ElasticExecutor.execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
+                  _ <- ElasticExecutor
+                         .execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
                   res <- ElasticExecutor
                            .execute(ElasticRequest.search(deleteByQueryIndex, matchAll))
                            .documentAs[CustomerDocument]

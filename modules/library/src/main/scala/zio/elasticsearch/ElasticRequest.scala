@@ -37,6 +37,9 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
+  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregationRequest =
+    Aggregation(index = index, aggregation = aggregation)
+
   def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
 
@@ -70,8 +73,20 @@ object ElasticRequest {
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(index = index, query = query, routing = None)
 
+  def searchWithAggregation(
+    index: IndexName,
+    query: ElasticQuery[_],
+    aggregation: ElasticAggregation
+  ): SearchWithAggregationRequest =
+    SearchWithAggregation(index = index, query = query, aggregation = aggregation)
+
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
+
+  sealed trait AggregationRequest extends ElasticRequest[AggregationResult]
+
+  private[elasticsearch] final case class Aggregation(index: IndexName, aggregation: ElasticAggregation)
+      extends AggregationRequest
 
   sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[BulkRequest] with HasRouting[BulkRequest]
 
@@ -293,6 +308,14 @@ object ElasticRequest {
     query: ElasticQuery[_],
     routing: Option[Routing]
   ) extends SearchRequest
+
+  sealed trait SearchWithAggregationRequest extends ElasticRequest[SearchWithAggregationsResult]
+
+  private[elasticsearch] final case class SearchWithAggregation(
+    index: IndexName,
+    query: ElasticQuery[_],
+    aggregation: ElasticAggregation
+  ) extends SearchWithAggregationRequest
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }

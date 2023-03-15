@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, assertZIO}
@@ -24,6 +25,17 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
 
   def spec: Spec[TestEnvironment, Any] =
     suite("HttpElasticExecutor")(
+      test("aggregation request") {
+        assertZIO(
+          ElasticExecutor
+            .execute(
+              ElasticRequest.aggregate(index, termsAggregation(name = "aggregation1", field = "name"))
+            )
+            .aggregations
+        )(
+          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, List(TermsAggregationBucket("name", 5, None)))))
+        )
+      },
       test("bulk request") {
         assertZIO(
           ElasticExecutor.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
@@ -140,14 +152,22 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             .documentAs[GitHubRepo]
         )(isSome(equalTo(repo)))
       },
-      test("getting by query request") {
+      test("search request") {
         assertZIO(
           ElasticExecutor
             .execute(ElasticRequest.search(index = index, query = matchAll))
             .documentAs[GitHubRepo]
-        )(
-          equalTo(List(repo))
+        )(equalTo(List(repo)))
+      },
+      test("search with aggregation request") {
+        val terms = termsAggregation(name = "aggregation1", field = "name")
+        val req = ElasticExecutor
+          .execute(ElasticRequest.searchWithAggregation(index = index, query = matchAll, terms))
+        assertZIO(req.documentAs[GitHubRepo])(equalTo(List(repo))) &&
+        assertZIO(req.aggregations)(
+          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, List(TermsAggregationBucket("name", 5, None)))))
         )
+
       }
     ).provideShared(elasticsearchSttpLayer)
 }
