@@ -31,6 +31,10 @@ trait HasRouting[R <: HasRouting[R]] {
   def routing(value: Routing): R
 }
 
+trait WithSort[R <: WithSort[R]] {
+  def sortBy(sorts: SortBy*): R
+}
+
 sealed trait BulkableRequest[A] extends ElasticRequest[A]
 
 sealed trait ElasticRequest[A]
@@ -71,14 +75,14 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
-    Search(index = index, query = query, routing = None)
+    Search(index = index, query = query, sortBy = None, routing = None)
 
   def searchWithAggregation(
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation
   ): SearchWithAggregationRequest =
-    SearchWithAggregation(index = index, query = query, aggregation = aggregation)
+    SearchWithAggregation(index = index, query = query, aggregation = aggregation, sortBy = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -301,21 +305,31 @@ object ElasticRequest {
       self.copy(routing = Some(value))
   }
 
-  sealed trait SearchRequest extends ElasticRequest[SearchResult]
+  sealed trait SearchRequest extends ElasticRequest[SearchResult] with WithSort[SearchRequest]
 
   private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
+    sortBy: Option[List[SortBy]],
     routing: Option[Routing]
-  ) extends SearchRequest
+  ) extends SearchRequest { self =>
+    def sortBy(sorts: SortBy*): SearchRequest =
+      self.copy(sortBy = Some(sorts.toList))
+  }
 
-  sealed trait SearchWithAggregationRequest extends ElasticRequest[SearchWithAggregationsResult]
+  sealed trait SearchWithAggregationRequest
+      extends ElasticRequest[SearchWithAggregationsResult]
+      with WithSort[SearchWithAggregationRequest]
 
   private[elasticsearch] final case class SearchWithAggregation(
     index: IndexName,
     query: ElasticQuery[_],
-    aggregation: ElasticAggregation
-  ) extends SearchWithAggregationRequest
+    aggregation: ElasticAggregation,
+    sortBy: Option[List[SortBy]]
+  ) extends SearchWithAggregationRequest { self =>
+    def sortBy(sorts: SortBy*): SearchWithAggregationRequest =
+      self.copy(sortBy = Some(sorts.toList))
+  }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }
