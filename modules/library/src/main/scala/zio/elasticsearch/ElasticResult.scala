@@ -33,14 +33,6 @@ sealed trait DocumentResult[F[_]] {
   def documentAs[A: Schema]: Task[F[A]]
 }
 
-sealed trait DocumentsWithAggregationsResult {
-  def aggregation(name: String): Task[Option[ElasticAggregationResponse]]
-
-  def aggregations: Task[Map[String, ElasticAggregationResponse]]
-
-  def documentAs[A: Schema]: Task[List[A]]
-}
-
 final class AggregationResult private[elasticsearch] (private val aggregationsJson: Option[Json])
     extends AggregationsResult {
   def aggregation(name: String): Task[Option[ElasticAggregationResponse]] = ZIO.fromEither {
@@ -79,7 +71,8 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item]) e
 final class SearchWithAggregationsResult private[elasticsearch] (
   private val hits: List[Item],
   private val aggregationsJson: Option[Json]
-) extends DocumentsWithAggregationsResult {
+) extends DocumentResult[List]
+    with AggregationsResult {
   def aggregation(name: String): Task[Option[ElasticAggregationResponse]] = ZIO.fromEither {
     decodeAggregationsJson(aggregationsJson, Some(name)).map(_.get(name))
   }
