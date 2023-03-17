@@ -123,6 +123,17 @@ trait WithUnmappedType[S <: WithUnmappedType[S]] {
 }
 
 object SortBy {
+  def sortBy[S](field: Field[S, _]): SortBy =
+    SortByData(
+      field = field.toString,
+      format = None,
+      mode = None,
+      missing = None,
+      numericType = None,
+      order = None,
+      unmappedType = None
+    )
+
   def sortBy(field: String): SortBy =
     SortByData(
       field = field,

@@ -31,6 +31,21 @@ object SortBySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("successfully create SortBy with only type-safe field given") {
+          assert(sortBy(UserDocument.age))(
+            equalTo(
+              SortByData(
+                field = "age",
+                format = None,
+                missing = None,
+                mode = None,
+                numericType = None,
+                order = None,
+                unmappedType = None
+              )
+            )
+          )
+        },
         test("successfully create SortBy with given `format`") {
           assert(sortBy("day_of_week").format("strict_date_optional_time_nanos"))(
             equalTo(
