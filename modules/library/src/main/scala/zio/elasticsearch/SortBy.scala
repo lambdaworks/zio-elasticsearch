@@ -72,8 +72,6 @@ object Order {
   }
 }
 
-sealed trait SortByy
-
 sealed trait SortBy
     extends WithFormat[SortBy]
     with WithMissing[SortBy]

@@ -19,11 +19,15 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
+import zio.elasticsearch.Mode.Max
+import zio.elasticsearch.Order.Desc
+import zio.elasticsearch.SortBy.sortBy
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
 
+import java.time.LocalDate
 import scala.util.Random
 
 object HttpExecutorSpec extends IntegrationSpec {
@@ -145,6 +149,48 @@ object HttpExecutorSpec extends IntegrationSpec {
                   docs <- res.documentAs[CustomerDocument]
                   aggs <- res.aggregations
                 } yield assert(docs)(isNonEmpty) && assert(aggs)(
+                  isNonEmpty
+                )
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search using match all query with multiple terms aggregations with desc sort on one field") {
+            checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
+              (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
+                val firstEmployeeWithFixedAge  = firstEmployee.copy(age = 25)
+                val secondEmployeeWithFixedAge = secondEmployee.copy(age = 32)
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](firstSearchIndex, firstDocumentId, firstEmployeeWithFixedAge)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](firstSearchIndex, secondDocumentId, secondEmployeeWithFixedAge)
+                           .refreshTrue
+                       )
+                  query = matchAll
+                  aggregation =
+                    termsAggregation("aggregationName", "name.keyword").withAgg(
+                      termsAggregation("aggregationAge", "age.keyword")
+                    )
+                  res <- ElasticExecutor.execute(
+                           ElasticRequest
+                             .searchWithAggregation(
+                               index = firstSearchIndex,
+                               query = query,
+                               aggregation = aggregation
+                             )
+                             .sortBy(sortBy("age").order(Desc))
+                         )
+                  docs <- res.documentAs[EmployeeDocument]
+                  aggs <- res.aggregations
+                } yield assert(docs)(equalTo(List(secondEmployeeWithFixedAge, firstEmployeeWithFixedAge))) && assert(
+                  aggs
+                )(
                   isNonEmpty
                 )
             }
@@ -438,6 +484,84 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <-
                     ElasticExecutor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
                 } yield assert(res)(Assertion.contains(firstCustomer))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ) @@ shrinks(0),
+        suite("searching for sorted documents")(
+          test("search for document sorted by descending age and by descending birthDate using range query") {
+            checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
+              (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
+                val firstCustomerWithFixedAge = firstEmployee.copy(age = 30, birthDate = LocalDate.parse("1993-12-05"))
+                val secondCustomerWithFixedAge =
+                  secondEmployee.copy(age = 36, birthDate = LocalDate.parse("1987-12-05"))
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](firstSearchIndex, firstDocumentId, firstCustomerWithFixedAge)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](
+                             firstSearchIndex,
+                             secondDocumentId,
+                             secondCustomerWithFixedAge
+                           )
+                           .refreshTrue
+                       )
+                  query = range("age").gte(20)
+                  res <- ElasticExecutor
+                           .execute(
+                             ElasticRequest
+                               .search(firstSearchIndex, query)
+                               .sortBy(
+                                 sortBy("age").order(Desc),
+                                 sortBy("birthDate").order(Desc).format("strict_date_optional_time_nanos")
+                               )
+                           )
+                           .documentAs[EmployeeDocument]
+                } yield assert(res)(
+                  equalTo(List(secondCustomerWithFixedAge, firstCustomerWithFixedAge))
+                )
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for document sorted descending with 'max' mode by one field using matchAll query") {
+            checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                val firstEmployeeWithFixedSectors  = firstCustomer.copy(sectorsIds = List(11, 4, 37))
+                val secondEmployeeWithFixedSectors = secondCustomer.copy(sectorsIds = List(30, 29, 35))
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](firstSearchIndex, firstDocumentId, firstEmployeeWithFixedSectors)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](
+                             firstSearchIndex,
+                             secondDocumentId,
+                             secondEmployeeWithFixedSectors
+                           )
+                           .refreshTrue
+                       )
+                  query = matchAll
+                  res <- ElasticExecutor
+                           .execute(
+                             ElasticRequest
+                               .search(firstSearchIndex, query)
+                               .sortBy(sortBy("sectorsIds").mode(Max).order(Desc))
+                           )
+                           .documentAs[EmployeeDocument]
+                } yield assert(res)(
+                  equalTo(List(firstEmployeeWithFixedSectors, secondEmployeeWithFixedSectors))
+                )
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
