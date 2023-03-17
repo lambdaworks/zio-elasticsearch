@@ -39,6 +39,7 @@ sealed trait CompoundOperator
 object CompoundOperator {
   case object And extends CompoundOperator
   case object Or  extends CompoundOperator
+  case object Not extends CompoundOperator
 }
 
 sealed trait FilterOperator
