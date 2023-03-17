@@ -311,5 +311,6 @@ object SortBySpec extends ZIOSpecDefault {
         }
       )
     )
+
   private def sortsToJson(sorts: SortBy*): Json = Obj("sort" -> Arr(sorts.map(_.paramsToJson): _*))
 }

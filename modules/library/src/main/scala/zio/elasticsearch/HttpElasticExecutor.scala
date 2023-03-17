@@ -309,9 +309,11 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
 
   private def executeSearch(r: Search): Task[SearchResult] = {
-    val body = r.sortBy.fold(r.query.toJson)(sorts =>
-      Obj(List("query" -> r.query.paramsToJson(None), "sort" -> Arr(sorts.map(_.paramsToJson): _*)): _*)
-    )
+    val body = r.sortBy match {
+      case sorts if sorts.nonEmpty =>
+        Obj(List("query" -> r.query.paramsToJson(None), "sort" -> Arr(sorts.toList.map(_.paramsToJson): _*)): _*)
+      case _ => r.query.toJson
+    }
 
     sendRequestWithCustomResponse(
       request
@@ -394,16 +396,19 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
   }
 
   private def executeSearchWithAggregation(r: SearchWithAggregation): Task[SearchWithAggregationsResult] = {
-    val body =
-      r.sortBy.fold(Obj(List("query" -> r.query.paramsToJson(None), "aggs" -> r.aggregation.paramsToJson): _*))(sorts =>
+    val body = r.sortBy match {
+      case sorts if sorts.nonEmpty =>
         Obj(
           List(
             "query" -> r.query.paramsToJson(None),
-            "sort"  -> Arr(sorts.map(_.paramsToJson): _*),
+            "sort"  -> Arr(sorts.toList.map(_.paramsToJson): _*),
             "aggs"  -> r.aggregation.paramsToJson
           ): _*
         )
-      )
+      case _ =>
+        Obj(List("query" -> r.query.paramsToJson(None), "aggs" -> r.aggregation.paramsToJson): _*)
+
+    }
 
     sendRequestWithCustomResponse(
       request

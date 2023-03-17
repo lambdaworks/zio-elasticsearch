@@ -75,14 +75,14 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
-    Search(index = index, query = query, sortBy = None, routing = None)
+    Search(index = index, query = query, routing = None, sortBy = Set.empty)
 
   def searchWithAggregation(
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation
   ): SearchWithAggregationRequest =
-    SearchWithAggregation(index = index, query = query, aggregation = aggregation, sortBy = None)
+    SearchWithAggregation(index = index, query = query, aggregation = aggregation, sortBy = Set.empty)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -310,11 +310,11 @@ object ElasticRequest {
   private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
-    sortBy: Option[List[SortBy]],
-    routing: Option[Routing]
+    routing: Option[Routing],
+    sortBy: Set[SortBy]
   ) extends SearchRequest { self =>
     def sortBy(sorts: SortBy*): SearchRequest =
-      self.copy(sortBy = Some(sorts.toList))
+      self.copy(sortBy = sortBy ++ sorts.toSet)
   }
 
   sealed trait SearchWithAggregationRequest
@@ -325,10 +325,10 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
-    sortBy: Option[List[SortBy]]
+    sortBy: Set[SortBy]
   ) extends SearchWithAggregationRequest { self =>
     def sortBy(sorts: SortBy*): SearchWithAggregationRequest =
-      self.copy(sortBy = Some(sorts.toList))
+      self.copy(sortBy = sortBy ++ sorts.toSet)
   }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
