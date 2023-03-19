@@ -175,18 +175,14 @@ object ElasticQuery {
 
   private[elasticsearch] final case class Exists[S](field: String) extends ExistsQuery[S] {
     def paramsToJson(fieldPath: Option[String]): Json =
-      Obj(
-        "exists" -> Obj("field" -> (fieldPath.map(_ + ".").getOrElse("") + field).toJson)
-      )
+      Obj("exists" -> Obj("field" -> (fieldPath.map(_ + ".").getOrElse("") + field).toJson))
   }
 
   sealed trait MatchQuery[S] extends ElasticQuery[S]
 
   private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
     def paramsToJson(fieldPath: Option[String]): Json =
-      Obj(
-        "match" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> value.toJson)
-      )
+      Obj("match" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> value.toJson))
   }
 
   sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]

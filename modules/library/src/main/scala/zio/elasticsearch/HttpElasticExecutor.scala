@@ -61,7 +61,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
-    stream(r, StreamConfig.defaultStreamConfig)
+    stream(r, StreamConfig.Default)
 
   def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item] =
     request match {

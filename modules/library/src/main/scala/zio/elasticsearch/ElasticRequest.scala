@@ -83,11 +83,7 @@ object ElasticRequest {
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(index = index, query = query, routing = None, sortBy = Set.empty)
 
-  def searchWithAggregation(
-    index: IndexName,
-    query: ElasticQuery[_],
-    aggregation: ElasticAggregation
-  ): SearchWithAggregationRequest =
+  def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchWithAggregationRequest =
     SearchWithAggregation(index = index, query = query, aggregation = aggregation, sortBy = Set.empty)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
@@ -322,7 +318,9 @@ object ElasticRequest {
       self.copy(routing = Some(value))
   }
 
-  sealed trait SearchRequest extends ElasticRequest[SearchResult] with WithSort[SearchRequest]
+  sealed trait SearchRequest extends ElasticRequest[SearchResult] with WithSort[SearchRequest] {
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchWithAggregationsResult]
+  }
 
   private[elasticsearch] final case class Search(
     index: IndexName,
@@ -330,6 +328,9 @@ object ElasticRequest {
     routing: Option[Routing],
     sortBy: Set[Sort]
   ) extends SearchRequest { self =>
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchWithAggregationsResult] =
+      SearchWithAggregation(index = index, query = query, aggregation = aggregation, sortBy = sortBy)
+
     def sortBy(sorts: Sort*): SearchRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
   }

@@ -25,20 +25,20 @@ object ElasticPrimitive {
     def toJson(value: A): Json
   }
 
-  implicit object ElasticInt extends ElasticPrimitive[Int] {
-    def toJson(value: Int): Json = Num(value)
-  }
-
-  implicit object ElasticString extends ElasticPrimitive[String] {
-    def toJson(value: String): Json = Str(value)
-  }
-
   implicit object ElasticBool extends ElasticPrimitive[Boolean] {
     def toJson(value: Boolean): Json = Json.Bool(value)
   }
 
+  implicit object ElasticInt extends ElasticPrimitive[Int] {
+    def toJson(value: Int): Json = Num(value)
+  }
+
   implicit object ElasticLong extends ElasticPrimitive[Long] {
     def toJson(value: Long): Json = Num(value)
+  }
+
+  implicit object ElasticString extends ElasticPrimitive[String] {
+    def toJson(value: String): Json = Str(value)
   }
 
   final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {
