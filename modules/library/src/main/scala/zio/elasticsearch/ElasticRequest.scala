@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.elasticsearch.Routing.Routing
 import zio.schema.Schema
 
-trait HasRefresh[R <: HasRefresh[R]] {
+sealed trait HasRefresh[R <: HasRefresh[R]] {
   def refresh(value: Boolean): R
 
   def refreshFalse: R
@@ -27,7 +27,7 @@ trait HasRefresh[R <: HasRefresh[R]] {
   def refreshTrue: R
 }
 
-trait HasRouting[R <: HasRouting[R]] {
+sealed trait HasRouting[R <: HasRouting[R]] {
   def routing(value: Routing): R
 }
 

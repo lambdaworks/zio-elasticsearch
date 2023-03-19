@@ -22,7 +22,7 @@ import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
 import scala.annotation.unused
 
-trait HasBoost[Q <: HasBoost[Q]] {
+sealed trait HasBoost[Q <: HasBoost[Q]] {
   def boost(value: Double): Q
 }
 
