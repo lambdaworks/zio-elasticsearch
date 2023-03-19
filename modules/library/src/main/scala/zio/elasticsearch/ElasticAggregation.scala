@@ -93,7 +93,7 @@ object ElasticAggregation {
       }
 
     def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
-      multipleAggregations.aggregations(List(self, aggregation): _*)
+      multipleAggregations.aggregations(self, aggregation)
 
     def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
       self.copy(subAggregations = aggregation +: subAggregations)
