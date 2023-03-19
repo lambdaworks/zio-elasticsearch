@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Str}
 
-object ElasticPrimitive {
+private object ElasticPrimitive {
 
   sealed trait ElasticPrimitive[A] {
     def toJson(value: A): Json
