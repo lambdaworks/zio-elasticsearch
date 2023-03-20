@@ -67,7 +67,7 @@ object ElasticQuery {
     Exists(field = field)
 
   def filter[S](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = queries.toList, must = Nil, should = Nil, boost = None)
+    Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
   def matchAll: MatchAllQuery =
     MatchAll(boost = None)
@@ -79,7 +79,10 @@ object ElasticQuery {
     Match(field = field, value = value)
 
   def must[S](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = Nil, must = queries.toList, should = Nil, boost = None)
+    Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
+
+  def mustNot[S](queries: ElasticQuery[S]*): BoolQuery[S] =
+    Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
   def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
     Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None)
@@ -97,7 +100,7 @@ object ElasticQuery {
     Range.empty[Any, Any](field = field)
 
   def should[S](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = Nil, must = Nil, should = queries.toList, boost = None)
+    Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
   def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(field = field.toString, value = s"$value*", boost = None, caseInsensitive = None)
@@ -127,12 +130,15 @@ object ElasticQuery {
 
     def must(queries: ElasticQuery[S]*): BoolQuery[S]
 
+    def mustNot(queries: ElasticQuery[S]*): BoolQuery[S]
+
     def should(queries: ElasticQuery[S]*): BoolQuery[S]
   }
 
   private[elasticsearch] final case class Bool[S](
     filter: List[ElasticQuery[S]],
     must: List[ElasticQuery[S]],
+    mustNot: List[ElasticQuery[S]],
     should: List[ElasticQuery[S]],
     boost: Option[Double]
   ) extends BoolQuery[S] { self =>
@@ -145,13 +151,20 @@ object ElasticQuery {
     def must(queries: ElasticQuery[S]*): BoolQuery[S] =
       self.copy(must = must ++ queries)
 
+    def mustNot(queries: ElasticQuery[S]*): BoolQuery[S] =
+      self.copy(mustNot = mustNot ++ queries)
+
     def paramsToJson(fieldPath: Option[String]): Json = {
       val boolFields =
-        Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) ++
-          Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) ++
-          Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)): _*)) ++
+        List(
+          if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) else None,
+          if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) else None,
+          if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) else None,
+          if (should.nonEmpty) Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)): _*)) else None,
           boost.map("boost" -> Num(_))
-      Obj("bool" -> Obj(boolFields.toList: _*))
+        ).collect { case Some(obj) => obj }
+
+      Obj("bool" -> Obj(boolFields: _*))
     }
 
     def should(queries: ElasticQuery[S]*): BoolQuery[S] =
