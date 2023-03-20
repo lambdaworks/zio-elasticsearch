@@ -2,10 +2,10 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.Missing.First
-import zio.elasticsearch.Mode.Avg
+import zio.elasticsearch.SortMode.Avg
 import zio.elasticsearch.NumericType.{Long => NumTypeLong}
-import zio.elasticsearch.Order.Desc
-import zio.elasticsearch.Sorting.{SortOptions, sortBy}
+import zio.elasticsearch.SortOrder.Desc
+import zio.elasticsearch.Sort.{SortOptions, sortBy}
 import zio.elasticsearch.utils._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
@@ -327,5 +327,5 @@ object SortingSpec extends ZIOSpecDefault {
       )
     )
 
-  private def sortsToJson(sorts: Sorting*): Json = Obj("sort" -> Arr(sorts.map(_.paramsToJson): _*))
+  private def sortsToJson(sorts: Sort*): Json = Obj("sort" -> Arr(sorts.map(_.paramsToJson): _*))
 }

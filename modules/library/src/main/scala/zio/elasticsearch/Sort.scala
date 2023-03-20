@@ -32,26 +32,26 @@ object Missing {
   }
 }
 
-sealed trait Mode
+sealed trait SortMode
 
-object Mode {
-  final case object Avg extends Mode {
+object SortMode {
+  final case object Avg extends SortMode {
     override def toString: String = "avg"
   }
 
-  final case object Max extends Mode {
+  final case object Max extends SortMode {
     override def toString: String = "max"
   }
 
-  final case object Median extends Mode {
+  final case object Median extends SortMode {
     override def toString: String = "median"
   }
 
-  final case object Min extends Mode {
+  final case object Min extends SortMode {
     override def toString: String = "min"
   }
 
-  final case object Sum extends Mode {
+  final case object Sum extends SortMode {
     override def toString: String = "sum"
   }
 }
@@ -76,25 +76,25 @@ object NumericType {
   }
 }
 
-sealed trait Order
+sealed trait SortOrder
 
-object Order {
-  final case object Asc extends Order {
+object SortOrder {
+  final case object Asc extends SortOrder {
     override def toString: String = "asc"
   }
 
-  final case object Desc extends Order {
+  final case object Desc extends SortOrder {
     override def toString: String = "desc"
   }
 }
 
-sealed trait Sorting
-    extends WithFormat[Sorting]
-    with WithMissing[Sorting]
-    with WithMode[Sorting]
-    with WithNumericType[Sorting]
-    with WithOrder[Sorting]
-    with WithUnmappedType[Sorting] {
+sealed trait Sort
+    extends WithFormat[Sort]
+    with WithMissing[Sort]
+    with WithMode[Sort]
+    with WithNumericType[Sort]
+    with WithOrder[Sort]
+    with WithUnmappedType[Sort] {
   def paramsToJson: Json
 }
 
@@ -103,7 +103,7 @@ trait WithFormat[S <: WithFormat[S]] {
 }
 
 trait WithMode[S <: WithMode[S]] {
-  def mode(value: Mode): S
+  def mode(value: SortMode): S
 }
 
 trait WithMissing[S <: WithMissing[S]] {
@@ -115,15 +115,15 @@ trait WithNumericType[S <: WithNumericType[S]] {
 }
 
 trait WithOrder[S <: WithOrder[S]] {
-  def order(value: Order): S
+  def order(value: SortOrder): S
 }
 
 trait WithUnmappedType[S <: WithUnmappedType[S]] {
   def unmappedType(value: String): S
 }
 
-object Sorting {
-  def sortBy[S](field: Field[S, _]): Sorting =
+object Sort {
+  def sortBy[S](field: Field[S, _]): Sort =
     SortOptions(
       field = field.toString,
       format = None,
@@ -134,7 +134,7 @@ object Sorting {
       unmappedType = None
     )
 
-  def sortBy(field: String): Sorting =
+  def sortBy(field: String): Sort =
     SortOptions(
       field = field,
       format = None,
@@ -149,24 +149,24 @@ object Sorting {
     field: String,
     format: Option[String],
     missing: Option[Missing],
-    mode: Option[Mode],
+    mode: Option[SortMode],
     numericType: Option[NumericType],
-    order: Option[Order],
+    order: Option[SortOrder],
     unmappedType: Option[String]
-  ) extends Sorting { self =>
-    def format(value: String): Sorting =
+  ) extends Sort { self =>
+    def format(value: String): Sort =
       self.copy(format = Some(value))
 
-    def missing(value: Missing): Sorting =
+    def missing(value: Missing): Sort =
       self.copy(missing = Some(value))
 
-    def mode(value: Mode): Sorting =
+    def mode(value: SortMode): Sort =
       self.copy(mode = Some(value))
 
-    def numericType(value: NumericType): Sorting =
+    def numericType(value: NumericType): Sort =
       self.copy(numericType = Some(value))
 
-    def order(value: Order): Sorting =
+    def order(value: SortOrder): Sort =
       self.copy(order = Some(value))
 
     def paramsToJson: Json =
@@ -183,7 +183,7 @@ object Sorting {
         )
       )
 
-    def unmappedType(value: String): Sorting =
+    def unmappedType(value: String): Sort =
       self.copy(unmappedType = Some(value))
   }
 }
