@@ -156,12 +156,15 @@ object ElasticQuery {
 
     def paramsToJson(fieldPath: Option[String]): Json = {
       val boolFields =
-        Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) ++
-          Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) ++
-          Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) ++
-          Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)): _*)) ++
+        List(
+          if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) else None,
+          if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) else None,
+          if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) else None,
+          if (should.nonEmpty) Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)): _*)) else None,
           boost.map("boost" -> Num(_))
-      Obj("bool" -> Obj(boolFields.toList: _*))
+        ).collect { case Some(obj) => obj }
+
+      Obj("bool" -> Obj(boolFields: _*))
     }
 
     def should(queries: ElasticQuery[S]*): BoolQuery[S] =

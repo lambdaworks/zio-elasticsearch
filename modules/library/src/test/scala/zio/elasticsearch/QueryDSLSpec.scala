@@ -736,10 +736,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |            "day_of_week": "Monday"
               |          }
               |        }
-              |      ],
-              |      "must": [],
-              |      "must_not": [],
-              |      "should": []
+              |      ]
               |    }
               |  }
               |}
@@ -761,9 +758,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |          }
               |        }
               |      ],
-              |      "must": [],
-              |      "must_not": [],
-              |      "should": [],
               |      "boost": 1.0
               |    }
               |  }
@@ -779,16 +773,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |{
               |  "query": {
               |    "bool": {
-              |      "filter": [],
               |      "must": [
               |        {
               |          "match": {
               |            "day_of_week": "Monday"
               |          }
               |        }
-              |      ],
-              |      "must_not": [],
-              |      "should": []
+              |      ]
               |    }
               |  }
               |}
@@ -803,16 +794,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |{
               |  "query": {
               |    "bool": {
-              |      "filter": [],
-              |      "must": [],
               |      "must_not": [
               |        {
               |          "match": {
               |            "day_of_week": "Monday"
               |          }
               |        }
-              |      ],
-              |      "should": []
+              |      ]
               |    }
               |  }
               |}
@@ -827,9 +815,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |{
               |  "query": {
               |    "bool": {
-              |      "filter": [],
-              |      "must": [],
-              |      "must_not": [],
               |      "should": [
               |        {
               |          "match": {

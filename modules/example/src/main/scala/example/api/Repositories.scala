@@ -124,8 +124,8 @@ object Repositories {
       case CompoundCriteria(operator, filters) =>
         operator match {
           case And => ElasticQuery.must(filters.map(createElasticQuery): _*)
-          case Or  => ElasticQuery.should(filters.map(createElasticQuery): _*)
           case Not => ElasticQuery.mustNot(filters.map(createElasticQuery): _*)
+          case Or  => ElasticQuery.should(filters.map(createElasticQuery): _*)
         }
       case DateCriteria(field, operator, value) =>
         operator match {
