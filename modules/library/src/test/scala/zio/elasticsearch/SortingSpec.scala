@@ -5,21 +5,21 @@ import zio.elasticsearch.Missing.First
 import zio.elasticsearch.Mode.Avg
 import zio.elasticsearch.NumericType.{Long => NumTypeLong}
 import zio.elasticsearch.Order.Desc
-import zio.elasticsearch.SortBy.{SortByData, sortBy}
+import zio.elasticsearch.Sorting.{SortOptions, sortBy}
 import zio.elasticsearch.utils._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.test.Assertion.equalTo
 import zio.test._
 
-object SortBySpec extends ZIOSpecDefault {
+object SortingSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Sort by")(
       suite("creating SortBy")(
         test("successfully create SortBy with only field given") {
           assert(sortBy("day_of_week"))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = None,
                 missing = None,
@@ -34,7 +34,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with only type-safe field given") {
           assert(sortBy(UserDocument.age))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "age",
                 format = None,
                 missing = None,
@@ -49,7 +49,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with given `format`") {
           assert(sortBy("day_of_week").format("strict_date_optional_time_nanos"))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = Some("strict_date_optional_time_nanos"),
                 missing = None,
@@ -64,7 +64,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with given `missing`") {
           assert(sortBy("day_of_week").missing(First))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = None,
                 missing = Some(First),
@@ -79,7 +79,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with given `mode`") {
           assert(sortBy("day_of_week").mode(Avg))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = None,
                 missing = None,
@@ -94,7 +94,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with given `numericType`") {
           assert(sortBy("day_of_week").numericType(NumTypeLong))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = None,
                 missing = None,
@@ -109,7 +109,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with given `order`") {
           assert(sortBy("day_of_week").order(Desc))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = None,
                 missing = None,
@@ -124,7 +124,7 @@ object SortBySpec extends ZIOSpecDefault {
         test("successfully create SortBy with given `unmappedType`") {
           assert(sortBy("day_of_week").unmappedType("long"))(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = None,
                 missing = None,
@@ -147,7 +147,7 @@ object SortBySpec extends ZIOSpecDefault {
               .unmappedType("long")
           )(
             equalTo(
-              SortByData(
+              SortOptions(
                 field = "day_of_week",
                 format = Some("strict_date_optional_time_nanos"),
                 missing = Some(First),
@@ -327,5 +327,5 @@ object SortBySpec extends ZIOSpecDefault {
       )
     )
 
-  private def sortsToJson(sorts: SortBy*): Json = Obj("sort" -> Arr(sorts.map(_.paramsToJson): _*))
+  private def sortsToJson(sorts: Sorting*): Json = Obj("sort" -> Arr(sorts.map(_.paramsToJson): _*))
 }

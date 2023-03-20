@@ -88,13 +88,13 @@ object Order {
   }
 }
 
-sealed trait SortBy
-    extends WithFormat[SortBy]
-    with WithMissing[SortBy]
-    with WithMode[SortBy]
-    with WithNumericType[SortBy]
-    with WithOrder[SortBy]
-    with WithUnmappedType[SortBy] {
+sealed trait Sorting
+    extends WithFormat[Sorting]
+    with WithMissing[Sorting]
+    with WithMode[Sorting]
+    with WithNumericType[Sorting]
+    with WithOrder[Sorting]
+    with WithUnmappedType[Sorting] {
   def paramsToJson: Json
 }
 
@@ -122,9 +122,9 @@ trait WithUnmappedType[S <: WithUnmappedType[S]] {
   def unmappedType(value: String): S
 }
 
-object SortBy {
-  def sortBy[S](field: Field[S, _]): SortBy =
-    SortByData(
+object Sorting {
+  def sortBy[S](field: Field[S, _]): Sorting =
+    SortOptions(
       field = field.toString,
       format = None,
       mode = None,
@@ -134,8 +134,8 @@ object SortBy {
       unmappedType = None
     )
 
-  def sortBy(field: String): SortBy =
-    SortByData(
+  def sortBy(field: String): Sorting =
+    SortOptions(
       field = field,
       format = None,
       mode = None,
@@ -145,7 +145,7 @@ object SortBy {
       unmappedType = None
     )
 
-  private[elasticsearch] final case class SortByData(
+  private[elasticsearch] final case class SortOptions(
     field: String,
     format: Option[String],
     missing: Option[Missing],
@@ -153,20 +153,20 @@ object SortBy {
     numericType: Option[NumericType],
     order: Option[Order],
     unmappedType: Option[String]
-  ) extends SortBy { self =>
-    def format(value: String): SortBy =
+  ) extends Sorting { self =>
+    def format(value: String): Sorting =
       self.copy(format = Some(value))
 
-    def missing(value: Missing): SortBy =
+    def missing(value: Missing): Sorting =
       self.copy(missing = Some(value))
 
-    def mode(value: Mode): SortBy =
+    def mode(value: Mode): Sorting =
       self.copy(mode = Some(value))
 
-    def numericType(value: NumericType): SortBy =
+    def numericType(value: NumericType): Sorting =
       self.copy(numericType = Some(value))
 
-    def order(value: Order): SortBy =
+    def order(value: Order): Sorting =
       self.copy(order = Some(value))
 
     def paramsToJson: Json =
@@ -183,7 +183,7 @@ object SortBy {
         )
       )
 
-    def unmappedType(value: String): SortBy =
+    def unmappedType(value: String): Sorting =
       self.copy(unmappedType = Some(value))
   }
 }

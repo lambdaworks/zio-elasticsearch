@@ -21,7 +21,7 @@ import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregat
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.Mode.Max
 import zio.elasticsearch.Order.Desc
-import zio.elasticsearch.SortBy.sortBy
+import zio.elasticsearch.Sorting.sortBy
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -156,7 +156,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search using match all query with multiple terms aggregations with desc sort on one field") {
+          test("search using match all query with multiple terms aggregations with descending sort on one field") {
             checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
               (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
                 val firstEmployeeWithFixedAge  = firstEmployee.copy(age = 25)

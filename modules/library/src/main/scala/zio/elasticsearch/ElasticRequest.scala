@@ -32,7 +32,7 @@ trait HasRouting[R <: HasRouting[R]] {
 }
 
 trait WithSort[R <: WithSort[R]] {
-  def sortBy(sorts: SortBy*): R
+  def sortBy(sorts: Sorting*): R
 }
 
 sealed trait BulkableRequest[A] extends ElasticRequest[A]
@@ -311,9 +311,9 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     routing: Option[Routing],
-    sortBy: Set[SortBy]
+    sortBy: Set[Sorting]
   ) extends SearchRequest { self =>
-    def sortBy(sorts: SortBy*): SearchRequest =
+    def sortBy(sorts: Sorting*): SearchRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
   }
 
@@ -325,9 +325,9 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
-    sortBy: Set[SortBy]
+    sortBy: Set[Sorting]
   ) extends SearchWithAggregationRequest { self =>
-    def sortBy(sorts: SortBy*): SearchWithAggregationRequest =
+    def sortBy(sorts: Sorting*): SearchWithAggregationRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
   }
 
