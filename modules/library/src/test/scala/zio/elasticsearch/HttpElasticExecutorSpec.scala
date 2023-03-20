@@ -44,9 +44,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         )
       },
       test("count request") {
-        assertZIO(
-          ElasticExecutor.execute(ElasticRequest.count(index, matchAll).routing(Routing("routing")))
-        )(
+        assertZIO(ElasticExecutor.execute(ElasticRequest.count(index, matchAll).routing(Routing("routing"))))(
           equalTo(2)
         )
       },

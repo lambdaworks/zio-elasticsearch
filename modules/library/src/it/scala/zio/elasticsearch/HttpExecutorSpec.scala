@@ -230,9 +230,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           },
           test("successfully create document with ID given") {
             checkOnce(genDocumentId, genCustomer) { (documentId, customer) =>
-              assertZIO(
-                ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, customer))
-              )(
+              assertZIO(ElasticExecutor.execute(ElasticRequest.create[CustomerDocument](index, documentId, customer)))(
                 equalTo(Created)
               )
             }
