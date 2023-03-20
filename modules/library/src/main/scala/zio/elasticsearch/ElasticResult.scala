@@ -101,7 +101,7 @@ private object ElasticResult {
   def decodeAggregationsJson(
     aggregationsJson: Option[Json],
     name: Option[String]
-  ): Either[DecodingException, Map[String, TermsAggregationResponse]] = {
+  ): Either[DecodingException, Map[String, ElasticAggregationResponse]] = {
 
     val decodingExceptionMessage = name match {
       case Some(str) => s"Could not parse aggregation $str successfully."

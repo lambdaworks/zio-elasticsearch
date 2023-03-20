@@ -19,7 +19,35 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class SearchWithAggsResponse(
+private[elasticsearch] final case class ElasticCountResponse(
+  count: Int,
+  @jsonField("_shards")
+  shards: Shards
+)
+
+private[elasticsearch] object ElasticCountResponse {
+  implicit val decoder: JsonDecoder[ElasticCountResponse] = DeriveJsonDecoder.gen[ElasticCountResponse]
+}
+
+private[elasticsearch] final case class ElasticCreateResponse(
+  @jsonField("_id")
+  id: String
+)
+
+private[elasticsearch] object ElasticCreateResponse {
+  implicit val decoder: JsonDecoder[ElasticCreateResponse] = DeriveJsonDecoder.gen[ElasticCreateResponse]
+}
+
+private[elasticsearch] final case class ElasticGetResponse(
+  @jsonField("_source")
+  source: Json
+)
+
+private[elasticsearch] object ElasticGetResponse {
+  implicit val decoder: JsonDecoder[ElasticGetResponse] = DeriveJsonDecoder.gen[ElasticGetResponse]
+}
+
+private[elasticsearch] final case class ElasticSearchAndAggsResponse(
   @jsonField("pit_id")
   pitId: Option[String],
   @jsonField("_scroll_id")
@@ -38,8 +66,8 @@ private[elasticsearch] final case class SearchWithAggsResponse(
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 }
 
-private[elasticsearch] object SearchWithAggsResponse {
-  implicit val decoder: JsonDecoder[SearchWithAggsResponse] = DeriveJsonDecoder.gen[SearchWithAggsResponse]
+private[elasticsearch] object ElasticSearchAndAggsResponse {
+  implicit val decoder: JsonDecoder[ElasticSearchAndAggsResponse] = DeriveJsonDecoder.gen[ElasticSearchAndAggsResponse]
 }
 
 private[elasticsearch] final case class Shards(

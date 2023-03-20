@@ -32,7 +32,10 @@ import zio.prelude.Newtype.unsafeWrap
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
+    for {
+      aa <- elasticsearch.execute(ElasticRequest.count(Index, matchAll))
+      _   = println(aa)
+    } yield List()
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
