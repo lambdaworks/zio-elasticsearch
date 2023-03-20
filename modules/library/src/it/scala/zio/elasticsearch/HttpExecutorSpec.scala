@@ -134,10 +134,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = matchAll
-                  aggregation =
-                    termsAggregation("aggregationName", "name.keyword").withAgg(
-                      termsAggregation("aggregationAge", "age.keyword")
-                    )
+                  aggregation = termsAggregation("aggregationName", "name.keyword").withAgg(
+                                  termsAggregation("aggregationAge", "age")
+                                )
                   res <- ElasticExecutor.execute(
                            ElasticRequest
                              .search(
@@ -148,9 +147,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[CustomerDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(isNonEmpty) && assert(aggs)(
-                  isNonEmpty
-                )
+                  _     = println(aggs)
+                } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -214,7 +212,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = matchAll
                   aggregation =
                     termsAggregation("aggregationName", "name.keyword").withSubAgg(
-                      termsAggregation("aggregationAge", "age.keyword")
+                      termsAggregation("aggregationAge", "age")
                     )
                   res <- ElasticExecutor.execute(
                            ElasticRequest
@@ -226,9 +224,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[CustomerDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(isNonEmpty) && assert(aggs)(
-                  isNonEmpty
-                )
+                } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),

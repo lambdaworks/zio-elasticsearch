@@ -26,7 +26,7 @@ final case class StreamConfig(searchAfter: Boolean, keepAlive: String, pageSize:
 object StreamConfig {
   lazy val Default: StreamConfig     = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
   lazy val Scroll: StreamConfig      = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
-  lazy val SearchAfter: StreamConfig = StreamConfig(searchAfter = false, keepAlive = DefaultKeepAlive)
+  lazy val SearchAfter: StreamConfig = StreamConfig(searchAfter = true, keepAlive = DefaultKeepAlive)
 
   private val DefaultKeepAlive = "1m"
 }

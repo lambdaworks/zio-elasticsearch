@@ -26,6 +26,7 @@ import sttp.model.StatusCode.{
   NotFound => HttpNotFound,
   Ok => HttpOk
 }
+import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
@@ -44,20 +45,20 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case r: Aggregation           => executeAggregation(r)
-      case r: Bulk                  => executeBulk(r)
-      case r: Count                 => executeCount(r)
-      case r: Create                => executeCreate(r)
-      case r: CreateWithId          => executeCreateWithId(r)
-      case r: CreateIndex           => executeCreateIndex(r)
-      case r: CreateOrUpdate        => executeCreateOrUpdate(r)
-      case r: DeleteById            => executeDeleteById(r)
-      case r: DeleteByQuery         => executeDeleteByQuery(r)
-      case r: DeleteIndex           => executeDeleteIndex(r)
-      case r: Exists                => executeExists(r)
-      case r: GetById               => executeGetById(r)
-      case r: Search                => executeSearch(r)
-      case r: SearchWithAggregation => executeSearchWithAggregation(r)
+      case r: Aggregate          => executeAggregation(r)
+      case r: Bulk               => executeBulk(r)
+      case r: Count              => executeCount(r)
+      case r: Create             => executeCreate(r)
+      case r: CreateWithId       => executeCreateWithId(r)
+      case r: CreateIndex        => executeCreateIndex(r)
+      case r: CreateOrUpdate     => executeCreateOrUpdate(r)
+      case r: DeleteById         => executeDeleteById(r)
+      case r: DeleteByQuery      => executeDeleteByQuery(r)
+      case r: DeleteIndex        => executeDeleteIndex(r)
+      case r: Exists             => executeExists(r)
+      case r: GetById            => executeGetById(r)
+      case r: Search             => executeSearch(r)
+      case r: SearchAndAggregate => executeSearchWithAggregation(r)
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
@@ -86,7 +87,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
   def streamAs[A: Schema](r: SearchRequest, config: StreamConfig): Stream[Throwable, A] =
     stream(r, config).map(_.documentAs[A]).collectWhileRight
 
-  private def executeAggregation(r: Aggregation): Task[AggregationResult] =
+  private def executeAggregation(r: Aggregate): Task[AggregationResult] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
@@ -345,7 +346,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
     sendRequestWithCustomResponse(
       request
-        .post(uri"${esConfig.uri}/${r.index}/$Search")
+        .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
         .response(asJson[ElasticSearchAndAggsResponse])
         .contentType(ApplicationJson)
         .body(body)
@@ -423,7 +424,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
   }
 
-  private def executeSearchWithAggregation(r: SearchWithAggregation): Task[SearchWithAggregationsResult] = {
+  private def executeSearchWithAggregation(r: SearchAndAggregate): Task[SearchWithAggregationsResult] = {
     val body = r.sortBy match {
       case sorts if sorts.nonEmpty =>
         Obj(
@@ -440,12 +441,15 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
             "aggs"  -> r.aggregation.paramsToJson
           ): _*
         )
-
     }
 
     sendRequestWithCustomResponse(
       request
-        .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
+        .post(
+          uri"${esConfig.uri}/${r.index}/$Search?typed_keys"
+            .withParams(getQueryParams(List(("routing", r.routing))))
+            .addQuerySegment(QuerySegment.Value("typed_keys"))
+        )
         .response(asJson[ElasticSearchAndAggsResponse])
         .contentType(ApplicationJson)
         .body(body)
