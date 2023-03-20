@@ -2,10 +2,10 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.Missing.First
-import zio.elasticsearch.SortMode.Avg
 import zio.elasticsearch.NumericType.{Long => NumTypeLong}
-import zio.elasticsearch.SortOrder.Desc
 import zio.elasticsearch.Sort.{SortOptions, sortBy}
+import zio.elasticsearch.SortMode.Avg
+import zio.elasticsearch.SortOrder.Desc
 import zio.elasticsearch.utils._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
