@@ -122,25 +122,16 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
   }
 
   private def executeCount(r: Count): Task[Int] = {
-    val req = r.query match {
-      case Some(query) =>
-        request
-          .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
-          .contentType(ApplicationJson)
-          .body(query.toJson)
-          .response(asJson[ElasticCountResponse])
-      case None =>
-        request
-          .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
-          .contentType(ApplicationJson)
-          .response(asJson[ElasticCountResponse])
-    }
+    val req = request
+      .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
+      .contentType(ApplicationJson)
+      .response(asJson[ElasticCountResponse])
 
-    sendRequestWithCustomResponse(req).flatMap { response =>
+    sendRequestWithCustomResponse(r.query.fold(req)(query => req.body(query.toJson))).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body
-            .map(res => res.count)
+            .map(_.count)
             .fold(
               e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
               value => ZIO.succeed(value)
