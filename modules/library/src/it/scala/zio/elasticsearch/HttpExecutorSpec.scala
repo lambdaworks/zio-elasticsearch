@@ -20,7 +20,7 @@ import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.SortMode.Max
-import zio.elasticsearch.SortOrder.Desc
+import zio.elasticsearch.SortOrder._
 import zio.elasticsearch.Sort.sortBy
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
@@ -525,6 +525,46 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .documentAs[EmployeeDocument]
                 } yield assert(res)(
                   equalTo(List(secondCustomerWithFixedAge, firstCustomerWithFixedAge))
+                )
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for document sorted by ascending age and by ascending birthDate using range query") {
+            checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
+              (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
+                val firstCustomerWithFixedAge = firstEmployee.copy(age = 30, birthDate = LocalDate.parse("1993-12-05"))
+                val secondCustomerWithFixedAge =
+                  secondEmployee.copy(age = 36, birthDate = LocalDate.parse("1987-12-05"))
+                for {
+                  _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](firstSearchIndex, firstDocumentId, firstCustomerWithFixedAge)
+                       )
+                  _ <- ElasticExecutor.execute(
+                         ElasticRequest
+                           .upsert[EmployeeDocument](
+                             firstSearchIndex,
+                             secondDocumentId,
+                             secondCustomerWithFixedAge
+                           )
+                           .refreshTrue
+                       )
+                  query = range("age").gte(20)
+                  res <- ElasticExecutor
+                           .execute(
+                             ElasticRequest
+                               .search(firstSearchIndex, query)
+                               .sortBy(
+                                 sortBy("age").order(Asc),
+                                 sortBy("birthDate").order(Asc).format("strict_date_optional_time_nanos")
+                               )
+                           )
+                           .documentAs[EmployeeDocument]
+                } yield assert(res)(
+                  equalTo(List(firstCustomerWithFixedAge, secondCustomerWithFixedAge))
                 )
             }
           } @@ around(
