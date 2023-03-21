@@ -176,7 +176,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     )
                   res <- ElasticExecutor.execute(
                            ElasticRequest
-                             .searchWithAggregation(
+                             .search(
                                index = firstSearchIndex,
                                query = query,
                                aggregation = aggregation

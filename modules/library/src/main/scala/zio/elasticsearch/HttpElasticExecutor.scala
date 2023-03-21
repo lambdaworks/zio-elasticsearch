@@ -45,7 +45,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
-      case r: Aggregate          => executeAggregation(r)
+      case r: Aggregate          => executeAggregate(r)
       case r: Bulk               => executeBulk(r)
       case r: Count              => executeCount(r)
       case r: Create             => executeCreate(r)
@@ -58,7 +58,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
       case r: Exists             => executeExists(r)
       case r: GetById            => executeGetById(r)
       case r: Search             => executeSearch(r)
-      case r: SearchAndAggregate => executeSearchWithAggregation(r)
+      case r: SearchAndAggregate => executeSearchAndAggregate(r)
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
@@ -87,7 +87,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
   def streamAs[A: Schema](r: SearchRequest, config: StreamConfig): Stream[Throwable, A] =
     stream(r, config).map(_.documentAs[A]).collectWhileRight
 
-  private def executeAggregation(r: Aggregate): Task[AggregationResult] =
+  private def executeAggregate(r: Aggregate): Task[AggregationResult] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
@@ -424,7 +424,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
   }
 
-  private def executeSearchWithAggregation(r: SearchAndAggregate): Task[SearchWithAggregationsResult] = {
+  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchWithAggregationsResult] = {
     val body = r.sortBy match {
       case sorts if sorts.nonEmpty =>
         Obj(
