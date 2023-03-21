@@ -185,11 +185,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[EmployeeDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(equalTo(List(secondEmployeeWithFixedAge, firstEmployeeWithFixedAge))) && assert(
-                  aggs
-                )(
-                  isNonEmpty
-                )
+                } yield assert(docs)(equalTo(List(secondEmployeeWithFixedAge, firstEmployeeWithFixedAge))) &&
+                  assert(aggs)(isNonEmpty)
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
