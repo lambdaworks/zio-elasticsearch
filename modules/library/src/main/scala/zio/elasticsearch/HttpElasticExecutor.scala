@@ -99,7 +99,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new AggregationResult(value.aggregations))
+            value => ZIO.succeed(new AggregationResult(value.aggs))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -458,7 +458,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchWithAggregationsResult(value.results.map(Item), value.aggregations))
+            value => ZIO.succeed(new SearchWithAggregationsResult(value.results.map(Item), value.aggs))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))

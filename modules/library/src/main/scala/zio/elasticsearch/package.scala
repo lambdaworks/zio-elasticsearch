@@ -18,6 +18,7 @@ package zio
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
+import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 import zio.schema.Schema
@@ -58,6 +59,11 @@ package object elasticsearch {
     }
   }
   type IndexName = IndexName.Type
+
+  object Routing extends Newtype[String] {
+    override def assertion = assert(!isEmptyString) // scalafix:ok
+  }
+  type Routing = Routing.Type
 
   def containsAny(name: String, params: List[String]): Boolean =
     params.exists(StringUtils.contains(name, _))

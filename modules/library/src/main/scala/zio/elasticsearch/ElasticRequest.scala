@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.Routing.Routing
 import zio.schema.Schema
 
 sealed trait HasRefresh[R <: HasRefresh[R]] {

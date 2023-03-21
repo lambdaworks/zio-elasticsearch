@@ -16,10 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticResult.decodeAggregationsJson
-import zio.json.ast.Json
-import zio.json.ast.Json.Obj
-import zio.prelude.{Validation, ZValidation}
+import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, ZIO}
 
@@ -33,15 +30,13 @@ sealed trait DocumentResult[F[_]] {
   def documentAs[A: Schema]: Task[F[A]]
 }
 
-final class AggregationResult private[elasticsearch] (private val aggregationsJson: Option[Json])
+final class AggregationResult private[elasticsearch] (private val aggs: Map[String, ElasticAggregationResponse])
     extends AggregationsResult {
-  def aggregation(name: String): Task[Option[ElasticAggregationResponse]] = ZIO.fromEither {
-    decodeAggregationsJson(aggregationsJson, Some(name)).map(_.get(name))
-  }
+  def aggregation(name: String): Task[Option[ElasticAggregationResponse]] =
+    ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, ElasticAggregationResponse]] = ZIO.fromEither {
-    decodeAggregationsJson(aggregationsJson, None)
-  }
+  def aggregations: Task[Map[String, ElasticAggregationResponse]] =
+    ZIO.succeed(aggs)
 }
 
 final class GetResult private[elasticsearch] (private val doc: Option[Item]) extends DocumentResult[Option] {
@@ -70,16 +65,14 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item]) e
 
 final class SearchWithAggregationsResult private[elasticsearch] (
   private val hits: List[Item],
-  private val aggregationsJson: Option[Json]
+  private val aggs: Map[String, ElasticAggregationResponse]
 ) extends DocumentResult[List]
     with AggregationsResult {
-  def aggregation(name: String): Task[Option[ElasticAggregationResponse]] = ZIO.fromEither {
-    decodeAggregationsJson(aggregationsJson, Some(name)).map(_.get(name))
-  }
+  def aggregation(name: String): Task[Option[ElasticAggregationResponse]] =
+    ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, ElasticAggregationResponse]] = ZIO.fromEither {
-    decodeAggregationsJson(aggregationsJson, None)
-  }
+  def aggregations: Task[Map[String, ElasticAggregationResponse]] =
+    ZIO.succeed(aggs)
 
   def documentAs[A: Schema]: Task[List[A]] = ZIO.fromEither {
     ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
@@ -87,59 +80,5 @@ final class SearchWithAggregationsResult private[elasticsearch] (
         s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})"
       )
     }
-  }
-}
-
-private object ElasticResult {
-  def decodeAggregationsJson(
-    aggregationsJson: Option[Json],
-    name: Option[String]
-  ): Either[DecodingException, Map[String, ElasticAggregationResponse]] = {
-
-    val decodingExceptionMessage = name match {
-      case Some(str) => s"Could not parse aggregation $str successfully."
-      case None      => "Could not parse all aggregations successfully."
-    }
-
-    def getUsefulPairs(pairs: List[(String, Json)]): List[(String, Json)] =
-      name match {
-        case Some(str) => pairs.filter { case (field, _) => field == str }
-        case None      => pairs
-      }
-
-    aggregationsJson.fold[Either[DecodingException, Map[String, TermsAggregationResponse]]](
-      Right(Map.empty[String, TermsAggregationResponse])
-    )(aggregations =>
-      Obj.decoder.decodeJson(aggregations.toString) match {
-        case Right(res) =>
-          Validation
-            .validateAll(
-              getUsefulPairs(res.fields.toList).map { case (field, data) =>
-                ZValidation.fromEither(
-                  field match {
-                    case str if str.contains("terms#") =>
-                      TermsAggregationResponse.decoder
-                        .decodeJson(data.toString)
-                        .map(field.split("#")(1) -> _)
-                    case _ =>
-                      Left(
-                        DecodingException(
-                          s"$decodingExceptionMessage."
-                        )
-                      )
-                  }
-                )
-              }
-            )
-            .toEitherWith { errors =>
-              DecodingException(
-                s"$decodingExceptionMessage: ${errors.mkString(",")})"
-              )
-            }
-            .map(_.toMap)
-        case Left(e) =>
-          Left(DecodingException(s"$decodingExceptionMessage: $e)"))
-      }
-    )
   }
 }
