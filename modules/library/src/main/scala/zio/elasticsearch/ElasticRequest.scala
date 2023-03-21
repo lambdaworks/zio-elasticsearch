@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.elasticsearch.Routing.Routing
 import zio.schema.Schema
 
-trait HasRefresh[R <: HasRefresh[R]] {
+sealed trait HasRefresh[R <: HasRefresh[R]] {
   def refresh(value: Boolean): R
 
   def refreshFalse: R
@@ -27,7 +27,7 @@ trait HasRefresh[R <: HasRefresh[R]] {
   def refreshTrue: R
 }
 
-trait HasRouting[R <: HasRouting[R]] {
+sealed trait HasRouting[R <: HasRouting[R]] {
   def routing(value: Routing): R
 }
 
@@ -41,8 +41,8 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
-  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregationRequest =
-    Aggregation(index = index, aggregation = aggregation)
+  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
+    Aggregate(index = index, aggregation = aggregation)
 
   def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
@@ -81,22 +81,18 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
-    Search(index = index, query = query, routing = None, sortBy = Set.empty)
+    Search(index = index, query = query, sortBy = Set.empty, routing = None)
 
-  def searchWithAggregation(
-    index: IndexName,
-    query: ElasticQuery[_],
-    aggregation: ElasticAggregation
-  ): SearchWithAggregationRequest =
-    SearchWithAggregation(index = index, query = query, aggregation = aggregation, sortBy = Set.empty)
+  def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchAndAggregateRequest =
+    SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = Set.empty, routing = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
-  sealed trait AggregationRequest extends ElasticRequest[AggregationResult]
+  sealed trait AggregateRequest extends ElasticRequest[AggregationResult]
 
-  private[elasticsearch] final case class Aggregation(index: IndexName, aggregation: ElasticAggregation)
-      extends AggregationRequest
+  private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
+      extends AggregateRequest
 
   sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[BulkRequest] with HasRouting[BulkRequest]
 
@@ -322,29 +318,45 @@ object ElasticRequest {
       self.copy(routing = Some(value))
   }
 
-  sealed trait SearchRequest extends ElasticRequest[SearchResult] with WithSort[SearchRequest]
+  sealed trait SearchRequest
+      extends ElasticRequest[SearchResult]
+      with HasRouting[SearchRequest]
+      with WithSort[SearchRequest] {
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchWithAggregationsResult]
+  }
 
   private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
-    routing: Option[Routing],
-    sortBy: Set[Sort]
+    sortBy: Set[Sort],
+    routing: Option[Routing]
   ) extends SearchRequest { self =>
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchWithAggregationsResult] =
+      SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = sortBy, routing = routing)
+
+    def routing(value: Routing): SearchRequest =
+      self.copy(routing = Some(value))
+
     def sortBy(sorts: Sort*): SearchRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
   }
 
-  sealed trait SearchWithAggregationRequest
+  sealed trait SearchAndAggregateRequest
       extends ElasticRequest[SearchWithAggregationsResult]
-      with WithSort[SearchWithAggregationRequest]
+      with HasRouting[SearchAndAggregateRequest]
+      with WithSort[SearchAndAggregateRequest]
 
-  private[elasticsearch] final case class SearchWithAggregation(
+  private[elasticsearch] final case class SearchAndAggregate(
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
-    sortBy: Set[Sort]
-  ) extends SearchWithAggregationRequest { self =>
-    def sortBy(sorts: Sort*): SearchWithAggregationRequest =
+    sortBy: Set[Sort],
+    routing: Option[Routing]
+  ) extends SearchAndAggregateRequest { self =>
+    def routing(value: Routing): SearchAndAggregateRequest =
+      self.copy(routing = Some(value))
+
+    def sortBy(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
   }
 

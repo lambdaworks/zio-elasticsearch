@@ -134,13 +134,12 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = matchAll
-                  aggregation =
-                    termsAggregation("aggregationName", "name.keyword").withAgg(
-                      termsAggregation("aggregationAge", "age.keyword")
-                    )
+                  aggregation = termsAggregation("aggregationName", "name.keyword").withAgg(
+                                  termsAggregation("aggregationAge", "age")
+                                )
                   res <- ElasticExecutor.execute(
                            ElasticRequest
-                             .searchWithAggregation(
+                             .search(
                                index = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
@@ -148,9 +147,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[CustomerDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(isNonEmpty) && assert(aggs)(
-                  isNonEmpty
-                )
+                } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -179,7 +176,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     )
                   res <- ElasticExecutor.execute(
                            ElasticRequest
-                             .searchWithAggregation(
+                             .search(
                                index = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
@@ -188,11 +185,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[EmployeeDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(equalTo(List(secondEmployeeWithFixedAge, firstEmployeeWithFixedAge))) && assert(
-                  aggs
-                )(
-                  isNonEmpty
-                )
+                } yield assert(docs)(equalTo(List(secondEmployeeWithFixedAge, firstEmployeeWithFixedAge))) &&
+                  assert(aggs)(isNonEmpty)
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -214,11 +208,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = matchAll
                   aggregation =
                     termsAggregation("aggregationName", "name.keyword").withSubAgg(
-                      termsAggregation("aggregationAge", "age.keyword")
+                      termsAggregation("aggregationAge", "age")
                     )
                   res <- ElasticExecutor.execute(
                            ElasticRequest
-                             .searchWithAggregation(
+                             .search(
                                index = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
@@ -226,9 +220,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[CustomerDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(isNonEmpty) && assert(aggs)(
-                  isNonEmpty
-                )
+                } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
             ElasticExecutor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -741,7 +733,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _    <- ElasticExecutor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range("balance").gte(100)
                 res <- ElasticExecutor
-                         .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.searchAfter)
+                         .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.SearchAfter)
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
             }
@@ -769,7 +761,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res <- ElasticExecutor
                          .stream(
                            ElasticRequest.search(secondSearchIndex, query),
-                           StreamConfig.searchAfter.withPageSize(40).keepAliveFor("2m")
+                           StreamConfig.SearchAfter.withPageSize(40).keepAliveFor("2m")
                          )
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
@@ -796,7 +788,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res <- ElasticExecutor
                          .streamAs[CustomerDocument](
                            ElasticRequest.search(secondSearchIndex, query),
-                           StreamConfig.searchAfter
+                           StreamConfig.SearchAfter
                          )
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
@@ -822,7 +814,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                      )
                 query = range("balance").gte(200)
                 res <- ElasticExecutor
-                         .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.searchAfter)
+                         .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.SearchAfter)
                          .run(sink)
               } yield assert(res)(isEmpty)
             }

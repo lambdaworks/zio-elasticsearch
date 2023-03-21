@@ -81,18 +81,19 @@ object ElasticAggregation {
       Obj(name -> paramsToJsonHelper(field, subAggregations))
 
     private def paramsToJsonHelper(currField: String, currSubAggs: List[SingleElasticAggregation]): Obj =
-      if (currSubAggs.nonEmpty)
+      if (currSubAggs.nonEmpty) {
         Obj(
           "terms" -> Obj("field" -> currField.toJson),
           "aggs" -> Obj(currSubAggs.map { case termsAgg: Terms =>
             (termsAgg.name, paramsToJsonHelper(termsAgg.field, termsAgg.subAggregations))
           }: _*)
         )
-      else
+      } else {
         Obj("terms" -> Obj("field" -> currField.toJson))
+      }
 
     def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
-      multipleAggregations.aggregations(List(self, aggregation): _*)
+      multipleAggregations.aggregations(self, aggregation)
 
     def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
       self.copy(subAggregations = aggregation +: subAggregations)

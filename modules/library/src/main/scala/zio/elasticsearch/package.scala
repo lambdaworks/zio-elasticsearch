@@ -63,12 +63,15 @@ package object elasticsearch {
     params.exists(StringUtils.contains(name, _))
 
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
-    def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] = zio.flatMap(_.aggregation(name))
+    def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] =
+      zio.flatMap(_.aggregation(name))
 
-    def aggregations: RIO[R, Map[String, ElasticAggregationResponse]] = zio.flatMap(_.aggregations)
+    def aggregations: RIO[R, Map[String, ElasticAggregationResponse]] =
+      zio.flatMap(_.aggregations)
   }
 
   final implicit class ZIODocumentOps[R, F[_]](zio: RIO[R, DocumentResult[F]]) {
-    def documentAs[A: Schema]: RIO[R, F[A]] = zio.flatMap(_.documentAs[A])
+    def documentAs[A: Schema]: RIO[R, F[A]] =
+      zio.flatMap(_.documentAs[A])
   }
 }
