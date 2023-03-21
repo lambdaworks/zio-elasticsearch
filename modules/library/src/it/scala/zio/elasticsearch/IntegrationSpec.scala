@@ -25,6 +25,8 @@ import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
 import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
 
+import java.time.LocalDate
+
 trait IntegrationSpec extends ZIOSpecDefault {
 
   val elasticsearchLayer: TaskLayer[ElasticExecutor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
@@ -58,11 +60,20 @@ trait IntegrationSpec extends ZIOSpecDefault {
   } yield CustomerDocument(id = id, name = name, address = address, balance = balance, age = age)
 
   def genEmployee: Gen[Any, EmployeeDocument] = for {
-    id     <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
-    name   <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    degree <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    age    <- Gen.int(18, 75)
-  } yield EmployeeDocument(id = id, name = name, degree = degree, age = age)
+    id        <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
+    name      <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    degree    <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    birthDate <- Gen.localDate(LocalDate.parse("1991-12-02"), LocalDate.parse("1999-12-05"))
+    age       <- Gen.int(18, 75)
+    sectorId1 <- Gen.numericChar
+  } yield EmployeeDocument(
+    id = id,
+    name = name,
+    degree = degree,
+    sectorsIds = List(sectorId1 + 10, sectorId1, sectorId1 - 5),
+    age = age,
+    birthDate = birthDate
+  )
 
   def checkOnce: CheckN = checkN(1)
 

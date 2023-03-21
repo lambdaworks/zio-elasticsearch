@@ -29,7 +29,7 @@ import sttp.model.StatusCode.{
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.json.ast.Json
-import zio.json.ast.Json.{Obj, Str}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
@@ -276,8 +276,8 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         .response(asJson[ElasticGetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(new GetResult(response.body.toOption.map(r => Item(r.source))))
-        case HttpNotFound => ZIO.succeed(new GetResult(None))
+        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => Item(r.source))))
+        case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
         case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
@@ -308,13 +308,25 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
       }
     }
 
-  private def executeSearch(r: Search): Task[SearchResult] =
+  private def executeSearch(r: Search): Task[SearchResult] = {
+    val body = r.sortBy match {
+      case sorts if sorts.nonEmpty =>
+        Obj(
+          List(
+            "query" -> r.query.paramsToJson(fieldPath = None),
+            "sort"  -> Arr(sorts.toList.map(_.paramsToJson): _*)
+          ): _*
+        )
+      case _ =>
+        r.query.toJson
+    }
+
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search")
         .response(asJson[SearchWithAggsResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJson)
+        .body(body)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -326,6 +338,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
+  }
 
   private def executeSearchAfterRequest(
     r: Search,
@@ -388,13 +401,32 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
   }
 
-  private def executeSearchWithAggregation(r: SearchWithAggregation): Task[SearchWithAggregationsResult] =
+  private def executeSearchWithAggregation(r: SearchWithAggregation): Task[SearchWithAggregationsResult] = {
+    val body = r.sortBy match {
+      case sorts if sorts.nonEmpty =>
+        Obj(
+          List(
+            "query" -> r.query.paramsToJson(fieldPath = None),
+            "sort"  -> Arr(sorts.toList.map(_.paramsToJson): _*),
+            "aggs"  -> r.aggregation.paramsToJson
+          ): _*
+        )
+      case _ =>
+        Obj(
+          List(
+            "query" -> r.query.paramsToJson(fieldPath = None),
+            "aggs"  -> r.aggregation.paramsToJson
+          ): _*
+        )
+
+    }
+
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
         .response(asJson[SearchWithAggsResponse])
         .contentType(ApplicationJson)
-        .body(Obj(List("query" -> r.query.paramsToJson(None), "aggs" -> r.aggregation.paramsToJson): _*))
+        .body(body)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -406,6 +438,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
+  }
 
   private def executeSearchWithScroll(r: Search, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(

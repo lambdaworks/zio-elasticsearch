@@ -82,7 +82,7 @@ object TermsAggregationBucket {
     Right(TermsAggregationBucket.apply(key, docCount, Option(subAggs).filter(_.nonEmpty)))
   }
 
-  implicit class JsonDecoderOps(json: Json) {
+  final implicit class JsonDecoderOps(json: Json) {
     def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
       (json.as[A]: @unchecked) match {
         case Right(decoded) => decoded
