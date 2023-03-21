@@ -235,6 +235,36 @@ object HttpExecutorSpec extends IntegrationSpec {
             ElasticExecutor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ),
+        suite("counting documents")(
+          test("successfully count documents with given query") {
+            checkOnce(genCustomer) { customer =>
+              for {
+                _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(firstCountIndex, matchAll))
+                _ <- ElasticExecutor.execute(
+                       ElasticRequest.create[CustomerDocument](firstCountIndex, customer).refreshTrue
+                     )
+                res <- ElasticExecutor.execute(ElasticRequest.count(firstCountIndex, matchAll))
+              } yield assert(res)(equalTo(1))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(firstCountIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(firstCountIndex)).orDie
+          ),
+          test("successfully count documents without given query") {
+            checkOnce(genCustomer) { customer =>
+              for {
+                _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(secondCountIndex, matchAll))
+                _ <- ElasticExecutor.execute(
+                       ElasticRequest.create[CustomerDocument](secondCountIndex, customer).refreshTrue
+                     )
+                res <- ElasticExecutor.execute(ElasticRequest.count(secondCountIndex))
+              } yield assert(res)(equalTo(1))
+            }
+          } @@ around(
+            ElasticExecutor.execute(ElasticRequest.createIndex(secondCountIndex)),
+            ElasticExecutor.execute(ElasticRequest.deleteIndex(secondCountIndex)).orDie
+          )
+        ) @@ shrinks(0),
         suite("creating document")(
           test("successfully create document") {
             checkOnce(genCustomer) { customer =>

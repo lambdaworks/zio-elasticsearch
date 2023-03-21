@@ -41,6 +41,10 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val createIndexTestName: IndexName = IndexName("create-index-test-name")
 
+  val firstCountIndex: IndexName = IndexName("count-index-1")
+
+  val secondCountIndex: IndexName = IndexName("count-index-2")
+
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- ElasticExecutor.execute(ElasticRequest.createIndex(index))
     _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)

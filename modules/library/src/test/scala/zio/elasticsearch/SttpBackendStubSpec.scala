@@ -25,58 +25,6 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val url = "http://localhost:9200"
 
-  private val searchWithAggregationRequestStub: StubMapping = StubMapping(
-    request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search?typed_keys",
-    response = Response(
-      """
-        |{
-        |  "took": 5,
-        |  "timed_out": false,
-        |  "_shards": {
-        |    "total": 8,
-        |    "successful": 5,
-        |    "skipped": 3,
-        |    "failed": 0
-        |  },
-        |  "hits": {
-        |    "total": {
-        |      "value": 2,
-        |      "relation": "relation"
-        |    },
-        |    "max_score": 1,
-        |    "hits": [
-        |      {
-        |        "_index": "repositories",
-        |        "_type": "type",
-        |        "_id": "111",
-        |        "_score": 1,
-        |        "_source": {
-        |          "id": "123",
-        |          "organization": "lambdaworks.io",
-        |          "name": "LambdaWorks",
-        |          "stars": 10,
-        |          "forks": 10
-        |        }
-        |      }
-        |    ]
-        |  }, 
-        |  "aggregations": {
-        |    "terms#aggregation1": {
-        |      "doc_count_error_upper_bound": 0,
-        |      "sum_other_doc_count": 0,
-        |      "buckets": [
-        |        {
-        |          "key": "name",
-        |          "doc_count": 5
-        |        }
-        |      ]
-        |    }
-        |  }
-        |}""".stripMargin,
-      StatusCode.Ok
-    )
-  )
-
   private val bulkRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/_bulk?refresh=true",
     response = Response(
@@ -103,6 +51,23 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |     }
         |   }
         | ]
+        |}""".stripMargin,
+      StatusCode.Ok
+    )
+  )
+
+  private val countRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_count?routing=routing",
+    response = Response(
+      """
+        |{
+        |  "count": 2,
+        |  "_shards": {
+        |    "total": 2,
+        |    "successful": 2,
+        |    "skipped": 0,
+        |    "failed": 0
+        |  }
         |}""".stripMargin,
       StatusCode.Ok
     )
@@ -243,8 +208,61 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val searchWithAggregationRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search?typed_keys",
+    response = Response(
+      """
+        |{
+        |  "took": 5,
+        |  "timed_out": false,
+        |  "_shards": {
+        |    "total": 8,
+        |    "successful": 5,
+        |    "skipped": 3,
+        |    "failed": 0
+        |  },
+        |  "hits": {
+        |    "total": {
+        |      "value": 2,
+        |      "relation": "relation"
+        |    },
+        |    "max_score": 1,
+        |    "hits": [
+        |      {
+        |        "_index": "repositories",
+        |        "_type": "type",
+        |        "_id": "111",
+        |        "_score": 1,
+        |        "_source": {
+        |          "id": "123",
+        |          "organization": "lambdaworks.io",
+        |          "name": "LambdaWorks",
+        |          "stars": 10,
+        |          "forks": 10
+        |        }
+        |      }
+        |    ]
+        |  }, 
+        |  "aggregations": {
+        |    "terms#aggregation1": {
+        |      "doc_count_error_upper_bound": 0,
+        |      "sum_other_doc_count": 0,
+        |      "buckets": [
+        |        {
+        |          "key": "name",
+        |          "doc_count": 5
+        |        }
+        |      ]
+        |    }
+        |  }
+        |}""".stripMargin,
+      StatusCode.Ok
+    )
+  )
+
   private val stubs: List[StubMapping] = List(
     bulkRequestStub,
+    countRequestStub,
     createDocumentRequestStub,
     createIndexRequestWithMappingStub,
     createIndexRequestWithoutMappingStub,

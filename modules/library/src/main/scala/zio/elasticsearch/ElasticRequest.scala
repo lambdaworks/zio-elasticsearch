@@ -47,6 +47,12 @@ object ElasticRequest {
   def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
 
+  def count(index: IndexName): CountRequest =
+    Count(index = index, query = None, routing = None)
+
+  def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
+    Count(index = index, query = Some(query), routing = None)
+
   def create[A: Schema](index: IndexName, doc: A): CreateRequest =
     Create(index = index, document = Document.from(doc), refresh = None, routing = None)
 
@@ -135,6 +141,17 @@ object ElasticRequest {
   object Bulk {
     def of(requests: BulkableRequest[_]*): Bulk =
       Bulk(requests = requests.toList, index = None, refresh = None, routing = None)
+  }
+
+  sealed trait CountRequest extends ElasticRequest[Int] with HasRouting[CountRequest]
+
+  private[elasticsearch] final case class Count(
+    index: IndexName,
+    query: Option[ElasticQuery[_]],
+    routing: Option[Routing]
+  ) extends CountRequest { self =>
+    def routing(value: Routing): CountRequest =
+      self.copy(routing = Some(value))
   }
 
   sealed trait CreateRequest
