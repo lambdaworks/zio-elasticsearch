@@ -147,7 +147,6 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[CustomerDocument]
                   aggs <- res.aggregations
-                  _     = println(aggs)
                 } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
