@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.elasticsearch.query.sort._
 import zio.elasticsearch.utils.Field
 
-object Sort {
+object ElasticSort {
   def sortBy[S](field: Field[S, _]): Sort =
     SortOptions(
       field = field.toString,

@@ -1,12 +1,12 @@
 package zio.elasticsearch
 
 import zio.Scope
-import zio.elasticsearch.Sort._
+import zio.elasticsearch.ElasticSort._
 import zio.elasticsearch.query.sort.Missing._
 import zio.elasticsearch.query.sort.NumericType.{Long => NumTypeLong}
 import zio.elasticsearch.query.sort.SortMode._
 import zio.elasticsearch.query.sort.SortOrder._
-import zio.elasticsearch.query.sort.{SortOptions, _}
+import zio.elasticsearch.query.sort._
 import zio.elasticsearch.utils._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
