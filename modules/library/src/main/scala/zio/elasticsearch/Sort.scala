@@ -98,27 +98,27 @@ sealed trait Sort
   def paramsToJson: Json
 }
 
-trait WithFormat[S <: WithFormat[S]] {
+sealed trait WithFormat[S <: WithFormat[S]] {
   def format(value: String): S
 }
 
-trait WithMode[S <: WithMode[S]] {
+sealed trait WithMode[S <: WithMode[S]] {
   def mode(value: SortMode): S
 }
 
-trait WithMissing[S <: WithMissing[S]] {
+sealed trait WithMissing[S <: WithMissing[S]] {
   def missing(value: Missing): S
 }
 
-trait WithNumericType[S <: WithNumericType[S]] {
+sealed trait WithNumericType[S <: WithNumericType[S]] {
   def numericType(value: NumericType): S
 }
 
-trait WithOrder[S <: WithOrder[S]] {
+sealed trait WithOrder[S <: WithOrder[S]] {
   def order(value: SortOrder): S
 }
 
-trait WithUnmappedType[S <: WithUnmappedType[S]] {
+sealed trait WithUnmappedType[S <: WithUnmappedType[S]] {
   def unmappedType(value: String): S
 }
 
