@@ -22,7 +22,7 @@ import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
 import scala.annotation.unused
 
-g trait ElasticQuery[-S] { self =>
+sealed trait ElasticQuery[-S] { self =>
   def paramsToJson(fieldPath: Option[String]): Json
 
   final def toJson: Json =

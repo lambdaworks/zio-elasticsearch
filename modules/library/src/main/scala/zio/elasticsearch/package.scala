@@ -28,7 +28,7 @@ import zio.schema.Schema
 package object elasticsearch {
   private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
 
-  final case class DecodingException(message: String) extends ElasticException(message)
+  private[elasticsearch] final case class DecodingException(message: String) extends ElasticException(message)
 
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
