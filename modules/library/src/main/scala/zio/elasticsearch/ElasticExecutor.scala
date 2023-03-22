@@ -18,21 +18,11 @@ package zio.elasticsearch
 
 import sttp.client3.SttpBackend
 import zio.elasticsearch.ElasticRequest.SearchRequest
+import zio.elasticsearch.executor.{ElasticExecutor, HttpElasticExecutor}
+import zio.elasticsearch.result.Item
 import zio.schema.Schema
-import zio.stream.{Stream, ZStream}
+import zio.stream.ZStream
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
-
-private[elasticsearch] trait ElasticExecutor {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-
-  def stream(request: SearchRequest): Stream[Throwable, Item]
-
-  def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item]
-
-  def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
-
-  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A]
-}
 
 object ElasticExecutor {
   lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], ElasticExecutor] =

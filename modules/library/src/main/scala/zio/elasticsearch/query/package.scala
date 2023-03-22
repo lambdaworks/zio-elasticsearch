@@ -16,11 +16,28 @@
 
 package zio.elasticsearch
 
-import zio.json.ast.Json
-import zio.schema.Schema
-import zio.schema.codec.DecodeError
-import zio.schema.codec.JsonCodec.JsonDecoder
+package object query {
+  private[elasticsearch] trait HasBoost[Q <: HasBoost[Q]] {
+    def boost(value: Double): Q
+  }
 
-private[elasticsearch] final case class Item(raw: Json) {
-  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
+  private[elasticsearch] trait HasCaseInsensitive[Q <: HasCaseInsensitive[Q]] {
+    def caseInsensitive(value: Boolean): Q
+
+    def caseInsensitiveFalse: Q
+
+    def caseInsensitiveTrue: Q
+  }
+
+  private[elasticsearch] trait HasIgnoreUnmapped[Q <: HasIgnoreUnmapped[Q]] {
+    def ignoreUnmapped(value: Boolean): Q
+
+    def ignoreUnmappedFalse: Q
+
+    def ignoreUnmappedTrue: Q
+  }
+
+  private[elasticsearch] trait HasScoreMode[Q <: HasScoreMode[Q]] {
+    def scoreMode(scoreMode: ScoreMode): Q
+  }
 }

@@ -4,6 +4,7 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import sttp.client3.testing.SttpBackendStub
 import sttp.client3.{Request, Response, StringBody}
 import sttp.model.{Method, StatusCode}
+import zio.elasticsearch.executor.ElasticExecutor
 import zio.test.ZIOSpecDefault
 import zio.{Task, TaskLayer, ZLayer}
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor
 
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
@@ -29,6 +29,9 @@ import sttp.model.StatusCode.{
 import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
+import zio.elasticsearch._
+import zio.elasticsearch.response._
+import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
@@ -299,7 +302,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         .response(asJson[ElasticGetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => Item(r.source))))
+        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => result.Item(r.source))))
         case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
         case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
@@ -424,7 +427,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
   }
 
-  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchWithAggregationsResult] = {
+  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchAndAggregateResult] = {
     val body = r.sortBy match {
       case sorts if sorts.nonEmpty =>
         Obj(
@@ -458,7 +461,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchWithAggregationsResult(value.results.map(Item), value.aggs))
+            value => ZIO.succeed(new SearchAndAggregateResult(value.results.map(Item), value.aggs))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))

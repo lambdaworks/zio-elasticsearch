@@ -14,24 +14,27 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.result
 
+import zio.elasticsearch.DecodingException
+import zio.elasticsearch.response.ElasticAggregationResponse
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, ZIO}
 
-sealed trait AggregationsResult {
+private[elasticsearch] sealed trait AggregationsResult {
   def aggregation(name: String): Task[Option[ElasticAggregationResponse]]
 
   def aggregations: Task[Map[String, ElasticAggregationResponse]]
 }
 
-sealed trait DocumentResult[F[_]] {
+private[elasticsearch] sealed trait DocumentResult[F[_]] {
   def documentAs[A: Schema]: Task[F[A]]
 }
 
-final class AggregationResult private[elasticsearch] (private val aggs: Map[String, ElasticAggregationResponse])
-    extends AggregationsResult {
+private[elasticsearch] final class AggregationResult private[elasticsearch] (
+  private val aggs: Map[String, ElasticAggregationResponse]
+) extends AggregationsResult {
   def aggregation(name: String): Task[Option[ElasticAggregationResponse]] =
     ZIO.succeed(aggs.get(name))
 
@@ -39,7 +42,8 @@ final class AggregationResult private[elasticsearch] (private val aggs: Map[Stri
     ZIO.succeed(aggs)
 }
 
-final class GetResult private[elasticsearch] (private val doc: Option[Item]) extends DocumentResult[Option] {
+private[elasticsearch] final class GetResult private[elasticsearch] (private val doc: Option[Item])
+    extends DocumentResult[Option] {
   def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
     ZIO
       .fromEither(doc match {
@@ -54,7 +58,8 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends DocumentResult[List] {
+private[elasticsearch] final class SearchResult private[elasticsearch] (private val hits: List[Item])
+    extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
@@ -63,7 +68,7 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item]) e
     }
 }
 
-final class SearchWithAggregationsResult private[elasticsearch] (
+private[elasticsearch] final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
   private val aggs: Map[String, ElasticAggregationResponse]
 ) extends DocumentResult[List]

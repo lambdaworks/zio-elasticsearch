@@ -14,23 +14,24 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+sealed trait NumericType
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
+object NumericType {
+  final case object Double extends NumericType {
+    override def toString: String = "double"
+  }
 
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
+  final case object Long extends NumericType {
+    override def toString: String = "long"
+  }
 
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+  final case object Date extends NumericType {
+    override def toString: String = "date"
+  }
+
+  final case object DateNanos extends NumericType {
+    override def toString: String = "date_nanos"
+  }
 }

@@ -14,23 +14,28 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+sealed trait SortMode
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
+object SortMode {
+  final case object Avg extends SortMode {
+    override def toString: String = "avg"
+  }
 
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
+  final case object Max extends SortMode {
+    override def toString: String = "max"
+  }
 
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+  final case object Median extends SortMode {
+    override def toString: String = "median"
+  }
+
+  final case object Min extends SortMode {
+    override def toString: String = "min"
+  }
+
+  final case object Sum extends SortMode {
+    override def toString: String = "sum"
+  }
 }

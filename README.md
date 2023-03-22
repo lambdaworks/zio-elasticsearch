@@ -87,7 +87,7 @@ term(EmployeeDocument.name, "foo bar")
 You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors:
 
 ```scala
-import zio.elasticsearch.ElasticQueryAccessorBuilder
+import zio.elasticsearch.utils.ElasticQueryAccessorBuilder
 import zio.elasticsearch.ElasticQuery._
 import zio.schema.annotation.fieldName
 import zio.schema.{DeriveSchema, Schema}

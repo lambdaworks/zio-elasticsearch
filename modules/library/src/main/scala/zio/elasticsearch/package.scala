@@ -18,6 +18,8 @@ package zio
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
+import zio.elasticsearch.response.ElasticAggregationResponse
+import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
 import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
@@ -26,7 +28,7 @@ import zio.schema.Schema
 package object elasticsearch {
   private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
 
-  private[elasticsearch] final case class DecodingException(message: String) extends ElasticException(message)
+  final case class DecodingException(message: String) extends ElasticException(message)
 
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type

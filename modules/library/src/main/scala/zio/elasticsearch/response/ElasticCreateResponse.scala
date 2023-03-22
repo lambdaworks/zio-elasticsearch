@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.response
 
-import zio.schema.Schema
-import zio.schema.codec.JsonCodec
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class Document(json: String)
+private[elasticsearch] final case class ElasticCreateResponse(
+  @jsonField("_id")
+  id: String
+)
 
-private[elasticsearch] object Document {
-  def from[A](doc: A)(implicit schema: Schema[A]): Document = Document(
-    JsonCodec.jsonEncoder(schema).encodeJson(doc, indent = None).toString
-  )
+private[elasticsearch] object ElasticCreateResponse {
+  implicit val decoder: JsonDecoder[ElasticCreateResponse] = DeriveJsonDecoder.gen[ElasticCreateResponse]
 }

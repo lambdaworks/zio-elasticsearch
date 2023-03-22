@@ -19,9 +19,10 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
-import zio.elasticsearch.SortMode.Max
-import zio.elasticsearch.SortOrder._
 import zio.elasticsearch.Sort.sortBy
+import zio.elasticsearch.query.sort.SortMode.Max
+import zio.elasticsearch.query.sort.SortOrder._
+import zio.elasticsearch.result.Item
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._

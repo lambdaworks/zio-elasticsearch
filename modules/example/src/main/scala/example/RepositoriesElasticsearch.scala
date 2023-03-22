@@ -19,15 +19,8 @@ package example
 import zio._
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
-import zio.elasticsearch.{
-  CreationOutcome,
-  DeletionOutcome,
-  DocumentId,
-  ElasticQuery,
-  ElasticRequest,
-  Elasticsearch,
-  Routing
-}
+import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.{CreationOutcome, DeletionOutcome, DocumentId, ElasticRequest, Elasticsearch, Routing}
 import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {

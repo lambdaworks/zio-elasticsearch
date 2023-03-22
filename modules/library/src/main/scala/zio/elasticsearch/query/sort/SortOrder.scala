@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+sealed trait SortOrder
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
+object SortOrder {
+  final case object Asc extends SortOrder {
+    override def toString: String = "asc"
+  }
 
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
-
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+  final case object Desc extends SortOrder {
+    override def toString: String = "desc"
+  }
 }

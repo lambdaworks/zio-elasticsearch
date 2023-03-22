@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.response._
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, assertZIO}
 

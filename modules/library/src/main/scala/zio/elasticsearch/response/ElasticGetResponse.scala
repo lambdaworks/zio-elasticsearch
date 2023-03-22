@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.response
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+import zio.json.ast.Json
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
+private[elasticsearch] final case class ElasticGetResponse(
+  @jsonField("_source")
+  source: Json
+)
 
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
-
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+private[elasticsearch] object ElasticGetResponse {
+  implicit val decoder: JsonDecoder[ElasticGetResponse] = DeriveJsonDecoder.gen[ElasticGetResponse]
 }

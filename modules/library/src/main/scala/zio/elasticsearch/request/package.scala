@@ -16,21 +16,22 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+import zio.elasticsearch.query.sort.Sort
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
+package object request {
+  private[elasticsearch] trait HasRefresh[R <: HasRefresh[R]] {
+    def refresh(value: Boolean): R
 
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
+    def refreshFalse: R
 
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+    def refreshTrue: R
+  }
+
+  private[elasticsearch] trait HasRouting[R <: HasRouting[R]] {
+    def routing(value: Routing): R
+  }
+
+  private[elasticsearch] trait WithSort[R <: WithSort[R]] {
+    def sortBy(sorts: Sort*): R
+  }
 }

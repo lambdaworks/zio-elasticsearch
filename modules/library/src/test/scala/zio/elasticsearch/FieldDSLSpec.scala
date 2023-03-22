@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.utils.{ElasticQueryAccessorBuilder, Field}
 import zio.schema.{DeriveSchema, Schema}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 

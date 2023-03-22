@@ -16,21 +16,12 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+package object aggregation {
+  private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A]] {
+    def withSubAgg(subAgg: SingleElasticAggregation): A
+  }
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
-
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
-
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+  private[elasticsearch] trait WithAgg {
+    def withAgg(agg: SingleElasticAggregation): MultipleAggregations
+  }
 }

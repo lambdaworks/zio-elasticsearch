@@ -14,23 +14,14 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query
 
-import zio.elasticsearch.executor.ElasticExecutor
-import zio.{RIO, Task, URLayer, ZIO, ZLayer}
+sealed trait ScoreMode
 
-trait Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): Task[A]
-}
-
-object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
-    ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
-
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
-      new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
-      }
-    }
+object ScoreMode {
+  final case object Avg  extends ScoreMode
+  final case object Max  extends ScoreMode
+  final case object Min  extends ScoreMode
+  final case object None extends ScoreMode
+  final case object Sum  extends ScoreMode
 }
