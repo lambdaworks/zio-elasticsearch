@@ -17,7 +17,6 @@
 package example
 
 import zio._
-import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.{CreationOutcome, DeletionOutcome, DocumentId, ElasticRequest, Elasticsearch, Routing}
@@ -25,19 +24,8 @@ import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
-  def findAll(): Task[List[GitHubRepo]] = {
-    val terms = termsAggregation("aggrName", "organization")
-      .withSubAgg(termsAggregation("aggrName2", "stars"))
-      .withSubAgg(termsAggregation("aggggrrrr33333", "forks"))
-
-    val a = elasticsearch.execute(ElasticRequest.search(Index, matchAll, terms))
-
-    for {
-      aa <- a.documentAs[GitHubRepo]
-      bb <- a.aggregations
-      _   = println(bb)
-    } yield aa
-  }
+  def findAll(): Task[List[GitHubRepo]] =
+    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
