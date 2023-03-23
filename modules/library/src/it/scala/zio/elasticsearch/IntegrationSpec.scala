@@ -32,19 +32,19 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val elasticsearchLayer: TaskLayer[Executor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
 
-  val index: IndexName = IndexName("users") // scalafix:ok
+  val index: IndexName = IndexName("users")
 
-  val deleteByQueryIndex: IndexName = IndexName("delete-by-query-index") // scalafix:ok
+  val deleteByQueryIndex: IndexName = IndexName("delete-by-query-index")
 
-  val firstSearchIndex: IndexName = IndexName("search-index-1") // scalafix:ok
+  val firstSearchIndex: IndexName = IndexName("search-index-1")
 
-  val secondSearchIndex: IndexName = IndexName("search-index-2") // scalafix:ok
+  val secondSearchIndex: IndexName = IndexName("search-index-2")
 
-  val createIndexTestName: IndexName = IndexName("create-index-test-name") // scalafix:ok
+  val createIndexTestName: IndexName = IndexName("create-index-test-name")
 
-  val firstCountIndex: IndexName = IndexName("count-index-1") // scalafix:ok
+  val firstCountIndex: IndexName = IndexName("count-index-1")
 
-  val secondCountIndex: IndexName = IndexName("count-index-2") // scalafix:ok
+  val secondCountIndex: IndexName = IndexName("count-index-2")
 
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- Executor.execute(ElasticRequest.createIndex(index))

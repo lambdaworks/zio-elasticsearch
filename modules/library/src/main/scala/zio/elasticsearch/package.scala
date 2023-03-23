@@ -58,10 +58,10 @@ package object elasticsearch {
   }
   type Routing = Routing.Type
 
-  private def isValid(name: String): Boolean =
+  def isValid(name: String): Boolean =
     name.toLowerCase == name &&
       !startsWithAny(name, "+", "-", "_") &&
-      !List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(StringUtils.contains(name, _)) &&
+      !containsAny(name = name, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
       !equalsAny(name, ".", "..") &&
       name.getBytes().length <= 255
 
@@ -77,4 +77,7 @@ package object elasticsearch {
     def documentAs[A: Schema]: RIO[R, F[A]] =
       zio.flatMap(_.documentAs[A])
   }
+
+  private def containsAny(name: String, params: List[String]): Boolean =
+    params.exists(StringUtils.contains(name, _))
 }
