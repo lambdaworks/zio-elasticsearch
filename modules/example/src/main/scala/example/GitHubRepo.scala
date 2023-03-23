@@ -17,7 +17,7 @@
 package example
 
 import example.external.github.model.RepoResponse
-import zio.elasticsearch.ElasticQueryAccessorBuilder
+import zio.elasticsearch.FieldAccessorBuilder
 import zio.json.{DeriveJsonEncoder, JsonEncoder}
 import zio.schema.{DeriveSchema, Schema}
 
@@ -52,7 +52,7 @@ object GitHubRepo {
     DeriveSchema.gen[GitHubRepo]
 
   val (id, organization, name, url, description, lastCommitAt, stars, forks) =
-    schema.makeAccessors(ElasticQueryAccessorBuilder)
+    schema.makeAccessors(FieldAccessorBuilder)
 
   implicit val encoder: JsonEncoder[GitHubRepo] = DeriveJsonEncoder.gen[GitHubRepo]
 }

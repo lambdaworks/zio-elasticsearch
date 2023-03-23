@@ -20,7 +20,7 @@ import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-sealed trait ElasticAggregationResponse
+sealed trait AggregationResponse
 
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
@@ -28,20 +28,20 @@ private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("sum_other_doc_count")
   sumOtherDocCount: Int,
   buckets: List[TermsAggregationBucket]
-) extends ElasticAggregationResponse
+) extends AggregationResponse
 
 private[elasticsearch] object TermsAggregationResponse {
   implicit val decoder: JsonDecoder[TermsAggregationResponse] = DeriveJsonDecoder.gen[TermsAggregationResponse]
 }
 
-private[elasticsearch] sealed trait ElasticAggregationBucket
+private[elasticsearch] sealed trait AggregationBucket
 
 private[elasticsearch] final case class TermsAggregationBucket(
   key: String,
   @jsonField("doc_count")
   docCount: Int,
-  subAggregations: Option[Map[String, ElasticAggregationResponse]] = None
-) extends ElasticAggregationBucket
+  subAggregations: Option[Map[String, AggregationResponse]] = None
+) extends AggregationBucket
 
 private[elasticsearch] object TermsAggregationBucket {
   implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>

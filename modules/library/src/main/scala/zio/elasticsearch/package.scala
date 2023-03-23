@@ -18,7 +18,7 @@ package zio
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
-import zio.elasticsearch.executor.response.ElasticAggregationResponse
+import zio.elasticsearch.executor.response.AggregationResponse
 import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
 import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
@@ -66,10 +66,10 @@ package object elasticsearch {
       name.getBytes().length <= 255
 
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
-    def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] =
+    def aggregation(name: String): RIO[R, Option[AggregationResponse]] =
       zio.flatMap(_.aggregation(name))
 
-    def aggregations: RIO[R, Map[String, ElasticAggregationResponse]] =
+    def aggregations: RIO[R, Map[String, AggregationResponse]] =
       zio.flatMap(_.aggregations)
   }
 

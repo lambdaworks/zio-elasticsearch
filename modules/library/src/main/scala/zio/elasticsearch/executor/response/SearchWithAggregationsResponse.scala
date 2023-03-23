@@ -21,7 +21,7 @@ import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 import zio.prelude.{Validation, ZValidation}
 
-private[elasticsearch] final case class SearchAndAggsResponse(
+private[elasticsearch] final case class SearchWithAggregationsResponse(
   @jsonField("pit_id")
   pitId: Option[String],
   @jsonField("_scroll_id")
@@ -38,9 +38,9 @@ private[elasticsearch] final case class SearchAndAggsResponse(
 
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 
-  def aggs: Map[String, ElasticAggregationResponse] =
-    aggregations.fold[Map[String, ElasticAggregationResponse]](
-      Map.empty[String, ElasticAggregationResponse]
+  def aggs: Map[String, AggregationResponse] =
+    aggregations.fold[Map[String, AggregationResponse]](
+      Map.empty[String, AggregationResponse]
     )(aggregations =>
       (Obj.decoder.decodeJson(aggregations.toString): @unchecked) match {
         case Right(res) =>
@@ -63,6 +63,7 @@ private[elasticsearch] final case class SearchAndAggsResponse(
     )
 }
 
-private[elasticsearch] object SearchAndAggsResponse {
-  implicit val decoder: JsonDecoder[SearchAndAggsResponse] = DeriveJsonDecoder.gen[SearchAndAggsResponse]
+private[elasticsearch] object SearchWithAggregationsResponse {
+  implicit val decoder: JsonDecoder[SearchWithAggregationsResponse] =
+    DeriveJsonDecoder.gen[SearchWithAggregationsResponse]
 }

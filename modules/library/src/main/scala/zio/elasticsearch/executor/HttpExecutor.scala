@@ -30,7 +30,7 @@ import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
-import zio.elasticsearch.executor.response.{CountResponse, CreateResponse, GetResponse, SearchAndAggsResponse}
+import zio.elasticsearch.executor.response.{CountResponse, CreateResponse, GetResponse, SearchWithAggregationsResponse}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
@@ -94,7 +94,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
-        .response(asJson[SearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.aggregation.toJson)
     ).flatMap { response =>
@@ -313,7 +313,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
-        .response(asJson[SearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(Obj(ScrollId -> Str(scrollId)))
     ).flatMap { response =>
@@ -350,7 +350,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
-        .response(asJson[SearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(body)
     ).flatMap { response =>
@@ -385,7 +385,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequestWithCustomResponse(
       request
         .get(uri"${esConfig.uri}/$Search")
-        .response(asJson[SearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(searchAfterJson.map(_ merge requestBody).getOrElse(requestBody))
     ).flatMap { response =>
@@ -453,7 +453,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             .withParams(getQueryParams(List(("routing", r.routing))))
             .addQuerySegment(QuerySegment.Value("typed_keys"))
         )
-        .response(asJson[SearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(body)
     ).flatMap { response =>
@@ -477,7 +477,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
           )
         )
-        .response(asJson[SearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJson)
     ).flatMap { response =>

@@ -159,7 +159,7 @@ private[elasticsearch] final case class LessThanOrEqualTo[A: ElasticPrimitive](v
   def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
 }
 
-private[elasticsearch] final case object Unbounded extends LowerBound with UpperBound {
+private[elasticsearch] case object Unbounded extends LowerBound with UpperBound {
   def toJson: Option[(String, Json)] = None
 }
 

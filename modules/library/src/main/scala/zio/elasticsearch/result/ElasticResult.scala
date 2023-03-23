@@ -16,15 +16,15 @@
 
 package zio.elasticsearch.result
 
-import zio.elasticsearch.executor.response.ElasticAggregationResponse
+import zio.elasticsearch.executor.response.AggregationResponse
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, ZIO}
 
 private[elasticsearch] sealed trait AggregationsResult {
-  def aggregation(name: String): Task[Option[ElasticAggregationResponse]]
+  def aggregation(name: String): Task[Option[AggregationResponse]]
 
-  def aggregations: Task[Map[String, ElasticAggregationResponse]]
+  def aggregations: Task[Map[String, AggregationResponse]]
 }
 
 private[elasticsearch] sealed trait DocumentResult[F[_]] {
@@ -32,12 +32,12 @@ private[elasticsearch] sealed trait DocumentResult[F[_]] {
 }
 
 private[elasticsearch] final class AggregationResult private[elasticsearch] (
-  private val aggs: Map[String, ElasticAggregationResponse]
+  private val aggs: Map[String, AggregationResponse]
 ) extends AggregationsResult {
-  def aggregation(name: String): Task[Option[ElasticAggregationResponse]] =
+  def aggregation(name: String): Task[Option[AggregationResponse]] =
     ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, ElasticAggregationResponse]] =
+  def aggregations: Task[Map[String, AggregationResponse]] =
     ZIO.succeed(aggs)
 }
 
@@ -69,20 +69,21 @@ private[elasticsearch] final class SearchResult private[elasticsearch] (private 
 
 private[elasticsearch] final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
-  private val aggs: Map[String, ElasticAggregationResponse]
+  private val aggs: Map[String, AggregationResponse]
 ) extends DocumentResult[List]
     with AggregationsResult {
-  def aggregation(name: String): Task[Option[ElasticAggregationResponse]] =
+  def aggregation(name: String): Task[Option[AggregationResponse]] =
     ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, ElasticAggregationResponse]] =
+  def aggregations: Task[Map[String, AggregationResponse]] =
     ZIO.succeed(aggs)
 
-  def documentAs[A: Schema]: Task[List[A]] = ZIO.fromEither {
-    ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
-      DecodingException(
-        s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})"
-      )
+  def documentAs[A: Schema]: Task[List[A]] =
+    ZIO.fromEither {
+      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
+        DecodingException(
+          s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})"
+        )
+      }
     }
-  }
 }

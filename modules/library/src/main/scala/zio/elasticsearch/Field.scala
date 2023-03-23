@@ -36,7 +36,7 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
   }
 }
 
-object ElasticQueryAccessorBuilder extends AccessorBuilder {
+object FieldAccessorBuilder extends AccessorBuilder {
   type Lens[_, S, A]   = Field[S, A]
   type Prism[_, S, A]  = Unit
   type Traversal[S, A] = Unit
