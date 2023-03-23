@@ -17,25 +17,15 @@
 package example
 
 import zio._
+import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.query.ElasticQuery
-import zio.elasticsearch.{
-  CreationOutcome,
-  DeletionOutcome,
-  DocumentId,
-  ElasticQuery,
-  ElasticRequest,
-  Elasticsearch,
-  Routing
-}
+import zio.elasticsearch.{CreationOutcome, DeletionOutcome, DocumentId, ElasticRequest, Elasticsearch, Routing}
 import zio.prelude.Newtype.unsafeWrap
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    for {
-      a <- elasticsearch.execute(ElasticRequest.search(Index, ElasticQuery.exists(field = GitHubRepo.name)))
-      _  = println(a)
-    } yield (List())
+    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
