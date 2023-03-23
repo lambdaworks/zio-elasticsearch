@@ -59,12 +59,6 @@ package object elasticsearch {
   }
   type Routing = Routing.Type
 
-  private def isValid(name: String): Boolean = name.toLowerCase != name ||
-    startsWithAny(name, "+", "-", "_") ||
-    List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(StringUtils.contains(name, _)) ||
-    equalsAny(name, ".", "..") ||
-    name.getBytes().length > 255
-
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
     def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] =
       zio.flatMap(_.aggregation(name))
@@ -77,4 +71,11 @@ package object elasticsearch {
     def documentAs[A: Schema]: RIO[R, F[A]] =
       zio.flatMap(_.documentAs[A])
   }
+
+  private def isValid(name: String): Boolean =
+    name.toLowerCase != name ||
+      startsWithAny(name, "+", "-", "_") ||
+      List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(StringUtils.contains(name, _)) ||
+      equalsAny(name, ".", "..") ||
+      name.getBytes().length > 255
 }
