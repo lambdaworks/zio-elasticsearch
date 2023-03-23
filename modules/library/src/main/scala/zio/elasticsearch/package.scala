@@ -30,25 +30,24 @@ package object elasticsearch {
   type DocumentId = DocumentId.Type
 
   object IndexName extends Newtype[String] {
-    object IndexName extends Newtype[String] {
-      override def assertion = assertCustom { (name: String) => // scalafix:ok
-        if (isValid(name))
-          Left(
-            failure(
-              s"""
-                 |   - Must be lower case only
-                 |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
-                 |   - Cannot include ":"(since 7.0).
-                 |   - Cannot be empty
-                 |   - Cannot start with -, _, +.
-                 |   - Cannot be `.` or `..`.
-                 |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
-                 |   - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
-                 |""".stripMargin
-            )
+    override def assertion = assertCustom { (name: String) => // scalafix:ok
+      if (!isValid(name)) {
+        Left(
+          failure(
+            s"""
+               |   - Must be lower case only
+               |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
+               |   - Cannot include ":"(since 7.0).
+               |   - Cannot be empty
+               |   - Cannot start with -, _, +.
+               |   - Cannot be `.` or `..`.
+               |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
+               |   - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
+               |""".stripMargin
           )
-        else
-          Right(())
+        )
+      } else {
+        Right(())
       }
     }
   }
@@ -58,6 +57,13 @@ package object elasticsearch {
     override def assertion = assert(!isEmptyString) // scalafix:ok
   }
   type Routing = Routing.Type
+
+  private def isValid(name: String): Boolean =
+    name.toLowerCase == name &&
+      !startsWithAny(name, "+", "-", "_") &&
+      !List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(StringUtils.contains(name, _)) &&
+      !equalsAny(name, ".", "..") &&
+      name.getBytes().length <= 255
 
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
     def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] =
@@ -71,11 +77,4 @@ package object elasticsearch {
     def documentAs[A: Schema]: RIO[R, F[A]] =
       zio.flatMap(_.documentAs[A])
   }
-
-  private def isValid(name: String): Boolean =
-    name.toLowerCase != name ||
-      startsWithAny(name, "+", "-", "_") ||
-      List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":").exists(StringUtils.contains(name, _)) ||
-      equalsAny(name, ".", "..") ||
-      name.getBytes().length > 255
 }
