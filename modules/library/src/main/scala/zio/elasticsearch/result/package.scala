@@ -16,14 +16,8 @@
 
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+package object result {
+  private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
-
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  private[elasticsearch] final case class DecodingException(message: String) extends ElasticException(message)
 }

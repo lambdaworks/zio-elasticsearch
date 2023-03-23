@@ -30,7 +30,7 @@ import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
-import zio.elasticsearch.response._
+import zio.elasticsearch.executor.response.{CountResponse, CreateResponse, ElasticSearchAndAggsResponse, GetResponse}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
@@ -41,10 +41,10 @@ import zio.{Chunk, Task, ZIO}
 
 import scala.collection.immutable.{Map => ScalaMap}
 
-private[elasticsearch] final class HttpElasticExecutor private (esConfig: ElasticConfig, client: SttpBackend[Task, Any])
-    extends ElasticExecutor {
+private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig, client: SttpBackend[Task, Any])
+    extends Executor {
 
-  import HttpElasticExecutor._
+  import HttpExecutor._
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
@@ -129,7 +129,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     val req = request
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
       .contentType(ApplicationJson)
-      .response(asJson[ElasticCountResponse])
+      .response(asJson[CountResponse])
 
     sendRequestWithCustomResponse(r.query.fold(req)(query => req.body(query.toJson))).flatMap { response =>
       response.code match {
@@ -150,12 +150,12 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     val uri = uri"${esConfig.uri}/${r.index}/$Doc"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequestWithCustomResponse[ElasticCreateResponse](
+    sendRequestWithCustomResponse[CreateResponse](
       request
         .post(uri)
         .contentType(ApplicationJson)
         .body(r.document.json)
-        .response(asJson[ElasticCreateResponse])
+        .response(asJson[CreateResponse])
     ).flatMap { response =>
       response.code match {
         case HttpCreated =>
@@ -296,10 +296,10 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
       getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
     )
 
-    sendRequestWithCustomResponse[ElasticGetResponse](
+    sendRequestWithCustomResponse[GetResponse](
       request
         .get(uri)
-        .response(asJson[ElasticGetResponse])
+        .response(asJson[GetResponse])
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => result.Item(r.source))))
@@ -527,7 +527,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
 }
 
-private[elasticsearch] object HttpElasticExecutor {
+private[elasticsearch] object HttpExecutor {
 
   private final val Bulk          = "_bulk"
   private final val Count         = "_count"
@@ -548,5 +548,5 @@ private[elasticsearch] object HttpElasticExecutor {
   }
 
   def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) =
-    new HttpElasticExecutor(esConfig, client)
+    new HttpExecutor(esConfig, client)
 }

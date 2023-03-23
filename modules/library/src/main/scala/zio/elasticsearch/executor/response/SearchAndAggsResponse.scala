@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.response
+package zio.elasticsearch.executor.response
 
-import zio.elasticsearch.DecodingException
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
@@ -49,13 +48,11 @@ private[elasticsearch] final case class ElasticSearchAndAggsResponse(
             .validateAll(
               res.fields.toList.map { case (field, data) =>
                 ZValidation.fromEither(
-                  field match {
+                  (field: @unchecked) match {
                     case str if str.contains("terms#") =>
                       TermsAggregationResponse.decoder
                         .decodeJson(data.toString)
                         .map(field.split("#")(1) -> _)
-                    case _ =>
-                      Left(DecodingException("Could not parse all aggregations successfully."))
                   }
                 )
               }

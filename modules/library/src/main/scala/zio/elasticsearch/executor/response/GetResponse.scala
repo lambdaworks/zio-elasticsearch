@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.response
+package zio.elasticsearch.executor.response
 
 import zio.json.ast.Json
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class ElasticGetResponse(
+private[elasticsearch] final case class GetResponse(
   @jsonField("_source")
   source: Json
 )
 
-private[elasticsearch] object ElasticGetResponse {
-  implicit val decoder: JsonDecoder[ElasticGetResponse] = DeriveJsonDecoder.gen[ElasticGetResponse]
+private[elasticsearch] object GetResponse {
+  implicit val decoder: JsonDecoder[GetResponse] = DeriveJsonDecoder.gen[GetResponse]
 }

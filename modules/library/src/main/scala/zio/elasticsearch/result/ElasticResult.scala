@@ -16,8 +16,7 @@
 
 package zio.elasticsearch.result
 
-import zio.elasticsearch.DecodingException
-import zio.elasticsearch.response.ElasticAggregationResponse
+import zio.elasticsearch.executor.response.ElasticAggregationResponse
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, ZIO}

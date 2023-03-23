@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.utils
+package zio.elasticsearch
 
 import zio.schema.{AccessorBuilder, Schema}
 

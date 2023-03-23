@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.query.sort
 
-import zio.elasticsearch.utils.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 

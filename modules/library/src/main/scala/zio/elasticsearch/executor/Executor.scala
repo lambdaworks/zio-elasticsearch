@@ -16,14 +16,14 @@
 
 package zio.elasticsearch.executor
 
-import zio.Task
 import zio.elasticsearch.ElasticRequest.SearchRequest
 import zio.elasticsearch.result.Item
 import zio.elasticsearch.{ElasticRequest, StreamConfig}
 import zio.schema.Schema
-import zio.stream.Stream
+import zio.stream.{Stream, ZStream}
+import zio.{RIO, Task, ZIO}
 
-private[elasticsearch] trait ElasticExecutor {
+private[elasticsearch] trait Executor {
   def execute[A](request: ElasticRequest[A]): Task[A]
 
   def stream(request: SearchRequest): Stream[Throwable, Item]
@@ -33,4 +33,27 @@ private[elasticsearch] trait ElasticExecutor {
   def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
 
   def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A]
+}
+
+private[elasticsearch] object Executor {
+  private[elasticsearch] def execute[A](request: ElasticRequest[A]): RIO[Executor, A] =
+    ZIO.serviceWithZIO[Executor](_.execute(request))
+
+  private[elasticsearch] def stream(request: SearchRequest): ZStream[Executor, Throwable, Item] =
+    ZStream.serviceWithStream[Executor](_.stream(request))
+
+  private[elasticsearch] def stream(
+    request: SearchRequest,
+    config: StreamConfig
+  ): ZStream[Executor, Throwable, Item] =
+    ZStream.serviceWithStream[Executor](_.stream(request, config))
+
+  private[elasticsearch] def streamAs[A: Schema](request: SearchRequest): ZStream[Executor, Throwable, A] =
+    ZStream.serviceWithStream[Executor](_.streamAs[A](request))
+
+  private[elasticsearch] def streamAs[A: Schema](
+    request: SearchRequest,
+    config: StreamConfig
+  ): ZStream[Executor, Throwable, A] =
+    ZStream.serviceWithStream[Executor](_.streamAs[A](request, config))
 }

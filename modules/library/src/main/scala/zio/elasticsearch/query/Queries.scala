@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.query
 
-import zio.elasticsearch.utils.ElasticPrimitive._
+import zio.elasticsearch.ElasticPrimitive._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 

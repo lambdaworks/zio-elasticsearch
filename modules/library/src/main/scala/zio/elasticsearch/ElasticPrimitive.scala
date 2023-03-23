@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.utils
+package zio.elasticsearch
 
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Str}

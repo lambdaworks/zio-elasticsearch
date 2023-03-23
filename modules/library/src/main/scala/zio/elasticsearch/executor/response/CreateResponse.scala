@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.response
+package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class ElasticCountResponse(
-  count: Int,
-  @jsonField("_shards")
-  shards: Shards
+private[elasticsearch] final case class CreateResponse(
+  @jsonField("_id")
+  id: String
 )
 
-private[elasticsearch] object ElasticCountResponse {
-  implicit val decoder: JsonDecoder[ElasticCountResponse] = DeriveJsonDecoder.gen[ElasticCountResponse]
+private[elasticsearch] object CreateResponse {
+  implicit val decoder: JsonDecoder[CreateResponse] = DeriveJsonDecoder.gen[CreateResponse]
 }

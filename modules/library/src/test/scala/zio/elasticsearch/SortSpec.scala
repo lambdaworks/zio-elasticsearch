@@ -13,7 +13,7 @@ import zio.json.ast.Json.{Arr, Obj}
 import zio.test.Assertion.equalTo
 import zio.test._
 
-object SortingSpec extends ZIOSpecDefault {
+object SortSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Sort by")(
       suite("creating SortBy")(
