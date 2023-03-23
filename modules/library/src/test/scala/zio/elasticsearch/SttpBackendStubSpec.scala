@@ -19,7 +19,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         .thenRespond(stubMapping.response)
   }
 
-  val index: IndexName = IndexName("repositories")
+  val index: IndexName = IndexName("repositories") // scalafix:ok
 
   val repo: GitHubRepo =
     GitHubRepo(id = Some("123"), organization = "lambdaworks.io", name = "LambdaWorks", stars = 10, forks = 10)
