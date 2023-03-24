@@ -16,9 +16,10 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.query._
-import ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.query.Query._
+import zio.elasticsearch.query._
+
+import ElasticPrimitive.ElasticPrimitive
 
 object ElasticQuery {
   def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
