@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.request
 
-import zio.json.ast.Json
 import zio.schema.Schema
-import zio.schema.codec.DecodeError
-import zio.schema.codec.JsonCodec.JsonDecoder
+import zio.schema.codec.JsonCodec
 
-final case class Item(raw: Json) {
-  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
+private[elasticsearch] final case class Document(json: String)
+
+private[elasticsearch] object Document {
+  def from[A](doc: A)(implicit schema: Schema[A]): Document = Document(
+    JsonCodec.jsonEncoder(schema).encodeJson(doc, indent = None).toString
+  )
 }

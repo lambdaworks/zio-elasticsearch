@@ -14,36 +14,36 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor.response
 
-import zio.json._
+import zio.json.ast.Json
 import zio.json.ast.Json.Obj
-import zio.json.ast._
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-sealed trait ElasticAggregationResponse
+sealed trait AggregationResponse
 
-final case class TermsAggregationResponse(
+private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
   docErrorCount: Int,
   @jsonField("sum_other_doc_count")
   sumOtherDocCount: Int,
   buckets: List[TermsAggregationBucket]
-) extends ElasticAggregationResponse
+) extends AggregationResponse
 
-object TermsAggregationResponse {
+private[elasticsearch] object TermsAggregationResponse {
   implicit val decoder: JsonDecoder[TermsAggregationResponse] = DeriveJsonDecoder.gen[TermsAggregationResponse]
 }
 
-sealed trait ElasticAggregationBucket
+private[elasticsearch] sealed trait AggregationBucket
 
-final case class TermsAggregationBucket(
+private[elasticsearch] final case class TermsAggregationBucket(
   key: String,
   @jsonField("doc_count")
   docCount: Int,
-  subAggregations: Option[Map[String, ElasticAggregationResponse]] = None
-) extends ElasticAggregationBucket
+  subAggregations: Option[Map[String, AggregationResponse]] = None
+) extends AggregationBucket
 
-object TermsAggregationBucket {
+private[elasticsearch] object TermsAggregationBucket {
   implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val allFields = fields.flatMap { case (field, data) =>
       field match {
@@ -82,7 +82,7 @@ object TermsAggregationBucket {
     Right(TermsAggregationBucket.apply(key, docCount, Option(subAggs).filter(_.nonEmpty)))
   }
 
-  implicit class JsonDecoderOps(json: Json) {
+  final implicit class JsonDecoderOps(json: Json) {
     def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
       (json.as[A]: @unchecked) match {
         case Right(decoded) => decoded

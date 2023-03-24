@@ -16,12 +16,22 @@
 
 package zio.elasticsearch
 
-sealed trait ScoreMode
+import zio.elasticsearch.query.sort.Sort
 
-object ScoreMode {
-  final case object Avg  extends ScoreMode
-  final case object Max  extends ScoreMode
-  final case object Min  extends ScoreMode
-  final case object None extends ScoreMode
-  final case object Sum  extends ScoreMode
+package object request {
+  private[elasticsearch] trait HasRefresh[R <: HasRefresh[R]] {
+    def refresh(value: Boolean): R
+
+    def refreshFalse: R
+
+    def refreshTrue: R
+  }
+
+  private[elasticsearch] trait HasRouting[R <: HasRouting[R]] {
+    def routing(value: Routing): R
+  }
+
+  private[elasticsearch] trait WithSort[R <: WithSort[R]] {
+    def sortBy(sorts: Sort*): R
+  }
 }

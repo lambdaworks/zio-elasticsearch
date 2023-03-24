@@ -19,6 +19,7 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch._
+import zio.elasticsearch.query.ElasticQuery
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{
@@ -124,6 +125,7 @@ object Repositories {
       case CompoundCriteria(operator, filters) =>
         operator match {
           case And => ElasticQuery.must(filters.map(createElasticQuery): _*)
+          case Not => ElasticQuery.mustNot(filters.map(createElasticQuery): _*)
           case Or  => ElasticQuery.should(filters.map(createElasticQuery): _*)
         }
       case DateCriteria(field, operator, value) =>

@@ -16,14 +16,28 @@
 
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+import zio.elasticsearch.query.sort._
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+object ElasticSort {
+  def sortBy[S](field: Field[S, _]): Sort =
+    SortOptions(
+      field = field.toString,
+      format = None,
+      mode = None,
+      missing = None,
+      numericType = None,
+      order = None,
+      unmappedType = None
+    )
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  def sortBy(field: String): Sort =
+    SortOptions(
+      field = field,
+      format = None,
+      mode = None,
+      missing = None,
+      numericType = None,
+      order = None,
+      unmappedType = None
+    )
 }

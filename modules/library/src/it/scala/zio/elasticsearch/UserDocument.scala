@@ -18,9 +18,18 @@ package zio.elasticsearch
 
 import zio.schema.{DeriveSchema, Schema}
 
+import java.time.LocalDate
+
 final case class CustomerDocument(id: String, name: String, address: String, balance: BigDecimal, age: Int)
 
-final case class EmployeeDocument(id: String, name: String, degree: String, age: Int)
+final case class EmployeeDocument(
+  id: String,
+  name: String,
+  degree: String,
+  sectorsIds: List[Int],
+  age: Int,
+  birthDate: LocalDate
+)
 
 object CustomerDocument {
   implicit val schema: Schema[CustomerDocument] = DeriveSchema.gen[CustomerDocument]

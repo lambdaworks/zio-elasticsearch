@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor.response
 
-import zio.prelude.Assertion.isEmptyString
-import zio.prelude.Newtype
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
-object Routing extends Newtype[String] {
-  override def assertion = assert(!isEmptyString) // scalafix:ok
+private[elasticsearch] final case class Shards(
+  total: Int,
+  successful: Int,
+  skipped: Int,
+  failed: Int
+)
 
-  type Routing = Routing.Type
+private[elasticsearch] object Shards {
+  implicit val decoder: JsonDecoder[Shards] = DeriveJsonDecoder.gen[Shards]
 }

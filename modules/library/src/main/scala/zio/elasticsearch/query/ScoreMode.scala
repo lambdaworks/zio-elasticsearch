@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query
 
-import zio.json.ast.Json
-import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
+sealed trait ScoreMode
 
-private[elasticsearch] final case class ElasticGetResponse(
-  @jsonField("_source")
-  source: Json
-)
-
-private[elasticsearch] object ElasticGetResponse {
-  implicit val decoder: JsonDecoder[ElasticGetResponse] = DeriveJsonDecoder.gen[ElasticGetResponse]
+object ScoreMode {
+  final case object Avg  extends ScoreMode
+  final case object Max  extends ScoreMode
+  final case object Min  extends ScoreMode
+  final case object None extends ScoreMode
+  final case object Sum  extends ScoreMode
 }

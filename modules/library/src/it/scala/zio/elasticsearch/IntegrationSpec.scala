@@ -19,15 +19,18 @@ package zio.elasticsearch
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.executor.Executor
 import zio.prelude.Newtype.unsafeWrap
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
 import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
 
+import java.time.LocalDate
+
 trait IntegrationSpec extends ZIOSpecDefault {
 
-  val elasticsearchLayer: TaskLayer[ElasticExecutor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
+  val elasticsearchLayer: TaskLayer[Executor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
 
   val index: IndexName = IndexName("users")
 
@@ -39,9 +42,13 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val createIndexTestName: IndexName = IndexName("create-index-test-name")
 
+  val firstCountIndex: IndexName = IndexName("count-index-1")
+
+  val secondCountIndex: IndexName = IndexName("count-index-2")
+
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
-    _ <- ElasticExecutor.execute(ElasticRequest.createIndex(index))
-    _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
+    _ <- Executor.execute(ElasticRequest.createIndex(index))
+    _ <- Executor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
   } yield ()).provide(elasticsearchLayer))
 
   def genIndexName: Gen[Any, IndexName] =
@@ -58,11 +65,20 @@ trait IntegrationSpec extends ZIOSpecDefault {
   } yield CustomerDocument(id = id, name = name, address = address, balance = balance, age = age)
 
   def genEmployee: Gen[Any, EmployeeDocument] = for {
-    id     <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
-    name   <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    degree <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    age    <- Gen.int(18, 75)
-  } yield EmployeeDocument(id = id, name = name, degree = degree, age = age)
+    id        <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
+    name      <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    degree    <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    birthDate <- Gen.localDate(LocalDate.parse("1991-12-02"), LocalDate.parse("1999-12-05"))
+    age       <- Gen.int(18, 75)
+    sectorId1 <- Gen.numericChar
+  } yield EmployeeDocument(
+    id = id,
+    name = name,
+    degree = degree,
+    sectorsIds = List(sectorId1 + 10, sectorId1, sectorId1 - 5),
+    age = age,
+    birthDate = birthDate
+  )
 
   def checkOnce: CheckN = checkN(1)
 

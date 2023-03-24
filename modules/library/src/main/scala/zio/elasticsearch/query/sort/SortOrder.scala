@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+sealed trait SortOrder
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+object SortOrder {
+  final case object Asc extends SortOrder {
+    override def toString: String = "asc"
+  }
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  final case object Desc extends SortOrder {
+    override def toString: String = "desc"
+  }
 }

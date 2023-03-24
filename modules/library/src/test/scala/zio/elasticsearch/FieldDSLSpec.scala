@@ -27,7 +27,7 @@ object FieldDSLSpec extends ZIOSpecDefault {
 
     implicit val schema: Schema.CaseClass2[String, Int, Address] = DeriveSchema.gen[Address]
 
-    val (street, number) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+    val (street, number) = schema.makeAccessors(FieldAccessorBuilder)
   }
 
   final case class Student(name: String, address: Address)
@@ -36,7 +36,7 @@ object FieldDSLSpec extends ZIOSpecDefault {
 
     implicit val schema: Schema.CaseClass2[String, Address, Student] = DeriveSchema.gen[Student]
 
-    val (name, address) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+    val (name, address) = schema.makeAccessors(FieldAccessorBuilder)
   }
 
   def spec: Spec[TestEnvironment, Any] =

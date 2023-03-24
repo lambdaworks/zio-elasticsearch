@@ -16,13 +16,28 @@
 
 package zio.elasticsearch
 
-import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
+package object query {
+  private[elasticsearch] trait HasBoost[Q <: HasBoost[Q]] {
+    def boost(value: Double): Q
+  }
 
-private[elasticsearch] final case class ElasticCreateResponse(
-  @jsonField("_id")
-  id: String
-)
+  private[elasticsearch] trait HasCaseInsensitive[Q <: HasCaseInsensitive[Q]] {
+    def caseInsensitive(value: Boolean): Q
 
-private[elasticsearch] object ElasticCreateResponse {
-  implicit val decoder: JsonDecoder[ElasticCreateResponse] = DeriveJsonDecoder.gen[ElasticCreateResponse]
+    def caseInsensitiveFalse: Q
+
+    def caseInsensitiveTrue: Q
+  }
+
+  private[elasticsearch] trait HasIgnoreUnmapped[Q <: HasIgnoreUnmapped[Q]] {
+    def ignoreUnmapped(value: Boolean): Q
+
+    def ignoreUnmappedFalse: Q
+
+    def ignoreUnmappedTrue: Q
+  }
+
+  private[elasticsearch] trait HasScoreMode[Q <: HasScoreMode[Q]] {
+    def scoreMode(scoreMode: ScoreMode): Q
+  }
 }

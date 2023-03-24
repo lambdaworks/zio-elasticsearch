@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+sealed trait NumericType
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+object NumericType {
+  final case object Double extends NumericType {
+    override def toString: String = "double"
+  }
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  final case object Long extends NumericType {
+    override def toString: String = "long"
+  }
+
+  final case object Date extends NumericType {
+    override def toString: String = "date"
+  }
+
+  final case object DateNanos extends NumericType {
+    override def toString: String = "date_nanos"
+  }
 }

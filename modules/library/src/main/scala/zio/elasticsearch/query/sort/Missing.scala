@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+sealed trait Missing
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+object Missing {
+  final case object First extends Missing {
+    override def toString: String = "_first"
+  }
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  final case object Last extends Missing {
+    override def toString: String = "_last"
+  }
 }

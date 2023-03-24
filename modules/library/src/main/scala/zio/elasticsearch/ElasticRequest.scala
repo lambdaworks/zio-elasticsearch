@@ -16,20 +16,12 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.Routing.Routing
+import zio.elasticsearch.aggregation.ElasticAggregation
+import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.query.sort.Sort
+import zio.elasticsearch.request._
+import zio.elasticsearch.result.{AggregationResult, GetResult, SearchAndAggregateResult, SearchResult}
 import zio.schema.Schema
-
-trait HasRefresh[R <: HasRefresh[R]] {
-  def refresh(value: Boolean): R
-
-  def refreshFalse: R
-
-  def refreshTrue: R
-}
-
-trait HasRouting[R <: HasRouting[R]] {
-  def routing(value: Routing): R
-}
 
 sealed trait BulkableRequest[A] extends ElasticRequest[A]
 
@@ -37,11 +29,17 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
-  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregationRequest =
-    Aggregation(index = index, aggregation = aggregation)
+  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
+    Aggregate(index = index, aggregation = aggregation)
 
   def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
+
+  def count(index: IndexName): CountRequest =
+    Count(index = index, query = None, routing = None)
+
+  def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
+    Count(index = index, query = Some(query), routing = None)
 
   def create[A: Schema](index: IndexName, doc: A): CreateRequest =
     Create(index = index, document = Document.from(doc), refresh = None, routing = None)
@@ -71,22 +69,18 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
-    Search(index = index, query = query, routing = None)
+    Search(index = index, query = query, sortBy = Set.empty, routing = None)
 
-  def searchWithAggregation(
-    index: IndexName,
-    query: ElasticQuery[_],
-    aggregation: ElasticAggregation
-  ): SearchWithAggregationRequest =
-    SearchWithAggregation(index = index, query = query, aggregation = aggregation)
+  def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchAndAggregateRequest =
+    SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = Set.empty, routing = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
-  sealed trait AggregationRequest extends ElasticRequest[AggregationResult]
+  sealed trait AggregateRequest extends ElasticRequest[AggregationResult]
 
-  private[elasticsearch] final case class Aggregation(index: IndexName, aggregation: ElasticAggregation)
-      extends AggregationRequest
+  private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
+      extends AggregateRequest
 
   sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[BulkRequest] with HasRouting[BulkRequest]
 
@@ -131,6 +125,17 @@ object ElasticRequest {
   object Bulk {
     def of(requests: BulkableRequest[_]*): Bulk =
       Bulk(requests = requests.toList, index = None, refresh = None, routing = None)
+  }
+
+  sealed trait CountRequest extends ElasticRequest[Int] with HasRouting[CountRequest]
+
+  private[elasticsearch] final case class Count(
+    index: IndexName,
+    query: Option[ElasticQuery[_]],
+    routing: Option[Routing]
+  ) extends CountRequest { self =>
+    def routing(value: Routing): CountRequest =
+      self.copy(routing = Some(value))
   }
 
   sealed trait CreateRequest
@@ -301,21 +306,47 @@ object ElasticRequest {
       self.copy(routing = Some(value))
   }
 
-  sealed trait SearchRequest extends ElasticRequest[SearchResult]
+  sealed trait SearchRequest
+      extends ElasticRequest[SearchResult]
+      with HasRouting[SearchRequest]
+      with WithSort[SearchRequest] {
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult]
+  }
 
   private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
+    sortBy: Set[Sort],
     routing: Option[Routing]
-  ) extends SearchRequest
+  ) extends SearchRequest { self =>
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult] =
+      SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = sortBy, routing = routing)
 
-  sealed trait SearchWithAggregationRequest extends ElasticRequest[SearchWithAggregationsResult]
+    def routing(value: Routing): SearchRequest =
+      self.copy(routing = Some(value))
 
-  private[elasticsearch] final case class SearchWithAggregation(
+    def sortBy(sorts: Sort*): SearchRequest =
+      self.copy(sortBy = sortBy ++ sorts.toSet)
+  }
+
+  sealed trait SearchAndAggregateRequest
+      extends ElasticRequest[SearchAndAggregateResult]
+      with HasRouting[SearchAndAggregateRequest]
+      with WithSort[SearchAndAggregateRequest]
+
+  private[elasticsearch] final case class SearchAndAggregate(
     index: IndexName,
     query: ElasticQuery[_],
-    aggregation: ElasticAggregation
-  ) extends SearchWithAggregationRequest
+    aggregation: ElasticAggregation,
+    sortBy: Set[Sort],
+    routing: Option[Routing]
+  ) extends SearchAndAggregateRequest { self =>
+    def routing(value: Routing): SearchAndAggregateRequest =
+      self.copy(routing = Some(value))
+
+    def sortBy(sorts: Sort*): SearchAndAggregateRequest =
+      self.copy(sortBy = sortBy ++ sorts.toSet)
+  }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }

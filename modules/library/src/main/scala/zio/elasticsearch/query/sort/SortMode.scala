@@ -14,16 +14,28 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+sealed trait SortMode
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+object SortMode {
+  final case object Avg extends SortMode {
+    override def toString: String = "avg"
+  }
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  final case object Max extends SortMode {
+    override def toString: String = "max"
+  }
+
+  final case object Median extends SortMode {
+    override def toString: String = "median"
+  }
+
+  final case object Min extends SortMode {
+    override def toString: String = "min"
+  }
+
+  final case object Sum extends SortMode {
+    override def toString: String = "sum"
+  }
 }

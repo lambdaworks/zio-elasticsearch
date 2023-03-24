@@ -1,7 +1,8 @@
 package zio.elasticsearch
 
 import zio.Scope
-import zio.elasticsearch.ElasticAggregation.{Multiple, Terms, multipleAggregations, termsAggregation}
+import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
+import zio.elasticsearch.aggregation._
 import zio.elasticsearch.utils.{RichString, UserDocument}
 import zio.test.Assertion.equalTo
 import zio.test._
