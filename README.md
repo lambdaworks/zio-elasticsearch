@@ -69,7 +69,7 @@ getById[EmployeeDocument](IndexName("index"), DocumentId("documentId"))
 
 ### Elastic Query
 
-In order to execute Elasticsearch query requests, both for searching and deleting by query, you first must specify the type of the query along with the corresponding parameters for that type. Queries are described with the `ElasticQuery` data type, which can be constructed from the DSL methods found under the following import:
+In order to execute Elasticsearch query requests, both for searching and deleting by query, you first must specify the type of the query along with the corresponding parameters for that type. Queries are described with the `Query` data type, which can be constructed from the DSL methods found under the following import:
 
 ```scala
 import zio.elasticsearch.ElasticQuery._
@@ -87,7 +87,7 @@ term(EmployeeDocument.name, "foo bar")
 You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors:
 
 ```scala
-import zio.elasticsearch.ElasticQueryAccessorBuilder
+import zio.elasticsearch.FieldAccessorBuilder
 import zio.elasticsearch.ElasticQuery._
 import zio.schema.annotation.fieldName
 import zio.schema.{DeriveSchema, Schema}
@@ -102,7 +102,7 @@ final case class Name(
 object Name {
   implicit val schema = DeriveSchema.gen[Name]
 
-  val (firstName, lastName) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  val (firstName, lastName) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
 final case class EmployeeDocument(id: String, name: Name, degree: String, age: Int)
@@ -110,7 +110,7 @@ final case class EmployeeDocument(id: String, name: Name, degree: String, age: I
 object EmployeeDocument {
   implicit val schema = DeriveSchema.gen[EmployeeDocument]
 
-  val (id, name, degree, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  val (id, name, degree, age) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
 matches("name.first_name", "foo")
@@ -181,17 +181,12 @@ effect.provide(
 
 If the ElasticConfig arguments are the same as specified above, you can simply omit the `ElasticConfig` layer and replace `ElasticExecutor.live` with `ElasticExecutor.local` instead.
 
-For testing purposes, you can use `ElasticExecutor.test`, which is a mocked Elasticsearch executor that doesn't require an HTTP backend.
-
 ```scala
 // The Elasticsearch requests are executed locally
 effect.provide(
   HttpClientZioBackend.layer(),
   ElasticExecutor.local
 )
-
-// The Elasticsearch requests are executed on a mocked executor
-effect.provideLayer(ElasticExecutor.test)
 ```
 
 ## Example
