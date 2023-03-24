@@ -18,16 +18,18 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, assertZIO}
 
 object HttpElasticExecutorSpec extends SttpBackendStubSpec {
 
   def spec: Spec[TestEnvironment, Any] =
-    suite("HttpElasticExecutor")(
+    suite("HttpExecutor")(
       test("aggregation request") {
         assertZIO(
-          ElasticExecutor
+          Executor
             .execute(
               ElasticRequest.aggregate(index, termsAggregation(name = "aggregation1", field = "name"))
             )
@@ -38,19 +40,19 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("bulk request") {
         assertZIO(
-          ElasticExecutor.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
+          Executor.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
         )(
           isUnit
         )
       },
       test("count request") {
-        assertZIO(ElasticExecutor.execute(ElasticRequest.count(index, matchAll).routing(Routing("routing"))))(
+        assertZIO(Executor.execute(ElasticRequest.count(index, matchAll).routing(Routing("routing"))))(
           equalTo(2)
         )
       },
       test("creating document request") {
         assertZIO(
-          ElasticExecutor.execute(
+          Executor.execute(
             ElasticRequest
               .create[GitHubRepo](index = index, doc = repo)
               .routing(Routing("routing"))
@@ -60,7 +62,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("creating request with given ID") {
         assertZIO(
-          ElasticExecutor.execute(
+          Executor.execute(
             ElasticRequest
               .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
@@ -70,7 +72,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("creating index request without mapping") {
         assertZIO(
-          ElasticExecutor.execute(ElasticRequest.createIndex(name = index))
+          Executor.execute(ElasticRequest.createIndex(name = index))
         )(
           equalTo(Created)
         )
@@ -98,14 +100,14 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             |""".stripMargin
 
         assertZIO(
-          ElasticExecutor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
+          Executor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
         )(
           equalTo(Created)
         )
       },
       test("creating or updating request") {
         assertZIO(
-          ElasticExecutor.execute(
+          Executor.execute(
             ElasticRequest
               .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
               .routing(Routing("routing"))
@@ -115,7 +117,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("deleting by ID request") {
         assertZIO(
-          ElasticExecutor.execute(
+          Executor.execute(
             ElasticRequest
               .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
               .routing(Routing("routing"))
@@ -125,7 +127,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("deleting by query request") {
         assertZIO(
-          ElasticExecutor.execute(
+          Executor.execute(
             ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.routing(Routing("routing"))
           )
         )(
@@ -133,13 +135,13 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         )
       },
       test("deleting index request") {
-        assertZIO(ElasticExecutor.execute(ElasticRequest.deleteIndex(name = index)))(
+        assertZIO(Executor.execute(ElasticRequest.deleteIndex(name = index)))(
           equalTo(Deleted)
         )
       },
       test("exists request") {
         assertZIO(
-          ElasticExecutor.execute(
+          Executor.execute(
             ElasticRequest
               .exists(index = index, id = DocumentId("example-id"))
               .routing(Routing("routing"))
@@ -148,7 +150,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("getting by ID request") {
         assertZIO(
-          ElasticExecutor
+          Executor
             .execute(
               ElasticRequest
                 .getById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
@@ -159,14 +161,14 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("search request") {
         assertZIO(
-          ElasticExecutor
+          Executor
             .execute(ElasticRequest.search(index = index, query = matchAll))
             .documentAs[GitHubRepo]
         )(equalTo(List(repo)))
       },
       test("search with aggregation request") {
         val terms = termsAggregation(name = "aggregation1", field = "name")
-        val req = ElasticExecutor
+        val req = Executor
           .execute(ElasticRequest.search(index = index, query = matchAll, terms))
         assertZIO(req.documentAs[GitHubRepo])(equalTo(List(repo))) &&
         assertZIO(req.aggregations)(

@@ -19,6 +19,7 @@ package zio.elasticsearch
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.executor.Executor
 import zio.prelude.Newtype.unsafeWrap
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
@@ -29,7 +30,7 @@ import java.time.LocalDate
 
 trait IntegrationSpec extends ZIOSpecDefault {
 
-  val elasticsearchLayer: TaskLayer[ElasticExecutor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
+  val elasticsearchLayer: TaskLayer[Executor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
 
   val index: IndexName = IndexName("users")
 
@@ -46,8 +47,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
   val secondCountIndex: IndexName = IndexName("count-index-2")
 
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
-    _ <- ElasticExecutor.execute(ElasticRequest.createIndex(index))
-    _ <- ElasticExecutor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
+    _ <- Executor.execute(ElasticRequest.createIndex(index))
+    _ <- Executor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
   } yield ()).provide(elasticsearchLayer))
 
   def genIndexName: Gen[Any, IndexName] =

@@ -1,18 +1,19 @@
 package zio.elasticsearch
 
 import zio.Scope
-import zio.elasticsearch.Missing.First
-import zio.elasticsearch.NumericType.{Long => NumTypeLong}
-import zio.elasticsearch.Sort.{SortOptions, sortBy}
-import zio.elasticsearch.SortMode.Avg
-import zio.elasticsearch.SortOrder.Desc
+import zio.elasticsearch.ElasticSort._
+import zio.elasticsearch.query.sort.Missing._
+import zio.elasticsearch.query.sort.NumericType.{Long => NumTypeLong}
+import zio.elasticsearch.query.sort.SortMode._
+import zio.elasticsearch.query.sort.SortOrder._
+import zio.elasticsearch.query.sort._
 import zio.elasticsearch.utils._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.test.Assertion.equalTo
 import zio.test._
 
-object SortingSpec extends ZIOSpecDefault {
+object SortSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Sort by")(
       suite("creating SortBy")(

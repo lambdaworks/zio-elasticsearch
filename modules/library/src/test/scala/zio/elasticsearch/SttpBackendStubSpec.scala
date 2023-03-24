@@ -4,6 +4,7 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import sttp.client3.testing.SttpBackendStub
 import sttp.client3.{Request, Response, StringBody}
 import sttp.model.{Method, StatusCode}
+import zio.elasticsearch.executor.Executor
 import zio.test.ZIOSpecDefault
 import zio.{Task, TaskLayer, ZLayer}
 
@@ -281,7 +282,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     stubs.foldLeft(HttpClientZioBackend.stub)(_.addStubMapping(_))
   )
 
-  val elasticsearchSttpLayer: TaskLayer[ElasticExecutor] =
+  val elasticsearchSttpLayer: TaskLayer[Executor] =
     (sttpBackendStubLayer ++ ZLayer.succeed(ElasticConfig.Default)) >>> ElasticExecutor.live
 
 }

@@ -16,11 +16,28 @@
 
 package zio.elasticsearch
 
-import zio.prelude.Assertion.isEmptyString
-import zio.prelude.Newtype
+package object query {
+  private[elasticsearch] trait HasBoost[Q <: HasBoost[Q]] {
+    def boost(value: Double): Q
+  }
 
-object Routing extends Newtype[String] {
-  override def assertion = assert(!isEmptyString) // scalafix:ok
+  private[elasticsearch] trait HasCaseInsensitive[Q <: HasCaseInsensitive[Q]] {
+    def caseInsensitive(value: Boolean): Q
 
-  type Routing = Routing.Type
+    def caseInsensitiveFalse: Q
+
+    def caseInsensitiveTrue: Q
+  }
+
+  private[elasticsearch] trait HasIgnoreUnmapped[Q <: HasIgnoreUnmapped[Q]] {
+    def ignoreUnmapped(value: Boolean): Q
+
+    def ignoreUnmappedFalse: Q
+
+    def ignoreUnmappedTrue: Q
+  }
+
+  private[elasticsearch] trait HasScoreMode[Q <: HasScoreMode[Q]] {
+    def scoreMode(scoreMode: ScoreMode): Q
+  }
 }

@@ -16,14 +16,12 @@
 
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+package object aggregation {
+  private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A]] {
+    def withSubAgg(subAgg: SingleElasticAggregation): A
+  }
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
-
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+  private[elasticsearch] trait WithAgg {
+    def withAgg(agg: SingleElasticAggregation): MultipleAggregations
+  }
 }

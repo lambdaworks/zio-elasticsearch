@@ -18,27 +18,20 @@ package zio
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils._
+import zio.elasticsearch.executor.response.AggregationResponse
+import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
+import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 import zio.schema.Schema
 
 package object elasticsearch {
-  private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
-
-  private[elasticsearch] final case class DecodingException(message: String) extends ElasticException(message)
-
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 
   object IndexName extends Newtype[String] {
     override def assertion = assertCustom { (name: String) => // scalafix:ok
-      if (
-        name.toLowerCase != name ||
-        startsWithAny(name, "+", "-", "_") ||
-        containsAny(name, List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) ||
-        equalsAny(name, ".", "..") ||
-        name.getBytes().length > 255
-      )
+      if (!isValid(name)) {
         Left(
           failure(
             s"""
@@ -53,20 +46,30 @@ package object elasticsearch {
                |""".stripMargin
           )
         )
-      else
+      } else {
         Right(())
+      }
     }
   }
   type IndexName = IndexName.Type
 
-  def containsAny(name: String, params: List[String]): Boolean =
-    params.exists(StringUtils.contains(name, _))
+  object Routing extends Newtype[String] {
+    override def assertion = assert(!isEmptyString) // scalafix:ok
+  }
+  type Routing = Routing.Type
+
+  def isValid(name: String): Boolean =
+    name.toLowerCase == name &&
+      !startsWithAny(name, "+", "-", "_") &&
+      !containsAny(name = name, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+      !equalsAny(name, ".", "..") &&
+      name.getBytes().length <= 255
 
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
-    def aggregation(name: String): RIO[R, Option[ElasticAggregationResponse]] =
+    def aggregation(name: String): RIO[R, Option[AggregationResponse]] =
       zio.flatMap(_.aggregation(name))
 
-    def aggregations: RIO[R, Map[String, ElasticAggregationResponse]] =
+    def aggregations: RIO[R, Map[String, AggregationResponse]] =
       zio.flatMap(_.aggregations)
   }
 
@@ -74,4 +77,7 @@ package object elasticsearch {
     def documentAs[A: Schema]: RIO[R, F[A]] =
       zio.flatMap(_.documentAs[A])
   }
+
+  private def containsAny(name: String, params: List[String]): Boolean =
+    params.exists(StringUtils.contains(name, _))
 }

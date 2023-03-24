@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor
 
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
@@ -29,6 +29,9 @@ import sttp.model.StatusCode.{
 import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
+import zio.elasticsearch._
+import zio.elasticsearch.executor.response.{CountResponse, CreateResponse, GetResponse, SearchWithAggregationsResponse}
+import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
@@ -38,10 +41,10 @@ import zio.{Chunk, Task, ZIO}
 
 import scala.collection.immutable.{Map => ScalaMap}
 
-private[elasticsearch] final class HttpElasticExecutor private (esConfig: ElasticConfig, client: SttpBackend[Task, Any])
-    extends ElasticExecutor {
+private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig, client: SttpBackend[Task, Any])
+    extends Executor {
 
-  import HttpElasticExecutor._
+  import HttpExecutor._
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
@@ -91,7 +94,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
-        .response(asJson[ElasticSearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.aggregation.toJson)
     ).flatMap { response =>
@@ -99,7 +102,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new AggregationResult(value.aggregations))
+            value => ZIO.succeed(new AggregationResult(value.aggs))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -126,7 +129,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     val req = request
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
       .contentType(ApplicationJson)
-      .response(asJson[ElasticCountResponse])
+      .response(asJson[CountResponse])
 
     sendRequestWithCustomResponse(r.query.fold(req)(query => req.body(query.toJson))).flatMap { response =>
       response.code match {
@@ -147,12 +150,12 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     val uri = uri"${esConfig.uri}/${r.index}/$Doc"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequestWithCustomResponse[ElasticCreateResponse](
+    sendRequestWithCustomResponse[CreateResponse](
       request
         .post(uri)
         .contentType(ApplicationJson)
         .body(r.document.json)
-        .response(asJson[ElasticCreateResponse])
+        .response(asJson[CreateResponse])
     ).flatMap { response =>
       response.code match {
         case HttpCreated =>
@@ -293,13 +296,13 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
       getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
     )
 
-    sendRequestWithCustomResponse[ElasticGetResponse](
+    sendRequestWithCustomResponse[GetResponse](
       request
         .get(uri)
-        .response(asJson[ElasticGetResponse])
+        .response(asJson[GetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => Item(r.source))))
+        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => result.Item(r.source))))
         case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
         case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
@@ -310,7 +313,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
-        .response(asJson[ElasticSearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(Obj(ScrollId -> Str(scrollId)))
     ).flatMap { response =>
@@ -347,7 +350,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
-        .response(asJson[ElasticSearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(body)
     ).flatMap { response =>
@@ -382,7 +385,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     sendRequestWithCustomResponse(
       request
         .get(uri"${esConfig.uri}/$Search")
-        .response(asJson[ElasticSearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(searchAfterJson.map(_ merge requestBody).getOrElse(requestBody))
     ).flatMap { response =>
@@ -424,7 +427,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
     }
   }
 
-  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchWithAggregationsResult] = {
+  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchAndAggregateResult] = {
     val body = r.sortBy match {
       case sorts if sorts.nonEmpty =>
         Obj(
@@ -450,7 +453,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
             .withParams(getQueryParams(List(("routing", r.routing))))
             .addQuerySegment(QuerySegment.Value("typed_keys"))
         )
-        .response(asJson[ElasticSearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(body)
     ).flatMap { response =>
@@ -458,7 +461,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchWithAggregationsResult(value.results.map(Item), value.aggregations))
+            value => ZIO.succeed(new SearchAndAggregateResult(value.results.map(Item), value.aggs))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -474,7 +477,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
             getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
           )
         )
-        .response(asJson[ElasticSearchAndAggsResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.query.toJson)
     ).flatMap { response =>
@@ -524,7 +527,7 @@ private[elasticsearch] final class HttpElasticExecutor private (esConfig: Elasti
 
 }
 
-private[elasticsearch] object HttpElasticExecutor {
+private[elasticsearch] object HttpExecutor {
 
   private final val Bulk          = "_bulk"
   private final val Count         = "_count"
@@ -545,5 +548,5 @@ private[elasticsearch] object HttpElasticExecutor {
   }
 
   def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) =
-    new HttpElasticExecutor(esConfig, client)
+    new HttpExecutor(esConfig, client)
 }

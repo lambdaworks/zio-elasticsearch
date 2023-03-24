@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.Bulk
+import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
 import zio.prelude.Newtype.unsafeWrap
 import zio.prelude.Validation

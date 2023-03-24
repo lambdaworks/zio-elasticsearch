@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor.response
 
-import zio.json.ast.Json
-import zio.schema.Schema
-import zio.schema.codec.DecodeError
-import zio.schema.codec.JsonCodec.JsonDecoder
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
-final case class Item(raw: Json) {
-  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
+private[elasticsearch] final case class Shards(
+  total: Int,
+  successful: Int,
+  skipped: Int,
+  failed: Int
+)
+
+private[elasticsearch] object Shards {
+  implicit val decoder: JsonDecoder[Shards] = DeriveJsonDecoder.gen[Shards]
 }

@@ -16,14 +16,22 @@
 
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+import zio.elasticsearch.query.sort.Sort
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+package object request {
+  private[elasticsearch] trait HasRefresh[R <: HasRefresh[R]] {
+    def refresh(value: Boolean): R
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+    def refreshFalse: R
+
+    def refreshTrue: R
+  }
+
+  private[elasticsearch] trait HasRouting[R <: HasRouting[R]] {
+    def routing(value: Routing): R
+  }
+
+  private[elasticsearch] trait WithSort[R <: WithSort[R]] {
+    def sortBy(sorts: Sort*): R
+  }
 }

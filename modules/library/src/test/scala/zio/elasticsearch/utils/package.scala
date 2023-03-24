@@ -40,6 +40,6 @@ package object utils {
     implicit val schema: Schema.CaseClass6[String, String, String, Double, Int, List[String], UserDocument] =
       DeriveSchema.gen[UserDocument]
 
-    val (id, name, address, balance, age, items) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+    val (id, name, address, balance, age, items) = schema.makeAccessors(FieldAccessorBuilder)
   }
 }

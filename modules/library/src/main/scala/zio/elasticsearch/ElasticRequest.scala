@@ -16,24 +16,12 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.Routing.Routing
+import zio.elasticsearch.aggregation.ElasticAggregation
+import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.query.sort.Sort
+import zio.elasticsearch.request._
+import zio.elasticsearch.result.{AggregationResult, GetResult, SearchAndAggregateResult, SearchResult}
 import zio.schema.Schema
-
-sealed trait HasRefresh[R <: HasRefresh[R]] {
-  def refresh(value: Boolean): R
-
-  def refreshFalse: R
-
-  def refreshTrue: R
-}
-
-sealed trait HasRouting[R <: HasRouting[R]] {
-  def routing(value: Routing): R
-}
-
-trait WithSort[R <: WithSort[R]] {
-  def sortBy(sorts: Sort*): R
-}
 
 sealed trait BulkableRequest[A] extends ElasticRequest[A]
 
@@ -322,7 +310,7 @@ object ElasticRequest {
       extends ElasticRequest[SearchResult]
       with HasRouting[SearchRequest]
       with WithSort[SearchRequest] {
-    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchWithAggregationsResult]
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult]
   }
 
   private[elasticsearch] final case class Search(
@@ -331,7 +319,7 @@ object ElasticRequest {
     sortBy: Set[Sort],
     routing: Option[Routing]
   ) extends SearchRequest { self =>
-    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchWithAggregationsResult] =
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult] =
       SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = sortBy, routing = routing)
 
     def routing(value: Routing): SearchRequest =
@@ -342,7 +330,7 @@ object ElasticRequest {
   }
 
   sealed trait SearchAndAggregateRequest
-      extends ElasticRequest[SearchWithAggregationsResult]
+      extends ElasticRequest[SearchAndAggregateResult]
       with HasRouting[SearchAndAggregateRequest]
       with WithSort[SearchAndAggregateRequest]
 

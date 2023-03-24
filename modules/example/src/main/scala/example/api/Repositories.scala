@@ -19,6 +19,7 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch._
+import zio.elasticsearch.query.ElasticQuery
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{

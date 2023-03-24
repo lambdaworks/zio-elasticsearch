@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.request
 
-sealed trait ScoreMode
+import zio.schema.Schema
+import zio.schema.codec.JsonCodec
 
-object ScoreMode {
-  final case object Avg  extends ScoreMode
-  final case object Max  extends ScoreMode
-  final case object Min  extends ScoreMode
-  final case object None extends ScoreMode
-  final case object Sum  extends ScoreMode
+private[elasticsearch] final case class Document(json: String)
+
+private[elasticsearch] object Document {
+  def from[A](doc: A)(implicit schema: Schema[A]): Document = Document(
+    JsonCodec.jsonEncoder(schema).encodeJson(doc, indent = None).toString
+  )
 }

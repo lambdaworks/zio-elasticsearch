@@ -16,27 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticAggregation.MultipleAggregations
-import zio.elasticsearch.ElasticPrimitive._
-import zio.json.ast.Json
-import zio.json.ast.Json.Obj
-
-sealed trait ElasticAggregation { self =>
-  def paramsToJson: Json
-
-  final def toJson: Json =
-    Obj("aggs" -> paramsToJson)
-}
-
-sealed trait WithSubAgg[A <: WithSubAgg[A]] {
-  def withSubAgg(subAgg: SingleElasticAggregation): A
-}
-
-sealed trait WithAgg {
-  def withAgg(agg: SingleElasticAggregation): MultipleAggregations
-}
-
-sealed trait SingleElasticAggregation extends ElasticAggregation
+import zio.elasticsearch.aggregation._
 
 object ElasticAggregation {
   def multipleAggregations: Multiple =
@@ -47,55 +27,4 @@ object ElasticAggregation {
 
   def termsAggregation(name: String, field: String): Terms =
     Terms(name = name, field = field, subAggregations = Nil)
-
-  sealed trait MultipleAggregations extends ElasticAggregation with WithAgg
-
-  private[elasticsearch] final case class Multiple(aggregations: List[SingleElasticAggregation])
-      extends MultipleAggregations { self =>
-    def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
-      self.copy(aggregations = self.aggregations ++ aggregations)
-
-    def paramsToJson: Json =
-      Obj(aggregations.map { case Terms(name, field, subAggregations) =>
-        (
-          name,
-          Obj(("terms" -> Obj("field" -> field.toJson)) :: subAggregations.map { agg =>
-            "aggs" -> agg.paramsToJson
-          }: _*)
-        )
-      }: _*)
-
-    def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
-      self.copy(aggregations = agg +: aggregations)
-  }
-
-  sealed trait TermsAggregation extends SingleElasticAggregation with WithSubAgg[TermsAggregation] with WithAgg
-
-  private[elasticsearch] final case class Terms(
-    name: String,
-    field: String,
-    subAggregations: List[SingleElasticAggregation]
-  ) extends TermsAggregation { self =>
-
-    def paramsToJson: Json =
-      Obj(name -> paramsToJsonHelper(field, subAggregations))
-
-    private def paramsToJsonHelper(currField: String, currSubAggs: List[SingleElasticAggregation]): Obj =
-      if (currSubAggs.nonEmpty) {
-        Obj(
-          "terms" -> Obj("field" -> currField.toJson),
-          "aggs" -> Obj(currSubAggs.map { case termsAgg: Terms =>
-            (termsAgg.name, paramsToJsonHelper(termsAgg.field, termsAgg.subAggregations))
-          }: _*)
-        )
-      } else {
-        Obj("terms" -> Obj("field" -> currField.toJson))
-      }
-
-    def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
-      multipleAggregations.aggregations(self, aggregation)
-
-    def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
-      self.copy(subAggregations = aggregation +: subAggregations)
-  }
 }

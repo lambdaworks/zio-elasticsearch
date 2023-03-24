@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor.response
 
-import sttp.client3.SttpBackend
-import zio.elasticsearch.executor.{Executor, HttpExecutor}
-import zio.{Task, URLayer, ZLayer}
+import zio.json.ast.Json
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
-    ZLayer.fromFunction(HttpExecutor.apply _)
+private[elasticsearch] final case class Hit(
+  @jsonField("_index")
+  index: String,
+  @jsonField("_type")
+  `type`: String,
+  @jsonField("_id")
+  id: String,
+  @jsonField("_score")
+  score: Option[Double] = None,
+  @jsonField("_source")
+  source: Json,
+  sort: Option[Json]
+)
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
-    ZLayer.succeed(ElasticConfig.Default) >>> live
+private[elasticsearch] object Hit {
+  implicit val decoder: JsonDecoder[Hit] = DeriveJsonDecoder.gen[Hit]
 }

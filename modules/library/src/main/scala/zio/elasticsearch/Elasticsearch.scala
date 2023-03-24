@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.executor.Executor
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 trait Elasticsearch {
@@ -26,8 +27,8 @@ object Elasticsearch {
   def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
     ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
-  lazy val layer: URLayer[ElasticExecutor, Elasticsearch] =
-    ZLayer.fromFunction { executor: ElasticExecutor =>
+  lazy val layer: URLayer[Executor, Elasticsearch] =
+    ZLayer.fromFunction { executor: Executor =>
       new Elasticsearch {
         def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
       }
