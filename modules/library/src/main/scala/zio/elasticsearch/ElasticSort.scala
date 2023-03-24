@@ -16,7 +16,8 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.query.sort._
+import zio.elasticsearch.query.sort.Sort
+import zio.elasticsearch.query.sort.Sort.SortOptions
 
 object ElasticSort {
   def sortBy[S](field: Field[S, _]): Sort =

@@ -30,44 +30,47 @@ sealed trait Sort
   def paramsToJson: Json
 }
 
-private[elasticsearch] final case class SortOptions(
-  field: String,
-  format: Option[String],
-  missing: Option[Missing],
-  mode: Option[SortMode],
-  numericType: Option[NumericType],
-  order: Option[SortOrder],
-  unmappedType: Option[String]
-) extends Sort { self =>
-  def format(value: String): Sort =
-    self.copy(format = Some(value))
+object Sort {
+  private[elasticsearch] final case class SortOptions(
+    field: String,
+    format: Option[String],
+    missing: Option[Missing],
+    mode: Option[SortMode],
+    numericType: Option[NumericType],
+    order: Option[SortOrder],
+    unmappedType: Option[String]
+  ) extends Sort { self =>
+    def format(value: String): Sort =
+      self.copy(format = Some(value))
 
-  def missing(value: Missing): Sort =
-    self.copy(missing = Some(value))
+    def missing(value: Missing): Sort =
+      self.copy(missing = Some(value))
 
-  def mode(value: SortMode): Sort =
-    self.copy(mode = Some(value))
+    def mode(value: SortMode): Sort =
+      self.copy(mode = Some(value))
 
-  def numericType(value: NumericType): Sort =
-    self.copy(numericType = Some(value))
+    def numericType(value: NumericType): Sort =
+      self.copy(numericType = Some(value))
 
-  def order(value: SortOrder): Sort =
-    self.copy(order = Some(value))
+    def order(value: SortOrder): Sort =
+      self.copy(order = Some(value))
 
-  def paramsToJson: Json =
-    Obj(
-      self.field -> Obj(
-        List(
-          self.order.map(order => "order" -> order.toString.toJson),
-          self.format.map(format => "format" -> format.toJson),
-          self.numericType.map(numericType => "numeric_type" -> numericType.toString.toJson),
-          self.mode.map(mode => "mode" -> mode.toString.toJson),
-          self.missing.map(missing => "missing" -> missing.toString.toJson),
-          self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
-        ).collect { case Some(obj) => obj }: _*
+    def paramsToJson: Json =
+      Obj(
+        self.field -> Obj(
+          List(
+            self.order.map(order => "order" -> order.toString.toJson),
+            self.format.map(format => "format" -> format.toJson),
+            self.numericType.map(numericType => "numeric_type" -> numericType.toString.toJson),
+            self.mode.map(mode => "mode" -> mode.toString.toJson),
+            self.missing.map(missing => "missing" -> missing.toString.toJson),
+            self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
+          ).collect { case Some(obj) => obj }: _*
+        )
       )
-    )
 
-  def unmappedType(value: String): Sort =
-    self.copy(unmappedType = Some(value))
+    def unmappedType(value: String): Sort =
+      self.copy(unmappedType = Some(value))
+  }
+
 }
