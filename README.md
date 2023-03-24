@@ -134,6 +134,37 @@ Now, after describing a query, you can pass it to the `search`/`deleteByQuery` m
 search(IndexName("index"), term("name.first_name.keyword", "foo"))
 ```
 
+### Elastic Aggregation
+
+In order to execute Elasticsearch aggregation requests, you first must specify the type of the query along with the corresponding parameters for that type. Aggregations are described with the `Aggregation` data type, which can be constructed from the methods found under the following import:
+
+```scala
+import zio.elasticsearch.ElasticAggregation._
+```
+
+Aggregation methods that require a field solely accept field types that are defined as Elasticsearch primitives. You can pass field names simply as strings, or you can use the type-safe query methods that make use of ZIO Schema's accessors. An example with a `terms` aggregation is shown below:
+
+```scala
+terms("aggregationName", "name")
+
+// type-safe method
+terms("aggregationName", EmployeeDocument.name)
+```
+
+Now, after describing an aggregation, you can pass it to the `aggregate` method to obtain the Elastic request corresponding to that aggregation:
+
+```scala
+aggregate(IndexName("index"), terms("aggregationName", EmployeeDocument.name))
+```
+
+Query can be combined with aggregations, so we can pass query and aggregation to the `search` method to obtain the Elastic request corresponding to that aggregation, or aggregation can be added to query afterwards with `aggregate` method:
+
+```scala
+search(IndexName("index"), matchAll, terms("aggregationName", EmployeeDocument.name))
+
+search(IndexName("index"), matchAll).aggregate(terms("aggregationName", EmployeeDocument.name))
+```
+
 ### Fluent API
 
 Both Elastic requests and queries offer a fluent API, so that you can provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
