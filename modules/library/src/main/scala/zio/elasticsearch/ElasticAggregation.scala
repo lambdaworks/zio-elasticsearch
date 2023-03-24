@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.aggregation._
+import zio.elasticsearch.aggregation.Aggregation._
 
 object ElasticAggregation {
   def multipleAggregations: Multiple =

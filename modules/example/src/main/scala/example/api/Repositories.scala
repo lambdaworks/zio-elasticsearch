@@ -19,7 +19,7 @@ package example.api
 import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch._
-import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.query.Query
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{
@@ -120,7 +120,7 @@ object Repositories {
           .orDie
     }
 
-  private def createElasticQuery(query: Criteria): ElasticQuery[_] =
+  private def createElasticQuery(query: Criteria): Query[_] =
     query match {
       case CompoundCriteria(operator, filters) =>
         operator match {
