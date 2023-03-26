@@ -230,7 +230,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            pit => ZIO.succeed((Chunk(), Some(pit.id, None)))
+            pit => ZIO.succeed((Chunk(), Some((pit.id, None))))
           )
         case _ =>
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
@@ -402,7 +402,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                       body.lastSortField match {
                         case Some(newSearchAfter) =>
                           ZIO.succeed(
-                            (Chunk.fromIterable(body.results.map(Item)), Some(newPitId, Some(newSearchAfter)))
+                            (Chunk.fromIterable(body.results.map(Item)), Some((newPitId, Some(newSearchAfter))))
                           )
                         case None =>
                           ZIO.fail(

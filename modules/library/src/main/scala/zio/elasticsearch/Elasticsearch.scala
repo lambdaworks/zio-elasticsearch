@@ -28,7 +28,7 @@ object Elasticsearch {
     ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
   lazy val layer: URLayer[Executor, Elasticsearch] =
-    ZLayer.fromFunction { executor: Executor =>
+    ZLayer.fromFunction { (executor: Executor) =>
       new Elasticsearch {
         def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
       }
