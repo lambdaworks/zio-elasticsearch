@@ -52,7 +52,7 @@ jobs:
       - name: Cache Scala dependencies
         uses: coursier/cache-action@v6
       - name: Run tests
-        run: ./sbt ++${{ matrix.scala }}! test
+        run: ./sbt ++${{ matrix.scala }}! library/test
       - name: Run test container
         run: docker-compose -f docker-compose.yml up -d
       - name: Run integration tests
