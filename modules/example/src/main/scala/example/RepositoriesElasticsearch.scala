@@ -20,7 +20,7 @@ import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.{CreationOutcome, DeletionOutcome, DocumentId, ElasticRequest, Elasticsearch, Routing}
-import zio.prelude.Newtype.unsafeWrap
+import zio.elasticsearch.ZIODocumentOps
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
@@ -49,7 +49,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
       _ <- elasticsearch.execute(
              ElasticRequest
                .bulk(repositories.map { repository =>
-                 ElasticRequest.create[GitHubRepo](Index, unsafeWrap(DocumentId)(repository.id), repository)
+                 ElasticRequest.create[GitHubRepo](Index, DocumentId(repository.id), repository)
                }: _*)
                .routing(routing)
            )

@@ -19,9 +19,9 @@ package zio.elasticsearch.query
 sealed trait ScoreMode
 
 object ScoreMode {
-  final case object Avg  extends ScoreMode
-  final case object Max  extends ScoreMode
-  final case object Min  extends ScoreMode
-  final case object None extends ScoreMode
-  final case object Sum  extends ScoreMode
+  case object Avg  extends ScoreMode
+  case object Max  extends ScoreMode
+  case object Min  extends ScoreMode
+  case object None extends ScoreMode
+  case object Sum  extends ScoreMode
 }

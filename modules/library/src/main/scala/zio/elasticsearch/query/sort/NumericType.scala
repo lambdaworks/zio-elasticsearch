@@ -19,19 +19,19 @@ package zio.elasticsearch.query.sort
 sealed trait NumericType
 
 object NumericType {
-  final case object Double extends NumericType {
+  case object Double extends NumericType {
     override def toString: String = "double"
   }
 
-  final case object Long extends NumericType {
+  case object Long extends NumericType {
     override def toString: String = "long"
   }
 
-  final case object Date extends NumericType {
+  case object Date extends NumericType {
     override def toString: String = "date"
   }
 
-  final case object DateNanos extends NumericType {
+  case object DateNanos extends NumericType {
     override def toString: String = "date_nanos"
   }
 }
