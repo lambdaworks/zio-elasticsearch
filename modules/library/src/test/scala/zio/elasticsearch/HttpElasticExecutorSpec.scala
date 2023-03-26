@@ -21,8 +21,7 @@ import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
 import zio.test.Assertion._
-import zio.test.{Spec, TestEnvironment, assertZIO}
-import zio.test.TestResultZIOOps
+import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
 
 object HttpElasticExecutorSpec extends SttpBackendStubSpec {
 

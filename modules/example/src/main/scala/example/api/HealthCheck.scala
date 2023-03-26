@@ -18,8 +18,8 @@ package example.api
 
 import zio.http._
 import zio.http.model.Method
-import zio.json.ast.Json._
 import zio.json.EncoderOps
+import zio.json.ast.Json._
 
 object HealthCheck {
 

@@ -19,8 +19,15 @@ package example
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.query.ElasticQuery
-import zio.elasticsearch.{CreationOutcome, DeletionOutcome, DocumentId, ElasticRequest, Elasticsearch, Routing}
-import zio.elasticsearch.ZIODocumentOps
+import zio.elasticsearch.{
+  CreationOutcome,
+  DeletionOutcome,
+  DocumentId,
+  ElasticRequest,
+  Elasticsearch,
+  Routing,
+  ZIODocumentOps
+}
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 

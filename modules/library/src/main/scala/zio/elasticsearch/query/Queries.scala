@@ -183,7 +183,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
   ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]]
 }
 
-private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: UpperBound] (
+private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: UpperBound](
   field: String,
   lower: LB,
   upper: UB,
