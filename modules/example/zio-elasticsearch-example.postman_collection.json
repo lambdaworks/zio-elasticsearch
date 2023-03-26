@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "056ad5a1-fa75-4ff1-a176-3c6f9dec5b7f",
+		"_postman_id": "1b9620b5-f3c7-4ad7-a2dc-e3d14d73dc57",
 		"name": "zio-elasticsearch-example",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -141,7 +141,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"id\": \"1234567\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scountries\",\n    \"url\": \"https://github.com/lambdaworks/scountries\",\n    \"description\": \"Scala library that provides an enumeration of ISO 3166 codes for countries, along with their subdivisions.\",\n    \"lastCommitAt\": \"2022-12-08T19:10:46.016\",\n    \"stars\": 16,\n    \"forks\": 1\n}",
+					"raw": "{\n    \"id\": \"12345679\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scountries\",\n    \"url\": \"https://github.com/lambdaworks/scountries\",\n    \"description\": \"Scala library that provides an enumeration of ISO 3166 codes for countries, along with their subdivisions.\",\n    \"lastCommitAt\": \"2022-12-08T19:10:46.016\",\n    \"stars\": 16,\n    \"forks\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -189,7 +189,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/1234567",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -199,7 +199,7 @@
 						"api",
 						"repositories",
 						"lambdaworks",
-						"lw-zio-elasticsearch"
+						"1234567"
 					]
 				}
 			},
@@ -255,7 +255,7 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/1234567",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -265,7 +265,7 @@
 						"api",
 						"repositories",
 						"lambdaworks",
-						"lw-zio-elasticsearch"
+						"1234567"
 					]
 				}
 			},
@@ -308,7 +308,7 @@
 					}
 				},
 				"url": {
-					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lw-zio-elasticsearch",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/1234567",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -317,7 +317,7 @@
 					"path": [
 						"api",
 						"repositories",
-						"lw-zio-elasticsearch"
+						"1234567"
 					]
 				}
 			},
@@ -390,7 +390,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": {\"And\": {}},\n        \"filters\": [\n            {\n                \"IntCriteria\": {\n                    \"field\": {\"Forks\": {}},\n                    \"operator\": {\"EqualTo\": {}},\n                    \"value\": 4\n                }\n            },\n            {\n                \"DateCriteria\": {\n                    \"field\": {\"LastCommitAt\": {}},\n                    \"operator\": {\"GreaterThan\": {}},\n                    \"value\": \"2019-12-04T18:38:04\"\n                }\n            }\n        ]\n    }\n}\n"
+					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": \"And\",\n        \"filters\": [\n            {\n                \"IntCriteria\": {\n                    \"field\": \"Forks\",\n                    \"operator\": \"EqualTo\",\n                    \"value\": 4\n                }\n            },\n            {\n                \"DateCriteria\": {\n                    \"field\": \"LastCommitAt\",\n                    \"operator\": \"GreaterThan\",\n                    \"value\": \"2019-12-04T18:38:04\"\n                }\n            }\n        ]\n    }\n}\n"
 				},
 				"url": {
 					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search",
@@ -415,7 +415,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": {\"And\": {}},\n        \"filters\": [\n            {\n                \"StringCriteria\": {\n                    \"field\": {\"Name\": {}},\n                    \"operator\": {\"StartsWith\": {}},\n                    \"value\": \"scrul\"\n                }\n            },\n            {\n                \"StringCriteria\": {\n                    \"field\": {\"Name\": {}},\n                    \"operator\": {\"Contains\": {}},\n                    \"value\": \"detector\"\n                }\n            }\n        ]\n    }\n}"
+					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": \"And\",\n        \"filters\": [\n            {\n                \"StringCriteria\": {\n                    \"field\": \"Name\",\n                    \"operator\": \"StartsWith\",\n                    \"value\": \"scrul\"\n                }\n            },\n            {\n                \"StringCriteria\": {\n                    \"field\": \"Name\",\n                    \"operator\": \"Contains\",\n                    \"value\": \"detector\"\n                }\n            }\n        ]\n    }\n}"
 				},
 				"url": {
 					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search",

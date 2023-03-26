@@ -89,7 +89,7 @@ object Repositories {
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
-            case Right(repo) if repo.id == id =>
+            case Right(repo) if repo.id != id =>
               ZIO.succeed(
                 Response
                   .json(
