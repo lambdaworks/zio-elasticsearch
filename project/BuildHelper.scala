@@ -4,17 +4,17 @@ import scalafix.sbt.ScalafixPlugin.autoImport._
 
 object BuildHelper {
 
-  val Scala212: String   = "2.12.17"
-  val Scala213: String   = "2.13.10"
-  val ScalaDotty: String = "3.2.2"
+  val Scala212: String = "2.12.17"
+  val Scala213: String = "2.13.10"
+  val Scala3: String   = "3.2.2"
 
   def stdSettings(prjName: String) =
     List(
       name                     := s"$prjName",
-      crossScalaVersions       := List(Scala212, Scala213, ScalaDotty),
+      crossScalaVersions       := List(Scala212, Scala213, Scala3),
       ThisBuild / scalaVersion := Scala213,
       scalacOptions            := stdOptions ++ extraOptions(scalaVersion.value),
-      semanticdbEnabled        := scalaVersion.value != ScalaDotty, // enable SemanticDB
+      semanticdbEnabled        := scalaVersion.value != Scala3, // enable SemanticDB
       semanticdbOptions += "-P:semanticdb:synthetics:on",
       semanticdbVersion                                          := scalafixSemanticdb.revision,
       ThisBuild / scalafixScalaBinaryVersion                     := CrossVersion.binaryScalaVersion(scalaVersion.value),
@@ -24,7 +24,7 @@ object BuildHelper {
       autoAPIMappings := true
     )
 
-  private val stdOptions = Seq(
+  private val stdOptions = List(
     "-deprecation",
     "-encoding",
     "UTF-8",
@@ -32,7 +32,7 @@ object BuildHelper {
     "-unchecked"
   )
 
-  private val std2xOptions = Seq(
+  private val std2xOptions = List(
     "-language:higherKinds",
     "-language:existentials",
     "-explaintypes",
@@ -45,16 +45,16 @@ object BuildHelper {
   def extraOptions(scalaVersion: String) =
     CrossVersion.partialVersion(scalaVersion) match {
       case Some((3, 2)) =>
-        Seq(
+        List(
           "-language:implicitConversions",
           "-Xignore-scala2-macros"
         )
       case Some((2, 13)) =>
-        Seq(
+        List(
           "-Ywarn-unused:params,-implicits"
         ) ++ std2xOptions
       case Some((2, 12)) =>
-        Seq(
+        List(
           "-opt-warnings",
           "-Ywarn-extra-implicit",
           "-Ywarn-unused:_,imports",
@@ -71,6 +71,6 @@ object BuildHelper {
           "-Xmax-classfile-name",
           "242"
         )
-      case _ => Seq()
+      case _ => Nil
     }
 }
