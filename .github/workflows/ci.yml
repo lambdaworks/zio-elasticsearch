@@ -7,7 +7,7 @@ env:
 on:
   pull_request:
   push:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   lint:
@@ -36,8 +36,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '17']
-        scala: ['2.12.17', '2.13.10']
+        java: ["11", "17"]
+        scala: ["2.12.17", "2.13.10", "3.2.2"]
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.3.0
@@ -52,7 +52,7 @@ jobs:
       - name: Cache Scala dependencies
         uses: coursier/cache-action@v6
       - name: Run tests
-        run: ./sbt ++${{ matrix.scala }}! test
+        run: ./sbt ++${{ matrix.scala }}! library/test
       - name: Run test container
         run: docker-compose -f docker-compose.yml up -d
       - name: Run integration tests

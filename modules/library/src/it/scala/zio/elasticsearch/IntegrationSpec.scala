@@ -20,7 +20,6 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.executor.Executor
-import zio.prelude.Newtype.unsafeWrap
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
@@ -52,7 +51,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
   } yield ()).provide(elasticsearchLayer))
 
   def genIndexName: Gen[Any, IndexName] =
-    Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => unsafeWrap(IndexName)(name.toLowerCase))
+    Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => IndexName(name.toLowerCase))
 
   def genDocumentId: Gen[Any, DocumentId] = Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
 

@@ -19,11 +19,11 @@ package zio.elasticsearch.query.sort
 sealed trait Missing
 
 object Missing {
-  final case object First extends Missing {
+  case object First extends Missing {
     override def toString: String = "_first"
   }
 
-  final case object Last extends Missing {
+  case object Last extends Missing {
     override def toString: String = "_last"
   }
 }

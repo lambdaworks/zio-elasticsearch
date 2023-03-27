@@ -21,7 +21,6 @@ import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
-import zio.prelude.Newtype.unsafeWrap
 import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -1427,14 +1426,14 @@ object QueryDSLSpec extends ZIOSpecDefault {
             val req1 =
               ElasticRequest
                 .create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
-                .routing(unsafeWrap(Routing)(user.id))
-            val req2 = ElasticRequest.create[UserDocument](index, user).routing(unsafeWrap(Routing)(user.id))
+                .routing(Routing(user.id))
+            val req2 = ElasticRequest.create[UserDocument](index, user).routing(Routing(user.id))
             val req3 =
               ElasticRequest
                 .upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
-                .routing(unsafeWrap(Routing)(user.id))
+                .routing(Routing(user.id))
             val req4 =
-              ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(unsafeWrap(Routing)(user.id))
+              ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(Routing(user.id))
             ElasticRequest.bulk(req1, req2, req3, req4) match {
               case r: Bulk => Some(r.body)
               case _       => None
