@@ -16,8 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.aggregation.Aggregation.{MultipleAggregations, SingleElasticAggregation}
-
 package object aggregation {
   private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A]] {
     def withSubAgg(subAgg: SingleElasticAggregation): A

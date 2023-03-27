@@ -16,8 +16,8 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.aggregation.Aggregation
-import zio.elasticsearch.query.Query
+import zio.elasticsearch.aggregation.ElasticAggregation
+import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
 import zio.elasticsearch.result.{AggregationResult, GetResult, SearchAndAggregateResult, SearchResult}
@@ -29,7 +29,7 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
-  def aggregate(index: IndexName, aggregation: Aggregation): AggregateRequest =
+  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
     Aggregate(index = index, aggregation = aggregation)
 
   def bulk(requests: BulkableRequest[_]*): BulkRequest =
@@ -38,7 +38,7 @@ object ElasticRequest {
   def count(index: IndexName): CountRequest =
     Count(index = index, query = None, routing = None)
 
-  def count(index: IndexName, query: Query[_]): CountRequest =
+  def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
     Count(index = index, query = Some(query), routing = None)
 
   def create[A: Schema](index: IndexName, doc: A): CreateRequest =
@@ -56,7 +56,7 @@ object ElasticRequest {
   def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest =
     DeleteById(index = index, id = id, refresh = None, routing = None)
 
-  def deleteByQuery(index: IndexName, query: Query[_]): DeleteByQueryRequest =
+  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQueryRequest =
     DeleteByQuery(index = index, query = query, refresh = None, routing = None)
 
   def deleteIndex(name: IndexName): DeleteIndexRequest =
@@ -68,10 +68,10 @@ object ElasticRequest {
   def getById(index: IndexName, id: DocumentId): GetByIdRequest =
     GetById(index = index, id = id, refresh = None, routing = None)
 
-  def search(index: IndexName, query: Query[_]): SearchRequest =
+  def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(index = index, query = query, sortBy = Set.empty, routing = None)
 
-  def search(index: IndexName, query: Query[_], aggregation: Aggregation): SearchAndAggregateRequest =
+  def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchAndAggregateRequest =
     SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = Set.empty, routing = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
@@ -79,7 +79,8 @@ object ElasticRequest {
 
   sealed trait AggregateRequest extends ElasticRequest[AggregationResult]
 
-  private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: Aggregation) extends AggregateRequest
+  private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
+      extends AggregateRequest
 
   sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[BulkRequest] with HasRouting[BulkRequest]
 
@@ -130,7 +131,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Count(
     index: IndexName,
-    query: Option[Query[_]],
+    query: Option[ElasticQuery[_]],
     routing: Option[Routing]
   ) extends CountRequest { self =>
     def routing(value: Routing): CountRequest =
@@ -249,7 +250,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class DeleteByQuery(
     index: IndexName,
-    query: Query[_],
+    query: ElasticQuery[_],
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends DeleteByQueryRequest { self =>
@@ -309,16 +310,16 @@ object ElasticRequest {
       extends ElasticRequest[SearchResult]
       with HasRouting[SearchRequest]
       with WithSort[SearchRequest] {
-    def aggregate(aggregation: Aggregation): ElasticRequest[SearchAndAggregateResult]
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult]
   }
 
   private[elasticsearch] final case class Search(
     index: IndexName,
-    query: Query[_],
+    query: ElasticQuery[_],
     sortBy: Set[Sort],
     routing: Option[Routing]
   ) extends SearchRequest { self =>
-    def aggregate(aggregation: Aggregation): ElasticRequest[SearchAndAggregateResult] =
+    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult] =
       SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = sortBy, routing = routing)
 
     def routing(value: Routing): SearchRequest =
@@ -335,8 +336,8 @@ object ElasticRequest {
 
   private[elasticsearch] final case class SearchAndAggregate(
     index: IndexName,
-    query: Query[_],
-    aggregation: Aggregation,
+    query: ElasticQuery[_],
+    aggregation: ElasticAggregation,
     sortBy: Set[Sort],
     routing: Option[Routing]
   ) extends SearchAndAggregateRequest { self =>

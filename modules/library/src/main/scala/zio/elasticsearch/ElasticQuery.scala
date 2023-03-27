@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.query.Query._
 import zio.elasticsearch.query._
 
 import ElasticPrimitive.ElasticPrimitive
@@ -34,7 +33,7 @@ object ElasticQuery {
   def exists(field: String): ExistsQuery[Any] =
     Exists(field = field)
 
-  def filter[S](queries: Query[S]*): BoolQuery[S] =
+  def filter[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
   def matchAll: MatchAllQuery =
@@ -46,16 +45,16 @@ object ElasticQuery {
   def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
-  def must[S](queries: Query[S]*): BoolQuery[S] =
+  def must[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
 
-  def mustNot[S](queries: Query[S]*): BoolQuery[S] =
+  def mustNot[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
-  def nested[S, A](path: Field[S, Seq[A]], query: Query[A]): NestedQuery[S] =
+  def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
     Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None)
 
-  def nested(path: String, query: Query[_]): NestedQuery[Any] =
+  def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None)
 
   def range[S, A](
@@ -67,7 +66,7 @@ object ElasticQuery {
   def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
 
-  def should[S](queries: Query[S]*): BoolQuery[S] =
+  def should[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
   def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =

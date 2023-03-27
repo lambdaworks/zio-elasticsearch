@@ -4,7 +4,6 @@ import zio.Scope
 import zio.elasticsearch.ElasticSort._
 import zio.elasticsearch.query.sort.Missing._
 import zio.elasticsearch.query.sort.NumericType.{Long => NumTypeLong}
-import zio.elasticsearch.query.sort.Sort.SortOptions
 import zio.elasticsearch.query.sort.SortMode._
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort._
