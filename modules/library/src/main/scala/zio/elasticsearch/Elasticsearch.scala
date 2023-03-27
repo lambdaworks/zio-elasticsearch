@@ -16,21 +16,58 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticRequest.SearchRequest
 import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.result.Item
+import zio.schema.Schema
+import zio.stream.{Stream, ZStream}
 import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 
 trait Elasticsearch {
   def execute[A](request: ElasticRequest[A]): Task[A]
+
+  def stream(request: SearchRequest): Stream[Throwable, Item]
+
+  def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item]
+
+  def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
+
+  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A]
 }
 
 object Elasticsearch {
   def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
     ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
+  def stream(request: SearchRequest): ZStream[Elasticsearch, Throwable, Item] =
+    ZStream.serviceWithStream[Elasticsearch](_.stream(request))
+
+  def stream(request: SearchRequest, config: StreamConfig): ZStream[Elasticsearch, Throwable, Item] =
+    ZStream.serviceWithStream[Elasticsearch](_.stream(request, config))
+
+  def streamAs[A: Schema](request: SearchRequest): ZStream[Elasticsearch, Throwable, A] =
+    ZStream.serviceWithStream[Elasticsearch](_.streamAs[A](request))
+
+  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): ZStream[Executor, Throwable, A] =
+    ZStream.serviceWithStream[Executor](_.streamAs[A](request, config))
+
   lazy val layer: URLayer[Executor, Elasticsearch] =
     ZLayer.fromFunction { (executor: Executor) =>
       new Elasticsearch {
-        def execute[A](request: ElasticRequest[A]): Task[A] = executor.execute(request)
+        def execute[A](request: ElasticRequest[A]): Task[A] =
+          executor.execute(request)
+
+        def stream(request: SearchRequest): Stream[Throwable, Item] =
+          executor.stream(request)
+
+        def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item] =
+          executor.stream(request, config)
+
+        def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A] =
+          executor.streamAs[A](request)
+
+        def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A] =
+          executor.streamAs[A](request, config)
       }
     }
 }
