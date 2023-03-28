@@ -21,6 +21,10 @@ package object sort {
     def format(value: String): S
   }
 
+  private[elasticsearch] trait WithLang[S <: WithLang[S]] {
+    def lang(value: String): S
+  }
+
   private[elasticsearch] trait WithMode[S <: WithMode[S]] {
     def mode(value: SortMode): S
   }
@@ -35,6 +39,10 @@ package object sort {
 
   private[elasticsearch] trait WithOrder[S <: WithOrder[S]] {
     def order(value: SortOrder): S
+  }
+
+  private[elasticsearch] trait WithParam[S <: WithParam[S]] {
+    def withParam(value: (String, Any)): S
   }
 
   private[elasticsearch] trait WithUnmappedType[S <: WithUnmappedType[S]] {
