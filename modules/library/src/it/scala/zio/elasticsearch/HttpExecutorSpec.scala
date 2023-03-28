@@ -19,10 +19,11 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
-import zio.elasticsearch.ElasticSort.sortByField
+import zio.elasticsearch.ElasticSort.{sortByField, sortByScript}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
+import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.result.Item
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
@@ -515,7 +516,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ) @@ shrinks(0),
         suite("searching for sorted documents")(
-          test("search for document sorted by descending age and by descending birthDate using range query") {
+          test("search for document sorted by descending age and by ascending birthDate using range query") {
             checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
               (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
                 val firstCustomerWithFixedAge = firstEmployee.copy(age = 30, birthDate = LocalDate.parse("1993-12-05"))
@@ -543,7 +544,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                .search(firstSearchIndex, query)
                                .sortBy(
                                  sortByField("age").order(Desc),
-                                 sortByField("birthDate").order(Desc).format("strict_date_optional_time_nanos")
+                                 sortByField("birthDate").order(Asc).format("strict_date_optional_time_nanos")
                                )
                            )
                            .documentAs[EmployeeDocument]
@@ -555,7 +556,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for document sorted by ascending age and by ascending birthDate using range query") {
+          test("search for document sorted by script where age is ascending using range query") {
             checkOnce(genDocumentId, genEmployee, genDocumentId, genEmployee) {
               (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
                 val firstCustomerWithFixedAge = firstEmployee.copy(age = 30, birthDate = LocalDate.parse("1993-12-05"))
@@ -581,10 +582,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(
-                                 sortByField("age").order(Asc),
-                                 sortByField("birthDate").order(Asc).format("strict_date_optional_time_nanos")
-                               )
+                               .sortBy(sortByScript("doc['age'].value", NumberType).order(Asc).lang("painless"))
                            )
                            .documentAs[EmployeeDocument]
                 } yield assert(res)(
