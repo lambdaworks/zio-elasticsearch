@@ -17,6 +17,7 @@
 package zio.elasticsearch.query.sort
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 
@@ -69,7 +70,7 @@ private[elasticsearch] final case class SortByFieldOptions(
           self.mode.map(mode => "mode" -> mode.toString.toJson),
           self.missing.map(missing => "missing" -> missing.toString.toJson),
           self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
-        ).collect { case Some(obj) => obj }: _*
+        ).flatten: _*
       )
     )
 
@@ -77,24 +78,14 @@ private[elasticsearch] final case class SortByFieldOptions(
     self.copy(unmappedType = Some(value))
 }
 
-sealed trait SortByScript
-    extends Sort
-    with WithLang[SortByScript]
-    with WithMode[SortByScript]
-    with WithOrder[SortByScript]
-    with WithParam[SortByScript]
+sealed trait SortByScript extends Sort with WithMode[SortByScript] with WithOrder[SortByScript]
 
 private[elasticsearch] final case class SortByScriptOptions(
-  params: Map[String, Any],
-  source: String,
+  script: Script,
   sourceType: SourceType,
-  lang: Option[String],
   mode: Option[SortMode],
   order: Option[SortOrder]
 ) extends SortByScript { self =>
-  def lang(value: String): SortByScript =
-    self.copy(lang = Some(value))
-
   def mode(value: SortMode): SortByScript =
     self.copy(mode = Some(value))
 
@@ -106,33 +97,10 @@ private[elasticsearch] final case class SortByScriptOptions(
       "_script" -> Obj(
         List(
           Some("type"   -> self.sourceType.toString.toJson),
-          Some("script" -> scriptToJson),
+          Some("script" -> script.toJson),
           self.order.map(order => "order" -> order.toString.toJson),
           self.mode.map(mode => "mode" -> mode.toString.toJson)
-        ).collect { case Some(obj) => obj }: _*
+        ).flatten: _*
       )
     )
-
-  private def scriptToJson: Json =
-    Obj(
-      List(
-        self.lang.map(lang => "lang" -> lang.toJson),
-        Some("source" -> source.toJson),
-        if (params.nonEmpty)
-          Some("params" -> Obj(params.map { case (key, value) =>
-            value match {
-              case value: BigDecimal => key -> value.toJson
-              case value: Double     => key -> value.toJson
-              case value: Int        => key -> value.toJson
-              case value: Long       => key -> value.toJson
-              case _                 => key -> value.toString.toJson
-            }
-          }.toList: _*))
-        else
-          None
-      ).collect { case Some(obj) => obj }: _*
-    )
-
-  def withParam(value: (String, Any)): SortByScript =
-    self.copy(params = params + value)
 }

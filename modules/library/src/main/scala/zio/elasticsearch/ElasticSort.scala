@@ -17,9 +17,10 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.query.sort._
+import zio.elasticsearch.script.Script
 
 object ElasticSort {
-  def sortByField[S](field: Field[S, _]): SortByField =
+  def sortBy[S](field: Field[S, _]): SortByField =
     SortByFieldOptions(
       field = field.toString,
       format = None,
@@ -30,7 +31,7 @@ object ElasticSort {
       unmappedType = None
     )
 
-  def sortByField(field: String): SortByField =
+  def sortBy(field: String): SortByField =
     SortByFieldOptions(
       field = field,
       format = None,
@@ -41,12 +42,10 @@ object ElasticSort {
       unmappedType = None
     )
 
-  def sortByScript(script: String, sourceType: SourceType): SortByScript =
+  def sortBy(script: Script, sourceType: SourceType): SortByScript =
     SortByScriptOptions(
-      params = Map.empty,
-      source = script,
+      script = script,
       sourceType = sourceType,
-      lang = None,
       mode = None,
       order = None
     )

@@ -18,7 +18,11 @@ package example
 
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.query.sort.SortOrder.Desc
+import zio.elasticsearch.query.sort.SourceType.NumberType
+import zio.elasticsearch.script.Script
 import zio.elasticsearch.{
   CreationOutcome,
   DeletionOutcome,
@@ -32,7 +36,13 @@ import zio.elasticsearch.{
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
+    elasticsearch
+      .execute(
+        ElasticRequest
+          .search(Index, matchAll)
+          .sortBy(sortBy(Script("doc['forks'].value").lang("painless"), NumberType).order(Desc))
+      )
+      .documentAs[GitHubRepo]
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {

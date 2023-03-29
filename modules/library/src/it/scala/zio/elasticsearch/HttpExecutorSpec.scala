@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
-import zio.elasticsearch.ElasticSort.{sortByField, sortByScript}
+import zio.elasticsearch.ElasticSort.{sortBy, sortBy}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
@@ -582,7 +582,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(sortByScript("doc['age'].value", NumberType).order(Asc).lang("painless"))
+                               .sortBy(sortBy("doc['age'].value", NumberType).order(Asc).lang("painless"))
                            )
                            .documentAs[EmployeeDocument]
                 } yield assert(res)(
