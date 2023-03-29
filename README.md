@@ -33,7 +33,7 @@ Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge 
 
 In order to execute an Elasticsearch request we can rely on the `Elasticsearch` layer which offers an `execute` method accepting an `ElasticRequest`. In order to build the `Elasticsearch` layer we need to provide the following layers:
 
-- `ElasticExecutor` - if you provide `ElasticExecutor.local` it will run on `localhost:9200`, otherwise if you want to use `ElasticExecutor.live` you will have to provide `ElasticConfig` as well
+- `ElasticExecutor`: if you provide `ElasticExecutor.local`, it will run on `localhost:9200`. Otherwise, if you want to use `ElasticExecutor.live`, you will need to provide `ElasticConfig` as well.
 - `HttpClientZioBackend`
 
 ```scala
@@ -43,7 +43,7 @@ import zio.elasticsearch._
 import zio._
 
 object ZIOElasticsearchExample extends ZIOAppDefault {
-  val indexName = IndexName("test-es-index")
+  val indexName = IndexName("index")
   val effect: RIO[Elasticsearch, Unit] = for {
     _ <- Elasticsearch.execute(createIndex(indexName))
   } yield ()
@@ -58,34 +58,40 @@ object ZIOElasticsearchExample extends ZIOAppDefault {
 ```
 
 
-### Typesafety with ZIO-prelude's NewType
+### Type-safety with ZIO Prelude's new type
 
-The library uses ZIO Prelude's NewType for `IndexName`, `DocumentId` and `Routing` in order to preserve type safety.
+The library uses ZIO Prelude's new type for `IndexName`, `DocumentId` and `Routing` in order to preserve type-safety.
 
 ```scala
-val indexName: IndexName = IndexName("test-es-index")
-val docId: DocumentId = DocumentId("document-id")
+val indexName: IndexName = IndexName("index")
+val docId: DocumentId    = DocumentId("documentId")
 ```
 
 ### Fluent API
 
-Both Elastic requests and queries offer a fluent API, so that we could provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
+Both Elastic requests and queries offer a fluent API, allowing us to provide optional parameters in chained method calls for each request or query.
+For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
 
 ```scala
 deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
+```
 
+Creating complex queries can be created in the following manner:
+
+```scala
 must(range("version").gte(7).lt(10)).should(startsWith("name", "ZIO"))
 ```
 
-And if we wanted to specify lower and upper bounds for a `range` query:
+If we want to specify lower and upper bounds for a `range` query, we can do the following:
 
 ```scala
-range(EmployeeDocument.age).gte(18).lt(100)
+range(User.age).gte(18).lt(100)
 ```
 
 ### Bulkable
 
-Elastic Requests like `Create`, `CreateOrUpdate`, `CreateWithId`, `DeleteById` are bulkable requests. For bulkable request you can use `bulk` API that accepts request types that inherit `Bulkable` trait.
+Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
+For bulkable request, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
 
 ```scala
 for {
@@ -93,22 +99,21 @@ for {
 } yield ()
 ```
 
-### Usage of ZIO Schema and its accessors for type safety
+### Usage of ZIO Schema and its accessors for type-safety
 
-To provide type safety in your requests zio-elasticsearch uses ZIO Schema. Here is an example of creating schema for custom type `User` and using implicit schema to create accessors which results in type safe request and response.
+To provide type-safety in your Elasticsearch requests, ZIO Elasticsearch uses ZIO Schema. Here is an example of creating a schema for the custom type `User` and using an implicit schema to create accessors that result in type-safe requests.
 
 ```scala
 final case class Address(street: String, number: Int)
 
 object Address {
-
   implicit val schema: Schema.CaseClass2[String, Int, Address] =
     DeriveSchema.gen[Address]
 
   val (street, number) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-case class User(id: Int, address: Address)
+final case class User(id: Int, address: Address)
 
 object User {
   implicit val schema: Schema.CaseClass2[String, Address, User] =
@@ -120,7 +125,7 @@ object User {
 for {
   _ <- Elasticsearch.execute(
     search(
-      IndexName("index-name"),
+      IndexName("index"),
       must(range(User.id).gte(7).lt(10)).should(startsWith(User.address / Address.street, "ZIO"))
     ).aggregate(aggregation)
   )
@@ -129,19 +134,14 @@ for {
 
 ### Streaming
 
-Zio-elastic search is streaming friendly library and there are few specific API's that are used for creating ZIO streams. When using `stream` the result will be `Item` that is case class that contains only one field and that is `raw` that represents your response as a raw JSON. Also, it is important to note that you can use `StramConfig` to use your own settings when creating a stream, if you omit using `StreamConfig` then `StreamConfig.Default` will be used.
+ZIO Elasticsearch is a streaming-friendly library, and it provides specific APIs for creating ZIO streams. When using the stream API, the result will be an `Item`, which is a case class that contains only one field, `raw`, that represents your response as raw JSON. Additionally, it is important to note that you can use `StreamConfig` to customize your settings when creating a stream. If you don't use `StreamConfig`, the default settings (`StreamConfig.Default`) will be used.
 
 ```scala
 for {
-  stream <- Elasticsearch.stream(ElasticRequest.search(IndexName("index"), range("id").gte(5)))
-  scrollStream <- Elasticsearch.stream(ElasticRequest.search(IndexName("index"), range("id").gte(5)), StreamConfig.Scroll)
-} yield ()
-```
-
-```scala
-for {
-  stream <- Elasticsearch.streamAs[User](ElasticRequest.search(IndexName("index"), range(User.id).gte(5)))
-  searchAfterStream <- Elasticsearch.streamAs[User](ElasticRequest.search(IndexName("index"), range(User.id).gte(5)), StreamConfig.SearchAfter)
+  request           <- ElasticRequest.search(IndexName("index"), range(User.id).gte(5))
+  defaultStream     <- Elasticsearch.stream(request)
+  scrollStream      <- Elasticsearch.stream(request, StreamConfig.Scroll)
+  searchAfterStream <- Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)
 } yield ()
 ```
 
