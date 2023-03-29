@@ -7,7 +7,7 @@
 
 ## Overview
 
-ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.
+ZIO Elasticsearch is a type-safe, testable, and streaming-friendly ZIO native Elasticsearch client.
 
 The library depends on sttp as an HTTP client for executing requests, and other ZIO libraries such as ZIO Schema and ZIO Prelude.
 
@@ -33,7 +33,7 @@ Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge 
 
 In order to execute an Elasticsearch request we can rely on the `Elasticsearch` layer which offers an `execute` method accepting an `ElasticRequest`. In order to build the `Elasticsearch` layer we need to provide the following layers:
 
-- `ElasticExecutor`: if you provide `ElasticExecutor.local`, it will run on `localhost:9200`. Otherwise, if you want to use `ElasticExecutor.live`, you will need to provide `ElasticConfig` as well.
+- `ElasticExecutor`: if you provide `ElasticExecutor.local`, it will run on `localhost:9200`. Otherwise, if you want to use `ElasticExecutor.live`, you must also provide `ElasticConfig`.
 - `HttpClientZioBackend`
 
 ```scala
@@ -69,7 +69,7 @@ val docId: DocumentId    = DocumentId("documentId")
 
 ### Fluent API
 
-Both Elastic requests and queries offer a fluent API, allowing us to provide optional parameters in chained method calls for each request or query.
+ZIO Elastic requests and queries offer a fluent API, allowing us to provide optional parameters in chained method calls for each request or query.
 For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
 
 ```scala
@@ -90,8 +90,8 @@ range(User.age).gte(18).lt(100)
 
 ### Bulkable
 
-Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
-For bulkable request, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
+ZIO Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
+For bulkable requests, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
 
 ```scala
 for {
