@@ -31,8 +31,7 @@ Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge 
 
 ## Usage
 
-In order to get the functional effect of executing a specified `Elasticsearch` request, we must provide the `Elasticsearch` layer to that effect.  We can then call the `execute` method defined in `Elasticsearch` that accepts `ElasticRequest` as parameter.
-To create this layer we also have to provide following layers:
+In order to execute an Elasticsearch request we can rely on the `Elasticsearch` layer which offers an `execute` method accepting an `ElasticRequest`. In order to build the `Elasticsearch` layer we need to provide the following layers:
 
 - `ElasticExecutor` - if you provide `ElasticExecutor.local` it will run on `localhost:9200`, otherwise if you want to use `ElasticExecutor.live` you will have to provide `ElasticConfig` as well
 - `HttpClientZioBackend`
@@ -61,7 +60,7 @@ object ZIOElasticsearchExample extends ZIOAppDefault {
 
 ### Typesafety with ZIO-prelude's NewType
 
-We use ZIO Prelude's NewType for `IndexName`, `DocumentId` and `Routing` in order to preserve type safety.
+The library uses ZIO Prelude's NewType for `IndexName`, `DocumentId` and `Routing` in order to preserve type safety.
 
 ```scala
 val indexName: IndexName = IndexName("test-es-index")
@@ -70,7 +69,7 @@ val docId: DocumentId = DocumentId("document-id")
 
 ### Fluent API
 
-Both Elastic requests and queries offer a fluent API, so that you can provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
+Both Elastic requests and queries offer a fluent API, so that we could provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
 
 ```scala
 deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
