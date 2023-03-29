@@ -20,7 +20,7 @@ const config = {
       'classic',
       ({
         docs: {
-          path: '/Users/markoristic/Lambda/zio-elasticsearch/docs',
+          path: '../modules/docs/target/mdoc',
           routeBasePath: '/',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
