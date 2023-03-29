@@ -16,14 +16,14 @@
 
 package zio.elasticsearch
 
-import sttp.client3.SttpBackend
+import sttp.client4.Backend
 import zio.elasticsearch.executor.{Executor, HttpExecutor}
 import zio.{Task, URLayer, ZLayer}
 
 object ElasticExecutor {
-  lazy val live: URLayer[ElasticConfig with SttpBackend[Task, Any], Executor] =
+  lazy val live: URLayer[ElasticConfig with Backend[Task], Executor] =
     ZLayer.fromFunction(HttpExecutor.apply _)
 
-  lazy val local: URLayer[SttpBackend[Task, Any], Executor] =
+  lazy val local: URLayer[Backend[Task], Executor] =
     ZLayer.succeed(ElasticConfig.Default) >>> live
 }

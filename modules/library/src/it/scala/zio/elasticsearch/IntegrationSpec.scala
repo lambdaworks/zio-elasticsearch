@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import sttp.client3.httpclient.zio.HttpClientZioBackend
+import sttp.client4.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.executor.Executor

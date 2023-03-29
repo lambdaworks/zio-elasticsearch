@@ -16,8 +16,8 @@
 
 package zio.elasticsearch.executor
 
-import sttp.client3.ziojson._
-import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
+import sttp.client4.ziojson._
+import sttp.client4.{Request, Response, ResponseException, Backend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.StatusCode.{
   BadRequest => HttpBadRequest,
@@ -41,7 +41,7 @@ import zio.{Chunk, Task, ZIO}
 
 import scala.collection.immutable.{Map => ScalaMap}
 
-private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig, client: SttpBackend[Task, Any])
+private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig, client: Backend[Task])
     extends Executor {
 
   import HttpExecutor._
@@ -510,7 +510,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
   private def sendRequest(
-    req: RequestT[Identity, Either[String, String], Any]
+    req: Request[Either[String, String]]
   ): Task[Response[Either[String, String]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
@@ -519,7 +519,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
-    req: RequestT[Identity, Either[ResponseException[String, String], A], Any]
+    req: Request[Either[ResponseException[String, String], A]]
   ): Task[Response[Either[ResponseException[String, String], A]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
@@ -549,6 +549,6 @@ private[elasticsearch] object HttpExecutor {
       DeriveJsonDecoder.gen[PointInTimeResponse]
   }
 
-  def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) =
+  def apply(esConfig: ElasticConfig, client: Backend[Task]) =
     new HttpExecutor(esConfig, client)
 }
