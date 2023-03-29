@@ -19,12 +19,13 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
-import zio.elasticsearch.ElasticSort.{sortBy, sortBy}
+import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.result.Item
+import zio.elasticsearch.script.Script
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -184,7 +185,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                query = query,
                                aggregation = aggregation
                              )
-                             .sortBy(sortByField("age").order(Desc))
+                             .sortBy(sortBy("age").order(Desc))
                          )
                   docs <- res.documentAs[EmployeeDocument]
                   aggs <- res.aggregations
@@ -543,8 +544,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                              ElasticRequest
                                .search(firstSearchIndex, query)
                                .sortBy(
-                                 sortByField("age").order(Desc),
-                                 sortByField("birthDate").order(Asc).format("strict_date_optional_time_nanos")
+                                 sortBy("age").order(Desc),
+                                 sortBy("birthDate").order(Asc).format("strict_date_optional_time_nanos")
                                )
                            )
                            .documentAs[EmployeeDocument]
@@ -582,7 +583,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(sortBy("doc['age'].value", NumberType).order(Asc).lang("painless"))
+                               .sortBy(sortBy(Script("doc['age'].value").lang("painless"), NumberType).order(Asc))
                            )
                            .documentAs[EmployeeDocument]
                 } yield assert(res)(
@@ -618,7 +619,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(sortByField("sectorsIds").mode(Max).order(Desc))
+                               .sortBy(sortBy("sectorsIds").mode(Max).order(Desc))
                            )
                            .documentAs[EmployeeDocument]
                 } yield assert(res)(
