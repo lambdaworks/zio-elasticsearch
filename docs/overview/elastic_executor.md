@@ -26,7 +26,7 @@ val effect: RIO[ElasticExecutor, Boolean] = exists(IndexName("index"), DocumentI
 
 effect.provide(
   HttpClientZioBackend.layer(),
-  ZLayer.succeed(ElastichConfig("localhost", 9200)) >>> ElasticExecutor.live,
+  ZLayer.succeed(ElastichConfig("localhost", 9200)) >>> ElasticExecutor.live
 )
 ```
 

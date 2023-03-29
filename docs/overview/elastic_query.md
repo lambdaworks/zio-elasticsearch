@@ -3,13 +3,17 @@ id: overview_elastic_query
 title: "Elastic Query"
 ---
 
-In order to execute Elasticsearch query requests, both for searching and deleting by query, you first must specify the type of the query along with the corresponding parameters for that type. Queries are described with the `ElasticQuery` data type, which can be constructed from the DSL methods found under the following import:
+In order to execute Elasticsearch query requests, both for searching and deleting by query, 
+you first must specify the type of the query along with the corresponding parameters for that type. 
+Queries are described with the `ElasticQuery` data type, which can be constructed from the DSL methods found under the following import:
 
 ```scala
 import zio.elasticsearch.ElasticQuery._
 ```
 
-Query DSL methods that require a field solely accept field types that are defined as Elasticsearch primitives. You can pass field names simply as strings, or you can use the type-safe query methods that make use of ZIO Schema's accessors. An example with a `term` query is shown below:
+Query DSL methods that require a field solely accept field types that are defined as Elasticsearch primitives.
+You can pass field names simply as strings, or you can use the type-safe query methods that make use of ZIO Schema's accessors. 
+An example with a `term` query is shown below:
 
 ```scala
 term("name", "foo bar")
@@ -34,7 +38,7 @@ final case class Name(
 )
 
 object Name {
-  implicit val schema = DeriveSchema.gen[Name]
+  implicit val schema: Schema.CaseClass2[String, String, Address] = DeriveSchema.gen[Name]
 
   val (firstName, lastName) = schema.makeAccessors(ElasticQueryAccessorBuilder)
 }
@@ -42,7 +46,8 @@ object Name {
 final case class EmployeeDocument(id: String, name: Name, degree: String, age: Int)
 
 object EmployeeDocument {
-  implicit val schema = DeriveSchema.gen[EmployeeDocument]
+  implicit val schema: Schema.CaseClass4[String, Name, String, Int, EmployeeDocument] = 
+    DeriveSchema.gen[EmployeeDocument]
 
   val (id, name, degree, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
 }

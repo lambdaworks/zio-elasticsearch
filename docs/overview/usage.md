@@ -3,8 +3,7 @@ id: overview_usage
 title: "Usage"
 ---
 
-In order to get the functional effect of executing a specified `Elasticsearch` request, we must provide the `Elasticsearch` layer to that effect.  We can then call the `execute`method defined in `Elasticsearch` that accepts `ElasticRequest` as parameter.
-To create this layer we also have to provide following layers:
+In order to execute an Elasticsearch request we can rely on the `Elasticsearch` layer which offers an `execute` method accepting an `ElasticRequest`. In order to build the `Elasticsearch` layer we need to provide the following layers:
 
 - `ElasticExecutor` - if you provide `ElasticExecutor.local` it will run on localhost:9200, otherwise if you want to use `ElasticExecutor.live` you will have to provide `ElasticConfig` as well
 - `HttpClientZioBackend`

@@ -33,6 +33,3 @@ resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/r
 
 libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "<snapshot version>"
 ```
-
-Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge above.
-

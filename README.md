@@ -121,7 +121,7 @@ for {
   _ <- Elasticsearch.execute(
     search(
       IndexName("index-name"),
-      must(range(User.id).gte(7).lt(10)).should(startsWith(User.address.name, "ZIO"))
+      must(range(User.id).gte(7).lt(10)).should(startsWith(User.address / Address.street, "ZIO"))
     ).aggregate(aggregation)
   )
 } yield ()
