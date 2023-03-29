@@ -48,7 +48,7 @@ lazy val library =
       libraryDependencies ++= List(
         "com.softwaremill.sttp.client3" %% "zio"             % "3.8.13",
         "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.13",
-        "dev.zio"                       %% "zio-json"        % "0.4.2",
+        "dev.zio"                       %% "zio-json"        % "0.5.0",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC18",
         "dev.zio"                       %% "zio-schema"      % "0.4.9",
         "dev.zio"                       %% "zio-schema-json" % "0.4.9",
