@@ -19,7 +19,7 @@ An example with a `term` query is shown below:
 term("name", "foo bar")
 
 // type-safe method
-term(EmployeeDocument.name, "foo bar")
+term(User.name, "foo bar")
 ```
 
 You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors:
@@ -38,37 +38,40 @@ final case class Name(
 )
 
 object Name {
-  implicit val schema: Schema.CaseClass2[String, String, Address] = DeriveSchema.gen[Name]
+  implicit val schema: Schema.CaseClass2[String, String, Name] = DeriveSchema.gen[Name]
 
-  val (firstName, lastName) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  val (firstName, lastName) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-final case class EmployeeDocument(id: String, name: Name, degree: String, age: Int)
+final case class User(id: String, name: Name, email: String, age: Int)
 
-object EmployeeDocument {
-  implicit val schema: Schema.CaseClass4[String, Name, String, Int, EmployeeDocument] = 
-    DeriveSchema.gen[EmployeeDocument]
+object User {
+  implicit val schema: Schema.CaseClass4[String, Name, String, Int, User] = 
+    DeriveSchema.gen[User]
 
-  val (id, name, degree, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  val (id, name, email, age) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-matches("name.first_name", "foo")
+matches("name.first_name", "John")
 
 // type-safe method
-matches(EmployeeDocument.name / Name.firstName, "foo bar")
+matches(User.name / Name.firstName, "John")
 ```
 
 Type-safe query methods also have a `multiField` parameter, in case you want to use one in queries:
 
 ```scala
-term("degree.keyword", "baz")
+term("email.keyword", "jane.doe@lambdaworks.io")
 
 // type-safe method
-term(EmployeeDocument.degree, multiField = Some("keyword"), "baz")
+term(User.email, multiField = Some("keyword"), "jane.doe@lambdaworks.io")
 ```
 
-Now, after describing a query, you can pass it to the `search`/`deleteByQuery` method to obtain the Elastic request corresponding to that query:
+Now, after describing a query, you can pass it to the `search`/`deleteByQuery` method to obtain the `ElasticRequest` corresponding to that query:
 
 ```scala
-search(IndexName("index"), term("name.first_name.keyword", "foo"))
+search(IndexName("index"), term("name.first_name.keyword", "John"))
+
+// type-safe method
+search(IndexName("index"), term(User.name / Name.firstName, multiField = Some("keyword"), "John"))
 ```

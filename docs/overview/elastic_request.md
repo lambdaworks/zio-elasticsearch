@@ -22,22 +22,22 @@ All the DSL methods for request creation can be brought into scope with the foll
 import zio.elasticsearch.ElasticRequest._
 ```
 
-For methods receiving or returning a document of custom type `A`, you must create a schema for `A`. Here is an example of creating a schema for a custom type `EmployeeDocument`:
+For methods receiving or returning a document of custom type `A`, you must create a schema for `A`. Here is an example of creating a schema for a custom type `User`:
 
 ```scala
 import zio.schema.{DeriveSchema, Schema}
 
-final case class EmployeeDocument(id: String, name: String, degree: String, age: Int)
+final case class User(id: String, name: String, email: String, age: Int)
 
-object EmployeeDocument {
-  implicit val schema: Schema[EmployeeDocument] = DeriveSchema.gen[EmployeeDocument]
+object User {
+  implicit val schema: Schema[User] = DeriveSchema.gen[User]
 }
 ```
 
 As long as we have the implicit schema value in scope, we can call the aforementioned methods, such as `getById`:
 
 ```scala
-import EmployeeDocument._
+import User._
 
-getById[EmployeeDocument](IndexName("index"), DocumentId("documentId"))
+getById[User](IndexName("index"), DocumentId("documentId"))
 ```

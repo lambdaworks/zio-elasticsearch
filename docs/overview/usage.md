@@ -15,8 +15,8 @@ import zio.elasticsearch._
 import zio._
 
 object ZIOElasticsearchExample extends ZIOAppDefault {
-  val indexName = IndexName("test-es-index")
-  val effect: ZIO[Elasticsearch, Throwable, Unit] = for {
+  val indexName = IndexName("index")
+  val effect: RIO[Elasticsearch, Unit] = for {
     _ <- Elasticsearch.execute(createIndex(indexName))
   } yield ()
 

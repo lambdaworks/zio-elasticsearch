@@ -3,7 +3,7 @@ id: overview_streaming
 title: "Streaming"
 ---
 
-Zio-elastic search is streaming friendly library and there are few specific API's that are used for creating ZIO streams. 
+Zio-elastic search is streaming friendly library and there are few specific APIs that are used for creating ZIO streams. 
 Library makes use of two Elasticsearch APIs to create ZIO Stream, and those are Scroll API and Search_after API. 
 When using `Elasticsearch.stream()` method you can provide your own configuration by creating `StreamConfig` object and providing
 it as parameter for method next to `SearchRequest`. If you choose not to provide `StreamConfig` then `StreamConfig.Default` will be used.
@@ -24,8 +24,9 @@ represents your document as raw Json object from ZIO Json library.
 
 ```scala
 for {
-  stream <- Elasticsearch.stream(ElasticRequest.search(secondSearchIndex, range("id").gte(5)))
-  stream <- Elasticsearch.stream(ElasticRequest.search(secondSearchIndex, range("id").gte(5)), StreamConfig.Scroll)
+  request        <- ElasticRequest.search(IndexName("index"), range("id").gte(5))
+  defaultStream  <- Elasticsearch.stream(request)
+  scrollStream   <- Elasticsearch.stream(request, StreamConfig.Scroll)
 } yield ()
 ```
 
@@ -33,14 +34,18 @@ Other than basic `stream` method, library has `streamAs` method that requires ca
 uses ZIO Schema to convert response to case class you provided.
 
 ```scala
-case class User(id: Int, name: String)
+final case class User(id: Int, name: String)
 
 object User {
-  implicit val schema: Schema[User] = DeriveSchema.gen[User]
+  implicit val schema: Schema.CaseClass2[Int, String, User] =
+    DeriveSchema.gen[User]
+
+  val (id, name) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
 for {
-  stream <- Elasticsearch.streamAs[User](ElasticRequest.search(secondSearchIndex, range(User.id).gte(5)))
-  stream <- Elasticsearch.streamAs[User](ElasticRequest.search(secondSearchIndex, range(User.id).gte(5)), StreamConfig.SearchAfter)
+  request           <- ElasticRequest.search(IndexName("index"), range(User.id).gte(5))
+  defaultStream     <- Elasticsearch.streamAs[User](request)
+  searchAfterStream <- Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)
 } yield ()
 ```

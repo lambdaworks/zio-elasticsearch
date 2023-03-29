@@ -14,7 +14,7 @@ must(range("version").gte(7).lt(10)).should(startsWith("name", "ZIO"))
 And if we wanted to specify lower and upper bounds for a `range` query:
 
 ```scala
-range(EmployeeDocument.age).gte(18).lt(100)
+range(User.age).gte(18).lt(100)
 ```
 
 Fluent API is also supported for parameters like `routing` and `refresh`, for example, if we wanted to add routing and refresh parameters to a `deleteById` request:
@@ -31,7 +31,7 @@ termsAggregation(name = "firstAggregation", field = "day_of_week")
             .withAgg(termsAggregation(name = "secondAggregation", field = "customer_age"))
 ```
 
-Creating `sort` also supports fluent API, as it is shown in code below 
+Creating `sort` also supports fluent API, as it is shown in the code below:
 
 ```scala
 sortBy("day_of_week").mode(Avg)

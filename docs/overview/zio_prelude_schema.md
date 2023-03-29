@@ -5,7 +5,7 @@ title: "Use of ZIO Prelude and Schema"
 
 [ZIO Prelude](https://zio.github.io/zio-prelude/docs/overview/overview_index) is a library focused on providing a core set of functional data types and abstractions that can help you solve a variety of day to day problems.
 
-### Typesafety with ZIO-prelude's NewType
+### Type-safety with ZIO-prelude's NewType
 
 New Types provide zero overhead newtypes and refined newtypes to allow you to increase the type safety of your code base with zero overhead and minimal boilerplate.
 The library uses ZIO Prelude's NewType for `IndexName`, `DocumentId` and `Routing` in order to preserve type safety and have strings validated when these types are being created.
