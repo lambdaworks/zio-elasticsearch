@@ -23,7 +23,7 @@ import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
 import zio.prelude.Validation
 import zio.test.Assertion.equalTo
-import zio.test._
+import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
 object QueryDSLSpec extends ZIOSpecDefault {
 
@@ -53,15 +53,15 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Filter` query from two Match queries") {
           val query = filter(
-            matches(field = "day_of_week", value = "Monday"),
+            matches(field = TestDocument.stringField, value = "StringField"),
             matches(field = "customer_gender", value = "MALE")
           )
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = List(
-                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "stringField", value = "StringField"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
                 must = Nil,
@@ -74,15 +74,15 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Filter` query with boost from two Match queries") {
           val query = filter(
-            matches(field = "day_of_week", value = "Monday"),
+            matches(field = TestDocument.stringField, value = "StringField"),
             matches(field = "customer_gender", value = "MALE")
           ).boost(1.0)
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = List(
-                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "stringField", value = "StringField"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
                 must = Nil,
@@ -95,14 +95,17 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Must` query from two Match queries") {
           val query =
-            must(matches(field = "day_of_week", value = "Monday"), matches(field = "customer_gender", value = "MALE"))
+            must(
+              matches(field = TestDocument.stringField, value = "StringField"),
+              matches(field = "customer_gender", value = "MALE")
+            )
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = Nil,
                 must = List(
-                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "stringField", value = "StringField"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
                 mustNot = Nil,
@@ -115,17 +118,17 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("successfully create `MustNot` query from two Match queries") {
           val query =
             mustNot(
-              matches(field = "day_of_week", value = "Monday"),
+              matches(field = TestDocument.stringField, value = "StringField"),
               matches(field = "customer_gender", value = "MALE")
             )
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = Nil,
                 must = Nil,
                 mustNot = List(
-                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "stringField", value = "StringField"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
                 should = Nil,
@@ -136,18 +139,18 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Should` query from two Match queries") {
           val query = should(
-            matches(field = "day_of_week", value = "Monday"),
+            matches(field = TestDocument.stringField, value = "StringField"),
             matches(field = "customer_gender", value = "MALE")
           )
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = Nil,
                 must = Nil,
                 mustNot = Nil,
                 should = List(
-                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "stringField", value = "StringField"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
                 boost = None
@@ -157,22 +160,22 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Filter/Must/MustNot/Should` mixed query with Filter containing two Match queries") {
           val query = filter(
-            matches(field = "day_of_week", value = "Monday"),
+            matches(field = TestDocument.stringField, value = "StringField"),
             matches(field = "customer_gender", value = "MALE")
           )
             .must(matches(field = "customer_age", value = 23))
-            .mustNot(matches(field = "day_of_month", value = 17))
+            .mustNot(matches(field = TestDocument.intField, value = 17))
             .should(matches(field = "customer_id", value = 1))
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = List(
-                  Match(field = "day_of_week", value = "Monday"),
+                  Match(field = "stringField", value = "StringField"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
                 must = List(Match(field = "customer_age", value = 23)),
-                mustNot = List(Match(field = "day_of_month", value = 17)),
+                mustNot = List(Match(field = "intField", value = 17)),
                 should = List(Match(field = "customer_id", value = 1)),
                 boost = None
               )
@@ -181,20 +184,23 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Filter/Must/MustNot/Should` mixed query with Must containing two Match queries") {
           val query = filter(matches(field = "customer_id", value = 1))
-            .must(matches(field = "day_of_week", value = "Monday"), matches(field = "customer_gender", value = "MALE"))
-            .mustNot(matches(field = "day_of_month", value = 17))
-            .should(matches(field = "customer_age", value = 23))
+            .must(
+              matches(field = TestDocument.stringField, value = "StringField1"),
+              matches(field = TestDocument.stringField, value = "StringField2")
+            )
+            .mustNot(matches(field = TestDocument.intField, value = 17))
+            .should(matches(field = TestDocument.doubleField, value = 23.0))
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = List(Match(field = "customer_id", value = 1)),
                 must = List(
-                  Match(field = "day_of_week", value = "Monday"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField1"),
+                  Match(field = "stringField", value = "StringField2")
                 ),
-                mustNot = List(Match(field = "day_of_month", value = 17)),
-                should = List(Match(field = "customer_age", value = 23)),
+                mustNot = List(Match(field = "intField", value = 17)),
+                should = List(Match(field = "doubleField", value = 23.0)),
                 boost = None
               )
             )
@@ -202,23 +208,23 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Filter/Must/MustNot/Should` mixed query with MustNot containing two Match queries") {
           val query = filter(matches(field = "customer_id", value = 1))
-            .must(matches(field = "day_of_month", value = 17))
+            .must(matches(field = TestDocument.intField, value = 17))
             .mustNot(
               matches(field = "day_of_week", value = "Monday"),
               matches(field = "customer_gender", value = "MALE")
             )
-            .should(matches(field = "customer_age", value = 23))
+            .should(matches(field = TestDocument.intField, value = 23))
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = List(Match(field = "customer_id", value = 1)),
-                must = List(Match(field = "day_of_month", value = 17)),
+                must = List(Match(field = "intField", value = 17)),
                 mustNot = List(
                   Match(field = "day_of_week", value = "Monday"),
                   Match(field = "customer_gender", value = "MALE")
                 ),
-                should = List(Match(field = "customer_age", value = 23)),
+                should = List(Match(field = "intField", value = 23)),
                 boost = None
               )
             )
@@ -226,7 +232,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("successfully create `Filter/Must/MustNot/Should` mixed query with Should containing two Match queries") {
           val query = filter(matches(field = "customer_id", value = 1))
-            .must(matches(field = "customer_age", value = 23))
+            .must(matches(field = TestDocument.intField, value = 23))
             .mustNot(matches(field = "day_of_month", value = 17))
             .should(
               matches(field = "day_of_week", value = "Monday"),
@@ -235,9 +241,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              Bool[Any](
+              Bool[TestDocument](
                 filter = List(Match(field = "customer_id", value = 1)),
-                must = List(Match(field = "customer_age", value = 23)),
+                must = List(Match(field = "intField", value = 23)),
                 mustNot = List(Match(field = "day_of_month", value = 17)),
                 should = List(
                   Match(field = "day_of_week", value = "Monday"),
@@ -249,19 +255,19 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create `Filter/Must/MustNot/Should` mixed query with boost") {
-          val query = filter(matches(field = "customer_id", value = 1))
-            .must(matches(field = "customer_age", value = 23))
-            .mustNot(matches(field = "day_of_month", value = 17))
-            .should(matches(field = "day_of_week", value = "Monday"))
+          val query = filter(matches(field = TestDocument.intField, value = 1))
+            .must(matches(field = TestDocument.doubleField, value = 23.0))
+            .mustNot(matches(field = TestDocument.intField, value = 17))
+            .should(matches(field = TestDocument.stringField, value = "StringField"))
             .boost(1.0)
 
           assert(query)(
             equalTo(
-              Bool[Any](
-                filter = List(Match(field = "customer_id", value = 1)),
-                must = List(Match(field = "customer_age", value = 23)),
-                mustNot = List(Match(field = "day_of_month", value = 17)),
-                should = List(Match(field = "day_of_week", value = "Monday")),
+              Bool[TestDocument](
+                filter = List(Match(field = "intField", value = 1)),
+                must = List(Match(field = "doubleField", value = 23.0)),
+                mustNot = List(Match(field = "intField", value = 17)),
+                should = List(Match(field = "stringField", value = "StringField")),
                 boost = Some(1.0)
               )
             )

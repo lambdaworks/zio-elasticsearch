@@ -424,7 +424,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
                            .refreshTrue
                        )
-                  query = range("doubleField").gte(100) // todo here double
+                  query = range(TestDocument.doubleField).gte(100.0)
                   res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield assert(res)(isNonEmpty)
             }
@@ -565,14 +565,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .refreshTrue
                        )
-                  query = range("intField").gte(20)
+                  query = range(TestDocument.intField).gte(20)
                   res <- Executor
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
                                .sortBy(
-                                 sortBy("intField").order(Desc),
-                                 sortBy("dateField").order(Asc).format("strict_date_optional_time_nanos")
+                                 sortBy(TestDocument.intField).order(Desc),
+                                 sortBy(TestDocument.dateField).order(Asc).format("strict_date_optional_time_nanos")
                                )
                            )
                            .documentAs[TestDocument]
@@ -606,7 +606,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .refreshTrue
                        )
-                  query = range("intField").gte(20)
+                  query = range(TestDocument.intField).gte(20)
                   res <- Executor
                            .execute(
                              ElasticRequest
@@ -675,7 +675,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
                            .refreshTrue
                        )
-                  query = range("doubleField").gte(100) // todo double
+                  query = range(TestDocument.doubleField).gte(100.0)
                   res  <- Executor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
                 } yield assert(res)(isNonEmpty)
             }
@@ -696,7 +696,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
-                query = range("doubleField").gte(100) // todo double
+                query = range(TestDocument.doubleField).gte(100.0)
                 res <- Executor
                          .stream(
                            ElasticRequest.search(secondSearchIndex, query)
@@ -722,7 +722,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
-                query = range("doubleField").gte(100) // todo double
+                query = range(TestDocument.doubleField).gte(100.0)
                 res <- Executor
                          .streamAs[TestDocument](ElasticRequest.search(secondSearchIndex, query))
                          .run(sink)
@@ -737,7 +737,7 @@ object HttpExecutorSpec extends IntegrationSpec {
 
             for {
               _    <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-              query = range("doubleField").gte(100) // todo double
+              query = range(TestDocument.doubleField).gte(100.0)
               res  <- Executor.stream(ElasticRequest.search(firstSearchIndex, query)).run(sink)
             } yield assert(res)(hasSize(equalTo(0)))
           } @@ around(
@@ -760,7 +760,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
-                query = range("doubleField").gte(100) // todo double
+                query = range(TestDocument.doubleField).gte(100.0)
                 res <- Executor
                          .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.SearchAfter)
                          .run(sink)
@@ -786,7 +786,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
-                query = range("doubleField").gte(100) // todo double
+                query = range(TestDocument.doubleField).gte(100.0)
                 res <- Executor
                          .stream(
                            ElasticRequest.search(secondSearchIndex, query),
@@ -813,7 +813,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
-                query = range("doubleField").gte(100) // todo double
+                query = range(TestDocument.doubleField).gte(100.0)
                 res <- Executor
                          .streamAs[TestDocument](
                            ElasticRequest.search(secondSearchIndex, query),
@@ -841,7 +841,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                          .refreshTrue
                      )
-                query = range("doubleField").gte(200) // todo double
+                query = range(TestDocument.doubleField).gte(200.0)
                 res <- Executor
                          .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.SearchAfter)
                          .run(sink)
@@ -882,7 +882,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .refreshTrue
                        )
-                  deleteQuery = range("doubleField").gte(300) // todo double
+                  deleteQuery = range(TestDocument.doubleField).gte(300.0)
                   _ <- Executor
                          .execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
                   res <- Executor
