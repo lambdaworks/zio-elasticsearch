@@ -40,16 +40,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryLong)(equalTo(Match[Any, Long](field = "day_of_week", value = 1)))
         },
         test("successfully create type-safe Match query using `matches` method") {
-          val queryString = matches(field = UserDocument.name, value = "Name")
-          val queryInt    = matches(field = UserDocument.age, value = 39)
+          val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
+          val queryInt    = matches(field = TestSubDocument.intField, value = 39)
 
-          assert(queryString)(equalTo(Match[UserDocument, String](field = "name", value = "Name"))) &&
-          assert(queryInt)(equalTo(Match[UserDocument, Int](field = "age", value = 39)))
+          assert(queryString)(equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField"))) &&
+          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39)))
         },
         test("successfully create type-safe Match query with multi-field using `matches` method") {
-          val query = matches(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
+          val query = matches(field = TestSubDocument.stringField, multiField = Some("keyword"), value = "StringField")
 
-          assert(query)(equalTo(Match[UserDocument, String](field = "name.keyword", value = "Name")))
+          assert(query)(equalTo(Match[TestSubDocument, String](field = "stringField.keyword", value = "StringField")))
         },
         test("successfully create `Filter` query from two Match queries") {
           val query = filter(
@@ -273,9 +273,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(equalTo(Exists[Any](field = "day_of_week")))
         },
         test("successfully create Exists Query with accessor") {
-          val query = exists(field = UserDocument.name)
+          val query = exists(field = TestSubDocument.stringField)
 
-          assert(query)(equalTo(Exists[UserDocument](field = "name")))
+          assert(query)(equalTo(Exists[TestSubDocument](field = "stringField")))
         },
         test("successfully create MatchAll Query") {
           val query = matchAll
@@ -302,12 +302,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create type-safe Nested Query with MatchAll Query") {
-          val query = nested(path = UserDocument.items, query = matchAll)
+          val query = nested(path = TestDocument.subDocumentList, query = matchAll)
 
           assert(query)(
             equalTo(
-              Nested[UserDocument](
-                path = "items",
+              Nested[TestDocument](
+                path = "subDocumentList",
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None
@@ -416,13 +416,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create empty type-safe Range Query") {
-          val queryString = range(field = UserDocument.name)
-          val queryInt    = range(field = UserDocument.age)
+          val queryString = range(field = TestSubDocument.stringField)
+          val queryInt    = range(field = TestSubDocument.intField)
 
           assert(queryString)(
             equalTo(
-              Range[UserDocument, String, Unbounded.type, Unbounded.type](
-                field = "name",
+              Range[TestSubDocument, String, Unbounded.type, Unbounded.type](
+                field = "stringField",
                 lower = Unbounded,
                 upper = Unbounded,
                 boost = None
@@ -431,8 +431,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) &&
           assert(queryInt)(
             equalTo(
-              Range[UserDocument, Int, Unbounded.type, Unbounded.type](
-                field = "age",
+              Range[TestSubDocument, Int, Unbounded.type, Unbounded.type](
+                field = "intField",
                 lower = Unbounded,
                 upper = Unbounded,
                 boost = None
@@ -441,12 +441,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create empty type-safe Range Query with multi-field") {
-          val query = range(field = UserDocument.name, multiField = Some("keyword"))
+          val query = range(field = TestSubDocument.stringField, multiField = Some("keyword"))
 
           assert(query)(
             equalTo(
-              Range[UserDocument, String, Unbounded.type, Unbounded.type](
-                field = "name.keyword",
+              Range[TestSubDocument, String, Unbounded.type, Unbounded.type](
+                field = "stringField.keyword",
                 lower = Unbounded,
                 upper = Unbounded,
                 boost = None
@@ -546,26 +546,33 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create type-safe Term Query") {
-          val queryString = term(field = UserDocument.name, value = "Name")
-          val queryInt    = term(field = UserDocument.age, value = 39)
+          val queryString = term(field = TestSubDocument.stringField, value = "StringField")
+          val queryInt    = term(field = TestSubDocument.intField, value = 39)
 
           assert(queryString)(
             equalTo(
-              Term[UserDocument, String](field = "name", value = "Name", boost = None, caseInsensitive = None)
+              Term[TestSubDocument, String](
+                field = "stringField",
+                value = "StringField",
+                boost = None,
+                caseInsensitive = None
+              )
             )
           ) &&
           assert(queryInt)(
-            equalTo(Term[UserDocument, Int](field = "age", value = 39, boost = None, caseInsensitive = None))
+            equalTo(
+              Term[TestSubDocument, Int](field = "intField", value = 39, boost = None, caseInsensitive = None)
+            )
           )
         },
         test("successfully create type-safe Term Query with multi-field") {
-          val query = term(field = UserDocument.name, multiField = Some("keyword"), value = "Name")
+          val query = term(field = TestSubDocument.stringField, multiField = Some("keyword"), value = "StringField")
 
           assert(query)(
             equalTo(
-              Term[UserDocument, String](
-                field = "name.keyword",
-                value = "Name",
+              Term[TestSubDocument, String](
+                field = "stringField.keyword",
+                value = "StringField",
                 boost = None,
                 caseInsensitive = None
               )
@@ -639,18 +646,24 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create type-safe Wildcard Query") {
-          val wildcardQuery1 = contains(field = UserDocument.name, value = "M")
-          val wildcardQuery2 = startsWith(field = UserDocument.name, value = "M")
-          val wildcardQuery3 = wildcard(field = UserDocument.name, value = "M*")
+          val wildcardQuery1 = contains(field = TestSubDocument.stringField, value = "M")
+          val wildcardQuery2 = startsWith(field = TestSubDocument.stringField, value = "M")
+          val wildcardQuery3 = wildcard(field = TestSubDocument.stringField, value = "M*")
 
           assert(wildcardQuery1)(
-            equalTo(Wildcard[UserDocument](field = "name", value = "*M*", boost = None, caseInsensitive = None))
+            equalTo(
+              Wildcard[TestSubDocument](field = "stringField", value = "*M*", boost = None, caseInsensitive = None)
+            )
           ) &&
           assert(wildcardQuery2)(
-            equalTo(Wildcard[UserDocument](field = "name", value = "M*", boost = None, caseInsensitive = None))
+            equalTo(
+              Wildcard[TestSubDocument](field = "stringField", value = "M*", boost = None, caseInsensitive = None)
+            )
           ) &&
           assert(wildcardQuery3)(
-            equalTo(Wildcard[UserDocument](field = "name", value = "M*", boost = None, caseInsensitive = None))
+            equalTo(
+              Wildcard[TestSubDocument](field = "stringField", value = "M*", boost = None, caseInsensitive = None)
+            )
           )
         },
         test("successfully create Wildcard Query with boost") {
@@ -1421,19 +1434,23 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("properly encode Bulk request body") {
           val bulkQuery = IndexName.make("users").map { index =>
-            val user =
-              UserDocument(id = "WeeMwR5d5", name = "Name", address = "Address", balance = 1000, age = 24, items = Nil)
+            val nestedField = NestedField("NestedField", 1)
+            val subDoc = TestSubDocument(
+              stringField = "StringField",
+              nestedField = nestedField,
+              intField = 100,
+              intFieldList = Nil
+            )
             val req1 =
               ElasticRequest
-                .create[UserDocument](index, DocumentId("ETux1srpww2ObCx"), user.copy(age = 39))
-                .routing(Routing(user.id))
-            val req2 = ElasticRequest.create[UserDocument](index, user).routing(Routing(user.id))
-            val req3 =
-              ElasticRequest
-                .upsert[UserDocument](index, DocumentId("yMyEG8iFL5qx"), user.copy(balance = 3000))
-                .routing(Routing(user.id))
+                .create[TestSubDocument](index, DocumentId("ETux1srpww2ObCx"), subDoc.copy(intField = 65))
+                .routing(Routing(subDoc.stringField))
+            val req2 = ElasticRequest.create[TestSubDocument](index, subDoc).routing(Routing(subDoc.stringField))
+            val req3 = ElasticRequest
+              .upsert[TestSubDocument](index, DocumentId("yMyEG8iFL5qx"), subDoc.copy(stringField = "StringField2"))
+              .routing(Routing(subDoc.stringField))
             val req4 =
-              ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(Routing(user.id))
+              ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(Routing(subDoc.stringField))
             ElasticRequest.bulk(req1, req2, req3, req4) match {
               case r: Bulk => Some(r.body)
               case _       => None
@@ -1441,13 +1458,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
           }
 
           val expectedBody =
-            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "WeeMwR5d5" } }
-               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":39,"items":[]}
-               |{ "create" : { "_index" : "users", "routing" : "WeeMwR5d5" } }
-               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":1000.0,"age":24,"items":[]}
-               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx", "routing" : "WeeMwR5d5" } }
-               |{"id":"WeeMwR5d5","name":"Name","address":"Address","balance":3000.0,"age":24,"items":[]}
-               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "WeeMwR5d5" } }
+            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "StringField" } }
+               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":65,"intFieldList":[]}
+               |{ "create" : { "_index" : "users", "routing" : "StringField" } }
+               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
+               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx", "routing" : "StringField" } }
+               |{"stringField":"StringField2","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
+               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "StringField" } }
                |""".stripMargin
 
           assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))

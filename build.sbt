@@ -42,7 +42,7 @@ lazy val library =
     .disablePlugins(RevolverPlugin)
     .settings(stdSettings("zio-elasticsearch"))
     .settings(scalacOptions += "-language:higherKinds")
-    .configs(IntegrationTest)
+    .configs(IntegrationTest.extend(Test))
     .settings(
       Defaults.itSettings,
       libraryDependencies ++= List(
