@@ -15,11 +15,11 @@ import zio._
 
 object ZIOElasticsearchExample extends ZIOAppDefault {
   val indexName = IndexName("index")
-  val effect: RIO[Elasticsearch, CreationOutcome] =
+  val result: RIO[Elasticsearch, CreationOutcome] =
     Elasticsearch.execute(ElasticRequest.createIndex(indexName))
 
   override def run =
-    effect.provide(
+    result.provide(
       ElasticExecutor.local,
       Elasticsearch.layer,
       HttpClientZioBackend.layer()
