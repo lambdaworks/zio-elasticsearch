@@ -16,16 +16,17 @@ You can pass field names simply as strings, or you can use the type-safe query m
 An example with a `term` query is shown below:
 
 ```scala
-term("name", "foo bar")
+term("name", "John Doe")
 
 // type-safe method
-term(User.name, "foo bar")
+term(field = User.name, value = "John Doe")
 ```
 
 You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors:
 
 ```scala
-import zio.elasticsearch.ElasticQueryAccessorBuilder
+import zio._
+import zio.elasticsearch._
 import zio.elasticsearch.ElasticQuery._
 import zio.schema.annotation.fieldName
 import zio.schema.{DeriveSchema, Schema}
@@ -52,26 +53,26 @@ object User {
   val (id, name, email, age) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-matches("name.first_name", "John")
+matches(field = "name.first_name", value = "John")
 
 // type-safe method
-matches(User.name / Name.firstName, "John")
+matches(field = User.name / Name.firstName, value = "John")
 ```
 
 Type-safe query methods also have a `multiField` parameter, in case you want to use one in queries:
 
 ```scala
-term("email.keyword", "jane.doe@lambdaworks.io")
+term(field = "email.keyword", value = "jane.doe@lambdaworks.io")
 
 // type-safe method
-term(User.email, multiField = Some("keyword"), "jane.doe@lambdaworks.io")
+term(field = User.email, multiField = Some("keyword"), value = "jane.doe@lambdaworks.io")
 ```
 
 Now, after describing a query, you can pass it to the `search`/`deleteByQuery` method to obtain the `ElasticRequest` corresponding to that query:
 
 ```scala
-search(IndexName("index"), term("name.first_name.keyword", "John"))
+ElasticRequest.search(IndexName("index"), term(field = "name.first_name.keyword", value = "John"))
 
 // type-safe method
-search(IndexName("index"), term(User.name / Name.firstName, multiField = Some("keyword"), "John"))
+ElasticRequest.search(IndexName("index"), term(field = User.name / Name.firstName, multiField = Some("keyword"), value = "John"))
 ```

@@ -12,9 +12,7 @@ title: "Summary"
 
 [scala-version-badge]: https://img.shields.io/badge/scala-2.13.10-blue?logo=scala&color=red
 
-## Overview
-
-ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.
+ZIO Elasticsearch is a type-safe and streaming-friendly ZIO native Elasticsearch client.
 
 The library depends on sttp as an HTTP client for executing requests, and other ZIO libraries such as ZIO Schema and ZIO Prelude.
 
@@ -23,13 +21,3 @@ The following versions are supported:
 - ZIO: 2
 - Elasticsearch: 7
 - JVM 11+
-
-## Installation
-
-To use ZIO Elasticsearch in your project, add the following to your `build.sbt` file:
-
-```scala
-resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"
-
-libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "<snapshot version>"
-```

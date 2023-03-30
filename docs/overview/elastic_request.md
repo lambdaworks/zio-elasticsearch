@@ -37,7 +37,5 @@ object User {
 As long as we have the implicit schema value in scope, we can call the aforementioned methods, such as `getById`:
 
 ```scala
-import User._
-
 getById[User](IndexName("index"), DocumentId("documentId"))
 ```

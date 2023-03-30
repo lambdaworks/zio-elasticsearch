@@ -61,8 +61,8 @@ object ZIOElasticsearchExample extends ZIOAppDefault {
 The library uses ZIO Prelude's new type for `IndexName`, `DocumentId` and `Routing` in order to preserve type-safety.
 
 ```scala
-val indexName: IndexName = IndexName("index")
-val docId: DocumentId    = DocumentId("documentId")
+val indexName: IndexName   = IndexName("index")
+val documentId: DocumentId = DocumentId("documentId")
 ```
 
 ### Fluent API
@@ -137,7 +137,7 @@ val request: SearchAndAggregateRequest =
     .search(IndexName("index"), query)
     .aggregate(aggregation)
 
-Elasticsearch.execute(request)
+val result: RIO[Elasticsearch, SearchResult] = Elasticsearch.execute(request)
 ```
 
 ### Streaming
