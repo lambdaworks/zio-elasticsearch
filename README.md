@@ -65,40 +65,6 @@ val indexName: IndexName   = IndexName("index")
 val documentId: DocumentId = DocumentId("documentId")
 ```
 
-### Fluent API
-
-ZIO Elastic requests and queries offer a fluent API, allowing us to provide optional parameters in chained method calls for each request or query.
-For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
-
-```scala
-ElasticRequest.deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
-```
-
-Creating complex queries can be created in the following manner:
-
-```scala
-ElasticQuery.must(ElasticQuery.range("version").gte(7).lt(10)).should(ElasticQuery.startsWith("name", "ZIO"))
-```
-
-If we want to specify lower and upper bounds for a `range` query, we can do the following:
-
-```scala
-ElasticQuery.range(User.age).gte(18).lt(100)
-```
-
-### Bulkable
-
-ZIO Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
-For bulkable requests, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
-
-```scala
-ElasticRequest.bulk(
-  ElasticRequest.create[User](indexName, User(1, "John Doe")),
-  ElasticRequest.create[User](indexName, DocumentId("documentId2"), User(2, "Jane Doe")),
-  ElasticRequest.upsert[User](indexName, DocumentId("documentId3"), User(3, "Richard Roe")),
-  ElasticRequest.deleteById(indexName, DocumentId("documentId2"))
-)
-```
 
 ### Usage of ZIO Schema and its accessors for type-safety
 
@@ -139,6 +105,42 @@ val request: SearchAndAggregateRequest =
 
 val result: RIO[Elasticsearch, SearchResult] = Elasticsearch.execute(request)
 ```
+
+### Fluent API
+
+ZIO Elastic requests and queries offer a fluent API, allowing us to provide optional parameters in chained method calls for each request or query.
+For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
+
+```scala
+ElasticRequest.deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
+```
+
+Creating complex queries can be created in the following manner:
+
+```scala
+ElasticQuery.must(ElasticQuery.range("version").gte(7).lt(10)).should(ElasticQuery.startsWith("name", "ZIO"))
+```
+
+If we want to specify lower and upper bounds for a `range` query, we can do the following:
+
+```scala
+ElasticQuery.range(User.age).gte(18).lt(100)
+```
+
+### Bulkable
+
+ZIO Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
+For bulkable requests, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
+
+```scala
+ElasticRequest.bulk(
+  ElasticRequest.create[User](indexName, User(1, "John Doe")),
+  ElasticRequest.create[User](indexName, DocumentId("documentId2"), User(2, "Jane Doe")),
+  ElasticRequest.upsert[User](indexName, DocumentId("documentId3"), User(3, "Richard Roe")),
+  ElasticRequest.deleteById(indexName, DocumentId("documentId2"))
+)
+```
+
 
 ### Streaming
 
