@@ -14,7 +14,7 @@ title: "Summary"
 
 ## Overview
 
-ZIO Elasticsearch is a type-safe, testable, and streaming-friendly ZIO native Elasticsearch client.
+ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.
 
 The library depends on sttp as an HTTP client for executing requests, and other ZIO libraries such as ZIO Schema and ZIO Prelude.
 

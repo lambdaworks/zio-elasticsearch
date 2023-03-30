@@ -26,8 +26,8 @@ You can pass field names simply as strings, or you can use the type-safe query m
 Here is an example of creating schema for custom type `User` and using implicit schema to create accessors which results in type safe query methods.
 You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors, as shown below.
 
-If your field name has different naming in Elasticsearch index then you can use `@fieldName("")` annotation, in which case library
-will use name from annotation when making request as you can see in `User` case class for `id` field
+If your field name has different naming in Elasticsearch's index then you can use `@fieldName("")` annotation, in which case library
+will use name from annotation when making the request as you can see in `User` case class for `id` field.
 
 ```scala
 final case class Address(street: String, number: Int)

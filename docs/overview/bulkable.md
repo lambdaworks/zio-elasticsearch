@@ -6,7 +6,7 @@ title: "Bulkable"
 If you want to use Elasticsearch's Bulk API you can do so using the `bulk` method.
 The `bulk` method accepts a sequence of bulkable requests which are `ElasticRequest` that inherit the `Bulkable` trait.
 Bulk API for Elasticsearch supports only index, create, delete, and update actions and for that reason,
-you can use only `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` in your bulkable requests. 
+you can use only `Create`, `CreateOrUpdate`, `CreateWithId` and `DeleteById` in your bulkable requests. 
 
 
 ```scala
