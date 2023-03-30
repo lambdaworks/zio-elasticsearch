@@ -48,8 +48,8 @@ object Elasticsearch {
   def streamAs[A: Schema](request: SearchRequest): ZStream[Elasticsearch, Throwable, A] =
     ZStream.serviceWithStream[Elasticsearch](_.streamAs[A](request))
 
-  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): ZStream[Executor, Throwable, A] =
-    ZStream.serviceWithStream[Executor](_.streamAs[A](request, config))
+  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): ZStream[Elasticsearch, Throwable, A] =
+    ZStream.serviceWithStream[Elasticsearch](_.streamAs[A](request, config))
 
   lazy val layer: URLayer[Executor, Elasticsearch] =
     ZLayer.fromFunction { (executor: Executor) =>
