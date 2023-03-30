@@ -14,7 +14,7 @@ deleteById(IndexName("index"), DocumentId("documentId"))
 ```
 
 As you can see above, index names and document IDs are represented with `IndexName` and `DocumentId` respectively,
-using new types from ZIO Prelude, in order to increase type-safety with no runtime overhead. 
+using Newtypes from ZIO Prelude, in order to increase type-safety with no runtime overhead. 
 `IndexName` also validates the passed string according to Elasticsearch's naming criteria at compile-time using the `apply` method,
 or with `make` at runtime when dealing with a runtime value as an argument.
 

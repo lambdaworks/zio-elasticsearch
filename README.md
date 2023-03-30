@@ -56,9 +56,9 @@ object ZIOElasticsearchExample extends ZIOAppDefault {
 ```
 
 
-### Type-safety with ZIO Prelude's new type
+### Type-safety with ZIO Prelude's Newtype
 
-The library uses ZIO Prelude's new type for `IndexName`, `DocumentId` and `Routing` in order to preserve type-safety.
+The library uses ZIO Prelude's Newtype for `IndexName`, `DocumentId` and `Routing` in order to preserve type-safety.
 
 ```scala
 val indexName: IndexName   = IndexName("index")

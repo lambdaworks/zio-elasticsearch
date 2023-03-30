@@ -16,6 +16,15 @@ You can pass field names simply as strings, or you can use the type-safe query m
 An example with a `term` query is shown below:
 
 ```scala
+final case class User(id: Int, name: String)
+
+object User {
+  implicit val schema: Schema.CaseClass2[Int, String, User] =
+    DeriveSchema.gen[User]
+
+  val (id, name) = schema.makeAccessors(FieldAccessorBuilder)
+}
+
 term("name", "John Doe")
 
 // type-safe method

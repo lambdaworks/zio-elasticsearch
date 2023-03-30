@@ -19,20 +19,7 @@ and `keepAliveFor` (used to tell Elasticsearch how long should search be kept al
 StreamConfig(searchAfter = false, keepAlive = "5m", pageSize = Some(100))
 ```
 
-When using the `stream` method the result will be a stream of type `Item` which contains a `raw` field that represents a document using the `Json` type from the ZIO JSON library.
-
-```scala
-val request: SearchRequest =
-  ElasticRequest.search(IndexName("index"), ElasticQuery.range("id").gte(5))
-
-val defaultStream: ZStream[Elasticsearch, Throwable, Item] =
-  Elasticsearch.stream(request)
-
-val scrollStream: ZStream[Elasticsearch, Throwable, Item]  =
-  Elasticsearch.stream(request, StreamConfig.Scroll)
-```
-
-Besides the basic `stream` method, the library also offers `streamAs[A]`, which parses the results into the desired type `A`, relying on an implicit schema for `A`.
+When using the `streamAs[A]` method, results are parsed into the desired type `A`, relying on an implicit schema for `A`.
 
 ```scala
 final case class User(id: Int, name: String)
@@ -49,4 +36,17 @@ val request: SearchRequest =
 
 val searchAfterStream: ZStream[Elasticsearch, Throwable, User] =
   Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)
+```
+
+Besides the type-safe `streamAs[A]` method, the library offers a basic `stream` method, which result will be a stream of type `Item` which contains a `raw` field that represents a document using the `Json` type from the ZIO JSON library.
+
+```scala
+val request: SearchRequest =
+  ElasticRequest.search(IndexName("index"), ElasticQuery.range("id").gte(5))
+
+val defaultStream: ZStream[Elasticsearch, Throwable, Item] =
+  Elasticsearch.stream(request)
+
+val scrollStream: ZStream[Elasticsearch, Throwable, Item]  =
+  Elasticsearch.stream(request, StreamConfig.Scroll)
 ```

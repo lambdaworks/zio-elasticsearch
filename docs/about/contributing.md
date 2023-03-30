@@ -15,7 +15,7 @@ We welcome contributions from anybody wishing to participate. All code or docume
    
 4. When your work is completed, verify it with following commands:
 
-    ```
+    ```shell
     sbt check
     sbt +test
     ```
@@ -32,6 +32,6 @@ We welcome contributions from anybody wishing to participate. All code or docume
 
 - Follow the structure of the code in this repository, and the formatting rules used. You can format your code properly with the following command:
 
-    ```
+    ```shell
     sbt prepare
     ```

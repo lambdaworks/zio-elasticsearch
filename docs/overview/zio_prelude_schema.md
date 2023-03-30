@@ -8,7 +8,7 @@ title: "Use of ZIO Prelude and Schema"
 ### Type-safety with ZIO Prelude's Newtype
 
 Newtypes provide zero overhead new types and refined new types to allow you to increase the type-safety of your code base with zero overhead and minimal boilerplate.
-The library uses ZIO Prelude's Newtype for `IndexName`, `DocumentId`, and `Routing` in order to preserve type-safety and has strings validated when these types are being created.
+The library uses ZIO Prelude's Newtype for `IndexName`, `DocumentId`, and `Routing` in order to preserve type-safety when these types are being created.
 
 ```scala
 val indexName: IndexName   = IndexName("index")
