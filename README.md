@@ -38,15 +38,13 @@ In order to execute an Elasticsearch request we can rely on the `Elasticsearch` 
 
 ```scala
 import sttp.client3.httpclient.zio.HttpClientZioBackend
-import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
 import zio._
 
 object ZIOElasticsearchExample extends ZIOAppDefault {
   val indexName = IndexName("index")
-  val effect: RIO[Elasticsearch, Unit] = for {
-    _ <- Elasticsearch.execute(createIndex(indexName))
-  } yield ()
+  val effect: RIO[Elasticsearch, CreationOutcome] = 
+    Elasticsearch.execute(ElasticRequest.createIndex(indexName))
 
   override def run =
     effect.provide(
@@ -73,7 +71,7 @@ ZIO Elastic requests and queries offer a fluent API, allowing us to provide opti
 For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
 
 ```scala
-deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
+ElasticRequest.deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
 ```
 
 Creating complex queries can be created in the following manner:
@@ -139,8 +137,7 @@ val request: SearchAndAggregateRequest =
     .search(IndexName("index"), query)
     .aggregate(aggregation)
 
-val effect: RIO[Elasticsearch, SearchAndAggregateResult] =
-  Elasticsearch.execute(request)
+Elasticsearch.execute(request)
 ```
 
 ### Streaming
@@ -148,12 +145,17 @@ val effect: RIO[Elasticsearch, SearchAndAggregateResult] =
 ZIO Elasticsearch is a streaming-friendly library, and it provides specific APIs for creating ZIO streams. When using the stream API, the result will be an `Item`, which is a case class that contains only one field, `raw`, that represents your response as raw JSON. Additionally, it is important to note that you can use `StreamConfig` to customize your settings when creating a stream. If you don't use `StreamConfig`, the default settings (`StreamConfig.Default`) will be used.
 
 ```scala
-for {
-  request           <- ElasticRequest.search(IndexName("index"), ElasticQuery.range(User.id).gte(5))
-  defaultStream     <- Elasticsearch.stream(request)
-  scrollStream      <- Elasticsearch.stream(request, StreamConfig.Scroll)
-  searchAfterStream <- Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)
-} yield ()
+val request: SearchRequest =
+  ElasticRequest.search(IndexName("index"), ElasticQuery.range(User.id).gte(5))
+
+val defaultStream: ZStream[Elasticsearch, Throwable, Item] =
+  Elasticsearch.stream(request)
+
+val scrollStream: ZStream[Elasticsearch, Throwable, Item]  =
+  Elasticsearch.stream(request, StreamConfig.Scroll)
+
+val searchAfterStream: ZStream[Elasticsearch, Throwable, User] =
+  Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)
 ```
 
 ## Example
