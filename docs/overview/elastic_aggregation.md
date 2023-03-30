@@ -1,6 +1,6 @@
 ---
 id: overview_elastic_aggregation
-title: "Elastic Aggregation"
+title: "Overview"
 ---
 
 In order to execute Elasticsearch aggregation requests...

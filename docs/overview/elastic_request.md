@@ -1,11 +1,13 @@
 ---
 id: overview_elastic_request
-title: "Elastic Request"
+title: "Overview"
 ---
 
 We can represent an Elasticsearch request as a generic data type that returns a value of type `A`. 
 The library offers a DSL for creating these requests, by specifying their required parameters. 
 For example, we can create a request for deleting a document with a specified index as follows:
+
+Elastic requests for creating and deleting return `CreationOutcome` and `DeletionOutcome` respectively, notifying us on the outcome of the request.
 
 ```scala
 deleteById(IndexName("index"), DocumentId("documentId"))

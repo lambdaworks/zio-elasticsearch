@@ -1,6 +1,6 @@
 ---
 id: overview_elastic_query
-title: "Elastic Query"
+title: "Overview"
 ---
 
 In order to execute Elasticsearch query requests, both for searching and deleting by query, 
