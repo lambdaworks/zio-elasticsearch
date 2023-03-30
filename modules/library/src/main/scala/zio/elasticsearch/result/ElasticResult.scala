@@ -41,8 +41,7 @@ final class AggregationResult private[elasticsearch] (
     ZIO.succeed(aggs)
 }
 
-final class GetResult private[elasticsearch] (private val doc: Option[Item])
-    extends DocumentResult[Option] {
+final class GetResult private[elasticsearch] (private val doc: Option[Item]) extends DocumentResult[Option] {
   def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
     ZIO
       .fromEither(doc match {
@@ -57,8 +56,7 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item])
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-final class SearchResult private[elasticsearch] (private val hits: List[Item])
-    extends DocumentResult[List] {
+final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
