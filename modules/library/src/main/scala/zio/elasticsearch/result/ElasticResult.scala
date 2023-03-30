@@ -31,7 +31,7 @@ private[elasticsearch] sealed trait DocumentResult[F[_]] {
   def documentAs[A: Schema]: Task[F[A]]
 }
 
-private[elasticsearch] final class AggregationResult private[elasticsearch] (
+final class AggregationResult private[elasticsearch] (
   private val aggs: Map[String, AggregationResponse]
 ) extends AggregationsResult {
   def aggregation(name: String): Task[Option[AggregationResponse]] =
@@ -41,7 +41,7 @@ private[elasticsearch] final class AggregationResult private[elasticsearch] (
     ZIO.succeed(aggs)
 }
 
-private[elasticsearch] final class GetResult private[elasticsearch] (private val doc: Option[Item])
+final class GetResult private[elasticsearch] (private val doc: Option[Item])
     extends DocumentResult[Option] {
   def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
     ZIO
@@ -57,7 +57,7 @@ private[elasticsearch] final class GetResult private[elasticsearch] (private val
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-private[elasticsearch] final class SearchResult private[elasticsearch] (private val hits: List[Item])
+final class SearchResult private[elasticsearch] (private val hits: List[Item])
     extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
@@ -67,7 +67,7 @@ private[elasticsearch] final class SearchResult private[elasticsearch] (private 
     }
 }
 
-private[elasticsearch] final class SearchAndAggregateResult private[elasticsearch] (
+final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
   private val aggs: Map[String, AggregationResponse]
 ) extends DocumentResult[List]

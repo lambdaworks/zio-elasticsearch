@@ -7,7 +7,7 @@
 
 ## Overview
 
-ZIO Elasticsearch is a type-safe, testable, and streaming-friendly ZIO native Elasticsearch client.
+ZIO Elasticsearch is a type-safe and streaming-friendly ZIO native Elasticsearch client.
 
 The library depends on sttp as an HTTP client for executing requests, and other ZIO libraries such as ZIO Schema and ZIO Prelude.
 
@@ -79,13 +79,13 @@ deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routin
 Creating complex queries can be created in the following manner:
 
 ```scala
-must(range("version").gte(7).lt(10)).should(startsWith("name", "ZIO"))
+ElasticQuery.must(ElasticQuery.range("version").gte(7).lt(10)).should(ElasticQuery.startsWith("name", "ZIO"))
 ```
 
 If we want to specify lower and upper bounds for a `range` query, we can do the following:
 
 ```scala
-range(User.age).gte(18).lt(100)
+ElasticQuery.range(User.age).gte(18).lt(100)
 ```
 
 ### Bulkable
@@ -94,9 +94,12 @@ ZIO Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `Delet
 For bulkable requests, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
 
 ```scala
-for {
-  _ <- Elasticsearch.execute(bulk(requests: _*)) 
-} yield ()
+ElasticRequest.bulk(
+  ElasticRequest.create[User](indexName, User(1, "John Doe")),
+  ElasticRequest.create[User](indexName, DocumentId("documentId2"), User(2, "Jane Doe")),
+  ElasticRequest.upsert[User](indexName, DocumentId("documentId3"), User(3, "Richard Roe")),
+  ElasticRequest.deleteById(indexName, DocumentId("documentId2"))
+)
 ```
 
 ### Usage of ZIO Schema and its accessors for type-safety
@@ -122,14 +125,22 @@ object User {
   val (id, address) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-for {
-  _ <- Elasticsearch.execute(
-    search(
-      IndexName("index"),
-      must(range(User.id).gte(7).lt(10)).should(startsWith(User.address / Address.street, "ZIO"))
-    ).aggregate(aggregation)
-  )
-} yield ()
+val query: BoolQuery[User] =
+  ElasticQuery
+    .must(ElasticQuery.range(User.id).gte(7).lt(10))
+    .should(ElasticQuery.startsWith(User.address / Address.street, "ZIO"))
+
+val aggregation: TermsAggregation =
+  ElasticAggregation
+    .termsAggregation("termsAgg", User.address / Address.street)
+
+val request: SearchAndAggregateRequest =
+  ElasticRequest
+    .search(IndexName("index"), query)
+    .aggregate(aggregation)
+
+val effect: RIO[Elasticsearch, SearchAndAggregateResult] =
+  Elasticsearch.execute(request)
 ```
 
 ### Streaming
@@ -138,7 +149,7 @@ ZIO Elasticsearch is a streaming-friendly library, and it provides specific APIs
 
 ```scala
 for {
-  request           <- ElasticRequest.search(IndexName("index"), range(User.id).gte(5))
+  request           <- ElasticRequest.search(IndexName("index"), ElasticQuery.range(User.id).gte(5))
   defaultStream     <- Elasticsearch.stream(request)
   scrollStream      <- Elasticsearch.stream(request, StreamConfig.Scroll)
   searchAfterStream <- Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)

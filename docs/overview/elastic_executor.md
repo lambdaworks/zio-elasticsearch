@@ -1,6 +1,6 @@
 ---
 id: overview_elastic_executor
-title: "Elastic Executor"
+title: "Executing Requests"
 ---
 
 In order to get the functional effect of executing a specified Elasticsearch request, you must call the `execute` method defined on it, which returns a `ZIO` that requires an `ElasticExecutor`, fails with a `Throwable` and returns the relevant value `A` for that request.
