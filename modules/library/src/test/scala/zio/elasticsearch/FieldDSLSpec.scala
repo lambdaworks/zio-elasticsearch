@@ -33,7 +33,7 @@ object FieldDSLSpec extends ZIOSpecDefault {
         assertTrue(Field[Nothing, Nothing](Some(Field(None, "address")), "number").toString == "address.number")
       ),
       test("properly encode nested field path using accessors")(
-        assertTrue((TestSubDocument.nestedField / NestedField.longField).toString == "address.longField")
+        assertTrue((TestSubDocument.nestedField / NestedField.longField).toString == "nestedField.longField")
       )
     )
 }
