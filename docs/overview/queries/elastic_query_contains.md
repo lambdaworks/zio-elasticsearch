@@ -1,5 +1,5 @@
 ---
-id: overview_elastic_query_contains
+id: elastic_query_contains
 title: "Contains Query"
 ---
 

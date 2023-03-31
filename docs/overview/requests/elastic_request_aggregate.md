@@ -1,5 +1,5 @@
 ---
-id: overview_elastic_request_aggregate
+id: elastic_request_aggregate
 title: "Aggregation Request"
 ---
 
