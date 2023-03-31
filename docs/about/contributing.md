@@ -15,10 +15,10 @@ We welcome contributions from anybody wishing to participate. All code or docume
    
 4. When your work is completed, verify it with following commands:
 
-```
-sbt check
-sbt +test
-```
+    ```shell
+    sbt check
+    sbt +test
+    ```
 
 5. Submit a Pull Request.
 
@@ -32,6 +32,6 @@ sbt +test
 
 - Follow the structure of the code in this repository, and the formatting rules used. You can format your code properly with the following command:
 
-```
-sbt prepare
-```
+    ```shell
+    sbt prepare
+    ```

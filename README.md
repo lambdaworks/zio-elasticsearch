@@ -7,12 +7,12 @@
 
 ## Overview
 
-ZIO Elasticsearch is a type-safe, testable and streaming-friendly ZIO native Elasticsearch client.
+ZIO Elasticsearch is a type-safe and streaming-friendly ZIO native Elasticsearch client.
 
 The library depends on sttp as an HTTP client for executing requests, and other ZIO libraries such as ZIO Schema and ZIO Prelude.
 
 The following versions are supported:
-- Scala: 2.12+
+- Scala: 2.12, 2.13 and 3
 - ZIO: 2
 - Elasticsearch: 7
 - JVM 11+
@@ -31,167 +31,133 @@ Where `<snapshot version>` refers to the version in the Sonatype Snapshot badge 
 
 ## Usage
 
-### Elastic Request
+In order to execute an Elasticsearch request we can rely on the `Elasticsearch` layer which offers an `execute` method accepting an `ElasticRequest`. In order to build the `Elasticsearch` layer we need to provide the following layers:
 
-We can represent an Elasticsearch request as a generic data type that returns a value of type `A`. The library offers a DSL for creating these requests, by specifying their required parameters. For example, we can create a request for deleting a document with a specified index as follows:
-
-```scala
-deleteById(IndexName("index"), DocumentId("documentId"))
-```
-
-As you can see above, index names and document IDs are represented with `IndexName` and `DocumentId` respectively, using new types from ZIO Prelude, in order to increase type-safety with no runtime overhead. `IndexName` also validates the passed string according to Elasticsearch's naming criteria at compile-time using the `apply` method, or with `make` at runtime when dealing with a runtime value as an argument.
-
-All the DSL methods for request creation can be brought into scope with the following import:
+- `ElasticExecutor`: if you provide `ElasticExecutor.local`, it will run on `localhost:9200`. Otherwise, if you want to use `ElasticExecutor.live`, you must also provide `ElasticConfig`.
+- `HttpClientZioBackend`
 
 ```scala
-import zio.elasticsearch.ElasticRequest._
-```
+import sttp.client3.httpclient.zio.HttpClientZioBackend
+import zio.elasticsearch._
+import zio._
 
-For methods receiving or returning a document of custom type `A`, you must create a schema for `A`. Here is an example of creating a schema for a custom type `EmployeeDocument`:
+object ZIOElasticsearchExample extends ZIOAppDefault {
+  val indexName = IndexName("index")
+  val result: RIO[Elasticsearch, CreationOutcome] = 
+    Elasticsearch.execute(ElasticRequest.createIndex(indexName))
 
-```scala
-import zio.schema.{DeriveSchema, Schema}
-
-final case class EmployeeDocument(id: String, name: String, degree: String, age: Int)
-
-object EmployeeDocument {
-  implicit val schema: Schema[EmployeeDocument] = DeriveSchema.gen[EmployeeDocument]
+  override def run =
+    result.provide(
+      ElasticExecutor.local,
+      Elasticsearch.layer,
+      HttpClientZioBackend.layer()
+    )
 }
 ```
 
-As long as we have the implicit schema value in scope, we can call the aforementioned methods, such as `getById`:
+
+### Type-safety with ZIO Prelude's Newtype
+
+The library uses ZIO Prelude's Newtype for `IndexName`, `DocumentId` and `Routing` in order to preserve type-safety.
 
 ```scala
-import EmployeeDocument._
-
-getById[EmployeeDocument](IndexName("index"), DocumentId("documentId"))
+val indexName: IndexName   = IndexName("index")
+val documentId: DocumentId = DocumentId("documentId")
 ```
 
-### Elastic Query
 
-In order to execute Elasticsearch query requests, both for searching and deleting by query, you first must specify the type of the query along with the corresponding parameters for that type. Queries are described with the `ElasticQuery` data type, which can be constructed from the DSL methods found under the following import:
+### Usage of ZIO Schema and its accessors for type-safety
 
-```scala
-import zio.elasticsearch.ElasticQuery._
-```
-
-Query DSL methods that require a field solely accept field types that are defined as Elasticsearch primitives. You can pass field names simply as strings, or you can use the type-safe query methods that make use of ZIO Schema's accessors. An example with a `term` query is shown below:
+To provide type-safety in your Elasticsearch requests, ZIO Elasticsearch uses ZIO Schema. Here is an example of creating a schema for the custom type `User` and using an implicit schema to create accessors that result in type-safe requests.
 
 ```scala
-term("name", "foo bar")
+final case class Address(street: String, number: Int)
 
-// type-safe method
-term(EmployeeDocument.name, "foo bar")
-```
+object Address {
+  implicit val schema: Schema.CaseClass2[String, Int, Address] =
+    DeriveSchema.gen[Address]
 
-You can also represent a field from nested structures with type-safe query methods, using the `/` operator on accessors:
-
-```scala
-import zio.elasticsearch.ElasticQueryAccessorBuilder
-import zio.elasticsearch.ElasticQuery._
-import zio.schema.annotation.fieldName
-import zio.schema.{DeriveSchema, Schema}
-
-final case class Name(
-  @fieldName("first_name")
-  firstName: String,
-  @fieldName("last_name")
-  lastName: String
-)
-
-object Name {
-  implicit val schema = DeriveSchema.gen[Name]
-
-  val (firstName, lastName) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  val (street, number) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-final case class EmployeeDocument(id: String, name: Name, degree: String, age: Int)
+final case class User(id: Int, address: Address)
 
-object EmployeeDocument {
-  implicit val schema = DeriveSchema.gen[EmployeeDocument]
+object User {
+  implicit val schema: Schema.CaseClass2[String, Address, User] =
+    DeriveSchema.gen[User]
 
-  val (id, name, degree, age) = schema.makeAccessors(ElasticQueryAccessorBuilder)
+  val (id, address) = schema.makeAccessors(FieldAccessorBuilder)
 }
 
-matches("name.first_name", "foo")
+val query: BoolQuery[User] =
+  ElasticQuery
+    .must(ElasticQuery.range(User.id).gte(7).lt(10))
+    .should(ElasticQuery.startsWith(User.address / Address.street, "ZIO"))
 
-// type-safe method
-matches(EmployeeDocument.name / Name.firstName, "foo bar")
-```
+val aggregation: TermsAggregation =
+  ElasticAggregation
+    .termsAggregation("termsAgg", User.address / Address.street)
 
-Type-safe query methods also have a `multiField` parameter, in case you want to use one in queries:
+val request: SearchAndAggregateRequest =
+  ElasticRequest
+    .search(IndexName("index"), query)
+    .aggregate(aggregation)
 
-```scala
-term("degree.keyword", "baz")
-
-// type-safe method
-term(EmployeeDocument.degree, multiField = Some("keyword"), "baz")
-```
-
-Now, after describing a query, you can pass it to the `search`/`deleteByQuery` method to obtain the Elastic request corresponding to that query:
-
-```scala
-search(IndexName("index"), term("name.first_name.keyword", "foo"))
+val result: RIO[Elasticsearch, SearchResult] = Elasticsearch.execute(request)
 ```
 
 ### Fluent API
 
-Both Elastic requests and queries offer a fluent API, so that you can provide optional parameters in chained method calls for each request or query. For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
+ZIO Elastic requests and queries offer a fluent API, allowing us to provide optional parameters in chained method calls for each request or query.
+For example, if we wanted to add routing and refresh parameters to a `deleteById` request:
 
 ```scala
-deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
+ElasticRequest.deleteById(IndexName("index"), DocumentId("documentId")).routing(Routing("routing")).refreshTrue
 ```
 
-Just like `IndexName`, `Routing` is a new type that mustn't be an empty string.
-
-And if we wanted to specify lower and upper bounds for a `range` query:
+Creating complex queries can be created in the following manner:
 
 ```scala
-range(EmployeeDocument.age).gte(18).lt(100)
+ElasticQuery.must(ElasticQuery.range("version").gte(7).lt(10)).should(ElasticQuery.startsWith("name", "ZIO"))
 ```
 
-### Elastic Executor
-
-In order to get the functional effect of executing a specified Elasticsearch request, you must call the `execute` method defined on it, which returns a `ZIO` that requires an `ElasticExecutor`, fails with a `Throwable` and returns the relevant value `A` for that request.
-
-Elastic requests for creating and deleting return `CreationOutcome` and `DeletionOutcome` respectively if no other meaningful value could be returned, notifying us on the success of the request. Any other kind of error is returned as a `Throwable` in the error channel of `ZIO` for that Elastic request.
-
-If you want to execute multiple Elasticsearch requests in a single API call, you need to use the `bulk` method on those Elastic requests, and call `execute` on that bulk request instead.
-
-To provide the dependency on `ElasticExecutor`, you must pass one of the `ZLayer`s from the following import:
+If we want to specify lower and upper bounds for a `range` query, we can do the following:
 
 ```scala
-import zio.elasticsearch.ElasticExecutor
+ElasticQuery.range(User.age).gte(18).lt(100)
 ```
 
-For example, if you want to execute requests on a server running on `localhost` and port `9200`, you can provide the `live` ZLayer to your effect, along with a `SttpBackend` and an `ElasticConfig` layer:
+### Bulkable
+
+ZIO Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
+For bulkable requests, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
 
 ```scala
-import sttp.client3.SttpBackend
-import sttp.client3.httpclient.zio.HttpClientZioBackend
-import zio.elasticsearch.{ElasticConfig, ElasticExecutor}
-
-val effect: RIO[ElasticExecutor, Boolean] = exists(IndexName("index"), DocumentId("document")).execute
-
-effect.provide(
-  HttpClientZioBackend.layer(),
-  ZLayer.succeed(ElastichConfig("localhost", 9200)) >>> ElasticExecutor.live,
+ElasticRequest.bulk(
+  ElasticRequest.create[User](indexName, User(1, "John Doe")),
+  ElasticRequest.create[User](indexName, DocumentId("documentId2"), User(2, "Jane Doe")),
+  ElasticRequest.upsert[User](indexName, DocumentId("documentId3"), User(3, "Richard Roe")),
+  ElasticRequest.deleteById(indexName, DocumentId("documentId2"))
 )
 ```
 
-If the ElasticConfig arguments are the same as specified above, you can simply omit the `ElasticConfig` layer and replace `ElasticExecutor.live` with `ElasticExecutor.local` instead.
 
-For testing purposes, you can use `ElasticExecutor.test`, which is a mocked Elasticsearch executor that doesn't require an HTTP backend.
+### Streaming
+
+ZIO Elasticsearch is a streaming-friendly library, and it provides specific APIs for creating ZIO streams. When using the stream API, the result will be an `Item`, which is a case class that contains only one field, `raw`, that represents your response as raw JSON. Additionally, it is important to note that you can use `StreamConfig` to customize your settings when creating a stream. If you don't use `StreamConfig`, the default settings (`StreamConfig.Default`) will be used.
 
 ```scala
-// The Elasticsearch requests are executed locally
-effect.provide(
-  HttpClientZioBackend.layer(),
-  ElasticExecutor.local
-)
+val request: SearchRequest =
+  ElasticRequest.search(IndexName("index"), ElasticQuery.range(User.id).gte(5))
 
-// The Elasticsearch requests are executed on a mocked executor
-effect.provideLayer(ElasticExecutor.test)
+val defaultStream: ZStream[Elasticsearch, Throwable, Item] =
+  Elasticsearch.stream(request)
+
+val scrollStream: ZStream[Elasticsearch, Throwable, Item]  =
+  Elasticsearch.stream(request, StreamConfig.Scroll)
+
+val searchAfterStream: ZStream[Elasticsearch, Throwable, User] =
+  Elasticsearch.streamAs[User](request, StreamConfig.SearchAfter)
 ```
 
 ## Example

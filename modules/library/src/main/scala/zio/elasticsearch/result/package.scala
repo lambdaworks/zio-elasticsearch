@@ -17,7 +17,7 @@
 package zio.elasticsearch
 
 package object result {
-  private[elasticsearch] class ElasticException(message: String) extends RuntimeException(message)
+  class ElasticException(message: String) extends RuntimeException(message)
 
-  private[elasticsearch] final case class DecodingException(message: String) extends ElasticException(message)
+  final case class DecodingException(message: String) extends ElasticException(message)
 }

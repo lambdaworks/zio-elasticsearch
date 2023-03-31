@@ -310,7 +310,7 @@ object ElasticRequest {
       extends ElasticRequest[SearchResult]
       with HasRouting[SearchRequest]
       with WithSort[SearchRequest] {
-    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult]
+    def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
   }
 
   private[elasticsearch] final case class Search(
@@ -319,7 +319,7 @@ object ElasticRequest {
     sortBy: Set[Sort],
     routing: Option[Routing]
   ) extends SearchRequest { self =>
-    def aggregate(aggregation: ElasticAggregation): ElasticRequest[SearchAndAggregateResult] =
+    def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
       SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = sortBy, routing = routing)
 
     def routing(value: Routing): SearchRequest =

@@ -21,6 +21,6 @@ import zio.schema.Schema
 import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 
-private[elasticsearch] final case class Item(raw: Json) {
+final case class Item(raw: Json) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 }

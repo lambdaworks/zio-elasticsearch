@@ -1,1 +1,6 @@
 target/
+
+website/.docusaurus
+website/node_modules
+website/package-lock.json
+website/build
