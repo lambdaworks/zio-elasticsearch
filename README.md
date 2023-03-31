@@ -164,6 +164,10 @@ val searchAfterStream: ZStream[Elasticsearch, Throwable, User] =
 
 For a full-fledged example using this library, you can check out the [example](modules/example) module, which contains an application with both a description and instructions on how to run it.
 
+## Documentation
+
+Learn more on the [ZIO Elasticsearch homepage](https://lambdaworks.github.io/zio-elasticsearch)!
+
 ## Contributing
 
 For the general guidelines, see ZIO Elasticsearch [contributor's guide](https://lambdaworks.github.io/zio-elasticsearch/about/about_contributing).
