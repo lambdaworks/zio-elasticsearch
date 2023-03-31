@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.ElasticSort._
+import zio.elasticsearch.domain._
 import zio.elasticsearch.query.sort.Missing._
 import zio.elasticsearch.query.sort.NumericType.{Long => NumTypeLong}
 import zio.elasticsearch.query.sort.SortMode._
@@ -34,11 +35,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with only type-safe field given") {
-          assert(sortBy(UserDocument.age))(
+        test("successfully create type-safe SortByField with only field given") {
+          assert(sortBy(TestDocument.intField))(
             equalTo(
               SortByFieldOptions(
-                field = "age",
+                field = "intField",
                 format = None,
                 missing = None,
                 mode = None,
@@ -49,11 +50,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given `format`") {
-          assert(sortBy("day_of_week").format("strict_date_optional_time_nanos"))(
+        test("successfully create type-safe SortByField with given `format`") {
+          assert(sortBy(TestDocument.dateField).format("strict_date_optional_time_nanos"))(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "dateField",
                 format = Some("strict_date_optional_time_nanos"),
                 missing = None,
                 mode = None,
@@ -64,11 +65,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given `missing`") {
-          assert(sortBy("day_of_week").missing(First))(
+        test("successfully create type-safe SortByField with given `missing`") {
+          assert(sortBy(TestDocument.intField).missing(First))(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "intField",
                 format = None,
                 missing = Some(First),
                 mode = None,
@@ -79,11 +80,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given `mode`") {
-          assert(sortBy("day_of_week").mode(Avg))(
+        test("successfully create type-safe SortByField with given `mode`") {
+          assert(sortBy(TestSubDocument.intFieldList).mode(Avg))(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "intFieldList",
                 format = None,
                 missing = None,
                 mode = Some(Avg),
@@ -94,11 +95,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given `numericType`") {
-          assert(sortBy("day_of_week").numericType(NumTypeLong))(
+        test("successfully create type-safe SortByField with given `numericType`") {
+          assert(sortBy(TestDocument.intField).numericType(NumTypeLong))(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "intField",
                 format = None,
                 missing = None,
                 mode = None,
@@ -109,11 +110,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given `order`") {
-          assert(sortBy("day_of_week").order(Desc))(
+        test("successfully create type-safe SortByField with given `order`") {
+          assert(sortBy(TestDocument.intField).order(Desc))(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "intField",
                 format = None,
                 missing = None,
                 mode = None,
@@ -124,11 +125,11 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given `unmappedType`") {
-          assert(sortBy("day_of_week").unmappedType("long"))(
+        test("successfully create type-safe SortByField with given `unmappedType`") {
+          assert(sortBy(TestDocument.intField).unmappedType("long"))(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "intField",
                 format = None,
                 missing = None,
                 mode = None,
@@ -139,9 +140,9 @@ object SortSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create SortByField with given all params") {
+        test("successfully create type-safe SortByField with given all params") {
           assert(
-            sortBy("day_of_week")
+            sortBy(TestDocument.dateField)
               .format("strict_date_optional_time_nanos")
               .missing(First)
               .mode(Avg)
@@ -151,7 +152,7 @@ object SortSpec extends ZIOSpecDefault {
           )(
             equalTo(
               SortByFieldOptions(
-                field = "day_of_week",
+                field = "dateField",
                 format = Some("strict_date_optional_time_nanos"),
                 missing = Some(First),
                 mode = Some(Avg),
@@ -231,13 +232,13 @@ object SortSpec extends ZIOSpecDefault {
       ),
       suite("encoding SortBy as JSON")(
         test("properly encode SortByField with only field") {
-          val sort = sortBy("day_of_week")
+          val sort = sortBy(TestDocument.intField)
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {}
+              |      "intField": {}
               |    }
               |  ]
               |}
@@ -246,13 +247,13 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with `format` given") {
-          val sort = sortBy("day_of_week").format("strict_date_optional_time_nanos")
+          val sort = sortBy(TestDocument.dateField).format("strict_date_optional_time_nanos")
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "dateField": {
               |        "format": "strict_date_optional_time_nanos"
               |      }
               |    }
@@ -263,13 +264,13 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with `missing` given") {
-          val sort = sortBy("day_of_week").missing(First)
+          val sort = sortBy(TestDocument.intField).missing(First)
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "intField": {
               |        "missing": "_first"
               |      }
               |    }
@@ -280,13 +281,13 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with `mode` given") {
-          val sort = sortBy("day_of_week").mode(Avg)
+          val sort = sortBy(TestSubDocument.intFieldList).mode(Avg)
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "intFieldList": {
               |        "mode": "avg"
               |      }
               |    }
@@ -297,13 +298,13 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with `numericType` given") {
-          val sort = sortBy("day_of_week").numericType(NumTypeLong)
+          val sort = sortBy(TestDocument.intField).numericType(NumTypeLong)
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "intField": {
               |        "numeric_type": "long"
               |      }
               |    }
@@ -314,13 +315,13 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with `order` given") {
-          val sort = sortBy("day_of_week").order(Desc)
+          val sort = sortBy(TestDocument.intField).order(Desc)
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "intField": {
               |        "order": "desc"
               |      }
               |    }
@@ -331,13 +332,13 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with `unmappedType` given") {
-          val sort = sortBy("day_of_week").unmappedType("long")
+          val sort = sortBy(TestDocument.intField).unmappedType("long")
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "intField": {
               |        "unmapped_type": "long"
               |      }
               |    }
@@ -348,7 +349,7 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode SortByField with all params given") {
-          val sort = sortBy("day_of_week")
+          val sort = sortBy(TestDocument.dateField)
             .format("strict_date_optional_time_nanos")
             .missing(First)
             .mode(Avg)
@@ -360,7 +361,7 @@ object SortSpec extends ZIOSpecDefault {
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "dateField": {
               |        "format": "strict_date_optional_time_nanos", "missing": "_first", "mode": "avg", "numeric_type": "long", "order": "desc", "unmapped_type": "long"
               |      }
               |    }
@@ -371,14 +372,14 @@ object SortSpec extends ZIOSpecDefault {
           assert(sortsToJson(sort))(equalTo(expected.toJson))
         },
         test("properly encode multiple SortByField") {
-          val sort1 = sortBy("day_of_week").order(Desc)
+          val sort1 = sortBy(TestDocument.intField).order(Desc)
           val sort2 = sortBy("day_of_month").missing(First)
           val expected =
             """
               |{
               |  "sort": [
               |    {
-              |      "day_of_week": {
+              |      "intField": {
               |        "order": "desc"
               |      }
               |    },

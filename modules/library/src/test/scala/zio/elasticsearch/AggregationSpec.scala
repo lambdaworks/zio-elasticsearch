@@ -3,7 +3,8 @@ package zio.elasticsearch
 import zio.Scope
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.aggregation._
-import zio.elasticsearch.utils.{RichString, UserDocument}
+import zio.elasticsearch.domain.TestSubDocument
+import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
 
@@ -20,18 +21,18 @@ object AggregationSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create type-safe Terms aggregation using `terms` method") {
-          val aggregation = termsAggregation(name = "aggregation", field = UserDocument.name)
+          val aggregation = termsAggregation(name = "aggregation", field = TestSubDocument.stringField)
 
           assert(aggregation)(
-            equalTo(Terms(name = "aggregation", field = "name", subAggregations = Nil))
+            equalTo(Terms(name = "aggregation", field = "stringField", subAggregations = Nil))
           )
         },
         test("successfully create type-safe Terms aggregation with multi-field using `terms` method") {
           val aggregation =
-            termsAggregation(name = "aggregation", field = UserDocument.name, multiField = Some("keyword"))
+            termsAggregation(name = "aggregation", field = TestSubDocument.stringField, multiField = Some("keyword"))
 
           assert(aggregation)(
-            equalTo(Terms(name = "aggregation", field = "name.keyword", subAggregations = Nil))
+            equalTo(Terms(name = "aggregation", field = "stringField.keyword", subAggregations = Nil))
           )
         },
         test("successfully create Multiple aggregations using `multipleAggregations` method with two `terms`") {

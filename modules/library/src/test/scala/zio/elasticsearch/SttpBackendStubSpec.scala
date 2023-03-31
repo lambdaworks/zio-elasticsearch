@@ -4,9 +4,12 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import sttp.client3.testing.SttpBackendStub
 import sttp.client3.{Request, Response, StringBody}
 import sttp.model.{Method, StatusCode}
+import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
 import zio.test.ZIOSpecDefault
 import zio.{Task, TaskLayer, ZLayer}
+
+import java.time.LocalDate
 
 trait SttpBackendStubSpec extends ZIOSpecDefault {
 
@@ -21,8 +24,24 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   val index: IndexName = IndexName("repositories")
 
-  val repo: GitHubRepo =
-    GitHubRepo(id = Some("123"), organization = "lambdaworks.io", name = "LambdaWorks", stars = 10, forks = 10)
+  val nestedField: TestNestedField = TestNestedField("StringField", 1)
+
+  val subDoc: TestSubDocument =
+    TestSubDocument(
+      stringField = "StringField",
+      nestedField = nestedField,
+      intField = 132,
+      intFieldList = Nil
+    )
+
+  val doc: TestDocument =
+    TestDocument(
+      stringField = "StringField",
+      subDocumentList = List(subDoc),
+      dateField = LocalDate.parse("2020-10-11"),
+      intField = 10,
+      doubleField = 10.0
+    )
 
   private val url = "http://localhost:9200"
 
@@ -158,11 +177,21 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       """
         |{
         |  "_source": {
-        |    "id": "123",
-        |    "organization": "lambdaworks.io",
-        |    "name": "LambdaWorks",
-        |    "stars": 10,
-        |    "forks": 10
+        |    "stringField": "StringField",
+        |    "subDocumentList": [
+        |      {
+        |        "stringField": "StringField",
+        |        "nestedField": {
+        |          "stringField": "StringField",
+        |          "longField": 1
+        |        },
+        |        "intField": 132,
+        |        "intFieldList": []
+        |      }
+        |    ],
+        |    "dateField": "2020-10-11",
+        |    "intField": 10,
+        |    "doubleField": 10.0
         |  }
         |}""".stripMargin,
       StatusCode.Ok
@@ -195,11 +224,21 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |        "_id": "111",
         |        "_score": 1,
         |        "_source": {
-        |          "id": "123",
-        |          "organization": "lambdaworks.io",
-        |          "name": "LambdaWorks",
-        |          "stars": 10,
-        |          "forks": 10
+        |          "stringField": "StringField",
+        |          "subDocumentList": [
+        |            {
+        |              "stringField": "StringField",
+        |              "nestedField": {
+        |                "stringField": "StringField",
+        |                "longField": 1
+        |              },
+        |              "intField": 132,
+        |              "intFieldList": []
+        |            }
+        |          ],
+        |          "dateField": "2020-10-11",
+        |          "intField": 10,
+        |          "doubleField": 10.0
         |        }
         |      }
         |    ]
@@ -235,11 +274,21 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |        "_id": "111",
         |        "_score": 1,
         |        "_source": {
-        |          "id": "123",
-        |          "organization": "lambdaworks.io",
-        |          "name": "LambdaWorks",
-        |          "stars": 10,
-        |          "forks": 10
+        |          "stringField": "StringField",
+        |          "subDocumentList": [
+        |            {
+        |              "stringField": "StringField",
+        |              "nestedField": {
+        |                "stringField": "StringField",
+        |                "longField": 1
+        |              },
+        |              "intField": 132,
+        |              "intFieldList": []
+        |            }
+        |          ],
+        |          "dateField": "2020-10-11",
+        |          "intField": 10,
+        |          "doubleField": 10.0
         |        }
         |      }
         |    ]

@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
 import zio.test.Assertion._
@@ -40,7 +41,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       },
       test("bulk request") {
         assertZIO(
-          Executor.execute(ElasticRequest.bulk(ElasticRequest.create(index, repo)).refreshTrue)
+          Executor.execute(ElasticRequest.bulk(ElasticRequest.create(index, doc)).refreshTrue)
         )(
           isUnit
         )
@@ -54,7 +55,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(
             ElasticRequest
-              .create[GitHubRepo](index = index, doc = repo)
+              .create[TestDocument](index = index, doc = doc)
               .routing(Routing("routing"))
               .refreshTrue
           )
@@ -64,7 +65,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(
             ElasticRequest
-              .create[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
+              .create[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
               .routing(Routing("routing"))
               .refreshTrue
           )
@@ -109,7 +110,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(
             ElasticRequest
-              .upsert[GitHubRepo](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = repo)
+              .upsert[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
               .routing(Routing("routing"))
               .refreshTrue
           )
@@ -156,21 +157,21 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 .getById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
                 .routing(Routing("routing"))
             )
-            .documentAs[GitHubRepo]
-        )(isSome(equalTo(repo)))
+            .documentAs[TestDocument]
+        )(isSome(equalTo(doc)))
       },
       test("search request") {
         assertZIO(
           Executor
             .execute(ElasticRequest.search(index = index, query = matchAll))
-            .documentAs[GitHubRepo]
-        )(equalTo(List(repo)))
+            .documentAs[TestDocument]
+        )(equalTo(List(doc)))
       },
       test("search with aggregation request") {
         val terms = termsAggregation(name = "aggregation1", field = "name")
         val req = Executor
           .execute(ElasticRequest.search(index = index, query = matchAll, terms))
-        assertZIO(req.documentAs[GitHubRepo])(equalTo(List(repo))) &&
+        assertZIO(req.documentAs[TestDocument])(equalTo(List(doc))) &&
         assertZIO(req.aggregations)(
           equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, List(TermsAggregationBucket("name", 5, None)))))
         )

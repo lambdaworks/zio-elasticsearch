@@ -21,8 +21,13 @@ import zio.elasticsearch.query._
 import ElasticPrimitive.ElasticPrimitive
 
 object ElasticQuery {
-  def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
-    Wildcard(field = field.toString, value = s"*$value*", boost = None, caseInsensitive = None)
+  def contains[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
+    Wildcard(
+      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      value = s"*$value*",
+      boost = None,
+      caseInsensitive = None
+    )
 
   def contains(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
@@ -69,8 +74,13 @@ object ElasticQuery {
   def should[S](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
-  def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =
-    Wildcard(field = field.toString, value = s"$value*", boost = None, caseInsensitive = None)
+  def startsWith[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
+    Wildcard(
+      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      value = s"$value*",
+      boost = None,
+      caseInsensitive = None
+    )
 
   def startsWith(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"$value*", boost = None, caseInsensitive = None)
@@ -86,8 +96,13 @@ object ElasticQuery {
   def term[A: ElasticPrimitive](field: String, value: A): Term[Any, A] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
 
-  def wildcard[S](field: Field[S, _], value: String): Wildcard[S] =
-    Wildcard(field = field.toString, value = value, boost = None, caseInsensitive = None)
+  def wildcard[S](field: Field[S, _], multiField: Option[String] = None, value: String): Wildcard[S] =
+    Wildcard(
+      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      value = value,
+      boost = None,
+      caseInsensitive = None
+    )
 
   def wildcard(field: String, value: String): Wildcard[Any] =
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)

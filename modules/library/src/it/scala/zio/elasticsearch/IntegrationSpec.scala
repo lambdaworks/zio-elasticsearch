@@ -19,6 +19,7 @@ package zio.elasticsearch
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
@@ -53,30 +54,32 @@ trait IntegrationSpec extends ZIOSpecDefault {
   def genIndexName: Gen[Any, IndexName] =
     Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => IndexName(name.toLowerCase))
 
-  def genDocumentId: Gen[Any, DocumentId] = Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
+  def genDocumentId: Gen[Any, DocumentId] =
+    Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
 
-  def genCustomer: Gen[Any, CustomerDocument] = for {
-    id      <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
-    name    <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    address <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
-    balance <- Gen.bigDecimal(100, 10000)
-    age     <- Gen.int(18, 75)
-  } yield CustomerDocument(id = id, name = name, address = address, balance = balance, age = age)
+  def genTestDocument: Gen[Any, TestDocument] = for {
+    stringField <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    dateField   <- Gen.localDate(LocalDate.parse("2010-12-02"), LocalDate.parse("2022-12-05"))
+    intField    <- Gen.int(1, 2000)
+    doubleField <- Gen.double(100, 2000)
+  } yield TestDocument(
+    stringField = stringField,
+    dateField = dateField,
+    subDocumentList = Nil,
+    intField = intField,
+    doubleField = doubleField
+  )
 
-  def genEmployee: Gen[Any, EmployeeDocument] = for {
-    id        <- Gen.stringBounded(5, 10)(Gen.alphaNumericChar)
-    name      <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    degree    <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    birthDate <- Gen.localDate(LocalDate.parse("1991-12-02"), LocalDate.parse("1999-12-05"))
-    age       <- Gen.int(18, 75)
-    sectorId1 <- Gen.numericChar
-  } yield EmployeeDocument(
-    id = id,
-    name = name,
-    degree = degree,
-    sectorsIds = List(sectorId1 + 10, sectorId1, sectorId1 - 5),
-    age = age,
-    birthDate = birthDate
+  def genTestSubDocument: Gen[Any, TestSubDocument] = for {
+    stringField1 <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    stringField2 <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    longField    <- Gen.long(1, 75)
+    intField     <- Gen.int(1, 200)
+  } yield TestSubDocument(
+    stringField = stringField1,
+    nestedField = TestNestedField(stringField2, longField),
+    intField = intField,
+    intFieldList = Nil
   )
 
   def checkOnce: CheckN = checkN(1)
