@@ -334,7 +334,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                   ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   ZIO.succeed(
-                    (Chunk.fromIterable(value.results).map(Item.apply), value.scrollId.orElse(Some(scrollId)))
+                    (Chunk.fromIterable(value.results).map(Item(_)), value.scrollId.orElse(Some(scrollId)))
                   )
               }
           )
@@ -355,7 +355,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchResult(value.results.map(Item.apply)))
+            value => ZIO.succeed(new SearchResult(value.resultsWithHighlights.map {
+              case (source, highlight) => Item(source, highlight)
+            }))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -404,7 +406,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                       body.lastSortField match {
                         case Some(newSearchAfter) =>
                           ZIO.succeed(
-                            (Chunk.fromIterable(body.results.map(Item.apply)), Some((newPitId, Some(newSearchAfter))))
+                            (Chunk.fromIterable(body.results.map(Item(_))), Some((newPitId, Some(newSearchAfter))))
                           )
                         case None =>
                           ZIO.fail(
@@ -445,7 +447,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchAndAggregateResult(value.results.map(Item.apply), value.aggs))
+            value => ZIO.succeed(new SearchAndAggregateResult(value.resultsWithHighlights.map {
+              case (source, highlight) => Item(source, highlight)
+            }, value.aggs))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -468,7 +472,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item.apply), value.scrollId))
+            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item(_)), value.scrollId))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))

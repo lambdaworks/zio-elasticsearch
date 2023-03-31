@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
+import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
@@ -551,22 +552,24 @@ object HttpExecutorSpec extends IntegrationSpec {
         ) @@ shrinks(0),
         suite("searching for documents with highlights")(
           test("successfully find document and return highlight") {
-            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
-              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
-                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
                        )
                   _ <- Executor.execute(
                          ElasticRequest
-                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
                            .refreshTrue
                        )
-                  query = range("balance").gte(100)
+                  query = should(matches("stringField", firstDocument.stringField))
                   res <-
-                    Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
-                } yield assert(res)(isNonEmpty)
+                    Executor.execute(
+                      ElasticRequest.search(firstSearchIndex, query).highlights(highlight("stringField"))
+                    )
+                } yield assert(res.hits.flatMap(_.highlight))(isNonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

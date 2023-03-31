@@ -36,6 +36,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
 ) {
   lazy val results: List[Json] = hits.hits.map(_.source)
 
+  lazy val resultsWithHighlights: List[(Json, Option[Json])] = hits.hits.map(h => (h.source, h.highlight))
+
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 
   def aggs: Map[String, AggregationResponse] =

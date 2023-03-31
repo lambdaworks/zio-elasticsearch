@@ -1,7 +1,6 @@
 package zio.elasticsearch.highlighting
 
 import zio.Chunk
-import zio.elasticsearch.Field
 import zio.elasticsearch.highlighting.Highlights.HighlightConfig
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
@@ -11,9 +10,6 @@ case class Highlights(fields: Chunk[HighlightField], globalConfig: HighlightConf
 
   def withGlobalConfig(configFieldName: String, config: Json): Highlights =
     self.copy(globalConfig = self.globalConfig.updated(configFieldName, config))
-
-  def withHighlight[S](fieldName: Field[S, _], fieldConfig: HighlightConfig = Map.empty): Highlights =
-    self.copy(fields = HighlightField(fieldName.toString, fieldConfig) +: self.fields)
 
   def withHighlight(fieldName: String, fieldConfig: HighlightConfig = Map.empty): Highlights =
     self.copy(fields = HighlightField(fieldName, fieldConfig) +: self.fields)

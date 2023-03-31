@@ -17,6 +17,7 @@
 package zio.elasticsearch.result
 
 import zio.elasticsearch.executor.response.AggregationResponse
+import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, ZIO}
@@ -56,7 +57,7 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends DocumentResult[List] {
+final class SearchResult private[elasticsearch] (val hits: List[Item]) extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>

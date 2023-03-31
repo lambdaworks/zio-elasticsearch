@@ -334,6 +334,7 @@ object ElasticRequest {
       with WithSort[SearchRequest]
       with HasSize[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
+    def highlights(value: Highlights): Search
   }
 
   private[elasticsearch] final case class Search(
@@ -411,14 +412,14 @@ object ElasticRequest {
     def from(value: Int): SearchAndAggregateRequest =
       self.copy(from = Some(value))
 
+    def highlights(value: Highlights): SearchAndAggregateRequest =
+      self.copy(highlights = Some(value))
+
     def routing(value: Routing): SearchAndAggregateRequest =
       self.copy(routing = Some(value))
 
     def size(value: Int): SearchAndAggregateRequest =
       self.copy(size = Some(value))
-
-    def highlights(value: Highlights): SearchAndAggregate =
-      self.copy(highlights = Some(value))
 
     def sortBy(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
