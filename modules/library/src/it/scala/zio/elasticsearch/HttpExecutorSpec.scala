@@ -549,6 +549,30 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
+        suite("searching for documents with highlights")(
+          test("successfully find document and return highlight") {
+            checkOnce(genDocumentId, genCustomer, genDocumentId, genCustomer) {
+              (firstDocumentId, firstCustomer, secondDocumentId, secondCustomer) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[CustomerDocument](firstSearchIndex, firstDocumentId, firstCustomer)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[CustomerDocument](firstSearchIndex, secondDocumentId, secondCustomer)
+                           .refreshTrue
+                       )
+                  query = range("balance").gte(100)
+                  res <-
+                    Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[CustomerDocument]
+                } yield assert(res)(isNonEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ),
         suite("searching for sorted documents")(
           test("search for document sorted by descending age and by ascending birthDate using range query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.ElasticAggregation
+import zio.elasticsearch.highlighting.Highlights
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
@@ -72,7 +73,15 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
-    Search(index = index, query = query, sortBy = Set.empty, from = None, routing = None, size = None)
+    Search(
+      index = index,
+      query = query,
+      sortBy = Set.empty,
+      from = None,
+      highlights = None,
+      routing = None,
+      size = None
+    )
 
   def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchAndAggregateRequest =
     SearchAndAggregate(
@@ -81,6 +90,7 @@ object ElasticRequest {
       aggregation = aggregation,
       sortBy = Set.empty,
       from = None,
+      highlights = None,
       routing = None,
       size = None
     )
@@ -331,9 +341,11 @@ object ElasticRequest {
     query: ElasticQuery[_],
     sortBy: Set[Sort],
     from: Option[Int],
+    highlights: Option[Highlights],
     routing: Option[Routing],
     size: Option[Int]
   ) extends SearchRequest { self =>
+
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
       SearchAndAggregate(
         index = index,
@@ -341,12 +353,16 @@ object ElasticRequest {
         aggregation = aggregation,
         sortBy = sortBy,
         from = from,
+        highlights = highlights,
         routing = routing,
         size = size
       )
 
     def from(value: Int): SearchRequest =
       self.copy(from = Some(value))
+
+    def highlights(value: Highlights): Search =
+      self.copy(highlights = Some(value))
 
     def routing(value: Routing): SearchRequest =
       self.copy(routing = Some(value))
@@ -358,16 +374,13 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val baseJson = (self.from, self.size) match {
-        case (Some(from), Some(size)) =>
-          Obj("from" -> from.toJson) merge Obj("size" -> size.toJson) merge self.query.toJson
-        case (Some(from), None) =>
-          Obj("from" -> from.toJson) merge self.query.toJson
-        case (None, Some(size)) =>
-          Obj("size" -> size.toJson) merge self.query.toJson
-        case _ =>
-          self.query.toJson
-      }
+      val selfJson: Json = self.from.map(f => Obj("from" -> f.toJson)).getOrElse(Json.Obj())
+
+      val sizeJson: Json = self.size.map(s => Obj("size" -> s.toJson)).getOrElse(Json.Obj())
+
+      val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Json.Obj())
+
+      val baseJson = selfJson merge sizeJson merge highlightsJson merge self.query.toJson
 
       sortBy match {
         case sorts if sorts.nonEmpty =>
@@ -391,6 +404,7 @@ object ElasticRequest {
     aggregation: ElasticAggregation,
     sortBy: Set[Sort],
     from: Option[Int],
+    highlights: Option[Highlights],
     routing: Option[Routing],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
@@ -402,6 +416,9 @@ object ElasticRequest {
 
     def size(value: Int): SearchAndAggregateRequest =
       self.copy(size = Some(value))
+
+    def highlights(value: Highlights): SearchAndAggregate =
+      self.copy(highlights = Some(value))
 
     def sortBy(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)

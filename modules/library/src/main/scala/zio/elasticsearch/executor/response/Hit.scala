@@ -30,7 +30,8 @@ private[elasticsearch] final case class Hit(
   score: Option[Double] = None,
   @jsonField("_source")
   source: Json,
-  sort: Option[Json]
+  sort: Option[Json],
+  highlight: Option[Json]
 )
 
 private[elasticsearch] object Hit {
