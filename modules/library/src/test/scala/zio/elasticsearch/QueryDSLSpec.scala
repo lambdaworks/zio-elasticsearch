@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.Bulk
+import zio.elasticsearch.domain._
 import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
 import zio.prelude.Validation
@@ -1440,7 +1441,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
         },
         test("properly encode Bulk request body") {
           val bulkQuery = IndexName.make("users").map { index =>
-            val nestedField = NestedField("NestedField", 1)
+            val nestedField = TestNestedField("NestedField", 1)
             val subDoc = TestSubDocument(
               stringField = "StringField",
               nestedField = nestedField,

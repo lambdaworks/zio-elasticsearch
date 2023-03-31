@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.utils._
+import zio.elasticsearch.domain.{TestNestedField, TestSubDocument}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object FieldDSLSpec extends ZIOSpecDefault {
@@ -33,7 +33,7 @@ object FieldDSLSpec extends ZIOSpecDefault {
         assertTrue(Field[Nothing, Nothing](Some(Field(None, "address")), "number").toString == "address.number")
       ),
       test("properly encode nested field path using accessors")(
-        assertTrue((TestSubDocument.nestedField / NestedField.longField).toString == "nestedField.longField")
+        assertTrue((TestSubDocument.nestedField / TestNestedField.longField).toString == "nestedField.longField")
       )
     )
 }

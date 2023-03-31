@@ -20,13 +20,13 @@ import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy
+import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.result.Item
 import zio.elasticsearch.script.Script
-import zio.elasticsearch.utils.{TestDocument, TestSubDocument}
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._

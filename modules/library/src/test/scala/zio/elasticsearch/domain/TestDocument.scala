@@ -1,4 +1,4 @@
-package zio.elasticsearch.utils
+package zio.elasticsearch.domain
 
 import zio.elasticsearch.FieldAccessorBuilder
 import zio.schema.{DeriveSchema, Schema}

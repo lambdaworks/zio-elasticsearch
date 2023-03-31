@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import zio.Scope
 import zio.elasticsearch.ElasticSort._
+import zio.elasticsearch.domain._
 import zio.elasticsearch.query.sort.Missing._
 import zio.elasticsearch.query.sort.NumericType.{Long => NumTypeLong}
 import zio.elasticsearch.query.sort.SortMode._

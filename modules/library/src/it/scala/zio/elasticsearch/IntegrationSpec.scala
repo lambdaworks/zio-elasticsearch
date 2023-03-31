@@ -19,8 +19,8 @@ package zio.elasticsearch
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.utils._
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
@@ -77,7 +77,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
     intField     <- Gen.int(1, 200)
   } yield TestSubDocument(
     stringField = stringField1,
-    nestedField = NestedField(stringField2, longField),
+    nestedField = TestNestedField(stringField2, longField),
     intField = intField,
     intFieldList = Nil
   )

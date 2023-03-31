@@ -4,8 +4,8 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import sttp.client3.testing.SttpBackendStub
 import sttp.client3.{Request, Response, StringBody}
 import sttp.model.{Method, StatusCode}
+import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.utils._
 import zio.test.ZIOSpecDefault
 import zio.{Task, TaskLayer, ZLayer}
 
@@ -24,7 +24,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   val index: IndexName = IndexName("repositories")
 
-  val nestedField: NestedField = NestedField("StringField", 1)
+  val nestedField: TestNestedField = TestNestedField("StringField", 1)
 
   val subDoc: TestSubDocument =
     TestSubDocument(

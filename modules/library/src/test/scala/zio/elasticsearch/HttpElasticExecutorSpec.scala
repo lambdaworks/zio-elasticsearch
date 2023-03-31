@@ -18,9 +18,9 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
-import zio.elasticsearch.utils._
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
 
