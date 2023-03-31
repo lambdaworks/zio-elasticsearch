@@ -237,9 +237,7 @@ object SortSpec extends ZIOSpecDefault {
             """
               |{
               |  "sort": [
-              |    {
-              |      "intField": {}
-              |    }
+              |    "intField"
               |  ]
               |}
               |""".stripMargin

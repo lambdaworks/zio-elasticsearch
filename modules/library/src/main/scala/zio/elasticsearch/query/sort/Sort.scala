@@ -60,19 +60,18 @@ private[elasticsearch] final case class SortByFieldOptions(
   def order(value: SortOrder): SortByField =
     self.copy(order = Some(value))
 
-  def paramsToJson: Json =
-    Obj(
-      self.field -> Obj(
-        List(
-          self.order.map(order => "order" -> order.toString.toJson),
-          self.format.map(format => "format" -> format.toJson),
-          self.numericType.map(numericType => "numeric_type" -> numericType.toString.toJson),
-          self.mode.map(mode => "mode" -> mode.toString.toJson),
-          self.missing.map(missing => "missing" -> missing.toString.toJson),
-          self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
-        ).flatten: _*
-      )
-    )
+  def paramsToJson: Json = {
+    val allParams = List(
+      self.order.map(order => "order" -> order.toString.toJson),
+      self.format.map(format => "format" -> format.toJson),
+      self.numericType.map(numericType => "numeric_type" -> numericType.toString.toJson),
+      self.mode.map(mode => "mode" -> mode.toString.toJson),
+      self.missing.map(missing => "missing" -> missing.toString.toJson),
+      self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
+    ).flatten
+
+    if (allParams.isEmpty) self.field.toJson else Obj(self.field -> Obj(allParams: _*))
+  }
 
   def unmappedType(value: String): SortByField =
     self.copy(unmappedType = Some(value))
