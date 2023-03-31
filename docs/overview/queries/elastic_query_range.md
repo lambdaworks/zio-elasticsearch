@@ -1,6 +1,6 @@
 ---
-id: elastic_query_exists
-title: "Exists Query"
+id: elastic_query_range
+title: "Range Query"
 ---
 
 TBD
