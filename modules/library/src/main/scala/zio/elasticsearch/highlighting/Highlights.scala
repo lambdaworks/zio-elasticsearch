@@ -3,25 +3,38 @@ package zio.elasticsearch.highlighting
 import zio.Chunk
 import zio.elasticsearch.highlighting.Highlights.HighlightConfig
 import zio.json.ast.Json
-import zio.json.ast.Json.Obj
+import zio.json.ast.Json.{Arr, Obj}
 
-case class Highlights(fields: Chunk[HighlightField], globalConfig: HighlightConfig = Map.empty) { self =>
+final case class Highlights(
+  fields: Chunk[HighlightField],
+  globalConfig: HighlightConfig = Map.empty,
+  explicitFieldOrder: Boolean = false
+) { self =>
   def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsList))
 
-  def withGlobalConfig(configFieldName: String, config: Json): Highlights =
-    self.copy(globalConfig = self.globalConfig.updated(configFieldName, config))
+  def withGlobalConfig(field: String, value: Json): Highlights =
+    self.copy(globalConfig = self.globalConfig.updated(field, value))
 
-  def withHighlight(fieldName: String, fieldConfig: HighlightConfig = Map.empty): Highlights =
-    self.copy(fields = HighlightField(fieldName, fieldConfig) +: self.fields)
+  def withHighlight(field: String, config: HighlightConfig = Map.empty): Highlights =
+    self.copy(fields = HighlightField(field, config) +: self.fields)
 
-  private lazy val configList: List[(String, Json)] = globalConfig.toList
-  private lazy val fieldsList: Obj                  = Obj("fields" -> Obj(fields.map(_.toStringJsonPair): _*))
+  def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
+
+  private def configList: List[(String, Json)] = globalConfig.toList
+  private def fieldsList: Obj =
+    if (explicitFieldOrder) {
+      Obj("fields" -> Arr(fields.reverse.map(_.toJsonObj)))
+    } else {
+      Obj("fields" -> Obj(fields.reverse.map(_.toStringJsonPair): _*))
+    }
 }
 
 object Highlights {
   type HighlightConfig = Map[String, Json]
 }
 
-case class HighlightField(fieldName: String, fieldConfig: HighlightConfig = Map.empty) {
-  def toStringJsonPair: (String, Obj) = fieldName -> Obj(fieldConfig.toList: _*)
+final case class HighlightField(field: String, config: HighlightConfig = Map.empty) {
+  def toStringJsonPair: (String, Obj) = field -> Obj(config.toList: _*)
+
+  def toJsonObj: Json = Obj(field -> Obj(config.toList: _*))
 }

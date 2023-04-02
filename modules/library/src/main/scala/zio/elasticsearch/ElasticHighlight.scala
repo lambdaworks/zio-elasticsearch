@@ -6,9 +6,9 @@ import zio.json.ast.Json
 
 object ElasticHighlight {
 
-  def highlight[S](field: Field[S, _], fieldConfig: Map[String, Json]): Highlights =
-    Highlights(Chunk(HighlightField(field.toString, fieldConfig)))
+  def highlightSafe[S](field: Field[S, _], config: Map[String, Json] = Map.empty): Highlights =
+    Highlights(Chunk(HighlightField(field.toString, config)))
 
-  def highlight(field: String, fieldConfig: Map[String, Json] = Map.empty): Highlights =
-    Highlights(Chunk(HighlightField(field, fieldConfig)))
+  def highlight(field: String, config: Map[String, Json] = Map.empty): Highlights =
+    Highlights(Chunk(HighlightField(field, config)))
 }

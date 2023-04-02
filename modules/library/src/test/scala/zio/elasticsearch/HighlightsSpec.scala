@@ -1,7 +1,7 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticHighlight.highlight
-import zio.elasticsearch.highlighting.{Highlights, HighlightField}
+import zio.elasticsearch.highlighting.{HighlightField, Highlights}
 import zio.elasticsearch.utils.RichString
 import zio.json.ast.Json.{Arr, Bool, Num, Str}
 import zio.test.Assertion.equalTo
@@ -86,8 +86,8 @@ object HighlightsSpec extends ZIOSpecDefault {
               |{
               |  "highlight" : {
               |    "fields" : {
-              |      "day_of_week" : {},
-              |      "first_name" : {}
+              |      "first_name" : {},
+              |      "day_of_week" : {}
               |    }
               |  }
               |}
@@ -104,8 +104,8 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  "highlight" : {
               |    "type" : "plain",
               |    "fields" : {
-              |      "day_of_week" : {},
-              |      "first_name" : {}
+              |      "first_name" : {},
+              |      "day_of_week" : {}
               |    }
               |  }
               |}
@@ -115,7 +115,7 @@ object HighlightsSpec extends ZIOSpecDefault {
         },
         test("properly encode Highlight with one field given with both global and field config") {
           val highlightObject =
-            highlight("day_of_week", fieldConfig = Map("require_field_match" -> Bool(false)))
+            highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
               .withGlobalConfig("type", Str("plain"))
           val expected =
             """
@@ -147,14 +147,47 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  "highlight" : {
               |    "type" : "plain",
               |    "fields" : {
+              |      "day_of_week" : {
+              |        "require_field_match" : false
+              |      },
               |      "first_name" : {
               |        "matched_fields": [ "comment", "comment.plain" ],
               |        "type": "fvh"
-              |      },
-              |      "day_of_week" : {
-              |        "require_field_match" : false
               |      }
               |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(highlightObject.toJson)(equalTo(expected.toJson))
+        },
+        test(
+          "properly encode Highlight with two fields given with both having global and field config and explicit order"
+        ) {
+          val highlightObject =
+            highlight("day_of_week", Map("require_field_match" -> Bool(false)))
+              .withGlobalConfig("type", Str("plain"))
+              .withHighlight(
+                "first_name",
+                Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
+              )
+              .withExplicitFieldOrder
+          val expected =
+            """
+              |{
+              |  "highlight" : {
+              |    "type" : "plain",
+              |    "fields" : [
+              |      { "day_of_week" : {
+              |          "require_field_match" : false
+              |        }
+              |      },
+              |      { "first_name" : {
+              |          "matched_fields": [ "comment", "comment.plain" ],
+              |          "type": "fvh"
+              |        }
+              |      }
+              |    ]
               |  }
               |}
               |""".stripMargin
@@ -168,8 +201,8 @@ object HighlightsSpec extends ZIOSpecDefault {
               .withGlobalConfig("type", Str("fvh"))
               .withGlobalConfig("fragment_size", Num(150))
               .withHighlight(
-                fieldName = "first_name",
-                fieldConfig = Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
+                field = "first_name",
+                config = Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
               )
               .withHighlight("last_name")
           val expected =
@@ -179,12 +212,12 @@ object HighlightsSpec extends ZIOSpecDefault {
               |    "type" : "fvh",
               |    "fragment_size" : 150,
               |    "fields" : {
+              |      "day_of_week" : {
+              |        "require_field_match" : false
+              |      },
               |      "first_name" : {
               |        "matched_fields": [ "comment", "comment.plain" ],
               |        "type": "fvh"
-              |      },
-              |      "day_of_week" : {
-              |        "require_field_match" : false
               |      },
               |      "last_name" : {}
               |    }

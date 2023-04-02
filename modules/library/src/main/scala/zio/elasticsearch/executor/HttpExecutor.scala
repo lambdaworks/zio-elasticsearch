@@ -343,7 +343,27 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
+<<<<<<< HEAD
   private def executeSearch(r: Search): Task[SearchResult] =
+=======
+  private def executeSearch(r: Search): Task[SearchResult] = {
+    val sort =
+      if (r.sortBy.isEmpty) {
+        None
+      } else {
+        Some(Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*)))
+      }
+
+    val highlights = r.highlights.map(_.toJson)
+
+    val body = (sort, highlights) match {
+      case (Some(s), Some(h)) => r.query.toJson merge s merge h
+      case (Some(s), _)       => r.query.toJson merge s
+      case (_, Some(h))       => r.query.toJson merge h
+      case _                  => r.query.toJson
+    }
+
+>>>>>>> 8d3e3e7 (Fix code remarsk and add explicit field order)
     sendRequestWithCustomResponse(
       baseRequest
         .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
@@ -355,9 +375,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchResult(value.resultsWithHighlights.map {
-              case (source, highlight) => Item(source, highlight)
-            }))
+            value =>
+              ZIO.succeed(new SearchResult(value.resultsWithHighlights.map { case (source, highlight) =>
+                Item(source, highlight)
+              }))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -447,9 +468,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchAndAggregateResult(value.resultsWithHighlights.map {
-              case (source, highlight) => Item(source, highlight)
-            }, value.aggs))
+            value =>
+              ZIO.succeed(
+                new SearchAndAggregateResult(
+                  value.resultsWithHighlights.map { case (source, highlight) =>
+                    Item(source, highlight)
+                  },
+                  value.aggs
+                )
+              )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
