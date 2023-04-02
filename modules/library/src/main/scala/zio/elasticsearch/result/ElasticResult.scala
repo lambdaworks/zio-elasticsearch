@@ -17,7 +17,6 @@
 package zio.elasticsearch.result
 
 import zio.elasticsearch.executor.response.AggregationResponse
-import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, ZIO}
