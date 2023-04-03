@@ -36,7 +36,7 @@ object HighlightsSpec extends ZIOSpecDefault {
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week")),
-                globalConfig = Map("type" -> Str("plain"))
+                config = Map("type" -> Str("plain"))
               )
             )
           )
@@ -57,7 +57,7 @@ object HighlightsSpec extends ZIOSpecDefault {
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week", Map("type" -> Str("plain")))),
-                globalConfig = Map("pre_tags" -> Arr(Str("<tag1>")))
+                config = Map("pre_tags" -> Arr(Str("<tag1>")))
               )
             )
           )

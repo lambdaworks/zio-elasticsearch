@@ -358,9 +358,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
     val body = (sort, highlights) match {
       case (Some(s), Some(h)) => r.query.toJson merge s merge h
-      case (Some(s), _)       => r.query.toJson merge s
-      case (_, Some(h))       => r.query.toJson merge h
-      case _                  => r.query.toJson
+      case (Some(s), None)    => r.query.toJson merge s
+      case (None, Some(h))    => r.query.toJson merge h
+      case (None, None)       => r.query.toJson
     }
 
 >>>>>>> 8d3e3e7 (Fix code remarsk and add explicit field order)

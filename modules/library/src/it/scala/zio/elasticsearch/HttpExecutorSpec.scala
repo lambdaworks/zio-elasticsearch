@@ -569,7 +569,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                     Executor.execute(
                       ElasticRequest.search(firstSearchIndex, query).highlights(highlight("stringField"))
                     )
-                } yield assert(res.hits.flatMap(_.highlight))(isNonEmpty)
+                  items <- res.items
+                } yield assert(items.map(_.highlight))(isNonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

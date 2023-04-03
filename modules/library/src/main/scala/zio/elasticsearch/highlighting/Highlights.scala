@@ -23,20 +23,20 @@ import zio.json.ast.Json.{Arr, Obj}
 
 final case class Highlights(
   fields: Chunk[HighlightField],
-  globalConfig: HighlightConfig = Map.empty,
+  config: HighlightConfig = Map.empty,
   explicitFieldOrder: Boolean = false
 ) { self =>
   def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsList))
 
   def withGlobalConfig(field: String, value: Json): Highlights =
-    self.copy(globalConfig = self.globalConfig.updated(field, value))
+    self.copy(config = self.config.updated(field, value))
 
   def withHighlight(field: String, config: HighlightConfig = Map.empty): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)
 
   def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
 
-  private def configList: List[(String, Json)] = globalConfig.toList
+  private def configList: List[(String, Json)] = config.toList
   private def fieldsList: Obj =
     if (explicitFieldOrder) {
       Obj("fields" -> Arr(fields.reverse.map(_.toJsonObj)))

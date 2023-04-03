@@ -56,13 +56,15 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-final class SearchResult private[elasticsearch] (val hits: List[Item]) extends DocumentResult[List] {
+final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
         DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
       }
     }
+
+  def items: ZIO[Any, Nothing, List[Item]] = ZIO.succeed(hits)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
