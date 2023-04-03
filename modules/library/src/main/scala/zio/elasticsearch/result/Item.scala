@@ -18,31 +18,22 @@ package zio.elasticsearch.result
 
 import zio.Chunk
 import zio.json.DecoderOps
-import zio.json.ast.Json
-import zio.prelude.ZValidation
+import zio.json.ast.{Json, JsonCursor}
 import zio.schema.Schema
 import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 
-final case class Item(raw: Json, highlight: Option[Json] = None) {
+final case class Item(raw: Json, private val highlight: Option[Json] = None) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 
-  lazy val highlights: Option[Either[DecodingException, Map[String, Chunk[String]]]] = highlight map { json =>
-    ZValidation.fromEither(json.toString.fromJson[Map[String, Chunk[String]]]).toEitherWith { error =>
-      DecodingException(s"Could not parse all highlights successfully: ${error.mkString(",")})")
+  lazy val highlights: Option[Map[String, Chunk[String]]] = highlight.flatMap { json =>
+    json.toString.fromJson[Map[String, Chunk[String]]] match {
+      case Left(_)      => None
+      case Right(value) => Some(value)
     }
   }
 
-  def highlight(field: String): Option[Either[DecodingException, Chunk[String]]] = highlights match {
-    case Some(value) =>
-      value match {
-        case Left(err) => Some(Left(err))
-        case Right(highlightsMap) =>
-          highlightsMap.get(field) match {
-            case Some(value) => Some(Right(value))
-            case None        => None
-          }
-      }
-    case None => None
-  }
+  def highlight(field: String): Option[Chunk[String]] =
+    highlight.flatMap(_.get(JsonCursor.field(field)).toOption).flatMap(_.toString.fromJson[Chunk[String]].toOption)
+
 }

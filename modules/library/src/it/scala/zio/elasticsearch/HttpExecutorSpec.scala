@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.{Chunk, ZIO}
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
@@ -570,7 +570,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                       ElasticRequest.search(firstSearchIndex, query).highlights(highlight("stringField"))
                     )
                   items <- res.items
-                } yield assert(items.map(_.highlight))(isNonEmpty)
+                } yield assert(items.map(_.highlight("stringField")))(
+                  hasSameElements(List(Some(Chunk(s"<em>${firstDocument.stringField}</em>"))))
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
