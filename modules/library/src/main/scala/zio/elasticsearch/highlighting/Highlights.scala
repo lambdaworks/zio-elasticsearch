@@ -26,18 +26,18 @@ final case class Highlights(
   config: HighlightConfig = Map.empty,
   explicitFieldOrder: Boolean = false
 ) { self =>
-  def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsList))
+  def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
 
   def withGlobalConfig(field: String, value: Json): Highlights =
     self.copy(config = self.config.updated(field, value))
 
   def withHighlight(field: String, config: HighlightConfig = Map.empty): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)
+  private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsList))
 
-  def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
+  private lazy val configList: List[(String, Json)] = config.toList
 
-  private def configList: List[(String, Json)] = config.toList
-  private def fieldsList: Obj =
+  private lazy val fieldsList: Obj =
     if (explicitFieldOrder) {
       Obj("fields" -> Arr(fields.reverse.map(_.toJsonObj)))
     } else {
@@ -49,7 +49,7 @@ object Highlights {
   type HighlightConfig = Map[String, Json]
 }
 
-final case class HighlightField(field: String, config: HighlightConfig = Map.empty) {
+private[elasticsearch] final case class HighlightField(field: String, config: HighlightConfig = Map.empty) {
   def toStringJsonPair: (String, Obj) = field -> Obj(config.toList: _*)
 
   def toJsonObj: Json = Obj(field -> Obj(config.toList: _*))

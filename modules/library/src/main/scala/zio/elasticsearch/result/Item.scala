@@ -27,10 +27,7 @@ final case class Item(raw: Json, private val highlight: Option[Json] = None) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 
   lazy val highlights: Option[Map[String, Chunk[String]]] = highlight.flatMap { json =>
-    json.toString.fromJson[Map[String, Chunk[String]]] match {
-      case Left(_)      => None
-      case Right(value) => Some(value)
-    }
+    json.toString.fromJson[Map[String, Chunk[String]]].toOption
   }
 
   def highlight(field: String): Option[Chunk[String]] =

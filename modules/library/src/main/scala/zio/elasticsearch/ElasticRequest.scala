@@ -334,6 +334,7 @@ object ElasticRequest {
       with WithSort[SearchRequest]
       with HasSize[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
+
     def highlights(value: Highlights): Search
   }
 
