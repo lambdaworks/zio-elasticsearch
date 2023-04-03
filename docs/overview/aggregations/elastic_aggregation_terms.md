@@ -1,5 +1,5 @@
 ---
-id: overview_elastic_aggregation_terms
+id: elastic_aggregation_terms
 title: "Terms Aggregation"
 ---
 

@@ -1,5 +1,5 @@
 ---
-id: overview_elastic_query
+id: elastic_query
 title: "Overview"
 ---
 

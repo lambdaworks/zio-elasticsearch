@@ -1,5 +1,5 @@
 ---
-id: overview_elastic_aggregation
+id: elastic_aggregation
 title: "Overview"
 ---
 
