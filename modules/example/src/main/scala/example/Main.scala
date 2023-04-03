@@ -23,7 +23,6 @@ import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.config.getConfig
-import zio.elasticsearch.executor.ElasticCredentials
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
 import zio.http.{Server, ServerConfig}
 
@@ -33,11 +32,7 @@ import scala.util.Using
 object Main extends ZIOAppDefault {
 
   override def run: Task[ExitCode] = {
-    val elasticConfigLive = ZLayer(
-      getConfig[ElasticsearchConfig].map(es =>
-        ElasticConfig(es.host, es.port, Some(ElasticCredentials("elastic", "password")))
-      )
-    )
+    val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port, None)))
 
     (prepare *> runServer).provide(
       AppConfig.live,

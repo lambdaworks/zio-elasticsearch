@@ -19,10 +19,12 @@ package zio.elasticsearch.executor
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
+import sttp.model.StatusCode
 import sttp.model.StatusCode.{
   BadRequest => HttpBadRequest,
   Conflict => HttpConflict,
   Created => HttpCreated,
+  Forbidden => HttpForbidden,
   NotFound => HttpNotFound,
   Ok => HttpOk,
   Unauthorized => HttpUnauthorized
@@ -110,8 +112,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value => ZIO.succeed(new AggregationResult(value.aggs))
           )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
 
@@ -125,8 +127,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
     ).flatMap { response =>
       response.code match {
-        case HttpOk => ZIO.unit
-        case _      => ZIO.fail(createElasticException(response))
+        case HttpOk    => ZIO.unit
+        case errorCode => ZIO.fail(handleFailures(errorCode, response))
       }
     }
   }
@@ -146,8 +148,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
               value => ZIO.succeed(value)
             )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
   }
@@ -171,8 +173,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
               value => ZIO.succeed(value)
             )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
 
@@ -191,7 +193,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpCreated  => ZIO.succeed(Created)
         case HttpConflict => ZIO.succeed(AlreadyExists)
-        case _            => ZIO.fail(createElasticException(response))
+        case errorCode    => ZIO.fail(handleFailures(errorCode, response))
       }
     }
   }
@@ -206,7 +208,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk         => ZIO.succeed(Created)
         case HttpBadRequest => ZIO.succeed(AlreadyExists)
-        case _              => ZIO.fail(createElasticException(response))
+        case errorCode      => ZIO.fail(handleFailures(errorCode, response))
       }
     }
 
@@ -217,7 +219,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
         case HttpOk | HttpCreated => ZIO.unit
-        case _                    => ZIO.fail(createElasticException(response))
+        case errorCode            => ZIO.fail(handleFailures(errorCode, response))
       }
     }
   }
@@ -238,8 +240,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             pit => ZIO.succeed((Chunk(), Some((pit.id, None))))
           )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
 
@@ -251,7 +253,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
+        case errorCode    => ZIO.fail(handleFailures(errorCode, response))
       }
     }
   }
@@ -271,7 +273,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
+        case errorCode    => ZIO.fail(handleFailures(errorCode, response))
       }
     }
   }
@@ -281,7 +283,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
+        case errorCode    => ZIO.fail(handleFailures(errorCode, response))
       }
     }
 
@@ -292,7 +294,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk       => ZIO.succeed(true)
         case HttpNotFound => ZIO.succeed(false)
-        case _            => ZIO.fail(createElasticException(response))
+        case errorCode    => ZIO.fail(handleFailures(errorCode, response))
       }
     }
   }
@@ -310,7 +312,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => result.Item(r.source))))
         case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
-        case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode    => ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
   }
@@ -337,8 +339,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                   )
               }
           )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
 
@@ -368,10 +370,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value => ZIO.succeed(new SearchResult(value.results.map(Item.apply)))
           )
-        case HttpUnauthorized =>
-          ZIO.fail(UnauthorizedException("Unauthorized action!"))
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
   }
@@ -431,8 +431,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               }
             }
           )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
   }
@@ -473,8 +473,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value => ZIO.succeed(new SearchAndAggregateResult(value.results.map(Item.apply), value.aggs))
           )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
   }
@@ -497,25 +497,36 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item.apply), value.scrollId))
           )
-        case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case errorCode =>
+          ZIO.fail(handleFailuresFromCustomResponse(errorCode, response))
       }
     }
 
-  private def createElasticException(response: Response[Either[String, String]]): ElasticException =
-    new ElasticException(
-      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
-    )
-
-  private def createElasticExceptionFromCustomResponse[A](
-    response: Response[Either[ResponseException[String, String], A]]
-  ): ElasticException =
-    new ElasticException(
-      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
-    )
-
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
+
+  private def handleFailures(errorCode: StatusCode, response: Response[Either[String, String]]) =
+    errorCode match {
+      case HttpUnauthorized | HttpForbidden =>
+        UnauthorizedException
+      case _ =>
+        new ElasticException(
+          s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+        )
+    }
+
+  private def handleFailuresFromCustomResponse[A](
+    errorCode: StatusCode,
+    response: Response[Either[ResponseException[String, String], A]]
+  ): ElasticException =
+    errorCode match {
+      case HttpUnauthorized | HttpForbidden =>
+        UnauthorizedException
+      case _ =>
+        new ElasticException(
+          s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+        )
+    }
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
@@ -534,7 +545,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       resp <- req.send(client)
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
-
 }
 
 private[elasticsearch] object HttpExecutor {

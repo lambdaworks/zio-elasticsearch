@@ -21,5 +21,5 @@ package object result {
 
   final case class DecodingException(message: String) extends ElasticException(message)
 
-  final case class UnauthorizedException(message: String) extends ElasticException(message)
+  case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
 }

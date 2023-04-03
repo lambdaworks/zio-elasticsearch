@@ -17,7 +17,3 @@
 package zio.elasticsearch.executor
 
 final case class ElasticCredentials(username: String, password: String)
-
-object ElasticCredentials {
-  val default: ElasticCredentials = ElasticCredentials("elastic", "password")
-}

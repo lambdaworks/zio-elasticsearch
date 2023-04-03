@@ -24,5 +24,5 @@ final case class ElasticConfig(host: String, port: Int, credentials: Option[Elas
 }
 
 object ElasticConfig {
-  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200, Some(ElasticCredentials.default))
+  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200, None)
 }
