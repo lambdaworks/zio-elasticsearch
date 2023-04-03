@@ -23,8 +23,10 @@ import sttp.model.StatusCode.{
   BadRequest => HttpBadRequest,
   Conflict => HttpConflict,
   Created => HttpCreated,
+  Forbidden => HttpForbidden,
   NotFound => HttpNotFound,
-  Ok => HttpOk
+  Ok => HttpOk,
+  Unauthorized => HttpUnauthorized
 }
 import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
@@ -45,6 +47,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     extends Executor {
 
   import HttpExecutor._
+
+  private val baseRequest = esConfig.credentials match {
+    case Some(credentials) => request.auth.basic(credentials.username, credentials.password)
+    case _                 => request
+  }
 
   def execute[A](request: ElasticRequest[A]): Task[A] =
     request match {
@@ -92,7 +99,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeAggregate(r: Aggregate): Task[AggregationResult] =
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
@@ -105,7 +112,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value => ZIO.succeed(new AggregationResult(value.aggs))
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
@@ -116,17 +123,17 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
-      request.post(uri).contentType(ApplicationJson).body(r.body)
+      baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
     ).flatMap { response =>
       response.code match {
         case HttpOk => ZIO.unit
-        case _      => ZIO.fail(createElasticException(response))
+        case _      => ZIO.fail(handleFailures(response))
       }
     }
   }
 
   private def executeCount(r: Count): Task[Int] = {
-    val req = request
+    val req = baseRequest
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
       .contentType(ApplicationJson)
       .response(asJson[CountResponse])
@@ -141,7 +148,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               value => ZIO.succeed(value)
             )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }
@@ -151,7 +158,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequestWithCustomResponse[CreateResponse](
-      request
+      baseRequest
         .post(uri)
         .contentType(ApplicationJson)
         .body(r.document.json)
@@ -166,7 +173,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               value => ZIO.succeed(value)
             )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
@@ -177,7 +184,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
-      request
+      baseRequest
         .post(uri)
         .contentType(ApplicationJson)
         .body(r.document.json)
@@ -185,14 +192,14 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpCreated  => ZIO.succeed(Created)
         case HttpConflict => ZIO.succeed(AlreadyExists)
-        case _            => ZIO.fail(createElasticException(response))
+        case _            => ZIO.fail(handleFailures(response))
       }
     }
   }
 
   private def executeCreateIndex(createIndex: CreateIndex): Task[CreationOutcome] =
     sendRequest(
-      request
+      baseRequest
         .put(uri"${esConfig.uri}/${createIndex.name}")
         .contentType(ApplicationJson)
         .body(createIndex.definition.getOrElse(""))
@@ -200,7 +207,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk         => ZIO.succeed(Created)
         case HttpBadRequest => ZIO.succeed(AlreadyExists)
-        case _              => ZIO.fail(createElasticException(response))
+        case _              => ZIO.fail(handleFailures(response))
       }
     }
 
@@ -208,10 +215,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(request.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
+    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
         case HttpOk | HttpCreated => ZIO.unit
-        case _                    => ZIO.fail(createElasticException(response))
+        case _                    => ZIO.fail(handleFailures(response))
       }
     }
   }
@@ -221,7 +228,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     config: StreamConfig
   ): Task[(Chunk[Item], Option[(String, Option[Json])])] =
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .post(uri"${esConfig.uri}/$index/$PointInTime".withParams((KeepAlive, config.keepAlive)))
         .response(asJson[PointInTimeResponse])
         .contentType(ApplicationJson)
@@ -233,7 +240,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             pit => ZIO.succeed((Chunk(), Some((pit.id, None))))
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
@@ -241,11 +248,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(request.delete(uri)).flatMap { response =>
+    sendRequest(baseRequest.delete(uri)).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
+        case _            => ZIO.fail(handleFailures(response))
       }
     }
   }
@@ -257,7 +264,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       )
 
     sendRequest(
-      request
+      baseRequest
         .post(uri)
         .contentType(ApplicationJson)
         .body(r.query.toJson)
@@ -265,28 +272,28 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
+        case _            => ZIO.fail(handleFailures(response))
       }
     }
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[DeletionOutcome] =
-    sendRequest(request.delete(uri"${esConfig.uri}/${r.name}")).flatMap { response =>
+    sendRequest(baseRequest.delete(uri"${esConfig.uri}/${r.name}")).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(Deleted)
         case HttpNotFound => ZIO.succeed(NotFound)
-        case _            => ZIO.fail(createElasticException(response))
+        case _            => ZIO.fail(handleFailures(response))
       }
     }
 
   private def executeExists(r: Exists): Task[Boolean] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
 
-    sendRequest(request.head(uri)).flatMap { response =>
+    sendRequest(baseRequest.head(uri)).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(true)
         case HttpNotFound => ZIO.succeed(false)
-        case _            => ZIO.fail(createElasticException(response))
+        case _            => ZIO.fail(handleFailures(response))
       }
     }
   }
@@ -297,21 +304,21 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     )
 
     sendRequestWithCustomResponse[GetResponse](
-      request
+      baseRequest
         .get(uri)
         .response(asJson[GetResponse])
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => result.Item(r.source))))
         case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
-        case _            => ZIO.fail(createElasticExceptionFromCustomResponse(response))
+        case _            => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }
 
   private def executeGetByScroll(scrollId: String, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
@@ -332,13 +339,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               }
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
   private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
@@ -351,7 +358,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value => ZIO.succeed(new SearchResult(value.results.map(Item.apply)))
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
@@ -378,7 +385,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         r.query.toJson merge sortsJson merge pointInTimeJson
       }
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .get(uri"${esConfig.uri}/$Search")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
@@ -417,14 +424,14 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             }
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }
 
   private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchAndAggregateResult] =
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .post(
           uri"${esConfig.uri}/${r.index}/$Search?typed_keys"
             .withParams(getQueryParams(List(("routing", r.routing))))
@@ -441,13 +448,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value => ZIO.succeed(new SearchAndAggregateResult(value.results.map(Item.apply), value.aggs))
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
   private def executeSearchWithScroll(r: Search, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
-      request
+      baseRequest
         .post(
           uri"${esConfig.uri}/${r.index}/$Search".withParams(
             getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
@@ -464,24 +471,34 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item.apply), value.scrollId))
           )
         case _ =>
-          ZIO.fail(createElasticExceptionFromCustomResponse(response))
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
-  private def createElasticException(response: Response[Either[String, String]]): ElasticException =
-    new ElasticException(
-      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
-    )
-
-  private def createElasticExceptionFromCustomResponse[A](
-    response: Response[Either[ResponseException[String, String], A]]
-  ): ElasticException =
-    new ElasticException(
-      s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
-    )
-
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
+
+  private def handleFailures(response: Response[Either[String, String]]): ElasticException =
+    response.code match {
+      case HttpUnauthorized | HttpForbidden =>
+        UnauthorizedException
+      case _ =>
+        new ElasticException(
+          s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+        )
+    }
+
+  private def handleFailuresFromCustomResponse[A](
+    response: Response[Either[ResponseException[String, String], A]]
+  ): ElasticException =
+    response.code match {
+      case HttpUnauthorized | HttpForbidden =>
+        UnauthorizedException
+      case _ =>
+        new ElasticException(
+          s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+        )
+    }
 
   private def sendRequest(
     req: RequestT[Identity, Either[String, String], Any]
@@ -500,7 +517,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       resp <- req.send(client)
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
-
 }
 
 private[elasticsearch] object HttpExecutor {

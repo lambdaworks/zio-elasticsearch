@@ -14,17 +14,6 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor
 
-import sttp.model.Uri
-import zio.elasticsearch.executor.ElasticCredentials
-
-final case class ElasticConfig(host: String, port: Int, credentials: Option[ElasticCredentials]) {
-  lazy val uri: Uri = Uri(host, port)
-}
-
-object ElasticConfig {
-  def apply(host: String, port: Int): ElasticConfig = ElasticConfig(host, port, None)
-
-  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200)
-}
+final case class ElasticCredentials(username: String, password: String)
