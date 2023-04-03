@@ -138,7 +138,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ),
         suite("search with aggregation")(
-          test("search using match all query with multiple terms aggregations") {
+          test("search for first result using match all query with multiple terms aggregations") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -164,10 +164,12 @@ object HttpExecutorSpec extends IntegrationSpec {
                                query = query,
                                aggregation = aggregation
                              )
+                             .from(0)
+                             .size(1)
                          )
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
+                } yield assert(docs.length)(equalTo(1)) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -411,9 +413,9 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         ),
         suite("searching for documents")(
-          test("search for document using range query") {
-            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
-              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+          test("search for first 2 documents using range query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
@@ -424,9 +426,16 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
                            .refreshTrue
                        )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument)
+                           .refreshTrue
+                       )
                   query = range(TestDocument.doubleField).gte(100.0)
-                  res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(isNonEmpty)
+                  res <- Executor
+                           .execute(ElasticRequest.search(firstSearchIndex, query).from(0).size(2))
+                           .documentAs[TestDocument]
+                } yield assert(res.length)(equalTo(2))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

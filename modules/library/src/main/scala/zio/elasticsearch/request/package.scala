@@ -31,6 +31,14 @@ package object request {
     def routing(value: Routing): R
   }
 
+  private[elasticsearch] trait HasFrom[R <: HasSize[R]] {
+    def from(value: Int): R
+  }
+
+  private[elasticsearch] trait HasSize[R <: HasSize[R]] {
+    def size(value: Int): R
+  }
+
   private[elasticsearch] trait WithSort[R <: WithSort[R]] {
     def sortBy(sorts: Sort*): R
   }

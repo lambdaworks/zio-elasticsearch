@@ -16,11 +16,14 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
 import zio.elasticsearch.result.{AggregationResult, GetResult, SearchAndAggregateResult, SearchResult}
+import zio.json.ast.Json
+import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
 sealed trait BulkableRequest[A] extends ElasticRequest[A]
@@ -69,10 +72,18 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
-    Search(index = index, query = query, sortBy = Set.empty, routing = None)
+    Search(index = index, query = query, sortBy = Set.empty, from = None, routing = None, size = None)
 
   def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchAndAggregateRequest =
-    SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = Set.empty, routing = None)
+    SearchAndAggregate(
+      index = index,
+      query = query,
+      aggregation = aggregation,
+      sortBy = Set.empty,
+      from = None,
+      routing = None,
+      size = None
+    )
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -308,8 +319,10 @@ object ElasticRequest {
 
   sealed trait SearchRequest
       extends ElasticRequest[SearchResult]
+      with HasFrom[SearchRequest]
       with HasRouting[SearchRequest]
-      with WithSort[SearchRequest] {
+      with WithSort[SearchRequest]
+      with HasSize[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
   }
 
@@ -317,21 +330,59 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     sortBy: Set[Sort],
-    routing: Option[Routing]
+    from: Option[Int],
+    routing: Option[Routing],
+    size: Option[Int]
   ) extends SearchRequest { self =>
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
-      SearchAndAggregate(index = index, query = query, aggregation = aggregation, sortBy = sortBy, routing = routing)
+      SearchAndAggregate(
+        index = index,
+        query = query,
+        aggregation = aggregation,
+        sortBy = sortBy,
+        from = from,
+        routing = routing,
+        size = size
+      )
+
+    def from(value: Int): SearchRequest =
+      self.copy(from = Some(value))
 
     def routing(value: Routing): SearchRequest =
       self.copy(routing = Some(value))
 
+    def size(value: Int): SearchRequest =
+      self.copy(size = Some(value))
+
     def sortBy(sorts: Sort*): SearchRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
+
+    def toJson: Json = {
+      val startJson = (self.from, self.size) match {
+        case (Some(from), Some(size)) =>
+          Obj("from" -> from.toJson) merge Obj("size" -> size.toJson) merge self.query.toJson
+        case (Some(from), None) =>
+          Obj("from" -> from.toJson) merge self.query.toJson
+        case (None, Some(size)) =>
+          Obj("size" -> size.toJson) merge self.query.toJson
+        case _ =>
+          self.query.toJson
+      }
+
+      sortBy match {
+        case sorts if sorts.nonEmpty =>
+          startJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*))
+        case _ =>
+          startJson
+      }
+    }
   }
 
   sealed trait SearchAndAggregateRequest
       extends ElasticRequest[SearchAndAggregateResult]
+      with HasFrom[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
+      with HasSize[SearchAndAggregateRequest]
       with WithSort[SearchAndAggregateRequest]
 
   private[elasticsearch] final case class SearchAndAggregate(
@@ -339,13 +390,41 @@ object ElasticRequest {
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
     sortBy: Set[Sort],
-    routing: Option[Routing]
+    from: Option[Int],
+    routing: Option[Routing],
+    size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
+    def from(value: Int): SearchAndAggregateRequest =
+      self.copy(from = Some(value))
+
     def routing(value: Routing): SearchAndAggregateRequest =
       self.copy(routing = Some(value))
 
+    def size(value: Int): SearchAndAggregateRequest =
+      self.copy(size = Some(value))
+
     def sortBy(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
+
+    def toJson: Json = {
+      val startJson = (self.from, self.size) match {
+        case (Some(from), Some(size)) =>
+          Obj("from" -> from.toJson) merge Obj("size" -> size.toJson) merge self.query.toJson
+        case (Some(from), None) =>
+          Obj("from" -> from.toJson) merge self.query.toJson
+        case (None, Some(size)) =>
+          Obj("size" -> size.toJson) merge self.query.toJson
+        case _ =>
+          self.query.toJson
+      }
+
+      sortBy match {
+        case sorts if sorts.nonEmpty =>
+          startJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) merge aggregation.toJson
+        case _ =>
+          startJson merge aggregation.toJson
+      }
+    }
   }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
