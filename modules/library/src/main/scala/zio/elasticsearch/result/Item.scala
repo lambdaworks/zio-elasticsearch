@@ -16,15 +16,13 @@
 
 package zio.elasticsearch.result
 
-import zio.{Chunk, ZIO}
+import zio.Chunk
 import zio.json.DecoderOps
 import zio.json.ast.Json
-import zio.prelude.{Validation, ZValidation}
+import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
-
-import scala.collection.immutable.{AbstractMap, SeqMap, SortedMap}
 
 final case class Item(raw: Json, highlight: Option[Json] = None) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
