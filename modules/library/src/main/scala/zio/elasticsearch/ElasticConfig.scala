@@ -17,11 +17,12 @@
 package zio.elasticsearch
 
 import sttp.model.Uri
+import zio.elasticsearch.executor.ElasticCredentials
 
-final case class ElasticConfig(host: String, port: Int) {
+final case class ElasticConfig(host: String, port: Int, credentials: Option[ElasticCredentials]) {
   lazy val uri: Uri = Uri(host, port)
 }
 
 object ElasticConfig {
-  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200)
+  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200, Some(ElasticCredentials.default))
 }

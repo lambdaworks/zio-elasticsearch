@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor
 
-package object result {
-  class ElasticException(message: String) extends RuntimeException(message)
+final case class ElasticCredentials(username: String, password: String)
 
-  final case class DecodingException(message: String) extends ElasticException(message)
-
-  final case class UnauthorizedException(message: String) extends ElasticException(message)
+object ElasticCredentials {
+  val default: ElasticCredentials = ElasticCredentials("elastic", "password")
 }
