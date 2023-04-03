@@ -32,7 +32,7 @@ import scala.util.Using
 object Main extends ZIOAppDefault {
 
   override def run: Task[ExitCode] = {
-    val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port, None)))
+    val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
 
     (prepare *> runServer).provide(
       AppConfig.live,
