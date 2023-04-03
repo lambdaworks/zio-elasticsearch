@@ -336,25 +336,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeSearch(r: Search): Task[SearchResult] = {
-    val body = r.sortBy match {
-      case sorts if sorts.nonEmpty =>
-        Obj(
-          List(
-            "query" -> r.query.paramsToJson(fieldPath = None),
-            "sort"  -> Arr(sorts.toList.map(_.paramsToJson): _*)
-          ): _*
-        )
-      case _ =>
-        r.query.toJson
-    }
-
+  private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       request
         .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(body)
+        .body(r.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -366,7 +354,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
-  }
 
   private def executeSearchAfterRequest(
     r: Search,
@@ -383,7 +370,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       )
     val defaultSortField = Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
     val searchAfterJson  = searchAfter.map(sa => Json.Obj("search_after" -> sa))
-    val requestBody      = r.query.toJson merge pointInTimeJson merge defaultSortField
+    val sortsJson        = Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
+    val requestBody =
+      if (r.sortBy.isEmpty) {
+        r.query.toJson merge pointInTimeJson merge defaultSortField
+      } else {
+        r.query.toJson merge sortsJson merge pointInTimeJson
+      }
     sendRequestWithCustomResponse(
       request
         .get(uri"${esConfig.uri}/$Search")
@@ -429,25 +422,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
   }
 
-  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchAndAggregateResult] = {
-    val body = r.sortBy match {
-      case sorts if sorts.nonEmpty =>
-        Obj(
-          List(
-            "query" -> r.query.paramsToJson(fieldPath = None),
-            "sort"  -> Arr(sorts.toList.map(_.paramsToJson): _*),
-            "aggs"  -> r.aggregation.paramsToJson
-          ): _*
-        )
-      case _ =>
-        Obj(
-          List(
-            "query" -> r.query.paramsToJson(fieldPath = None),
-            "aggs"  -> r.aggregation.paramsToJson
-          ): _*
-        )
-    }
-
+  private def executeSearchAndAggregate(r: SearchAndAggregate): Task[SearchAndAggregateResult] =
     sendRequestWithCustomResponse(
       request
         .post(
@@ -457,7 +432,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(body)
+        .body(r.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -469,7 +444,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           ZIO.fail(createElasticExceptionFromCustomResponse(response))
       }
     }
-  }
 
   private def executeSearchWithScroll(r: Search, config: StreamConfig): Task[(Chunk[Item], Option[String])] =
     sendRequestWithCustomResponse(
@@ -481,7 +455,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJson)
+        .body(r.query.toJson merge Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*)))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
