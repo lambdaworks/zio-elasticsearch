@@ -422,9 +422,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
                        )
                   _ <- Executor.execute(
-                         ElasticRequest
-                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
-                           .refreshTrue
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
                        )
                   _ <- Executor.execute(
                          ElasticRequest
