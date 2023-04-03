@@ -372,8 +372,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val searchAfterJson  = searchAfter.map(sa => Json.Obj("search_after" -> sa))
     val sortsJson        = Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
     val requestBody =
-      if (r.sortBy.isEmpty) r.query.toJson merge pointInTimeJson merge defaultSortField
-      else r.query.toJson merge sortsJson merge pointInTimeJson
+      if (r.sortBy.isEmpty) {
+        r.query.toJson merge pointInTimeJson merge defaultSortField
+      } else {
+        r.query.toJson merge sortsJson merge pointInTimeJson
+      }
     sendRequestWithCustomResponse(
       request
         .get(uri"${esConfig.uri}/$Search")

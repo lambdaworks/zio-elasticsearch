@@ -358,7 +358,7 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val startJson = (self.from, self.size) match {
+      val baseJson = (self.from, self.size) match {
         case (Some(from), Some(size)) =>
           Obj("from" -> from.toJson) merge Obj("size" -> size.toJson) merge self.query.toJson
         case (Some(from), None) =>
@@ -371,9 +371,9 @@ object ElasticRequest {
 
       sortBy match {
         case sorts if sorts.nonEmpty =>
-          startJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*))
+          baseJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*))
         case _ =>
-          startJson
+          baseJson
       }
     }
   }
@@ -407,7 +407,7 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val startJson = (self.from, self.size) match {
+      val baseJson = (self.from, self.size) match {
         case (Some(from), Some(size)) =>
           Obj("from" -> from.toJson) merge Obj("size" -> size.toJson) merge self.query.toJson
         case (Some(from), None) =>
@@ -420,9 +420,9 @@ object ElasticRequest {
 
       sortBy match {
         case sorts if sorts.nonEmpty =>
-          startJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) merge aggregation.toJson
+          baseJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) merge aggregation.toJson
         case _ =>
-          startJson merge aggregation.toJson
+          baseJson merge aggregation.toJson
       }
     }
   }
