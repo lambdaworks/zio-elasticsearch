@@ -17,9 +17,7 @@
 package example
 
 import zio._
-import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
-import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.{
   CreationOutcome,
@@ -34,16 +32,7 @@ import zio.elasticsearch.{
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
   def findAll(): Task[List[GitHubRepo]] =
-    elasticsearch
-      .execute(
-        ElasticRequest
-          .search(Index, matchAll)
-          .aggregate(termsAggregation("agg", "stars"))
-          .sortBy(sortBy("forks"), sortBy("stars"))
-          .size(7)
-          .from(80)
-      )
-      .documentAs[GitHubRepo]
+    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
