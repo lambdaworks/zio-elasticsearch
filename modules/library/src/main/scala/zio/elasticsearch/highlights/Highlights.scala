@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.highlighting
+package zio.elasticsearch.highlights
 
 import zio.Chunk
 import zio.elasticsearch.Field
-import zio.elasticsearch.highlighting.Highlights.HighlightConfig
+import zio.elasticsearch.highlights.Highlights.HighlightConfig
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 
@@ -33,23 +33,23 @@ final case class Highlights(
   def withGlobalConfig(field: String, value: Json): Highlights =
     self.copy(config = self.config.updated(field, value))
 
-  def withHighlight(field: String): Highlights =
-    self.copy(fields = HighlightField(field, Map.empty) +: self.fields)
-
   def withHighlight(field: Field[_, _]): Highlights =
     withHighlight(field.toString, Map.empty)
 
-  def withHighlight(field: String, config: HighlightConfig): Highlights =
-    self.copy(fields = HighlightField(field, config) +: self.fields)
+  def withHighlight(field: String): Highlights =
+    self.copy(fields = HighlightField(field, Map.empty) +: self.fields)
 
   def withHighlight(field: Field[_, _], config: HighlightConfig): Highlights =
     withHighlight(field.toString, config)
 
-  private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsList))
+  def withHighlight(field: String, config: HighlightConfig): Highlights =
+    self.copy(fields = HighlightField(field, config) +: self.fields)
+
+  private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsJson))
 
   private lazy val configList: List[(String, Json)] = config.toList
 
-  private lazy val fieldsList: Obj =
+  private lazy val fieldsJson: Json =
     if (explicitFieldOrder) {
       Obj("fields" -> Arr(fields.reverse.map(_.toJsonObj)))
     } else {

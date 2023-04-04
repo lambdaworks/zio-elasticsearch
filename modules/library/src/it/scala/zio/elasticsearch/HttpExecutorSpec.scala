@@ -171,8 +171,6 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
-                  _     = println(docs)
-                  _     = println(aggs)
                 } yield assert(docs.length)(equalTo(1)) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
@@ -554,7 +552,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ) @@ shrinks(0),
         suite("searching for documents with highlights")(
-          test("successfully find document and return highlight") {
+          test("successfully find document with highlight") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -581,7 +579,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document and return highlight using field accessor") {
+          test("successfully find document with highlight using field accessor") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -608,7 +606,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document and return highlights map") {
+          test("successfully find document with highlights and return highlights map successfully") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -635,7 +633,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document and use global config to return highlight") {
+          test("successfully find document with highlight while using global config") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -668,7 +666,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document and use local config to overwrite global config and return highlight") {
+          test("successfully find document with highlight while using local config to overwrite global config") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {

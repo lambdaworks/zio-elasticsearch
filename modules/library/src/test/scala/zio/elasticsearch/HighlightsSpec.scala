@@ -2,7 +2,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.domain.{TestNestedField, TestSubDocument}
-import zio.elasticsearch.highlighting.{HighlightField, Highlights}
+import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.elasticsearch.utils.RichString
 import zio.json.ast.Json.{Arr, Bool, Num, Str}
 import zio.test.Assertion.equalTo

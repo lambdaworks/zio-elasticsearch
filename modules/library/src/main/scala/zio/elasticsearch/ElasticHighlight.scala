@@ -17,7 +17,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
-import zio.elasticsearch.highlighting.{HighlightField, Highlights}
+import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.json.ast.Json
 
 object ElasticHighlight {

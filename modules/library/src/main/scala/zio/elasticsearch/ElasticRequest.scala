@@ -18,7 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.ElasticAggregation
-import zio.elasticsearch.highlighting.Highlights
+import zio.elasticsearch.highlights.Highlights
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
@@ -431,7 +431,7 @@ object ElasticRequest {
       val sortJson: Json =
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
 
-      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson
+      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge aggregation.toJson
     }
   }
 
