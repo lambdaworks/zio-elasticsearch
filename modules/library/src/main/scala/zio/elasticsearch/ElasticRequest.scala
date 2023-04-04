@@ -376,20 +376,16 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val selfJson: Json = self.from.map(f => Obj("from" -> f.toJson)).getOrElse(Json.Obj())
+      val fromJson: Json = self.from.map(f => Obj("from" -> f.toJson)).getOrElse(Obj())
 
-      val sizeJson: Json = self.size.map(s => Obj("size" -> s.toJson)).getOrElse(Json.Obj())
+      val sizeJson: Json = self.size.map(s => Obj("size" -> s.toJson)).getOrElse(Obj())
 
-      val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Json.Obj())
+      val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Obj())
 
-      val baseJson = selfJson merge sizeJson merge highlightsJson merge self.query.toJson
+      val sortJson: Json =
+        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
 
-      sortBy match {
-        case sorts if sorts.nonEmpty =>
-          baseJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*))
-        case _ =>
-          baseJson
-      }
+      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson
     }
   }
 
@@ -426,23 +422,16 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val baseJson = (self.from, self.size) match {
-        case (Some(from), Some(size)) =>
-          Obj("from" -> from.toJson) merge Obj("size" -> size.toJson) merge self.query.toJson
-        case (Some(from), None) =>
-          Obj("from" -> from.toJson) merge self.query.toJson
-        case (None, Some(size)) =>
-          Obj("size" -> size.toJson) merge self.query.toJson
-        case _ =>
-          self.query.toJson
-      }
+      val fromJson: Json = self.from.map(f => Obj("from" -> f.toJson)).getOrElse(Obj())
 
-      sortBy match {
-        case sorts if sorts.nonEmpty =>
-          baseJson merge Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) merge aggregation.toJson
-        case _ =>
-          baseJson merge aggregation.toJson
-      }
+      val sizeJson: Json = self.size.map(s => Obj("size" -> s.toJson)).getOrElse(Obj())
+
+      val highlightsJson: Json = self.highlights.map(_.toJson).getOrElse(Obj())
+
+      val sortJson: Json =
+        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
+
+      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson
     }
   }
 

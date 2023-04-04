@@ -329,12 +329,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              value.results match {
+              value.resultsWithHighlights match {
                 case Nil =>
                   ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   ZIO.succeed(
-                    (Chunk.fromIterable(value.results).map(Item(_)), value.scrollId.orElse(Some(scrollId)))
+                    (
+                      itemFromResultsWithHighlights(value.resultsWithHighlights),
+                      value.scrollId.orElse(Some(scrollId))
+                    )
                   )
               }
           )
@@ -343,27 +346,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-<<<<<<< HEAD
   private def executeSearch(r: Search): Task[SearchResult] =
-=======
-  private def executeSearch(r: Search): Task[SearchResult] = {
-    val sort =
-      if (r.sortBy.isEmpty) {
-        None
-      } else {
-        Some(Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*)))
-      }
-
-    val highlights = r.highlights.map(_.toJson)
-
-    val body = (sort, highlights) match {
-      case (Some(s), Some(h)) => r.query.toJson merge s merge h
-      case (Some(s), None)    => r.query.toJson merge s
-      case (None, Some(h))    => r.query.toJson merge h
-      case (None, None)       => r.query.toJson
-    }
-
->>>>>>> 8d3e3e7 (Fix code remarsk and add explicit field order)
     sendRequestWithCustomResponse(
       baseRequest
         .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
@@ -375,10 +358,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value =>
-              ZIO.succeed(new SearchResult(value.resultsWithHighlights.map { case (source, highlight) =>
-                Item(source, highlight)
-              }))
+            value => ZIO.succeed(new SearchResult(itemFromResultsWithHighlights(value.resultsWithHighlights).toList))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -398,28 +378,23 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           KeepAlive -> Json.Str(config.keepAlive)
         )
       )
-    val defaultSortField = Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
-    val searchAfterJson  = searchAfter.map(sa => Json.Obj("search_after" -> sa))
-    val sortsJson        = Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
-    val requestBody =
-      if (r.sortBy.isEmpty) {
-        r.query.toJson merge pointInTimeJson merge defaultSortField
-      } else {
-        r.query.toJson merge sortsJson merge pointInTimeJson
-      }
+    val sortsJson =
+      if (r.sortBy.isEmpty) Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
+      else Obj("sort"                       -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
+    val searchAfterJson = searchAfter.map(sa => Json.Obj("search_after" -> sa)).getOrElse(Obj())
     sendRequestWithCustomResponse(
       baseRequest
         .get(uri"${esConfig.uri}/$Search")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(searchAfterJson.map(_ merge requestBody).getOrElse(requestBody))
+        .body(r.query.toJson merge sortsJson merge pointInTimeJson merge searchAfterJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             body => {
-              body.results match {
+              body.resultsWithHighlights match {
                 case Nil => ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   body.pitId match {
@@ -427,7 +402,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                       body.lastSortField match {
                         case Some(newSearchAfter) =>
                           ZIO.succeed(
-                            (Chunk.fromIterable(body.results.map(Item(_))), Some((newPitId, Some(newSearchAfter))))
+                            (
+                              itemFromResultsWithHighlights(body.resultsWithHighlights),
+                              Some((newPitId, Some(newSearchAfter)))
+                            )
                           )
                         case None =>
                           ZIO.fail(
@@ -499,7 +477,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item(_)), value.scrollId))
+            value =>
+              ZIO.succeed(
+                (itemFromResultsWithHighlights(value.resultsWithHighlights), value.scrollId)
+              )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -529,6 +510,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         new ElasticException(
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
         )
+    }
+
+  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]) =
+    Chunk.fromIterable(results).map { case (source, highlight) =>
+      Item(source, highlight)
     }
 
   private def sendRequest(

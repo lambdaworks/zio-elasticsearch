@@ -171,6 +171,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
+                  _     = println(docs)
+                  _     = println(aggs)
                 } yield assert(docs.length)(equalTo(1)) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
@@ -256,7 +258,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
-        ),
+        ) @@ shrinks(0),
         suite("counting documents")(
           test("successfully count documents with given query") {
             checkOnce(genTestDocument) { document =>
