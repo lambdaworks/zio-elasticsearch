@@ -22,13 +22,13 @@ import zio.json.ast.Json
 
 object ElasticHighlight {
 
-  def highlight[S](field: Field[S, _]): Highlights =
+  def highlight(field: Field[_, _]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, Map.empty)))
 
   def highlight(field: String): Highlights =
     Highlights(Chunk(HighlightField(field, Map.empty)))
 
-  def highlight[S](field: Field[S, _], config: Map[String, Json]): Highlights =
+  def highlight(field: Field[_, _], config: Map[String, Json]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, config)))
 
   def highlight(field: String, config: Map[String, Json]): Highlights =

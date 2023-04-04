@@ -17,6 +17,7 @@
 package zio.elasticsearch.result
 
 import zio.Chunk
+import zio.elasticsearch.Field
 import zio.json.DecoderOps
 import zio.json.ast.{Json, JsonCursor}
 import zio.schema.Schema
@@ -33,4 +34,6 @@ final case class Item(raw: Json, private val highlight: Option[Json] = None) {
   def highlight(field: String): Option[Chunk[String]] =
     highlight.flatMap(_.get(JsonCursor.field(field)).toOption).flatMap(_.toString.fromJson[Chunk[String]].toOption)
 
+  def highlight(field: Field[_, _]): Option[Chunk[String]] =
+    highlight(field.toString)
 }

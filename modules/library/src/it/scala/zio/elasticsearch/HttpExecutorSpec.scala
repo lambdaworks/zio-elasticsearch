@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.{Chunk, ZIO}
+import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
@@ -28,6 +28,7 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.result.Item
 import zio.elasticsearch.script.Script
+import zio.json.ast.Json.{Arr, Str}
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
@@ -572,6 +573,129 @@ object HttpExecutorSpec extends IntegrationSpec {
                   items <- res.items
                 } yield assert(items.map(_.highlight("stringField")))(
                   hasSameElements(List(Some(Chunk(s"<em>${firstDocument.stringField}</em>"))))
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("successfully find document and return highlight using field accessor") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = should(matches("stringField", firstDocument.stringField))
+                  res <-
+                    Executor.execute(
+                      ElasticRequest.search(firstSearchIndex, query).highlights(highlight(TestDocument.stringField))
+                    )
+                  items <- res.items
+                } yield assert(items.map(_.highlight(TestDocument.stringField)))(
+                  hasSameElements(List(Some(Chunk(s"<em>${firstDocument.stringField}</em>"))))
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("successfully find document and return highlights map") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = should(matches("stringField", firstDocument.stringField))
+                  res <-
+                    Executor.execute(
+                      ElasticRequest.search(firstSearchIndex, query).highlights(highlight("stringField"))
+                    )
+                  items <- res.items
+                } yield assert(items.map(_.highlights))(
+                  hasSameElements(List(Some(Map("stringField" -> Chunk(s"<em>${firstDocument.stringField}</em>")))))
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("successfully find document and use global config to return highlight") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = should(matches("stringField", firstDocument.stringField))
+                  res <-
+                    Executor.execute(
+                      ElasticRequest
+                        .search(firstSearchIndex, query)
+                        .highlights(
+                          highlight(TestDocument.stringField)
+                            .withGlobalConfig("pre_tags", Arr(Str("<ul>")))
+                            .withGlobalConfig("post_tags", Arr(Str("</ul>")))
+                        )
+                    )
+                  items <- res.items
+                } yield assert(items.map(_.highlight(TestDocument.stringField)))(
+                  hasSameElements(List(Some(Chunk(s"<ul>${firstDocument.stringField}</ul>"))))
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("successfully find document and use local config to overwrite global config and return highlight") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = should(matches("stringField", firstDocument.stringField))
+                  res <-
+                    Executor.execute(
+                      ElasticRequest
+                        .search(firstSearchIndex, query)
+                        .highlights(
+                          highlight(
+                            TestDocument.stringField,
+                            config = Map("pre_tags" -> Arr(Str("<ol>")), "post_tags" -> Arr(Str("</ol>")))
+                          )
+                            .withGlobalConfig("pre_tags", Arr(Str("<ul>")))
+                            .withGlobalConfig("post_tags", Arr(Str("</ul>")))
+                        )
+                    )
+                  items <- res.items
+                } yield assert(items.map(_.highlight(TestDocument.stringField)))(
+                  hasSameElements(List(Some(Chunk(s"<ol>${firstDocument.stringField}</ol>"))))
                 )
             }
           } @@ around(

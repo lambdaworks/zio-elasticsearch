@@ -1,6 +1,7 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticHighlight.highlight
+import zio.elasticsearch.domain.{TestNestedField, TestSubDocument}
 import zio.elasticsearch.highlighting.{HighlightField, Highlights}
 import zio.elasticsearch.utils.RichString
 import zio.json.ast.Json.{Arr, Bool, Num, Str}
@@ -58,6 +59,48 @@ object HighlightsSpec extends ZIOSpecDefault {
               Highlights(
                 fields = Chunk(HighlightField("day_of_week", Map("type" -> Str("plain")))),
                 config = Map("pre_tags" -> Arr(Str("<tag1>")))
+              )
+            )
+          )
+        }
+      ),
+      suite("creating Highlight using accessors from Schema")(
+        test("successfully create Highlight with only field given without config") {
+          assert(highlight(TestSubDocument.stringField))(
+            equalTo(
+              Highlights(
+                fields = Chunk(HighlightField("stringField"))
+              )
+            )
+          )
+        },
+        test("successfully create Highlight with two fields given without config") {
+          assert(highlight(TestSubDocument.stringField).withHighlight(TestSubDocument.intField))(
+            equalTo(
+              Highlights(
+                fields = Chunk(HighlightField("intField"), HighlightField("stringField"))
+              )
+            )
+          )
+        },
+        test("successfully create Highlight with nested field ") {
+          assert(
+            highlight(TestSubDocument.nestedField / TestNestedField.stringField).withGlobalConfig("type", Str("plain"))
+          )(
+            equalTo(
+              Highlights(
+                fields = Chunk(HighlightField("nestedField.stringField")),
+                config = Map("type" -> Str("plain"))
+              )
+            )
+          )
+        },
+        test("successfully create Highlight with one field given with global config") {
+          assert(highlight(TestSubDocument.stringField).withGlobalConfig("type", Str("plain")))(
+            equalTo(
+              Highlights(
+                fields = Chunk(HighlightField("stringField")),
+                config = Map("type" -> Str("plain"))
               )
             )
           )

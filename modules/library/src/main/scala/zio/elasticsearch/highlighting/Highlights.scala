@@ -17,6 +17,7 @@
 package zio.elasticsearch.highlighting
 
 import zio.Chunk
+import zio.elasticsearch.Field
 import zio.elasticsearch.highlighting.Highlights.HighlightConfig
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
@@ -26,13 +27,24 @@ final case class Highlights(
   config: HighlightConfig = Map.empty,
   explicitFieldOrder: Boolean = false
 ) { self =>
+
   def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
 
   def withGlobalConfig(field: String, value: Json): Highlights =
     self.copy(config = self.config.updated(field, value))
 
-  def withHighlight(field: String, config: HighlightConfig = Map.empty): Highlights =
+  def withHighlight(field: String): Highlights =
+    self.copy(fields = HighlightField(field, Map.empty) +: self.fields)
+
+  def withHighlight(field: Field[_, _]): Highlights =
+    withHighlight(field.toString, Map.empty)
+
+  def withHighlight(field: String, config: HighlightConfig): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)
+
+  def withHighlight(field: Field[_, _], config: HighlightConfig): Highlights =
+    withHighlight(field.toString, config)
+
   private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsList))
 
   private lazy val configList: List[(String, Json)] = config.toList
