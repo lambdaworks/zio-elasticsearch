@@ -34,13 +34,13 @@ final case class Highlights(
     self.copy(config = self.config.updated(field, value))
 
   def withHighlight(field: Field[_, _]): Highlights =
-    withHighlight(field.toString, Map.empty)
+    self.copy(fields = HighlightField(field.toString, Map.empty) +: self.fields)
 
   def withHighlight(field: String): Highlights =
     self.copy(fields = HighlightField(field, Map.empty) +: self.fields)
 
   def withHighlight(field: Field[_, _], config: HighlightConfig): Highlights =
-    withHighlight(field.toString, config)
+    self.copy(fields = HighlightField(field.toString, config) +: self.fields)
 
   def withHighlight(field: String, config: HighlightConfig): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)

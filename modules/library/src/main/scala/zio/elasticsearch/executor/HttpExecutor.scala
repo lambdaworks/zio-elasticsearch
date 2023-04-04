@@ -379,8 +379,12 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
       )
     val sortsJson =
-      if (r.sortBy.isEmpty) Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
-      else Obj("sort"                       -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
+      if (r.sortBy.isEmpty) {
+        Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
+      }
+      else {
+        Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
+      }
     val searchAfterJson = searchAfter.map(sa => Json.Obj("search_after" -> sa)).getOrElse(Obj())
     sendRequestWithCustomResponse(
       baseRequest
