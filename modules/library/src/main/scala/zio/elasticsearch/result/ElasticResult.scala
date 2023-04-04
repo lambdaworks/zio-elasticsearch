@@ -19,7 +19,7 @@ package zio.elasticsearch.result
 import zio.elasticsearch.executor.response.AggregationResponse
 import zio.prelude.ZValidation
 import zio.schema.Schema
-import zio.{IO, Task, ZIO}
+import zio.{IO, Task, UIO, ZIO}
 
 private[elasticsearch] sealed trait AggregationsResult {
   def aggregation(name: String): Task[Option[AggregationResponse]]
@@ -63,6 +63,8 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item]) e
         DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})")
       }
     }
+
+  def items: UIO[List[Item]] = ZIO.succeed(hits)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (

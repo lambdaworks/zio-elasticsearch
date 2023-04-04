@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.executor.response
+package zio.elasticsearch
 
+import zio.Chunk
+import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.json.ast.Json
-import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class Hit(
-  @jsonField("_index")
-  index: String,
-  @jsonField("_type")
-  `type`: String,
-  @jsonField("_id")
-  id: String,
-  @jsonField("_score")
-  score: Option[Double] = None,
-  @jsonField("_source")
-  source: Json,
-  sort: Option[Json],
-  highlight: Option[Json]
-)
+object ElasticHighlight {
 
-private[elasticsearch] object Hit {
-  implicit val decoder: JsonDecoder[Hit] = DeriveJsonDecoder.gen[Hit]
+  def highlight(field: Field[_, _]): Highlights =
+    Highlights(Chunk(HighlightField(field.toString, Map.empty)))
+
+  def highlight(field: String): Highlights =
+    Highlights(Chunk(HighlightField(field, Map.empty)))
+
+  def highlight(field: Field[_, _], config: Map[String, Json]): Highlights =
+    Highlights(Chunk(HighlightField(field.toString, config)))
+
+  def highlight(field: String, config: Map[String, Json]): Highlights =
+    Highlights(Chunk(HighlightField(field, config)))
 }

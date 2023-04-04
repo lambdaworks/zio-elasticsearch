@@ -16,11 +16,24 @@
 
 package zio.elasticsearch.result
 
-import zio.json.ast.Json
+import zio.Chunk
+import zio.elasticsearch.Field
+import zio.json.DecoderOps
+import zio.json.ast.{Json, JsonCursor}
 import zio.schema.Schema
 import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 
-final case class Item(raw: Json) {
+final case class Item(raw: Json, private val highlight: Option[Json] = None) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
+
+  lazy val highlights: Option[Map[String, Chunk[String]]] = highlight.flatMap { json =>
+    json.toString.fromJson[Map[String, Chunk[String]]].toOption
+  }
+
+  def highlight(field: String): Option[Chunk[String]] =
+    highlight.flatMap(_.get(JsonCursor.field(field)).toOption).flatMap(_.toString.fromJson[Chunk[String]].toOption)
+
+  def highlight(field: Field[_, _]): Option[Chunk[String]] =
+    highlight(field.toString)
 }

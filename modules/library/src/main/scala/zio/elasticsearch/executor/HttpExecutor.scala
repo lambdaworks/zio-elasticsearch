@@ -329,12 +329,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              value.results match {
+              value.resultsWithHighlights match {
                 case Nil =>
                   ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   ZIO.succeed(
-                    (Chunk.fromIterable(value.results).map(Item.apply), value.scrollId.orElse(Some(scrollId)))
+                    (
+                      itemFromResultsWithHighlights(value.resultsWithHighlights),
+                      value.scrollId.orElse(Some(scrollId))
+                    )
                   )
               }
           )
@@ -355,7 +358,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchResult(value.results.map(Item.apply)))
+            value => ZIO.succeed(new SearchResult(itemFromResultsWithHighlights(value.resultsWithHighlights).toList))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -375,28 +378,26 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           KeepAlive -> Json.Str(config.keepAlive)
         )
       )
-    val defaultSortField = Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
-    val searchAfterJson  = searchAfter.map(sa => Json.Obj("search_after" -> sa))
-    val sortsJson        = Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
-    val requestBody =
+    val sortsJson =
       if (r.sortBy.isEmpty) {
-        r.query.toJson merge pointInTimeJson merge defaultSortField
+        Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
       } else {
-        r.query.toJson merge sortsJson merge pointInTimeJson
+        Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
       }
+    val searchAfterJson = searchAfter.map(sa => Json.Obj("search_after" -> sa)).getOrElse(Obj())
     sendRequestWithCustomResponse(
       baseRequest
         .get(uri"${esConfig.uri}/$Search")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(searchAfterJson.map(_ merge requestBody).getOrElse(requestBody))
+        .body(r.query.toJson merge sortsJson merge pointInTimeJson merge searchAfterJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             body => {
-              body.results match {
+              body.resultsWithHighlights match {
                 case Nil => ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   body.pitId match {
@@ -404,7 +405,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                       body.lastSortField match {
                         case Some(newSearchAfter) =>
                           ZIO.succeed(
-                            (Chunk.fromIterable(body.results.map(Item.apply)), Some((newPitId, Some(newSearchAfter))))
+                            (
+                              itemFromResultsWithHighlights(body.resultsWithHighlights),
+                              Some((newPitId, Some(newSearchAfter)))
+                            )
                           )
                         case None =>
                           ZIO.fail(
@@ -445,7 +449,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchAndAggregateResult(value.results.map(Item.apply), value.aggs))
+            value =>
+              ZIO.succeed(
+                new SearchAndAggregateResult(
+                  value.resultsWithHighlights.map { case (source, highlight) =>
+                    Item(source, highlight)
+                  },
+                  value.aggs
+                )
+              )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -468,7 +480,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed((Chunk.fromIterable(value.results).map(Item.apply), value.scrollId))
+            value =>
+              ZIO.succeed(
+                (itemFromResultsWithHighlights(value.resultsWithHighlights), value.scrollId)
+              )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -498,6 +513,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         new ElasticException(
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
         )
+    }
+
+  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]) =
+    Chunk.fromIterable(results).map { case (source, highlight) =>
+      Item(source, highlight)
     }
 
   private def sendRequest(
