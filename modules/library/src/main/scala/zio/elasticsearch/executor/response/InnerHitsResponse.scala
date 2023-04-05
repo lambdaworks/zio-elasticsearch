@@ -16,27 +16,10 @@
 
 package zio.elasticsearch.executor.response
 
-import zio.json.ast.Json
-import zio.json.ast.Json.Obj
-import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
-private[elasticsearch] final case class Hit(
-  @jsonField("_index")
-  index: String,
-  @jsonField("_type")
-  `type`: String,
-  @jsonField("_id")
-  id: String,
-  @jsonField("_score")
-  score: Option[Double] = None,
-  @jsonField("_source")
-  source: Json,
-  @jsonField("inner_hits")
-  innerHits: Option[Obj],
-  sort: Option[Json],
-  highlight: Option[Json]
-)
+private[elasticsearch] final case class InnerHitsResponse(hits: Hits)
 
-private[elasticsearch] object Hit {
-  implicit val decoder: JsonDecoder[Hit] = DeriveJsonDecoder.gen[Hit]
+private[elasticsearch] object InnerHitsResponse {
+  implicit val decoder: JsonDecoder[InnerHitsResponse] = DeriveJsonDecoder.gen[InnerHitsResponse]
 }

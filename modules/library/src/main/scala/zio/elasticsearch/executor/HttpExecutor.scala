@@ -359,9 +359,16 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              ZIO.succeed(
-                new SearchResult(itemFromResultsWithHighlights(value.resultsWithHighlights).toList, value.lastSortField)
-              )
+              ZIO
+                .fromEither(value.innerHitsResults)
+                .map { innerHitsResults =>
+                  new SearchResult(
+                    itemFromResultsWithHighlights(value.resultsWithHighlights).toList,
+                    itemFromInnerHitsResults(innerHitsResults),
+                    value.lastSortField
+                  )
+                }
+                .mapError(error => new DecodingException(s"Could not parse inner_hits: $error"))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -518,6 +525,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
         )
     }
+
+  private def itemFromInnerHitsResults(results: List[Map[String, List[Json]]]) =
+    results.map(_.map { case (string, list) =>
+      (string, list.map(Item(_)))
+    }.toMap[String, List[Item]])
 
   private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]) =
     Chunk.fromIterable(results).map { case (source, highlight) =>

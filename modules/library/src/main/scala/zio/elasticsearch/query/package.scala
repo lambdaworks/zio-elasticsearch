@@ -37,6 +37,11 @@ package object query {
     def ignoreUnmappedTrue: Q
   }
 
+  private[elasticsearch] trait HasInnerHits[Q <: HasInnerHits[Q]] {
+    def innerHitsEmpty: Q = innerHits(InnerHits())
+    def innerHits(innerHits: InnerHits): Q
+  }
+
   private[elasticsearch] trait HasScoreMode[Q <: HasScoreMode[Q]] {
     def scoreMode(scoreMode: ScoreMode): Q
   }

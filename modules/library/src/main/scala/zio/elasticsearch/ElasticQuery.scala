@@ -57,10 +57,10 @@ object ElasticQuery {
     Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
   def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
-    Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None)
+    Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None, innerHits = None)
 
   def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
-    Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None)
+    Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHits = None)
 
   def range[S, A](
     field: Field[S, A],

@@ -34,6 +34,27 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
   hits: Hits,
   aggregations: Option[Json]
 ) {
+  lazy val innerHitsResults: Either[String, List[Map[String, List[Json]]]] =
+    Validation
+      .validateAll(
+        hits.hits
+          .map(_.innerHits.fold[Validation[String, Map[String, List[Json]]]](Validation.succeed(Map.empty)) {
+            innerHits =>
+              Validation
+                .validateAll(
+                  innerHits.fields.map { tuple =>
+                    Validation.fromEither(
+                      tuple._2
+                        .as[InnerHitsResponse]
+                        .map(innerHitsResponse => (tuple._1, innerHitsResponse.hits.hits.map(_.source)))
+                    )
+                  }
+                )
+                .map(_.toMap)
+          })
+      )
+      .toEitherWith(errors => errors.mkString(", "))
+
   lazy val results: List[Json] = hits.hits.map(_.source)
 
   lazy val resultsWithHighlights: List[(Json, Option[Json])] = hits.hits.map(h => (h.source, h.highlight))

@@ -596,6 +596,70 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using nested query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query =
+                    nested(path = "subDocumentList", query = matchAll)
+                  res <-
+                    Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(Assertion.hasSameElements(List(firstDocument, secondDocument)))
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
+              )
+            ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ) @@ shrinks(0),
+        suite("searching for documents with inner hits")(
+          test("search for a document using nested query with inner hits") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query =
+                    nested(path = "subDocumentList", query = matchAll).innerHitsEmpty
+                  res <-
+                    Executor
+                      .execute(ElasticRequest.search(firstSearchIndex, query))
+                      .flatMap(_.innerHitAs[TestSubDocument]("subDocumentList"))
+                } yield assert(res)(
+                  Assertion.hasSameElements(List(firstDocument.subDocumentList, secondDocument.subDocumentList))
+                )
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
+              )
+            ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
         suite("searching for documents with highlights")(
