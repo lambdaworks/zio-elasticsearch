@@ -1013,6 +1013,48 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           )
         ) @@ shrinks(0),
+        suite("searching for documents using SearchAfter Query")(
+          test("search for document sorted by ascending age while using search after query") {
+            checkOnce(genTestDocument) { firstDocument =>
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                reqs = (0 to 100).map { i =>
+                         ElasticRequest.create[TestDocument](
+                           firstSearchIndex,
+                           firstDocument.copy(stringField = Random.alphanumeric.take(5).mkString, intField = i)
+                         )
+                       }
+                _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query = range(TestDocument.intField).gte(10)
+                res <- Executor
+                         .execute(
+                           ElasticRequest
+                             .search(firstSearchIndex, query)
+                             .size(10)
+                             .sortBy(
+                               sortBy(TestDocument.intField).order(Asc)
+                             )
+                         )
+                sa <- res.lastSortValue()
+                res2 <- Executor
+                          .execute(
+                            ElasticRequest
+                              .searchAfter(firstSearchIndex, query, sa.get)
+                              .size(10)
+                              .sortBy(
+                                sortBy(TestDocument.intField).order(Asc)
+                              )
+                          )
+                          .documentAs[TestDocument]
+              } yield assert(res2.map(_.intField))(
+                equalTo((20 to 29).toList)
+              )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ shrinks(0)
+        ),
         suite("deleting by query")(
           test("successfully delete all matched documents") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

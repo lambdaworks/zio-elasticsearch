@@ -358,7 +358,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new SearchResult(itemFromResultsWithHighlights(value.resultsWithHighlights).toList))
+            value =>
+              ZIO.succeed(
+                new SearchResult(itemFromResultsWithHighlights(value.resultsWithHighlights).toList, value.lastSortField)
+              )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))

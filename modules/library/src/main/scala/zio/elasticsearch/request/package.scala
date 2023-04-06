@@ -31,7 +31,7 @@ package object request {
     def routing(value: Routing): R
   }
 
-  private[elasticsearch] trait HasFrom[R <: HasSize[R]] {
+  private[elasticsearch] trait HasFrom[R <: HasFrom[R]] {
     def from(value: Int): R
   }
 
