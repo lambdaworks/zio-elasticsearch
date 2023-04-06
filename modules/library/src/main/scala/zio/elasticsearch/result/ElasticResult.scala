@@ -66,9 +66,9 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item], p
       }
     }
 
-  def items: UIO[List[Item]] = ZIO.succeed(hits)
+  lazy val items: UIO[List[Item]] = ZIO.succeed(hits)
 
-  def lastSortValue(): ZIO[Any, Nothing, Option[Json]] = ZIO.succeed(lastSort)
+  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(lastSort)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (

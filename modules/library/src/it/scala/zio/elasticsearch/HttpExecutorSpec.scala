@@ -1035,11 +1035,12 @@ object HttpExecutorSpec extends IntegrationSpec {
                                sortBy(TestDocument.intField).order(Asc)
                              )
                          )
-                sa <- res.lastSortValue()
+                sa <- res.lastSortValue
                 res2 <- Executor
                           .execute(
                             ElasticRequest
-                              .searchAfter(firstSearchIndex, query, sa.get)
+                              .search(firstSearchIndex, query)
+                              .searchAfter(sa.get)
                               .size(10)
                               .sortBy(
                                 sortBy(TestDocument.intField).order(Asc)
