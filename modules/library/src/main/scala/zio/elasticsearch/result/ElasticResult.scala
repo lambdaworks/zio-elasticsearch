@@ -17,6 +17,7 @@
 package zio.elasticsearch.result
 
 import zio.elasticsearch.executor.response.AggregationResponse
+import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{IO, Task, UIO, ZIO}
@@ -56,7 +57,8 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
       .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
-final class SearchResult private[elasticsearch] (private val hits: List[Item]) extends DocumentResult[List] {
+final class SearchResult private[elasticsearch] (private val hits: List[Item], private val lastSort: Option[Json])
+    extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
@@ -64,12 +66,15 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item]) e
       }
     }
 
-  def items: UIO[List[Item]] = ZIO.succeed(hits)
+  lazy val items: UIO[List[Item]] = ZIO.succeed(hits)
+
+  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(lastSort)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
-  private val aggs: Map[String, AggregationResponse]
+  private val aggs: Map[String, AggregationResponse],
+  private val lastSort: Option[Json]
 ) extends DocumentResult[List]
     with AggregationsResult {
   def aggregation(name: String): Task[Option[AggregationResponse]] =
@@ -86,4 +91,8 @@ final class SearchAndAggregateResult private[elasticsearch] (
         )
       }
     }
+
+  lazy val items: UIO[List[Item]] = ZIO.succeed(hits)
+
+  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(lastSort)
 }

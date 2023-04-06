@@ -80,6 +80,7 @@ object ElasticRequest {
       from = None,
       highlights = None,
       routing = None,
+      searchAfter = None,
       size = None
     )
 
@@ -92,6 +93,7 @@ object ElasticRequest {
       from = None,
       highlights = None,
       routing = None,
+      searchAfter = None,
       size = None
     )
 
@@ -335,7 +337,9 @@ object ElasticRequest {
       with HasSize[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
 
-    def highlights(value: Highlights): Search
+    def highlights(value: Highlights): SearchRequest
+
+    def searchAfter(value: Json): SearchRequest
   }
 
   private[elasticsearch] final case class Search(
@@ -345,6 +349,7 @@ object ElasticRequest {
     from: Option[Int],
     highlights: Option[Highlights],
     routing: Option[Routing],
+    searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchRequest { self =>
 
@@ -357,17 +362,21 @@ object ElasticRequest {
         from = from,
         highlights = highlights,
         routing = routing,
+        searchAfter = None,
         size = size
       )
 
     def from(value: Int): SearchRequest =
       self.copy(from = Some(value))
 
-    def highlights(value: Highlights): Search =
+    def highlights(value: Highlights): SearchRequest =
       self.copy(highlights = Some(value))
 
     def routing(value: Routing): SearchRequest =
       self.copy(routing = Some(value))
+
+    def searchAfter(value: Json): SearchRequest =
+      self.copy(searchAfter = Some(value))
 
     def size(value: Int): SearchRequest =
       self.copy(size = Some(value))
@@ -376,16 +385,18 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val fromJson: Json = self.from.map(f => Obj("from" -> f.toJson)).getOrElse(Obj())
+      val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
 
-      val sizeJson: Json = self.size.map(s => Obj("size" -> s.toJson)).getOrElse(Obj())
+      val sizeJson: Json = self.size.fold(Obj())(s => Obj("size" -> s.toJson))
 
       val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Obj())
+
+      val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
       val sortJson: Json =
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
 
-      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson
+      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge searchAfterJson
     }
   }
 
@@ -394,7 +405,11 @@ object ElasticRequest {
       with HasFrom[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
       with HasSize[SearchAndAggregateRequest]
-      with WithSort[SearchAndAggregateRequest]
+      with WithSort[SearchAndAggregateRequest] {
+    def highlights(value: Highlights): SearchAndAggregateRequest
+
+    def searchAfter(value: Json): SearchAndAggregateRequest
+  }
 
   private[elasticsearch] final case class SearchAndAggregate(
     index: IndexName,
@@ -404,6 +419,7 @@ object ElasticRequest {
     from: Option[Int],
     highlights: Option[Highlights],
     routing: Option[Routing],
+    searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
     def from(value: Int): SearchAndAggregateRequest =
@@ -418,20 +434,31 @@ object ElasticRequest {
     def size(value: Int): SearchAndAggregateRequest =
       self.copy(size = Some(value))
 
+    def searchAfter(value: Json): SearchAndAggregateRequest =
+      self.copy(searchAfter = Some(value))
+
     def sortBy(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
-      val fromJson: Json = self.from.map(f => Obj("from" -> f.toJson)).getOrElse(Obj())
+      val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
 
-      val sizeJson: Json = self.size.map(s => Obj("size" -> s.toJson)).getOrElse(Obj())
+      val sizeJson: Json = self.size.fold(Obj())(s => Obj("size" -> s.toJson))
 
-      val highlightsJson: Json = self.highlights.map(_.toJson).getOrElse(Obj())
+      val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Obj())
+
+      val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
       val sortJson: Json =
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
 
-      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge aggregation.toJson
+      fromJson merge
+        sizeJson merge
+        highlightsJson merge
+        sortJson merge
+        self.query.toJson merge
+        aggregation.toJson merge
+        searchAfterJson
     }
   }
 
