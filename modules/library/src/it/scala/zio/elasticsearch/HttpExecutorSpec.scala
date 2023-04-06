@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.{Chunk, ZIO}
+import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
@@ -172,6 +172,53 @@ object HttpExecutorSpec extends IntegrationSpec {
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
                 } yield assert(docs.length)(equalTo(1)) && assert(aggs)(isNonEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test(
+            "search for first result using match all query with multiple terms aggregations and search after parameter"
+          ) {
+            checkOnce(genTestDocument) { firstDocument =>
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                reqs = (0 to 20).map { i =>
+                         ElasticRequest.create[TestDocument](
+                           firstSearchIndex,
+                           firstDocument.copy(stringField = Random.alphanumeric.take(5).mkString, intField = i)
+                         )
+                       }
+                _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query = matchAll
+                aggregation = termsAggregation(
+                                name = "aggregationString",
+                                field = TestDocument.stringField,
+                                multiField = Some("keyword")
+                              ).withAgg(termsAggregation("aggregationInt", "intField"))
+                res <- Executor
+                         .execute(
+                           ElasticRequest
+                             .search(index = firstSearchIndex, query = query, aggregation = aggregation)
+                             .size(10)
+                             .sortBy(
+                               sortBy(TestDocument.intField).order(Asc)
+                             )
+                         )
+                sa <- res.lastSortValue
+                res2 <- Executor
+                          .execute(
+                            ElasticRequest
+                              .search(index = firstSearchIndex, query = query, aggregation = aggregation)
+                              .searchAfter(sa.get)
+                              .size(10)
+                              .sortBy(
+                                sortBy(TestDocument.intField).order(Asc)
+                              )
+                          )
+                docs <- res2.documentAs[TestDocument]
+                aggs <- res2.aggregations
+              } yield assert(docs.length)(equalTo(10)) && assert(aggs)(isNonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

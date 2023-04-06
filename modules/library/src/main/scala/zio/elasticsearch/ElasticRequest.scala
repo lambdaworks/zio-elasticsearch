@@ -405,7 +405,11 @@ object ElasticRequest {
       with HasFrom[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
       with HasSize[SearchAndAggregateRequest]
-      with WithSort[SearchAndAggregateRequest]
+      with WithSort[SearchAndAggregateRequest] {
+    def highlights(value: Highlights): SearchAndAggregateRequest
+
+    def searchAfter(value: Json): SearchAndAggregateRequest
+  }
 
   private[elasticsearch] final case class SearchAndAggregate(
     index: IndexName,
@@ -429,6 +433,9 @@ object ElasticRequest {
 
     def size(value: Int): SearchAndAggregateRequest =
       self.copy(size = Some(value))
+
+    def searchAfter(value: Json): SearchAndAggregateRequest =
+      self.copy(searchAfter = Some(value))
 
     def sortBy(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)

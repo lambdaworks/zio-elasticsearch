@@ -73,7 +73,8 @@ final class SearchResult private[elasticsearch] (private val hits: List[Item], p
 
 final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
-  private val aggs: Map[String, AggregationResponse]
+  private val aggs: Map[String, AggregationResponse],
+  private val lastSort: Option[Json]
 ) extends DocumentResult[List]
     with AggregationsResult {
   def aggregation(name: String): Task[Option[AggregationResponse]] =
@@ -90,4 +91,8 @@ final class SearchAndAggregateResult private[elasticsearch] (
         )
       }
     }
+
+  lazy val items: UIO[List[Item]] = ZIO.succeed(hits)
+
+  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(lastSort)
 }

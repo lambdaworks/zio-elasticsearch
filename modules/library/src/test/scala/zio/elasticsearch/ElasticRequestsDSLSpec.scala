@@ -114,8 +114,45 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
           .size(20)
           .highlights(highlight(TestDocument.intField))
           .sortBy(sortBy(TestDocument.intField).missing(First))
-          .from(10)
-          .aggregate(termsAggregation(name = "aggregation", field = "day_of_week")) match {
+          .from(10) match {
+          case r: ElasticRequest.Search => r.toJson
+        }
+        val expected =
+          """
+            |{
+            |  "query" : {
+            |    "range" : {
+            |      "intField" : {
+            |       "gte" : 10
+            |      }
+            |    }
+            |  },
+            |  "size" : 20,
+            |  "from" : 10,
+            |  "sort": [
+            |    {
+            |      "intField": {
+            |        "missing": "_first"
+            |      }
+            |    }
+            |  ],
+            |  "highlight" : {
+            |    "fields" : {
+            |      "intField" : {}
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(jsonRequest)(equalTo(expected.toJson))
+      },
+      test("successfully encode search and aggregate request to JSON with all parameters") {
+        val jsonRequest = search(IndexName("indexName"), Query)
+          .aggregate(termsAggregation(name = "aggregation", field = "day_of_week"))
+          .size(20)
+          .highlights(highlight(TestDocument.intField))
+          .sortBy(sortBy(TestDocument.intField).missing(First))
+          .from(10) match {
           case r: ElasticRequest.SearchAndAggregate => r.toJson
         }
         val expected =
