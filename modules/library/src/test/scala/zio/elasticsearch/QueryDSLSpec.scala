@@ -427,7 +427,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHits = Some(InnerHits(None, None, None))
               )
             )
           )
