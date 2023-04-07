@@ -1,5 +1,7 @@
 import sbt._
 import Keys._
+import sbtbuildinfo._
+import sbtbuildinfo.BuildInfoKeys._
 import scalafix.sbt.ScalafixPlugin.autoImport._
 
 object BuildHelper {
@@ -73,4 +75,10 @@ object BuildHelper {
         )
       case _ => Nil
     }
+
+  def buildInfoSettings(packageName: String) =
+    Seq(
+      buildInfoKeys    := Seq[BuildInfoKey](organization, name, version, isSnapshot),
+      buildInfoPackage := packageName
+    )
 }
