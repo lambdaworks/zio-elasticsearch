@@ -508,7 +508,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 assertZIO(result.exit)(
                   fails(
                     isSubtype[Exception](
-                      assertException("Could not parse all documents successfully: .subDocumentList(missing))")
+                      assertException("Could not parse all documents successfully: .subDocumentList(missing)")
                     )
                   )
                 )
@@ -612,7 +612,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query =
-                    nested(path = "subDocumentList", query = matchAll)
+                    nested(path = TestDocument.subDocumentList, query = matchAll)
                   res <-
                     Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield assert(res)(Assertion.hasSameElements(List(firstDocument, secondDocument)))
@@ -643,11 +643,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query =
-                    nested(path = "subDocumentList", query = matchAll).innerHitsEmpty
-                  res <-
-                    Executor
-                      .execute(ElasticRequest.search(firstSearchIndex, query))
-                      .flatMap(_.innerHitAs[TestSubDocument]("subDocumentList"))
+                    nested(path = TestDocument.subDocumentList, query = matchAll).innerHitsEmpty
+                  result <- Executor.execute(ElasticRequest.search(firstSearchIndex, query))
+                  items  <- result.items
+                  res =
+                    items.map(_.innerHitAs[TestSubDocument]("subDocumentList")).collect { case Right(value) => value }
                 } yield assert(res)(
                   Assertion.hasSameElements(List(firstDocument.subDocumentList, secondDocument.subDocumentList))
                 )

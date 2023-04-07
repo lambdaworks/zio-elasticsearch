@@ -363,12 +363,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 .fromEither(value.innerHitsResults)
                 .map { innerHitsResults =>
                   new SearchResult(
-                    itemFromResultsWithHighlights(value.resultsWithHighlights).toList,
-                    itemFromInnerHitsResults(innerHitsResults),
+                    itemFromResultsWithHighlightsAndInnerHits(value.resultsWithHighlights, innerHitsResults).toList,
                     value.lastSortField
                   )
                 }
-                .mapError(error => new DecodingException(s"Could not parse inner_hits: $error"))
+                .mapError(error => DecodingException(s"Could not parse inner_hits: $error"))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -526,14 +525,17 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
     }
 
-  private def itemFromInnerHitsResults(results: List[Map[String, List[Json]]]) =
-    results.map(_.map { case (string, list) =>
-      (string, list.map(Item(_)))
-    }.toMap[String, List[Item]])
-
   private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]) =
     Chunk.fromIterable(results).map { case (source, highlight) =>
       Item(source, highlight)
+    }
+
+  private def itemFromResultsWithHighlightsAndInnerHits(
+    results: List[(Json, Option[Json])],
+    innerHits: List[Map[String, List[Json]]]
+  ) =
+    Chunk.fromIterable(results).zip(innerHits).map { case ((source, highlight), innerHits) =>
+      Item(source, highlight, innerHits)
     }
 
   private def sendRequest(

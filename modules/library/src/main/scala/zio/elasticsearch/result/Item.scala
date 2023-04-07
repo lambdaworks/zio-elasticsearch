@@ -20,11 +20,16 @@ import zio.Chunk
 import zio.elasticsearch.Field
 import zio.json.DecoderOps
 import zio.json.ast.{Json, JsonCursor}
+import zio.prelude.Validation
 import zio.schema.Schema
 import zio.schema.codec.DecodeError
 import zio.schema.codec.JsonCodec.JsonDecoder
 
-final case class Item(raw: Json, private val highlight: Option[Json] = None) {
+final case class Item(
+  raw: Json,
+  private val highlight: Option[Json] = None,
+  private val innerHits: Map[String, List[Json]] = Map.empty
+) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 
   lazy val highlights: Option[Map[String, Chunk[String]]] = highlight.flatMap { json =>
@@ -36,4 +41,18 @@ final case class Item(raw: Json, private val highlight: Option[Json] = None) {
 
   def highlight(field: Field[_, _]): Option[Chunk[String]] =
     highlight(field.toString)
+
+  def innerHitAs[A](name: String)(implicit schema: Schema[A]): Either[DecodingException, List[A]] =
+    for {
+      innerHitsJson <- innerHits.get(name).toRight(DecodingException(s"Could not find inner hits with name $name"))
+      innerHits <- Validation
+                     .validateAll(
+                       innerHitsJson.map(json =>
+                         Validation.fromEither(JsonDecoder.decode(schema, json.toString)).mapError(_.message)
+                       )
+                     )
+                     .toEitherWith(errors =>
+                       DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
+                     )
+    } yield innerHits
 }
