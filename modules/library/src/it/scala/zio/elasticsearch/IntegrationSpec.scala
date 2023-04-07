@@ -58,14 +58,15 @@ trait IntegrationSpec extends ZIOSpecDefault {
     Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
 
   def genTestDocument: Gen[Any, TestDocument] = for {
-    stringField <- Gen.stringBounded(5, 10)(Gen.alphaChar)
-    dateField   <- Gen.localDate(LocalDate.parse("2010-12-02"), LocalDate.parse("2022-12-05"))
-    intField    <- Gen.int(1, 2000)
-    doubleField <- Gen.double(100, 2000)
+    stringField     <- Gen.stringBounded(5, 10)(Gen.alphaChar)
+    dateField       <- Gen.localDate(LocalDate.parse("2010-12-02"), LocalDate.parse("2022-12-05"))
+    subDocumentList <- Gen.listOfBounded(1, 3)(genTestSubDocument)
+    intField        <- Gen.int(1, 2000)
+    doubleField     <- Gen.double(100, 2000)
   } yield TestDocument(
     stringField = stringField,
     dateField = dateField,
-    subDocumentList = Nil,
+    subDocumentList = subDocumentList,
     intField = intField,
     doubleField = doubleField
   )

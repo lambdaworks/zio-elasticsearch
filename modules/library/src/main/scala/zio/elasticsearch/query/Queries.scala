@@ -17,6 +17,7 @@
 package zio.elasticsearch.query
 
 import zio.elasticsearch.ElasticPrimitive._
+import zio.elasticsearch.InnerHits
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
@@ -102,13 +103,15 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
 sealed trait NestedQuery[S]
     extends ElasticQuery[S]
     with HasIgnoreUnmapped[NestedQuery[S]]
+    with HasInnerHits[NestedQuery[S]]
     with HasScoreMode[NestedQuery[S]]
 
 private[elasticsearch] final case class Nested[S](
   path: String,
   query: ElasticQuery[_],
-  scoreMode: Option[ScoreMode],
-  ignoreUnmapped: Option[Boolean]
+  ignoreUnmapped: Option[Boolean],
+  innerHits: Option[InnerHits],
+  scoreMode: Option[ScoreMode]
 ) extends NestedQuery[S] { self =>
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
@@ -119,6 +122,9 @@ private[elasticsearch] final case class Nested[S](
   def ignoreUnmappedTrue: NestedQuery[S] =
     ignoreUnmapped(true)
 
+  def innerHits(innerHits: InnerHits): NestedQuery[S] =
+    self.copy(innerHits = Some(innerHits))
+
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "nested" -> Obj(
@@ -127,7 +133,13 @@ private[elasticsearch] final case class Nested[S](
           "query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))
         ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
           "ignore_unmapped" -> Json.Bool(_)
-        ): _*
+        ) ++ innerHits.map { innerHits =>
+          "inner_hits" -> Obj(
+            innerHits.from.map("from" -> Num(_)).toList
+              ++ innerHits.size.map("size" -> Num(_))
+              ++ innerHits.name.map("name" -> Str(_)): _*
+          )
+        }: _*
       )
     )
 
