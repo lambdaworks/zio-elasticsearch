@@ -417,9 +417,23 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create Nested Query with MatchAll Query and inner_hits") {
-          val query = nested(path = "customer", query = matchAll)
-            .innerHits(InnerHits(from = Some(0), size = Some(3), name = Some("name")))
+        test("successfully create Nested Query with MatchAll Query and inner hits with empty body") {
+          val query = nested(path = "customer", query = matchAll).innerHitsEmpty
+
+          assert(query)(
+            equalTo(
+              Nested[Any](
+                path = "customer",
+                query = MatchAll(boost = None),
+                scoreMode = None,
+                ignoreUnmapped = None,
+                innerHits = None
+              )
+            )
+          )
+        },
+        test("successfully create Nested Query with MatchAll Query and inner hits with from, size and name fields") {
+          val query = nested(path = "customer", query = matchAll).innerHits(InnerHits.from(0).size(3).name("name"))
 
           assert(query)(
             equalTo(
@@ -1114,7 +1128,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test("properly encode Nested Query with MatchAll Query and inner hits with no fields") {
+        test("properly encode Nested Query with MatchAll Query and inner hits with empty body") {
           val query = nested(path = "customer", query = matchAll).innerHitsEmpty
           val expected =
             """
@@ -1133,7 +1147,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test("properly encode Nested Query with MatchAll Query and inner hits with from, size and name") {
+        test("properly encode Nested Query with MatchAll Query and inner hits with from, size and name fields") {
           val query = nested(path = "customer", query = matchAll).innerHits(
             InnerHits.from(0).size(3).name("name")
           )
