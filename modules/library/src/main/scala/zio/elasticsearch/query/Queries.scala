@@ -109,9 +109,9 @@ sealed trait NestedQuery[S]
 private[elasticsearch] final case class Nested[S](
   path: String,
   query: ElasticQuery[_],
-  scoreMode: Option[ScoreMode],
   ignoreUnmapped: Option[Boolean],
-  innerHits: Option[InnerHits]
+  innerHits: Option[InnerHits],
+  scoreMode: Option[ScoreMode]
 ) extends NestedQuery[S] { self =>
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
