@@ -40,7 +40,9 @@ lazy val library =
   project
     .in(file("modules/library"))
     .disablePlugins(RevolverPlugin)
+    .enablePlugins(BuildInfoPlugin)
     .settings(stdSettings("zio-elasticsearch"))
+    .settings(buildInfoSettings("zio.elasticsearch"))
     .settings(scalacOptions += "-language:higherKinds")
     .configs(IntegrationTest.extend(Test))
     .settings(
