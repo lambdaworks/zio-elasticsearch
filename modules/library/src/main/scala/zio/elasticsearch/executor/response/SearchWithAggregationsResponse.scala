@@ -42,18 +42,18 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
             innerHits =>
               Validation
                 .validateAll(
-                  innerHits.fields.map { tuple =>
+                  innerHits.fields.map { case (name, response) =>
                     Validation.fromEither(
-                      tuple._2
+                      response
                         .as[InnerHitsResponse]
-                        .map(innerHitsResponse => (tuple._1, innerHitsResponse.hits.hits.map(_.source)))
+                        .map(innerHitsResponse => (name, innerHitsResponse.hits.hits.map(_.source)))
                     )
                   }
                 )
                 .map(_.toMap)
           })
       )
-      .toEitherWith(errors => errors.mkString(", "))
+      .toEitherWith(_.mkString(", "))
 
   lazy val results: List[Json] = hits.hits.map(_.source)
 
