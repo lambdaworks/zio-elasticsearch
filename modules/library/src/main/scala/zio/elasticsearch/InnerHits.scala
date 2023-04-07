@@ -16,24 +16,24 @@
 
 package zio.elasticsearch
 
-final case class InnerHits(from: Option[Int] = None, size: Option[Int] = None, name: Option[String] = None) { self =>
+final case class InnerHits(from: Option[Int] = None, name: Option[String] = None, size: Option[Int] = None) { self =>
   def from(value: Int): InnerHits =
     self.copy(from = Some(value))
 
-  def size(value: Int): InnerHits =
-    self.copy(size = Some(value))
-
   def name(value: String): InnerHits =
     self.copy(name = Some(value))
+
+  def size(value: Int): InnerHits =
+    self.copy(size = Some(value))
 }
 
 object InnerHits {
   def from(value: Int): InnerHits =
     InnerHits(from = Some(value))
 
-  def size(value: Int): InnerHits =
-    InnerHits(size = Some(value))
-
   def name(value: String): InnerHits =
     InnerHits(name = Some(value))
+
+  def size(value: Int): InnerHits =
+    InnerHits(size = Some(value))
 }

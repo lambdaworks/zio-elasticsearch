@@ -433,7 +433,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create Nested Query with MatchAll Query and inner hits with from, size and name fields") {
-          val query = nested(path = "customer", query = matchAll).innerHits(InnerHits.from(0).size(3).name("name"))
+          val query = nested(path = "customer", query = matchAll).innerHits(InnerHits.from(0).name("name").size(3))
 
           assert(query)(
             equalTo(
@@ -442,7 +442,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHits = Some(InnerHits(from = Some(0), size = Some(3), name = Some("name")))
+                innerHits = Some(InnerHits(from = Some(0), name = Some("name"), size = Some(3)))
               )
             )
           )
