@@ -20,6 +20,7 @@ import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch._
 import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{
@@ -30,9 +31,9 @@ import zio.http.model.Status.{
 }
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
+
 import CompoundOperator._
 import FilterOperator._
-import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 
 object Repositories {
 

@@ -166,7 +166,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(r.document.json)
         .response(asJson[CreateResponse])
     ).flatMap { response =>
-      println(response)
       response.code match {
         case HttpCreated =>
           response.body
@@ -514,7 +513,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .contentType(ApplicationJson)
         .body(r.toJson)
     ).flatMap { response =>
-      println(response.code)
       response.code match {
         case HttpOk      => ZIO.succeed(UpdateOutcome.Updated)
         case HttpCreated => ZIO.succeed(UpdateOutcome.Created)
