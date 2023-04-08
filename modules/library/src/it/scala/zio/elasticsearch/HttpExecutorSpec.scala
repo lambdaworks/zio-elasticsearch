@@ -26,6 +26,7 @@ import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.Item
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json.{Arr, Str}
@@ -346,7 +347,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("successfully create document with ID given") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               assertZIO(Executor.execute(ElasticRequest.create[TestDocument](index, documentId, document)))(
-                equalTo(Created)
+                equalTo(CreationOutcome.Created)
               )
             }
           },
@@ -355,19 +356,21 @@ object HttpExecutorSpec extends IntegrationSpec {
               for {
                 _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, firstDocument))
                 res <- Executor.execute(ElasticRequest.create[TestDocument](index, documentId, secondDocument))
-              } yield assert(res)(equalTo(AlreadyExists))
+              } yield assert(res)(equalTo(CreationOutcome.AlreadyExists))
             }
           }
         ),
         suite("creating index")(
           test("successfully create index") {
-            assertZIO(Executor.execute(ElasticRequest.createIndex(createIndexTestName)))(equalTo(Created))
+            assertZIO(Executor.execute(ElasticRequest.createIndex(createIndexTestName)))(
+              equalTo(CreationOutcome.Created)
+            )
           },
           test("return 'AlreadyExists' if index already exists") {
             for {
               _   <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
               res <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
-            } yield assert(res)(equalTo(AlreadyExists))
+            } yield assert(res)(equalTo(CreationOutcome.AlreadyExists))
           }
         ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
         suite("creating or updating document")(
@@ -395,12 +398,14 @@ object HttpExecutorSpec extends IntegrationSpec {
               for {
                 _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
                 res <- Executor.execute(ElasticRequest.deleteById(index, documentId))
-              } yield assert(res)(equalTo(Deleted))
+              } yield assert(res)(equalTo(DeletionOutcome.Deleted))
             }
           },
           test("return 'NotFound' if the document does not exist") {
             checkOnce(genDocumentId) { documentId =>
-              assertZIO(Executor.execute(ElasticRequest.deleteById(index, documentId)))(equalTo(NotFound))
+              assertZIO(Executor.execute(ElasticRequest.deleteById(index, documentId)))(
+                equalTo(DeletionOutcome.NotFound)
+              )
             }
           }
         ),
@@ -410,12 +415,12 @@ object HttpExecutorSpec extends IntegrationSpec {
               for {
                 _   <- Executor.execute(ElasticRequest.createIndex(name))
                 res <- Executor.execute(ElasticRequest.deleteIndex(name))
-              } yield assert(res)(equalTo(Deleted))
+              } yield assert(res)(equalTo(DeletionOutcome.Deleted))
             }
           },
           test("return 'NotFound' if index does not exists") {
             checkOnce(genIndexName) { name =>
-              assertZIO(Executor.execute(ElasticRequest.deleteIndex(name)))(equalTo(NotFound))
+              assertZIO(Executor.execute(ElasticRequest.deleteIndex(name)))(equalTo(DeletionOutcome.NotFound))
             }
           }
         ),
@@ -1212,7 +1217,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("returns NotFound when provided index is missing") {
             checkOnce(genIndexName) { missingIndex =>
               assertZIO(Executor.execute(ElasticRequest.deleteByQuery(missingIndex, matchAll)))(
-                equalTo(NotFound)
+                equalTo(DeletionOutcome.NotFound)
               )
             }
           }
@@ -1238,6 +1243,60 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req4 = ElasticRequest.deleteById(index, secondDocumentId)
                   res <- Executor.execute(ElasticRequest.bulk(req1, req2, req3, req4))
                 } yield assert(res)(isUnit)
+            }
+          }
+        ),
+        suite("updating document")(
+          test("successfully update document with script") {
+            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+              val intField = document.intField
+              val factor   = 2
+              for {
+                _ <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
+                _ <- Executor.execute(
+                       ElasticRequest.update(
+                         index,
+                         documentId,
+                         Script("ctx._source.intField += params['factor']").withParams("factor" -> factor)
+                       )
+                     )
+                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
+              } yield assert(doc)(isSome(equalTo(document.copy(intField = intField + factor))))
+            }
+          },
+          test("successfully create document if it does not exists") {
+            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+              for {
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .update(
+                           index,
+                           documentId,
+                           Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
+                         )
+                         .upsert(document)
+                     )
+                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
+              } yield assert(doc)(isSome(equalTo(document)))
+            }
+          },
+          test("successfully update document with doc") {
+            checkOnce(genDocumentId, genTestDocument, genTestDocument) { (documentId, firstDocument, secondDocument) =>
+              for {
+                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, firstDocument))
+                _   <- Executor.execute(ElasticRequest.update[TestDocument](index, documentId, secondDocument))
+                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
+              } yield assert(doc)(isSome(equalTo(secondDocument)))
+            }
+          },
+          test("successfully create document with doc and without upsert") {
+            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+              for {
+                _ <- Executor.execute(
+                       ElasticRequest.update[TestDocument](index, documentId, document).docAsUpsertTrue
+                     )
+                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
+              } yield assert(doc)(isSome(equalTo(document)))
             }
           }
         )

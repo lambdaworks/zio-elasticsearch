@@ -33,6 +33,7 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
 import zio.elasticsearch.executor.response.{CountResponse, CreateResponse, GetResponse, SearchWithAggregationsResponse}
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
@@ -69,6 +70,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: GetById            => executeGetById(r)
       case r: Search             => executeSearch(r)
       case r: SearchAndAggregate => executeSearchAndAggregate(r)
+      case r: Update             => executeUpdate(r)
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
@@ -164,6 +166,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(r.document.json)
         .response(asJson[CreateResponse])
     ).flatMap { response =>
+      println(response)
       response.code match {
         case HttpCreated =>
           response.body
@@ -190,8 +193,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(r.document.json)
     ).flatMap { response =>
       response.code match {
-        case HttpCreated  => ZIO.succeed(Created)
-        case HttpConflict => ZIO.succeed(AlreadyExists)
+        case HttpCreated  => ZIO.succeed(CreationOutcome.Created)
+        case HttpConflict => ZIO.succeed(CreationOutcome.AlreadyExists)
         case _            => ZIO.fail(handleFailures(response))
       }
     }
@@ -205,8 +208,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(createIndex.definition.getOrElse(""))
     ).flatMap { response =>
       response.code match {
-        case HttpOk         => ZIO.succeed(Created)
-        case HttpBadRequest => ZIO.succeed(AlreadyExists)
+        case HttpOk         => ZIO.succeed(CreationOutcome.Created)
+        case HttpBadRequest => ZIO.succeed(CreationOutcome.AlreadyExists)
         case _              => ZIO.fail(handleFailures(response))
       }
     }
@@ -250,8 +253,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
     sendRequest(baseRequest.delete(uri)).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.succeed(Deleted)
-        case HttpNotFound => ZIO.succeed(NotFound)
+        case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)
+        case HttpNotFound => ZIO.succeed(DeletionOutcome.NotFound)
         case _            => ZIO.fail(handleFailures(response))
       }
     }
@@ -270,8 +273,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(r.query.toJson)
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.succeed(Deleted)
-        case HttpNotFound => ZIO.succeed(NotFound)
+        case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)
+        case HttpNotFound => ZIO.succeed(DeletionOutcome.NotFound)
         case _            => ZIO.fail(handleFailures(response))
       }
     }
@@ -280,8 +283,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeDeleteIndex(r: DeleteIndex): Task[DeletionOutcome] =
     sendRequest(baseRequest.delete(uri"${esConfig.uri}/${r.name}")).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.succeed(Deleted)
-        case HttpNotFound => ZIO.succeed(NotFound)
+        case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)
+        case HttpNotFound => ZIO.succeed(DeletionOutcome.NotFound)
         case _            => ZIO.fail(handleFailures(response))
       }
     }
@@ -500,6 +503,25 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
+  private def executeUpdate(r: Update): Task[UpdateOutcome] =
+    sendRequest(
+      baseRequest
+        .post(
+          uri"${esConfig.uri}/${r.index}/$Update/${r.id}".withParams(
+            getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
+          )
+        )
+        .contentType(ApplicationJson)
+        .body(r.toJson)
+    ).flatMap { response =>
+      println(response.code)
+      response.code match {
+        case HttpOk      => ZIO.succeed(UpdateOutcome.Updated)
+        case HttpCreated => ZIO.succeed(UpdateOutcome.Created)
+        case _           => ZIO.fail(handleFailures(response))
+      }
+    }
+
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
@@ -570,6 +592,7 @@ private[elasticsearch] object HttpExecutor {
   private final val ScrollId      = "scroll_id"
   private final val Search        = "_search"
   private final val ShardDoc      = "_shard_doc"
+  private final val Update        = "_update"
 
   private[elasticsearch] final case class PointInTimeResponse(id: String)
   object PointInTimeResponse {

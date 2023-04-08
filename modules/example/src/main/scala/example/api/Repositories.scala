@@ -30,9 +30,9 @@ import zio.http.model.Status.{
 }
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
-
 import CompoundOperator._
 import FilterOperator._
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 
 object Repositories {
 
@@ -62,9 +62,9 @@ object Repositories {
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(repo) =>
               RepositoriesElasticsearch.create(repo).map {
-                case Created =>
+                case CreationOutcome.Created =>
                   Response.json(repo.toJson).setStatus(HttpCreated)
-                case AlreadyExists =>
+                case CreationOutcome.AlreadyExists =>
                   Response.json("A repository with a given ID already exists.").setStatus(HttpBadRequest)
               }
           }
@@ -112,9 +112,9 @@ object Repositories {
         RepositoriesElasticsearch
           .remove(organization, id)
           .map {
-            case Deleted =>
+            case DeletionOutcome.Deleted =>
               Response.status(HttpNoContent)
-            case NotFound =>
+            case DeletionOutcome.NotFound =>
               Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(HttpNotFound)
           }
           .orDie
