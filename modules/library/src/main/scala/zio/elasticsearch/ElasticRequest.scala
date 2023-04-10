@@ -494,9 +494,9 @@ object ElasticRequest {
 
     def docAsUpsert(value: Boolean): UpdateRequest
 
-    def docAsUpsertFalse: UpdateRequest
+    def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = true)
 
-    def docAsUpsertTrue: UpdateRequest
+    def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = false)
 
     def orCreate[A: Schema](doc: A): UpdateRequest
   }
@@ -513,12 +513,6 @@ object ElasticRequest {
   ) extends UpdateRequest { self =>
     def docAsUpsert(value: Boolean): UpdateRequest =
       self.copy(docAsUpsert = Some(value))
-
-    def docAsUpsertFalse: UpdateRequest =
-      docAsUpsert(value = false)
-
-    def docAsUpsertTrue: UpdateRequest =
-      docAsUpsert(value = true)
 
     def orCreate[A: Schema](doc: A): UpdateRequest =
       self.copy(upsert = Some(Document.from(doc)))
