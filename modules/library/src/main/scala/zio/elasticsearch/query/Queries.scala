@@ -116,12 +116,6 @@ private[elasticsearch] final case class Nested[S](
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
-  def ignoreUnmappedFalse: NestedQuery[S] =
-    ignoreUnmapped(false)
-
-  def ignoreUnmappedTrue: NestedQuery[S] =
-    ignoreUnmapped(true)
-
   def innerHits(innerHits: InnerHits): NestedQuery[S] =
     self.copy(innerHits = Some(innerHits))
 
@@ -257,12 +251,6 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
   def caseInsensitive(value: Boolean): TermQuery[S] =
     self.copy(caseInsensitive = Some(value))
 
-  def caseInsensitiveFalse: TermQuery[S] =
-    caseInsensitive(false)
-
-  def caseInsensitiveTrue: TermQuery[S] =
-    caseInsensitive(true)
-
   def paramsToJson(fieldPath: Option[String]): Json = {
     val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
@@ -287,12 +275,6 @@ private[elasticsearch] final case class Wildcard[S](
 
   def caseInsensitive(value: Boolean): WildcardQuery[S] =
     self.copy(caseInsensitive = Some(value))
-
-  def caseInsensitiveFalse: WildcardQuery[S] =
-    caseInsensitive(false)
-
-  def caseInsensitiveTrue: WildcardQuery[S] =
-    caseInsensitive(true)
 
   def paramsToJson(fieldPath: Option[String]): Json = {
     val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(

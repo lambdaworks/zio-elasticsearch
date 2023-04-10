@@ -141,12 +141,6 @@ object ElasticRequest {
     def refresh(value: Boolean): BulkRequest =
       self.copy(refresh = Some(value))
 
-    def refreshFalse: BulkRequest =
-      refresh(false)
-
-    def refreshTrue: BulkRequest =
-      refresh(true)
-
     def routing(value: Routing): BulkRequest =
       self.copy(routing = Some(value))
 
@@ -206,12 +200,6 @@ object ElasticRequest {
     def refresh(value: Boolean): CreateRequest =
       self.copy(refresh = Some(value))
 
-    def refreshFalse: CreateRequest =
-      refresh(false)
-
-    def refreshTrue: CreateRequest =
-      refresh(true)
-
     def routing(value: Routing): CreateRequest =
       self.copy(routing = Some(value))
   }
@@ -230,12 +218,6 @@ object ElasticRequest {
   ) extends CreateWithIdRequest { self =>
     def refresh(value: Boolean): CreateWithIdRequest =
       self.copy(refresh = Some(value))
-
-    def refreshFalse: CreateWithIdRequest =
-      refresh(false)
-
-    def refreshTrue: CreateWithIdRequest =
-      refresh(true)
 
     def routing(value: Routing): CreateWithIdRequest =
       self.copy(routing = Some(value))
@@ -263,12 +245,6 @@ object ElasticRequest {
     def refresh(value: Boolean): CreateOrUpdateRequest =
       self.copy(refresh = Some(value))
 
-    def refreshFalse: CreateOrUpdateRequest =
-      refresh(false)
-
-    def refreshTrue: CreateOrUpdateRequest =
-      refresh(true)
-
     def routing(value: Routing): CreateOrUpdateRequest =
       self.copy(routing = Some(value))
   }
@@ -287,12 +263,6 @@ object ElasticRequest {
     def refresh(value: Boolean): DeleteByIdRequest =
       self.copy(refresh = Some(value))
 
-    def refreshFalse: DeleteByIdRequest =
-      refresh(false)
-
-    def refreshTrue: DeleteByIdRequest =
-      refresh(true)
-
     def routing(value: Routing): DeleteByIdRequest =
       self.copy(routing = Some(value))
   }
@@ -310,12 +280,6 @@ object ElasticRequest {
   ) extends DeleteByQueryRequest { self =>
     def refresh(value: Boolean): DeleteByQueryRequest =
       self.copy(refresh = Some(value))
-
-    def refreshFalse: DeleteByQueryRequest =
-      refresh(false)
-
-    def refreshTrue: DeleteByQueryRequest =
-      refresh(true)
 
     def routing(value: Routing): DeleteByQueryRequest =
       self.copy(routing = Some(value))
@@ -349,12 +313,6 @@ object ElasticRequest {
   ) extends GetByIdRequest { self =>
     def refresh(value: Boolean): GetByIdRequest =
       self.copy(refresh = Some(value))
-
-    def refreshFalse: GetByIdRequest =
-      refresh(false)
-
-    def refreshTrue: GetByIdRequest =
-      refresh(true)
 
     def routing(value: Routing): GetByIdRequest =
       self.copy(routing = Some(value))
@@ -500,9 +458,9 @@ object ElasticRequest {
 
     def docAsUpsert(value: Boolean): UpdateRequest
 
-    def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = false)
+    final def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = false)
 
-    def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = true)
+    final def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = true)
 
     def orCreate[A: Schema](doc: A): UpdateRequest
   }
@@ -525,12 +483,6 @@ object ElasticRequest {
 
     def refresh(value: Boolean): UpdateRequest =
       self.copy(refresh = Some(value))
-
-    def refreshFalse: UpdateRequest =
-      refresh(value = false)
-
-    def refreshTrue: UpdateRequest =
-      refresh(value = true)
 
     def routing(value: Routing): UpdateRequest =
       self.copy(routing = Some(value))

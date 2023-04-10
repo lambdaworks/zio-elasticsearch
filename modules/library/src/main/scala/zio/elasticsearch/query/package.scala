@@ -24,17 +24,17 @@ package object query {
   private[elasticsearch] trait HasCaseInsensitive[Q <: HasCaseInsensitive[Q]] {
     def caseInsensitive(value: Boolean): Q
 
-    def caseInsensitiveFalse: Q
+    final def caseInsensitiveFalse: Q = caseInsensitive(false)
 
-    def caseInsensitiveTrue: Q
+    final def caseInsensitiveTrue: Q = caseInsensitive(true)
   }
 
   private[elasticsearch] trait HasIgnoreUnmapped[Q <: HasIgnoreUnmapped[Q]] {
     def ignoreUnmapped(value: Boolean): Q
 
-    def ignoreUnmappedFalse: Q
+    final def ignoreUnmappedFalse: Q = ignoreUnmapped(false)
 
-    def ignoreUnmappedTrue: Q
+    final def ignoreUnmappedTrue: Q = ignoreUnmapped(true)
   }
 
   private[elasticsearch] trait HasInnerHits[Q <: HasInnerHits[Q]] {

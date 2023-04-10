@@ -22,9 +22,9 @@ package object request {
   private[elasticsearch] trait HasRefresh[R <: HasRefresh[R]] {
     def refresh(value: Boolean): R
 
-    def refreshFalse: R
+    final def refreshFalse: R = refresh(false)
 
-    def refreshTrue: R
+    final def refreshTrue: R = refresh(true)
   }
 
   private[elasticsearch] trait HasRouting[R <: HasRouting[R]] {
