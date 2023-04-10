@@ -1241,9 +1241,20 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req2 = ElasticRequest.create[TestDocument](index, document.copy(stringField = "randomIdString3"))
                   req3 = ElasticRequest.upsert[TestDocument](index, firstDocumentId, document.copy(doubleField = 3000))
                   req4 = ElasticRequest.deleteById(index, secondDocumentId)
-                  req5 = ElasticRequest.update[TestDocument](index, firstDocumentId, document.copy(intField = 100))
-                  res <- Executor.execute(ElasticRequest.bulk(req1, req2, req3, req4, req5))
-                } yield assert(res)(isUnit)
+                  req5 = ElasticRequest.update[TestDocument](index, thirdDocumentId, document.copy(intField = 100))
+                  req6 = ElasticRequest.updateByScript(
+                           index,
+                           firstDocumentId,
+                           Script("ctx._source.intField = params['factor']").withParams("factor" -> 100)
+                         )
+                  res  <- Executor.execute(ElasticRequest.bulk(req1, req2, req3, req4, req5, req6).refreshTrue)
+                  doc1 <- Executor.execute(ElasticRequest.getById(index, firstDocumentId)).documentAs[TestDocument]
+                  doc2 <- Executor.execute(ElasticRequest.getById(index, secondDocumentId)).documentAs[TestDocument]
+                  doc3 <- Executor.execute(ElasticRequest.getById(index, thirdDocumentId)).documentAs[TestDocument]
+                } yield assert(res)(isUnit) && assert(doc3)(isSome(equalTo(document.copy(intField = 100)))) &&
+                  assert(doc2)(isNone) && assert(doc1)(
+                    isSome(equalTo(document.copy(doubleField = 3000, intField = 100)))
+                  )
             }
           }
         ),

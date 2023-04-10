@@ -166,8 +166,12 @@ object ElasticRequest {
           )
         case DeleteById(index, id, _, maybeRouting) =>
           List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
-        case Update(index, id, _, _, _, maybeRouting, _, _) =>
-          List(getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
+        case Update(index, id, maybeDocument, _, _, maybeRouting, maybeScript, _) =>
+          List(
+            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            if (maybeDocument.isDefined) Obj("doc" -> maybeDocument.get.json)
+            else Obj("script"                      -> maybeScript.get.toJson)
+          )
       }
     }.mkString(start = "", sep = "\n", end = "\n")
   }
