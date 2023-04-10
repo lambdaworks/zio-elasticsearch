@@ -21,6 +21,10 @@ import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
+import zio.elasticsearch.request.CreationOutcome.Created
+import zio.elasticsearch.request.DeletionOutcome.Deleted
+import zio.elasticsearch.request.UpdateOutcome
+import zio.elasticsearch.script.Script
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
 
@@ -175,7 +179,33 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(req.aggregations)(
           equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, List(TermsAggregationBucket("name", 5, None)))))
         )
-
+      },
+      test("update request with script") {
+        assertZIO(
+          Executor.execute(
+            ElasticRequest
+              .updateByScript(
+                index = index,
+                id = DocumentId("V4x8q4UB3agN0z75fv5r"),
+                script = Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
+              )
+              .orCreate(doc = secondDoc)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        )(equalTo(UpdateOutcome.Updated))
+      },
+      test("update request with doc") {
+        assertZIO(
+          Executor.execute(
+            ElasticRequest
+              .update[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
+              .orCreate(doc = secondDoc)
+              .docAsUpsertTrue
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        )(equalTo(UpdateOutcome.Updated))
       }
     ).provideShared(elasticsearchSttpLayer)
 }

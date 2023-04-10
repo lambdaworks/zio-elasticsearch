@@ -23,6 +23,7 @@ import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
 import zio.elasticsearch.result.{AggregationResult, GetResult, SearchAndAggregateResult, SearchResult}
+import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
@@ -97,6 +98,30 @@ object ElasticRequest {
       size = None
     )
 
+  def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
+    Update(
+      index = index,
+      id = id,
+      doc = Some(Document.from(doc)),
+      docAsUpsert = None,
+      refresh = None,
+      routing = None,
+      script = None,
+      upsert = None
+    )
+
+  def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
+    Update(
+      index = index,
+      id = id,
+      doc = None,
+      docAsUpsert = None,
+      refresh = None,
+      routing = None,
+      script = Some(script),
+      upsert = None
+    )
+
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
@@ -141,6 +166,12 @@ object ElasticRequest {
           )
         case DeleteById(index, id, _, maybeRouting) =>
           List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
+        case Update(index, id, maybeDocument, _, _, maybeRouting, maybeScript, _) =>
+          List(
+            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            if (maybeDocument.isDefined) Obj("doc" -> maybeDocument.get.json)
+            else Obj("script"                      -> maybeScript.get.toJson)
+          )
       }
     }.mkString(start = "", sep = "\n", end = "\n")
   }
@@ -462,18 +493,62 @@ object ElasticRequest {
     }
   }
 
+  sealed trait UpdateRequest
+      extends BulkableRequest[UpdateOutcome]
+      with HasRefresh[UpdateRequest]
+      with HasRouting[UpdateRequest] {
+
+    def docAsUpsert(value: Boolean): UpdateRequest
+
+    def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = false)
+
+    def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = true)
+
+    def orCreate[A: Schema](doc: A): UpdateRequest
+  }
+
+  private[elasticsearch] final case class Update(
+    index: IndexName,
+    id: DocumentId,
+    doc: Option[Document],
+    docAsUpsert: Option[Boolean],
+    refresh: Option[Boolean],
+    routing: Option[Routing],
+    script: Option[Script],
+    upsert: Option[Document]
+  ) extends UpdateRequest { self =>
+    def docAsUpsert(value: Boolean): UpdateRequest =
+      self.copy(docAsUpsert = Some(value))
+
+    def orCreate[A: Schema](doc: A): UpdateRequest =
+      self.copy(upsert = Some(Document.from(doc)))
+
+    def refresh(value: Boolean): UpdateRequest =
+      self.copy(refresh = Some(value))
+
+    def refreshFalse: UpdateRequest =
+      refresh(value = false)
+
+    def refreshTrue: UpdateRequest =
+      refresh(value = true)
+
+    def routing(value: Routing): UpdateRequest =
+      self.copy(routing = Some(value))
+
+    def toJson: Json = {
+      val docToJson: Json = doc.fold(Obj())(d => Obj("doc" -> d.json))
+
+      val docAsUpsertJson: Json = docAsUpsert.fold(Obj())(d => Obj("doc_as_upsert" -> d.toJson))
+
+      val scriptToJson: Json = script.fold(Obj())(s => Obj("script" -> s.toJson))
+
+      val upsertJson: Json = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
+
+      scriptToJson merge docToJson merge docAsUpsertJson merge upsertJson
+    }
+  }
+
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
-    parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }
+    parameters.collect { case (name, Some(value)) => s""""$name" : "$value"""" }
       .mkString(s"""{ "$requestType" : { """, ", ", " } }")
-
 }
-
-sealed abstract class CreationOutcome
-
-case object AlreadyExists extends CreationOutcome
-case object Created       extends CreationOutcome
-
-sealed abstract class DeletionOutcome
-
-case object Deleted  extends DeletionOutcome
-case object NotFound extends DeletionOutcome

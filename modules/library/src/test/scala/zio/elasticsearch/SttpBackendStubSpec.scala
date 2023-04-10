@@ -43,6 +43,15 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       doubleField = 10.0
     )
 
+  val secondDoc: TestDocument =
+    TestDocument(
+      stringField = "StringField2",
+      subDocumentList = Nil,
+      dateField = LocalDate.parse("2020-12-12"),
+      intField = 12,
+      doubleField = 12.0
+    )
+
   private val url = "http://localhost:9200"
 
   private val bulkRequestStub: StubMapping = StubMapping(
@@ -310,6 +319,12 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val UpdateRequestStub: StubMapping = StubMapping(
+    request = r =>
+      r.method == Method.POST && r.uri.toString == s"$url/repositories/_update/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
+    response = Response("Updated", StatusCode.Ok)
+  )
+
   private val stubs: List[StubMapping] = List(
     bulkRequestStub,
     countRequestStub,
@@ -324,7 +339,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     existsRequestStub,
     getByIdRequestStub,
     searchRequestStub,
-    searchWithAggregationRequestStub
+    searchWithAggregationRequestStub,
+    UpdateRequestStub
   )
 
   private val sttpBackendStubLayer: TaskLayer[SttpBackendStub[Task, Any]] = ZLayer.succeed(

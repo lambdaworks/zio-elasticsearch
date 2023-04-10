@@ -20,6 +20,7 @@ import example.{GitHubRepo, RepositoriesElasticsearch}
 import zio.ZIO
 import zio.elasticsearch._
 import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.http._
 import zio.http.model.Method
 import zio.http.model.Status.{
@@ -62,9 +63,9 @@ object Repositories {
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(repo) =>
               RepositoriesElasticsearch.create(repo).map {
-                case Created =>
+                case CreationOutcome.Created =>
                   Response.json(repo.toJson).setStatus(HttpCreated)
-                case AlreadyExists =>
+                case CreationOutcome.AlreadyExists =>
                   Response.json("A repository with a given ID already exists.").setStatus(HttpBadRequest)
               }
           }
@@ -112,9 +113,9 @@ object Repositories {
         RepositoriesElasticsearch
           .remove(organization, id)
           .map {
-            case Deleted =>
+            case DeletionOutcome.Deleted =>
               Response.status(HttpNoContent)
-            case NotFound =>
+            case DeletionOutcome.NotFound =>
               Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).setStatus(HttpNotFound)
           }
           .orDie
