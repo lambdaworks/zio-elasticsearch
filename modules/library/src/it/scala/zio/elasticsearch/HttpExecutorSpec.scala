@@ -1241,7 +1241,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req2 = ElasticRequest.create[TestDocument](index, document.copy(stringField = "randomIdString3"))
                   req3 = ElasticRequest.upsert[TestDocument](index, firstDocumentId, document.copy(doubleField = 3000))
                   req4 = ElasticRequest.deleteById(index, secondDocumentId)
-                  res <- Executor.execute(ElasticRequest.bulk(req1, req2, req3, req4))
+                  req5 = ElasticRequest.update[TestDocument](index, firstDocumentId, document.copy(intField = 100))
+                  res <- Executor.execute(ElasticRequest.bulk(req1, req2, req3, req4, req5))
                 } yield assert(res)(isUnit)
             }
           }

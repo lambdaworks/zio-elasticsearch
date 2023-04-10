@@ -166,6 +166,8 @@ object ElasticRequest {
           )
         case DeleteById(index, id, _, maybeRouting) =>
           List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
+        case Update(index, id, _, _, _, maybeRouting, _, _) =>
+          List(getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
       }
     }.mkString(start = "", sep = "\n", end = "\n")
   }
@@ -488,15 +490,15 @@ object ElasticRequest {
   }
 
   sealed trait UpdateRequest
-      extends ElasticRequest[UpdateOutcome]
+      extends BulkableRequest[UpdateOutcome]
       with HasRefresh[UpdateRequest]
       with HasRouting[UpdateRequest] {
 
     def docAsUpsert(value: Boolean): UpdateRequest
 
-    def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = true)
+    def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = false)
 
-    def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = false)
+    def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = true)
 
     def orCreate[A: Schema](doc: A): UpdateRequest
   }
