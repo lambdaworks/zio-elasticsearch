@@ -98,18 +98,6 @@ object ElasticRequest {
       size = None
     )
 
-  def update(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
-    Update(
-      index = index,
-      id = id,
-      doc = None,
-      docAsUpsert = None,
-      refresh = None,
-      routing = None,
-      script = Some(script),
-      upsert = None
-    )
-
   def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
     Update(
       index = index,
@@ -119,6 +107,18 @@ object ElasticRequest {
       refresh = None,
       routing = None,
       script = None,
+      upsert = None
+    )
+
+  def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
+    Update(
+      index = index,
+      id = id,
+      doc = None,
+      docAsUpsert = None,
+      refresh = None,
+      routing = None,
+      script = Some(script),
       upsert = None
     )
 
@@ -498,7 +498,7 @@ object ElasticRequest {
 
     def docAsUpsertTrue: UpdateRequest
 
-    def upsert[A: Schema](doc: A): UpdateRequest
+    def orCreate[A: Schema](doc: A): UpdateRequest
   }
 
   private[elasticsearch] final case class Update(
@@ -519,6 +519,9 @@ object ElasticRequest {
 
     def docAsUpsertTrue: UpdateRequest =
       docAsUpsert(value = true)
+
+    def orCreate[A: Schema](doc: A): UpdateRequest =
+      self.copy(upsert = Some(Document.from(doc)))
 
     def refresh(value: Boolean): UpdateRequest =
       self.copy(refresh = Some(value))
@@ -543,12 +546,9 @@ object ElasticRequest {
 
       scriptToJson merge docToJson merge docAsUpsertJson merge upsertJson
     }
-
-    def upsert[A: Schema](doc: A): UpdateRequest =
-      self.copy(upsert = Some(Document.from(doc)))
   }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
-    parameters.collect { case (name, Some(value)) => s""""$name" : "${value.toString}"""" }
+    parameters.collect { case (name, Some(value)) => s""""$name" : "$value"""" }
       .mkString(s"""{ "$requestType" : { """, ", ", " } }")
 }

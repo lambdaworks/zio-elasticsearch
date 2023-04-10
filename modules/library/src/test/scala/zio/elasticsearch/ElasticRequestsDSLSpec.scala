@@ -198,11 +198,11 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode update request to JSON with all parameters - script") {
-        val jsonRequest = update(
+        val jsonRequest = updateByScript(
           index = index,
           id = docId,
           script = Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
-        ).upsert[TestDocument](
+        ).orCreate[TestDocument](
           TestDocument(
             stringField = "stringField",
             subDocumentList = Nil,
@@ -244,7 +244,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
             intField = 1,
             doubleField = 1.0
           )
-        ).upsert[TestDocument](
+        ).orCreate[TestDocument](
           TestDocument(
             stringField = "stringField2",
             subDocumentList = Nil,

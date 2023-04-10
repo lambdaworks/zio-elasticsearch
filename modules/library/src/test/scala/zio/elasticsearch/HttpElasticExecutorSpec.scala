@@ -184,12 +184,12 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(
             ElasticRequest
-              .update(
+              .updateByScript(
                 index = index,
                 id = DocumentId("V4x8q4UB3agN0z75fv5r"),
                 script = Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
               )
-              .upsert(doc = secondDoc)
+              .orCreate(doc = secondDoc)
               .routing(Routing("routing"))
               .refreshTrue
           )
@@ -200,7 +200,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           Executor.execute(
             ElasticRequest
               .update[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
-              .upsert(doc = secondDoc)
+              .orCreate(doc = secondDoc)
               .docAsUpsertTrue
               .routing(Routing("routing"))
               .refreshTrue

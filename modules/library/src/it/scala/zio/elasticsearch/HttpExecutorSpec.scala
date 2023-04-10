@@ -1254,7 +1254,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               for {
                 _ <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
                 _ <- Executor.execute(
-                       ElasticRequest.update(
+                       ElasticRequest.updateByScript(
                          index,
                          documentId,
                          Script("ctx._source.intField += params['factor']").withParams("factor" -> factor)
@@ -1264,17 +1264,17 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(doc)(isSome(equalTo(document.copy(intField = intField + factor))))
             }
           },
-          test("successfully create document if it does not exists") {
+          test("successfully create document if it does not exist") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               for {
                 _ <- Executor.execute(
                        ElasticRequest
-                         .update(
+                         .updateByScript(
                            index,
                            documentId,
                            Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
                          )
-                         .upsert(document)
+                         .orCreate(document)
                      )
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
               } yield assert(doc)(isSome(equalTo(document)))
