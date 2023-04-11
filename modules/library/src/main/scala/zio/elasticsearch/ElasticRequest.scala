@@ -103,7 +103,6 @@ object ElasticRequest {
       index = index,
       id = id,
       doc = Some(Document.from(doc)),
-      docAsUpsert = None,
       refresh = None,
       routing = None,
       script = None,
@@ -111,16 +110,7 @@ object ElasticRequest {
     )
 
   def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
-    Update(
-      index = index,
-      id = id,
-      doc = None,
-      docAsUpsert = None,
-      refresh = None,
-      routing = None,
-      script = Some(script),
-      upsert = None
-    )
+    Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
 
   def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -146,25 +136,29 @@ object ElasticRequest {
 
     lazy val body: String = requests.flatMap { r =>
       r match {
-        case Create(index, document, _, maybeRouting) =>
-          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", maybeRouting))), document.json)
-        case CreateWithId(index, id, document, _, maybeRouting) =>
+        case Create(index, document, _, routing) =>
+          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", routing))), document.json)
+        case CreateWithId(index, id, document, _, routing) =>
           List(
-            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
-        case CreateOrUpdate(index, id, document, _, maybeRouting) =>
+        case CreateOrUpdate(index, id, document, _, routing) =>
           List(
-            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
-        case DeleteById(index, id, _, maybeRouting) =>
-          List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
-        case Update(index, id, maybeDocument, _, _, maybeRouting, maybeScript, _) =>
+        case DeleteById(index, id, _, routing) =>
+          List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))))
+        case Update(index, id, Some(document), _, routing, None, _) =>
           List(
-            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
-            if (maybeDocument.isDefined) Obj("doc" -> maybeDocument.get.json)
-            else Obj("script"                      -> maybeScript.get.toJson)
+            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+            Obj("doc" -> document.json)
+          )
+        case Update(index, id, None, _, routing, Some(script), _) =>
+          List(
+            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+            Obj("script" -> script.toJson)
           )
       }
     }.mkString(start = "", sep = "\n", end = "\n")
@@ -455,13 +449,6 @@ object ElasticRequest {
       extends BulkableRequest[UpdateOutcome]
       with HasRefresh[UpdateRequest]
       with HasRouting[UpdateRequest] {
-
-    def docAsUpsert(value: Boolean): UpdateRequest
-
-    final def docAsUpsertFalse: UpdateRequest = docAsUpsert(value = false)
-
-    final def docAsUpsertTrue: UpdateRequest = docAsUpsert(value = true)
-
     def orCreate[A: Schema](doc: A): UpdateRequest
   }
 
@@ -469,15 +456,11 @@ object ElasticRequest {
     index: IndexName,
     id: DocumentId,
     doc: Option[Document],
-    docAsUpsert: Option[Boolean],
     refresh: Option[Boolean],
     routing: Option[Routing],
     script: Option[Script],
     upsert: Option[Document]
   ) extends UpdateRequest { self =>
-    def docAsUpsert(value: Boolean): UpdateRequest =
-      self.copy(docAsUpsert = Some(value))
-
     def orCreate[A: Schema](doc: A): UpdateRequest =
       self.copy(upsert = Some(Document.from(doc)))
 
@@ -490,13 +473,11 @@ object ElasticRequest {
     def toJson: Json = {
       val docToJson: Json = doc.fold(Obj())(d => Obj("doc" -> d.json))
 
-      val docAsUpsertJson: Json = docAsUpsert.fold(Obj())(d => Obj("doc_as_upsert" -> d.toJson))
-
       val scriptToJson: Json = script.fold(Obj())(s => Obj("script" -> s.toJson))
 
       val upsertJson: Json = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
 
-      scriptToJson merge docToJson merge docAsUpsertJson merge upsertJson
+      scriptToJson merge docToJson merge upsertJson
     }
   }
 

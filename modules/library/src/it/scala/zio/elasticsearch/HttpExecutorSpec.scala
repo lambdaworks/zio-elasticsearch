@@ -1300,16 +1300,6 @@ object HttpExecutorSpec extends IntegrationSpec {
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
               } yield assert(doc)(isSome(equalTo(secondDocument)))
             }
-          },
-          test("successfully create document with doc and without upsert") {
-            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
-              for {
-                _ <- Executor.execute(
-                       ElasticRequest.update[TestDocument](index, documentId, document).docAsUpsertTrue
-                     )
-                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
-              } yield assert(doc)(isSome(equalTo(document)))
-            }
           }
         )
       ) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests @@ afterAll(

@@ -252,7 +252,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
             intField = 2,
             doubleField = 2.0
           )
-        ).docAsUpsertTrue match { case r: Update => r.toJson }
+        ) match { case r: Update => r.toJson }
 
         val expected =
           """
@@ -264,7 +264,6 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
             |    "intField": 1,
             |    "doubleField": 1.0
             |  },
-            |  "doc_as_upsert": true,
             |  "upsert": {
             |    "stringField": "stringField2",
             |    "subDocumentList": [],
