@@ -325,6 +325,23 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     response = Response("Updated", StatusCode.Ok)
   )
 
+  private val UpdateByQueryRequestStub: StubMapping = StubMapping(
+    request = r =>
+      r.method == Method.POST && r.uri.toString == s"$url/repositories/_update_by_query?conflicts=proceed&refresh=true&routing=routing",
+    response = Response(
+      """
+        |{
+        |  "took" : 1,
+        |  "total" : 10,
+        |  "updated" : 8,
+        |  "deleted" : 0,
+        |  "version_conflicts" : 2
+        |}
+        |""".stripMargin,
+      StatusCode.Ok
+    )
+  )
+
   private val stubs: List[StubMapping] = List(
     bulkRequestStub,
     countRequestStub,
@@ -340,7 +357,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     getByIdRequestStub,
     searchRequestStub,
     searchWithAggregationRequestStub,
-    UpdateRequestStub
+    UpdateRequestStub,
+    UpdateByQueryRequestStub
   )
 
   private val sttpBackendStubLayer: TaskLayer[SttpBackendStub[Task, Any]] = ZLayer.succeed(

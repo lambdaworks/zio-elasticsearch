@@ -20,9 +20,10 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
+import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse, UpdateByQueryResponse}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
+import zio.elasticsearch.request.UpdateConflicts.Proceed
 import zio.elasticsearch.request.UpdateOutcome
 import zio.elasticsearch.script.Script
 import zio.test.Assertion._
@@ -205,6 +206,17 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .refreshTrue
           )
         )(equalTo(UpdateOutcome.Updated))
+      },
+      test("update by query request") {
+        assertZIO(
+          Executor.execute(
+            ElasticRequest
+              .updateByQuery(index = index, Script("ctx._source['intField']++"))
+              .conflicts(Proceed)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        )(equalTo(UpdateByQueryResponse(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)))
       }
     ).provideShared(elasticsearchSttpLayer)
 }

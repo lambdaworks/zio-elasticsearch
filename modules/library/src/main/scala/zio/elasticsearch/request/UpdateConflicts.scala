@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.request
 
-package object result {
-  class ElasticException(message: String) extends RuntimeException(message)
+sealed abstract class UpdateConflicts
 
-  final case class DecodingException(message: String) extends ElasticException(message)
-
-  final case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
-
-  final case object VersionConflictException extends ElasticException("There are some conflicts in versions.")
+object UpdateConflicts {
+  case object Abort extends UpdateConflicts {
+    override def toString: String = "abort"
+  }
+  case object Proceed extends UpdateConflicts {
+    override def toString: String = "proceed"
+  }
 }

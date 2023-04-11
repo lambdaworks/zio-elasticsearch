@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.ElasticAggregation
+import zio.elasticsearch.executor.response.UpdateByQueryResponse
 import zio.elasticsearch.highlights.Highlights
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
@@ -108,6 +109,9 @@ object ElasticRequest {
       script = None,
       upsert = None
     )
+
+  def updateByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
+    UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
 
   def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
     Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
@@ -478,6 +482,43 @@ object ElasticRequest {
       val upsertJson: Json = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
 
       scriptToJson merge docToJson merge upsertJson
+    }
+  }
+
+  sealed trait UpdateByQueryRequest
+      extends ElasticRequest[UpdateByQueryResponse]
+      with HasRefresh[UpdateByQueryRequest]
+      with HasRouting[UpdateByQueryRequest] {
+    def conflicts(value: UpdateConflicts): UpdateByQueryRequest
+
+    def query(value: ElasticQuery[_]): UpdateByQueryRequest
+  }
+
+  private[elasticsearch] case class UpdateByQuery(
+    index: IndexName,
+    script: Script,
+    conflicts: Option[UpdateConflicts],
+    query: Option[ElasticQuery[_]],
+    refresh: Option[Boolean],
+    routing: Option[Routing]
+  ) extends UpdateByQueryRequest { self =>
+    def conflicts(value: UpdateConflicts): UpdateByQueryRequest =
+      self.copy(conflicts = Some(value))
+
+    def query(value: ElasticQuery[_]): UpdateByQueryRequest =
+      self.copy(query = Some(value))
+
+    def refresh(value: Boolean): UpdateByQueryRequest =
+      self.copy(refresh = Some(value))
+
+    def routing(value: Routing): UpdateByQueryRequest =
+      self.copy(routing = Some(value))
+
+    def toJson: Json = {
+      val queryToJson: Json  = query.fold(Obj())(q => q.toJson)
+      val scriptToJson: Json = Obj("script" -> script.toJson)
+
+      scriptToJson merge queryToJson
     }
   }
 

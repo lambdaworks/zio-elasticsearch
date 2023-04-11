@@ -26,7 +26,7 @@ import scala.annotation.unused
 sealed trait ElasticQuery[-S] { self =>
   def paramsToJson(fieldPath: Option[String]): Json
 
-  final def toJson: Json =
+  final def toJson: Obj =
     Obj("query" -> self.paramsToJson(None))
 }
 

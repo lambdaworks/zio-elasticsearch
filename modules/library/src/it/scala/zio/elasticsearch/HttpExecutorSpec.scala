@@ -23,6 +23,7 @@ import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.executor.response.UpdateByQueryResponse
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -1299,6 +1300,69 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _   <- Executor.execute(ElasticRequest.update[TestDocument](index, documentId, secondDocument))
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
               } yield assert(doc)(isSome(equalTo(secondDocument)))
+            }
+          }
+        ),
+        suite("updating document by query")(
+          test("successfully update document with only script") {
+            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+              val stringField = "StringField"
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(updateByQueryIndex, matchAll).refreshTrue)
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](updateByQueryIndex, documentId, document).refreshTrue
+                     )
+                updateRes <- Executor.execute(
+                               ElasticRequest
+                                 .updateByQuery(
+                                   updateByQueryIndex,
+                                   Script("ctx._source['stringField'] = params['str']").withParams("str" -> stringField)
+                                 )
+                                 .refreshTrue
+                             )
+                doc <- Executor.execute(ElasticRequest.getById(updateByQueryIndex, documentId)).documentAs[TestDocument]
+              } yield assert(updateRes)(
+                equalTo(
+                  UpdateByQueryResponse(
+                    took = updateRes.took,
+                    total = 1,
+                    updated = 1,
+                    deleted = 0,
+                    versionConflicts = 0
+                  )
+                )
+              ) && assert(doc)(isSome(equalTo(document.copy(stringField = stringField))))
+            }
+          },
+          test("successfully update document with script and query") {
+            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+              val newDocument = document.copy(stringField = "StringField")
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(updateByQueryIndex, matchAll).refreshTrue)
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](updateByQueryIndex, documentId, newDocument).refreshTrue
+                     )
+                updateRes <-
+                  Executor.execute(
+                    ElasticRequest
+                      .updateByQuery(updateByQueryIndex, Script("ctx._source['intField']++"))
+                      .query(
+                        term(field = TestDocument.stringField, multiField = Some("keyword"), value = "StringField")
+                      )
+                      .refreshTrue
+                  )
+                doc <- Executor.execute(ElasticRequest.getById(updateByQueryIndex, documentId)).documentAs[TestDocument]
+              } yield assert(updateRes)(
+                equalTo(
+                  UpdateByQueryResponse(
+                    took = updateRes.took,
+                    total = 1,
+                    updated = 1,
+                    deleted = 0,
+                    versionConflicts = 0
+                  )
+                )
+              ) && assert(doc)(isSome(equalTo(newDocument.copy(intField = newDocument.intField + 1))))
             }
           }
         )
