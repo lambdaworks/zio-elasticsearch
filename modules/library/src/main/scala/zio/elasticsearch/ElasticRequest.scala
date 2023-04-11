@@ -136,25 +136,29 @@ object ElasticRequest {
 
     lazy val body: String = requests.flatMap { r =>
       r match {
-        case Create(index, document, _, maybeRouting) =>
-          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", maybeRouting))), document.json)
-        case CreateWithId(index, id, document, _, maybeRouting) =>
+        case Create(index, document, _, routing) =>
+          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", routing))), document.json)
+        case CreateWithId(index, id, document, _, routing) =>
           List(
-            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
-        case CreateOrUpdate(index, id, document, _, maybeRouting) =>
+        case CreateOrUpdate(index, id, document, _, routing) =>
           List(
-            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
-        case DeleteById(index, id, _, maybeRouting) =>
-          List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))))
-        case Update(index, id, maybeDocument, _, maybeRouting, maybeScript, _) =>
+        case DeleteById(index, id, _, routing) =>
+          List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))))
+        case Update(index, id, Some(document), _, routing, None, _) =>
           List(
-            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
-            if (maybeDocument.isDefined) Obj("doc" -> maybeDocument.get.json)
-            else Obj("script"                      -> maybeScript.get.toJson)
+            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+            Obj("doc" -> document.json)
+          )
+        case Update(index, id, None, _, routing, Some(script), _) =>
+          List(
+            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+            Obj("script" -> script.toJson)
           )
       }
     }.mkString(start = "", sep = "\n", end = "\n")
