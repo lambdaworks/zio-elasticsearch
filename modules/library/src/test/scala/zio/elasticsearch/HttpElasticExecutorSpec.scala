@@ -201,7 +201,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             ElasticRequest
               .update[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
               .orCreate(doc = secondDoc)
-              .docAsUpsertTrue
               .routing(Routing("routing"))
               .refreshTrue
           )
