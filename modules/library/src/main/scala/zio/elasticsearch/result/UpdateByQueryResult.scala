@@ -14,15 +14,25 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.result
 
-package object result {
-  class ElasticException(message: String) extends RuntimeException(message)
+import zio.elasticsearch.executor.response.UpdateByQueryResponse
 
-  final case class DecodingException(message: String) extends ElasticException(message)
+final case class UpdateByQueryResult(
+  took: Int,
+  total: Int,
+  updated: Int,
+  deleted: Int,
+  versionConflicts: Int
+)
 
-  case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
-
-  final case class VersionConflictException(succeeded: Int, failed: Int)
-      extends ElasticException(s"There are $failed conflicts in versions. Only $succeeded documents are updated.")
+object UpdateByQueryResult {
+  def apply(updateByQueryResponse: UpdateByQueryResponse): UpdateByQueryResult =
+    UpdateByQueryResult(
+      updateByQueryResponse.took,
+      updateByQueryResponse.total,
+      updateByQueryResponse.updated,
+      updateByQueryResponse.deleted,
+      updateByQueryResponse.versionConflicts
+    )
 }

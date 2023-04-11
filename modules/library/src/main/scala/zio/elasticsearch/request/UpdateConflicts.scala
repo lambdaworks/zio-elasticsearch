@@ -22,6 +22,7 @@ object UpdateConflicts {
   case object Abort extends UpdateConflicts {
     override def toString: String = "abort"
   }
+
   case object Proceed extends UpdateConflicts {
     override def toString: String = "proceed"
   }

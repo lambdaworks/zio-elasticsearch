@@ -527,7 +527,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeUpdateByQuery(r: UpdateByQuery): Task[UpdateByQueryResponse] =
+  private def executeUpdateByQuery(r: UpdateByQuery): Task[UpdateByQueryResult] =
     sendRequestWithCustomResponse(
       baseRequest
         .post(
@@ -543,7 +543,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(value)
+            value => ZIO.succeed(UpdateByQueryResult(value))
           )
         case HttpConflict => ZIO.fail(VersionConflictException)
         case _            => ZIO.fail(handleFailuresFromCustomResponse(response))

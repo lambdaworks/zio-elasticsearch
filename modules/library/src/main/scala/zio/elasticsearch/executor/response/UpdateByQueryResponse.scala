@@ -18,7 +18,7 @@ package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-final case class UpdateByQueryResponse(
+private[elasticsearch] final case class UpdateByQueryResponse(
   took: Int,
   total: Int,
   updated: Int,
