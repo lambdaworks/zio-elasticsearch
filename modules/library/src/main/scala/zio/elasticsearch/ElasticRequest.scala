@@ -140,16 +140,16 @@ object ElasticRequest {
 
     lazy val body: String = requests.flatMap { r =>
       r match {
-        case Create(index, document, _, routing) =>
-          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", routing))), document.json)
-        case CreateWithId(index, id, document, _, routing) =>
+        case Create(index, document, _, maybeRouting) =>
+          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", maybeRouting))), document.json)
+        case CreateWithId(index, id, document, _, maybeRouting) =>
           List(
-            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
             document.json
           )
-        case CreateOrUpdate(index, id, document, _, routing) =>
+        case CreateOrUpdate(index, id, document, _, maybeRouting) =>
           List(
-            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
             document.json
           )
         case DeleteById(index, id, _, routing) =>
