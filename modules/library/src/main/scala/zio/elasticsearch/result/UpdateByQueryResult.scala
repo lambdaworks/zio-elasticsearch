@@ -27,7 +27,7 @@ final case class UpdateByQueryResult(
 )
 
 object UpdateByQueryResult {
-  def apply(updateByQueryResponse: UpdateByQueryResponse): UpdateByQueryResult =
+  def from(updateByQueryResponse: UpdateByQueryResponse): UpdateByQueryResult =
     UpdateByQueryResult(
       updateByQueryResponse.took,
       updateByQueryResponse.total,

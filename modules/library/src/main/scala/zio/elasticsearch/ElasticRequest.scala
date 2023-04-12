@@ -148,16 +148,16 @@ object ElasticRequest {
 
     lazy val body: String = requests.flatMap { r =>
       r match {
-        case Create(index, document, _, maybeRouting) =>
-          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", maybeRouting))), document.json)
-        case CreateWithId(index, id, document, _, maybeRouting) =>
+        case Create(index, document, _, routing) =>
+          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", routing))), document.json)
+        case CreateWithId(index, id, document, _, routing) =>
           List(
-            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
-        case CreateOrUpdate(index, id, document, _, maybeRouting) =>
+        case CreateOrUpdate(index, id, document, _, routing) =>
           List(
-            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", maybeRouting))),
+            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
         case DeleteById(index, id, _, routing) =>
@@ -518,10 +518,9 @@ object ElasticRequest {
       self.copy(routing = Some(value))
 
     def toJson: Json = {
-      val queryToJson: Json  = query.fold(Obj())(q => q.toJson)
       val scriptToJson: Json = Obj("script" -> script.toJson)
 
-      scriptToJson merge queryToJson
+      query.fold(scriptToJson)(q => scriptToJson merge q.toJson)
     }
   }
 
