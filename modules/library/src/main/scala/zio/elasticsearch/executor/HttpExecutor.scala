@@ -543,7 +543,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(UpdateByQueryResult.from(value))
+            value => ZIO.succeed(UpdateByQueryResult.from(response = value))
           )
         case HttpConflict =>
           response.body.fold(

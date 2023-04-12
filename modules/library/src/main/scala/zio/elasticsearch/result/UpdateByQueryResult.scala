@@ -27,12 +27,6 @@ final case class UpdateByQueryResult(
 )
 
 object UpdateByQueryResult {
-  def from(updateByQueryResponse: UpdateByQueryResponse): UpdateByQueryResult =
-    UpdateByQueryResult(
-      updateByQueryResponse.took,
-      updateByQueryResponse.total,
-      updateByQueryResponse.updated,
-      updateByQueryResponse.deleted,
-      updateByQueryResponse.versionConflicts
-    )
+  def from(response: UpdateByQueryResponse): UpdateByQueryResult =
+    UpdateByQueryResult(response.took, response.total, response.updated, response.deleted, response.versionConflicts)
 }

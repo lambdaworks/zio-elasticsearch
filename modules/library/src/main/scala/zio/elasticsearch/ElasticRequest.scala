@@ -517,11 +517,8 @@ object ElasticRequest {
     def routing(value: Routing): UpdateByQueryRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json = {
-      val scriptToJson: Json = Obj("script" -> script.toJson)
-
-      query.fold(scriptToJson)(q => scriptToJson merge q.toJson)
-    }
+    def toJson: Json =
+      query.foldLeft(Obj("script" -> script.toJson))((scriptJson, q) => scriptJson merge q.toJson)
   }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
