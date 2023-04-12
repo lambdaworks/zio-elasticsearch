@@ -198,7 +198,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
 
         assert(jsonRequest)(equalTo(expected.toJson))
       },
-      test("successfully encode update by query request with query to JSON") {
+      test("successfully encode update by query request to JSON") {
         val jsonRequest = updateByQuery(
           index = index,
           query = term(TestDocument.stringField, Some("keyword"), "StringField"),
