@@ -22,9 +22,29 @@ object ElasticAggregation {
   final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Nil)
 
+  /**
+   * Creates type-safe TermsAggregation (sub-type of ElasticAggregation).
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   type-safe field for which terms aggregation will be executed
+   * @return
+   *   returns created TermsAggregation.
+   */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
     Terms(name = name, field = field.toString, subAggregations = Nil)
 
+  /**
+   * Creates TermsAggregation (sub-type of ElasticAggregation).
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   field for which terms aggregation will be executed
+   * @return
+   *   returns created AggregationRequest.
+   */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, subAggregations = Nil)
 }

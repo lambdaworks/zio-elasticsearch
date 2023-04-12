@@ -40,12 +40,38 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
+  /**
+   * Creates AggregateRequest (sub-type of Elastic request).
+   *
+   * @param index
+   *   Index where aggregation will be executed
+   * @param aggregation
+   *   desired aggregation that will be executed in the given index
+   * @return
+   *   returns created AggregateRequest.
+   */
   final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
     Aggregate(index = index, aggregation = aggregation)
 
+  /**
+   * Creates BulkRequest (sub-type of Elastic request) which contains multiple requests we want to execute together.
+   *
+   * @param requests
+   *   `bulkable` requests that will be executed together
+   * @return
+   *   returns created BulkRequest.
+   */
   final def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
 
+  /**
+   * Creates CountRequest (sub-type of Elastic request).
+   *
+   * @param index
+   *   index where CountRequest will be executed
+   * @return
+   *   returns created CountRequest.
+   */
   final def count(index: IndexName): CountRequest =
     Count(index = index, query = None, routing = None)
 
