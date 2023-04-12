@@ -32,7 +32,13 @@ import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
-import zio.elasticsearch.executor.response.{CountResponse, CreateResponse, GetResponse, SearchWithAggregationsResponse}
+import zio.elasticsearch.executor.response.{
+  CountResponse,
+  CreateResponse,
+  GetResponse,
+  SearchWithAggregationsResponse,
+  UpdateByQueryResponse
+}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
@@ -71,6 +77,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: Search             => executeSearch(r)
       case r: SearchAndAggregate => executeSearchAndAggregate(r)
       case r: Update             => executeUpdate(r)
+      case r: UpdateByQuery      => executeUpdateByQuery(r)
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
@@ -520,6 +527,34 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
+  private def executeUpdateByQuery(r: UpdateByQuery): Task[UpdateByQueryResult] =
+    sendRequestWithCustomResponse(
+      baseRequest
+        .post(
+          uri"${esConfig.uri}/${r.index}/$UpdateByQuery".withParams(
+            getQueryParams(List(("conflicts", r.conflicts), ("refresh", r.refresh), ("routing", r.routing)))
+          )
+        )
+        .response(asJson[UpdateByQueryResponse])
+        .contentType(ApplicationJson)
+        .body(r.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(UpdateByQueryResult.from(response = value))
+          )
+        case HttpConflict =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.fail(VersionConflictException(value.updated + value.deleted, value.versionConflicts))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
+      }
+    }
+
   private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
@@ -545,7 +580,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
     }
 
-  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]) =
+  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]): Chunk[Item] =
     Chunk.fromIterable(results).map { case (source, highlight) =>
       Item(source, highlight)
     }
@@ -553,7 +588,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def itemFromResultsWithHighlightsAndInnerHits(
     results: List[(Json, Option[Json])],
     innerHits: List[Map[String, List[Json]]]
-  ) =
+  ): Chunk[Item] =
     Chunk.fromIterable(results).zip(innerHits).map { case ((source, highlight), innerHits) =>
       Item(source, highlight, innerHits)
     }
@@ -591,6 +626,7 @@ private[elasticsearch] object HttpExecutor {
   private final val Search        = "_search"
   private final val ShardDoc      = "_shard_doc"
   private final val Update        = "_update"
+  private final val UpdateByQuery = "_update_by_query"
 
   private[elasticsearch] final case class PointInTimeResponse(id: String)
   object PointInTimeResponse {

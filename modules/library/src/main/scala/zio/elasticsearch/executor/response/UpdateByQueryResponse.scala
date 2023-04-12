@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.executor.response
 
-package object result {
-  class ElasticException(message: String) extends RuntimeException(message)
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-  final case class DecodingException(message: String) extends ElasticException(message)
+private[elasticsearch] final case class UpdateByQueryResponse(
+  took: Int,
+  total: Int,
+  updated: Int,
+  deleted: Int,
+  @jsonField("version_conflicts")
+  versionConflicts: Int
+)
 
-  case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
-
-  final case class VersionConflictException(succeeded: Int, failed: Int)
-      extends ElasticException(
-        s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
-      )
+private[elasticsearch] object UpdateByQueryResponse {
+  implicit val decoder: JsonDecoder[UpdateByQueryResponse] = DeriveJsonDecoder.gen[UpdateByQueryResponse]
 }

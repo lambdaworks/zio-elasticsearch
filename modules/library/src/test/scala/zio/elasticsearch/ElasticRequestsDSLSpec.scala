@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticHighlight.highlight
+import zio.elasticsearch.ElasticQuery.term
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.domain.TestDocument
@@ -191,6 +192,31 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
             |       "field" : "day_of_week"
             |     }
             |   }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(jsonRequest)(equalTo(expected.toJson))
+      },
+      test("successfully encode update by query request with query to JSON") {
+        val jsonRequest = updateByQuery(
+          index = index,
+          query = term(TestDocument.stringField, Some("keyword"), "StringField"),
+          script = Script("ctx._source['intField']++")
+        ) match { case r: UpdateByQuery => r.toJson }
+
+        val expected =
+          """
+            |{
+            |  "script": {
+            |    "source": "ctx._source['intField']++"
+            |  },
+            |  "query": {
+            |    "term": {
+            |      "stringField.keyword": {
+            |        "value": "StringField"
+            |      }
+            |    }
             |  }
             |}
             |""".stripMargin

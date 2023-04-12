@@ -17,13 +17,15 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.ElasticAggregation.termsAggregation
-import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.ElasticQuery.{matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
+import zio.elasticsearch.request.UpdateConflicts.Proceed
 import zio.elasticsearch.request.UpdateOutcome
+import zio.elasticsearch.result.UpdateByQueryResult
 import zio.elasticsearch.script.Script
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
@@ -205,6 +207,32 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .refreshTrue
           )
         )(equalTo(UpdateOutcome.Updated))
+      },
+      test("update all by query request") {
+        assertZIO(
+          Executor.execute(
+            ElasticRequest
+              .updateAllByQuery(index = index, script = Script("ctx._source['intField']++"))
+              .conflicts(Proceed)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        )(equalTo(UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)))
+      },
+      test("update by query request") {
+        assertZIO(
+          Executor.execute(
+            ElasticRequest
+              .updateByQuery(
+                index = index,
+                query = term(field = TestDocument.stringField, multiField = Some("keyword"), value = "StringField"),
+                script = Script("ctx._source['intField']++")
+              )
+              .conflicts(Proceed)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        )(equalTo(UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)))
       }
     ).provideShared(elasticsearchSttpLayer)
 }

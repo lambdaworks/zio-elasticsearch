@@ -22,7 +22,13 @@ import zio.elasticsearch.highlights.Highlights
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
-import zio.elasticsearch.result.{AggregationResult, GetResult, SearchAndAggregateResult, SearchResult}
+import zio.elasticsearch.result.{
+  AggregationResult,
+  GetResult,
+  SearchAndAggregateResult,
+  SearchResult,
+  UpdateByQueryResult
+}
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
@@ -108,6 +114,12 @@ object ElasticRequest {
       script = None,
       upsert = None
     )
+
+  def updateAllByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
+    UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
+
+  def updateByQuery(index: IndexName, query: ElasticQuery[_], script: Script): UpdateByQueryRequest =
+    UpdateByQuery(index = index, script = script, conflicts = None, query = Some(query), refresh = None, routing = None)
 
   def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
     Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
@@ -479,6 +491,34 @@ object ElasticRequest {
 
       scriptToJson merge docToJson merge upsertJson
     }
+  }
+
+  sealed trait UpdateByQueryRequest
+      extends ElasticRequest[UpdateByQueryResult]
+      with HasRefresh[UpdateByQueryRequest]
+      with HasRouting[UpdateByQueryRequest] {
+    def conflicts(value: UpdateConflicts): UpdateByQueryRequest
+  }
+
+  private[elasticsearch] final case class UpdateByQuery(
+    index: IndexName,
+    script: Script,
+    conflicts: Option[UpdateConflicts],
+    query: Option[ElasticQuery[_]],
+    refresh: Option[Boolean],
+    routing: Option[Routing]
+  ) extends UpdateByQueryRequest { self =>
+    def conflicts(value: UpdateConflicts): UpdateByQueryRequest =
+      self.copy(conflicts = Some(value))
+
+    def refresh(value: Boolean): UpdateByQueryRequest =
+      self.copy(refresh = Some(value))
+
+    def routing(value: Routing): UpdateByQueryRequest =
+      self.copy(routing = Some(value))
+
+    def toJson: Json =
+      query.foldLeft(Obj("script" -> script.toJson))((scriptJson, q) => scriptJson merge q.toJson)
   }
 
   private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
