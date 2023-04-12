@@ -24,5 +24,7 @@ package object result {
   case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
 
   final case class VersionConflictException(succeeded: Int, failed: Int)
-      extends ElasticException(s"There are $failed conflicts in versions. Only $succeeded documents are updated.")
+      extends ElasticException(
+        s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
+      )
 }
