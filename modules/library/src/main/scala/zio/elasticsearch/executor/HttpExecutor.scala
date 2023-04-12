@@ -545,8 +545,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value => ZIO.succeed(UpdateByQueryResult(value))
           )
-        case HttpConflict => ZIO.fail(VersionConflictException)
-        case _            => ZIO.fail(handleFailuresFromCustomResponse(response))
+        case HttpConflict =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.fail(VersionConflictException(value.updated + value.deleted, value.versionConflicts))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
 
