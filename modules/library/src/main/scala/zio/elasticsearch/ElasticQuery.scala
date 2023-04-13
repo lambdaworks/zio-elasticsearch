@@ -24,16 +24,16 @@ import ElasticPrimitive.ElasticPrimitive
 object ElasticQuery {
 
   /**
-   * Creates type-safe WildcardQuery (sub-type of ElasticQuery) with pattern that represents `contains`.
+   * Specifies a type-safe [[zio.elasticsearch.query.WildcardQuery]] with pattern that represents `contains`.
    *
    * @param field
    *   type-safe field for which Wildcard query will be executed
    * @param value
-   *   text value that will be used for query
+   *   text value that will be used for the query
    * @tparam S
-   *   ?
+   *   document on which fields query is executed
    * @return
-   *   returns created WildcardQuery.
+   *   returns specified WildcardQuery.
    */
   final def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(

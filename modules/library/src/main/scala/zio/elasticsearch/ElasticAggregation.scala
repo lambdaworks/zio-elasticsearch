@@ -23,27 +23,27 @@ object ElasticAggregation {
     Multiple(aggregations = Nil)
 
   /**
-   * Creates type-safe TermsAggregation (sub-type of ElasticAggregation).
+   * Specifies a type-safe [[zio.elasticsearch.aggregation.TermsAggregation]].
    *
    * @param name
    *   aggregation name
    * @param field
    *   type-safe field for which terms aggregation will be executed
    * @return
-   *   returns created TermsAggregation.
+   *   returns specified term aggregation.
    */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
     Terms(name = name, field = field.toString, subAggregations = Nil)
 
   /**
-   * Creates TermsAggregation (sub-type of ElasticAggregation).
+   * Specifies [[zio.elasticsearch.aggregation.TermsAggregation]].
    *
    * @param name
    *   aggregation name
    * @param field
    *   field for which terms aggregation will be executed
    * @return
-   *   returns created AggregationRequest.
+   *   returns specified term aggregation.
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, subAggregations = Nil)

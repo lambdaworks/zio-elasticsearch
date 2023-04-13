@@ -41,36 +41,37 @@ sealed trait ElasticRequest[A]
 object ElasticRequest {
 
   /**
-   * Creates AggregateRequest (sub-type of Elastic request).
+   * Specifies [[zio.elasticsearch.ElasticRequest.AggregateRequest]].
    *
    * @param index
    *   Index where aggregation will be executed
    * @param aggregation
    *   desired aggregation that will be executed in the given index
    * @return
-   *   returns created AggregateRequest.
+   *   returns specified AggregateRequest.
    */
   final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
     Aggregate(index = index, aggregation = aggregation)
 
   /**
-   * Creates BulkRequest (sub-type of Elastic request) which contains multiple requests we want to execute together.
+   * Specifies [[zio.elasticsearch.ElasticRequest.BulkRequest]] which contains multiple requests we want to execute as a
+   * bulk.
    *
    * @param requests
-   *   `bulkable` requests that will be executed together
+   *   a list of requests that will be executed as a bulk
    * @return
-   *   returns created BulkRequest.
+   *   returns specified BulkRequest.
    */
   final def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
 
   /**
-   * Creates CountRequest (sub-type of Elastic request).
+   * Specifies [[zio.elasticsearch.ElasticRequest.CountRequest]].
    *
    * @param index
    *   index where CountRequest will be executed
    * @return
-   *   returns created CountRequest.
+   *   returns specified CountRequest.
    */
   final def count(index: IndexName): CountRequest =
     Count(index = index, query = None, routing = None)
