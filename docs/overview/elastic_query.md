@@ -68,14 +68,16 @@ matches(field = "name.first_name", value = "John")
 matches(field = User.name / Name.firstName, value = "John")
 ```
 
-Type-safe query methods also have a `multiField` parameter, in case you want to use one in queries:
+Accessors also have a `suffix` method, in case you want to use one in queries:
 
 ```scala
-term(field = "email.keyword", value = "jane.doe@lambdaworks.io")
+ElasticQuery.term("email.keyword", "jane.doe@lambdaworks.io")
 
 // type-safe method
-term(field = User.email, multiField = Some("keyword"), value = "jane.doe@lambdaworks.io")
+ElasticQuery.term(User.email.suffix("keyword"), "jane.doe@lambdaworks.io")
 ```
+
+In case the suffix is `"keyword"` or `"raw"` you can use `keyword` and `raw` methods respectively.
 
 Now, after describing a query, you can pass it to the `search`/`deleteByQuery` method to obtain the `ElasticRequest` corresponding to that query:
 
@@ -83,5 +85,5 @@ Now, after describing a query, you can pass it to the `search`/`deleteByQuery` m
 ElasticRequest.search(IndexName("index"), term(field = "name.first_name.keyword", value = "John"))
 
 // type-safe method
-ElasticRequest.search(IndexName("index"), term(field = User.name / Name.firstName, multiField = Some("keyword"), value = "John"))
+ElasticRequest.search(IndexName("index"), term(field = User.name / Name.firstName.keyword, value = "John"))
 ```

@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.schema.{AccessorBuilder, Schema}
 
 import scala.annotation.tailrec
@@ -24,6 +25,10 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
 
   def /[B](that: Field[A, B]): Field[S, B] =
     Field(that.parent.map(self / _).orElse(Some(self)), that.name)
+
+  def keyword[A1 >: A: ElasticPrimitive]: Field[S, A1] = suffix[A1]("keyword")
+
+  def raw[A1 >: A: ElasticPrimitive]: Field[S, A1] = suffix[A1]("raw")
 
   override def toString: String = {
     @tailrec
@@ -34,6 +39,9 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
 
     loop(self, Nil).mkString
   }
+
+  def suffix[A1 >: A: ElasticPrimitive](suffix: String): Field[S, A1] =
+    self.copy(name = name + s".$suffix")
 }
 
 object FieldAccessorBuilder extends AccessorBuilder {

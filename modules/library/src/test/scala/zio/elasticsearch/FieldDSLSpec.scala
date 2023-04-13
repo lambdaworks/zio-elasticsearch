@@ -30,10 +30,30 @@ object FieldDSLSpec extends ZIOSpecDefault {
         assertTrue(TestSubDocument.stringField.toString == "stringField")
       ),
       test("properly encode nested field path")(
-        assertTrue(Field[Nothing, Nothing](Some(Field(None, "address")), "number").toString == "address.number")
+        assertTrue(Field(Some(Field(None, "address")), "number").toString == "address.number")
       ),
       test("properly encode nested field path using accessors")(
         assertTrue((TestSubDocument.nestedField / TestNestedField.longField).toString == "nestedField.longField")
+      ),
+      test("properly encode single field with suffix")(
+        assertTrue(Field[Any, String](None, "name").suffix("keyword").toString == "name.keyword")
+      ),
+      test("properly encode single field with suffixes")(
+        assertTrue(
+          Field[Any, String](None, "name")
+            .suffix("multi_field")
+            .suffix("keyword")
+            .toString == "name.multi_field.keyword"
+        )
+      ),
+      test("properly encode single field with suffix using accessor")(
+        assertTrue(TestSubDocument.stringField.suffix("keyword").toString == "stringField.keyword")
+      ),
+      test("properly encode single field with keyword suffix")(
+        assertTrue(Field[Any, String](None, "name").keyword.toString == "name.keyword")
+      ),
+      test("properly encode single field with raw suffix")(
+        assertTrue(Field[Any, String](None, "name").raw.toString == "name.raw")
       )
     )
 }

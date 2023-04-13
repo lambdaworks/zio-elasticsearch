@@ -70,11 +70,13 @@ val request: SearchAndAggregateRequest =
 val result: RIO[Elasticsearch, SearchResult] = Elasticsearch.execute(request)
 ```
 
-Type-safe query methods also have a `multiField` parameter, in case you want to use one in queries:
+Accessors also have a `suffix` method, in case you want to use one in queries:
 
 ```scala
 ElasticQuery.term("email.keyword", "jane.doe@lambdaworks.io")
 
 // type-safe method
-ElasticQuery.term(User.email, multiField = Some("keyword"), "jane.doe@lambdaworks.io")
+ElasticQuery.term(User.email.suffix("keyword"), "jane.doe@lambdaworks.io")
 ```
+
+In case the suffix is `"keyword"` or `"raw"` you can use `keyword` and `raw` methods respectively.

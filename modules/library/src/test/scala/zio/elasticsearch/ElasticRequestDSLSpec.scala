@@ -16,7 +16,7 @@ import zio.test._
 
 import java.time.LocalDate
 
-object ElasticRequestsDSLSpec extends ZIOSpecDefault {
+object ElasticRequestDSLSpec extends ZIOSpecDefault {
 
   private val query = ElasticQuery.range(TestDocument.intField).gte(10)
   private val index = IndexName("index")
@@ -201,7 +201,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
       test("successfully encode update by query request to JSON") {
         val jsonRequest = updateByQuery(
           index = index,
-          query = term(TestDocument.stringField, Some("keyword"), "StringField"),
+          query = term(TestDocument.stringField.keyword, "StringField"),
           script = Script("ctx._source['intField']++")
         ) match { case r: UpdateByQuery => r.toJson }
 

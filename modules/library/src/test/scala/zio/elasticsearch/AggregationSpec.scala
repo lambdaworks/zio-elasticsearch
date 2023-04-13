@@ -29,7 +29,7 @@ object AggregationSpec extends ZIOSpecDefault {
         },
         test("successfully create type-safe Terms aggregation with multi-field using `terms` method") {
           val aggregation =
-            termsAggregation(name = "aggregation", field = TestSubDocument.stringField, multiField = Some("keyword"))
+            termsAggregation(name = "aggregation", field = TestSubDocument.stringField.keyword)
 
           assert(aggregation)(
             equalTo(Terms(name = "aggregation", field = "stringField.keyword", subAggregations = Nil))

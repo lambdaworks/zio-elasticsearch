@@ -22,9 +22,9 @@ import zio.schema.Schema
 import ElasticPrimitive.ElasticPrimitive
 
 object ElasticQuery {
-  final def contains[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
+  final def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(
-      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      field = field.toString,
       value = s"*$value*",
       boost = None,
       caseInsensitive = None
@@ -48,14 +48,10 @@ object ElasticQuery {
   final def matchAll: MatchAllQuery =
     MatchAll(boost = None)
 
-  final def matches[S, A: ElasticPrimitive](
-    field: Field[S, A],
-    multiField: Option[String] = None,
-    value: A
-  ): MatchQuery[S] =
-    Match(field = field.toString ++ multiField.map("." ++ _).getOrElse(""), value = value)
+  final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
+    Match(field = field.toString, value = value)
 
-  def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
+  final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
   final def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
@@ -77,10 +73,9 @@ object ElasticQuery {
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
 
   final def range[S, A](
-    field: Field[S, A],
-    multiField: Option[String] = None
+    field: Field[S, A]
   ): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
-    Range.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
+    Range.empty(field.toString)
 
   final def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
@@ -91,9 +86,9 @@ object ElasticQuery {
   final def should(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
-  final def startsWith[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
+  final def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(
-      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      field = field.toString,
       value = s"$value*",
       boost = None,
       caseInsensitive = None
@@ -102,13 +97,9 @@ object ElasticQuery {
   final def startsWith(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"$value*", boost = None, caseInsensitive = None)
 
-  final def term[S, A: ElasticPrimitive](
-    field: Field[S, A],
-    multiField: Option[String] = None,
-    value: A
-  ): TermQuery[S] =
+  final def term[S, A: ElasticPrimitive](field: Field[S, A], value: A): TermQuery[S] =
     Term(
-      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      field = field.toString,
       value = value,
       boost = None,
       caseInsensitive = None
@@ -117,9 +108,9 @@ object ElasticQuery {
   final def term[A: ElasticPrimitive](field: String, value: A): Term[Any, A] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
 
-  final def wildcard[S](field: Field[S, _], multiField: Option[String] = None, value: String): Wildcard[S] =
+  final def wildcard[S](field: Field[S, _], value: String): Wildcard[S] =
     Wildcard(
-      field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
+      field = field.toString,
       value = value,
       boost = None,
       caseInsensitive = None
