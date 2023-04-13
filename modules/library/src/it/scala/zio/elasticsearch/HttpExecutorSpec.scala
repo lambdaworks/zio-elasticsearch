@@ -202,7 +202,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            ElasticRequest
                              .search(index = firstSearchIndex, query = query, aggregation = aggregation)
                              .size(10)
-                             .sortBy(
+                             .sort(
                                sortBy(TestDocument.intField).order(Asc)
                              )
                          )
@@ -213,7 +213,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                               .search(index = firstSearchIndex, query = query, aggregation = aggregation)
                               .searchAfter(sa.get)
                               .size(10)
-                              .sortBy(
+                              .sort(
                                 sortBy(TestDocument.intField).order(Asc)
                               )
                           )
@@ -255,7 +255,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                query = query,
                                aggregation = aggregation
                              )
-                             .sortBy(sortBy(field = TestDocument.intField).order(Desc))
+                             .sort(sortBy(field = TestDocument.intField).order(Desc))
                          )
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
@@ -648,7 +648,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query =
-                    nested(path = TestDocument.subDocumentList, query = matchAll).innerHitsEmpty
+                    nested(path = TestDocument.subDocumentList, query = matchAll).innerHits
                   result <- Executor.execute(ElasticRequest.search(firstSearchIndex, query))
                   items  <- result.items
                   res =
@@ -847,7 +847,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(
+                               .sort(
                                  sortBy(TestDocument.intField).order(Desc),
                                  sortBy(TestDocument.dateField).order(Asc).format("strict_date_optional_time_nanos")
                                )
@@ -888,7 +888,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(sortBy(Script("doc['intField'].value").lang("painless"), NumberType).order(Asc))
+                               .sort(sortBy(Script("doc['intField'].value").lang("painless"), NumberType).order(Asc))
                            )
                            .documentAs[TestDocument]
                 } yield assert(res)(
@@ -924,7 +924,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
-                               .sortBy(sortBy(TestSubDocument.intFieldList).mode(Max).order(Desc))
+                               .sort(sortBy(TestSubDocument.intFieldList).mode(Max).order(Desc))
                            )
                            .documentAs[TestSubDocument]
                 } yield assert(res)(
@@ -1147,7 +1147,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            ElasticRequest
                              .search(firstSearchIndex, query)
                              .size(10)
-                             .sortBy(
+                             .sort(
                                sortBy(TestDocument.intField).order(Asc)
                              )
                          )
@@ -1158,7 +1158,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                               .search(firstSearchIndex, query)
                               .searchAfter(sa.get)
                               .size(10)
-                              .sortBy(
+                              .sort(
                                 sortBy(TestDocument.intField).order(Asc)
                               )
                           )

@@ -304,7 +304,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           )
@@ -319,7 +319,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           )
@@ -338,7 +338,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -349,7 +349,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Max),
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -360,7 +360,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Min),
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -371,7 +371,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.None),
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -382,7 +382,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Sum),
                 ignoreUnmapped = None,
-                innerHits = None
+                innerHitsField = None
               )
             )
           )
@@ -397,7 +397,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = Some(true),
-                innerHits = None
+                innerHitsField = None
               )
             )
           )
@@ -412,13 +412,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = Some(false),
-                innerHits = None
+                innerHitsField = None
               )
             )
           )
         },
         test("successfully create Nested Query with MatchAll Query and inner hits with empty body") {
-          val query = nested(path = "customer", query = matchAll).innerHitsEmpty
+          val query = nested(path = "customer", query = matchAll).innerHits
 
           assert(query)(
             equalTo(
@@ -427,7 +427,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHits = Some(InnerHits(None, None, None))
+                innerHitsField = Some(InnerHits(None, None, None))
               )
             )
           )
@@ -442,7 +442,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHits = Some(InnerHits(from = Some(0), name = Some("name"), size = Some(3)))
+                innerHitsField = Some(InnerHits(from = Some(0), name = Some("name"), size = Some(3)))
               )
             )
           )
@@ -1129,7 +1129,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Nested Query with MatchAll Query and inner hits with empty body") {
-          val query = nested(path = "customer", query = matchAll).innerHitsEmpty
+          val query = nested(path = "customer", query = matchAll).innerHits
           val expected =
             """
               |{

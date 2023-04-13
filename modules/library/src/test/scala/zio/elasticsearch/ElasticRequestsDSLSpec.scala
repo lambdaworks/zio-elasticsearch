@@ -88,7 +88,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
       test("successfully encode search request to JSON with multiple parameters") {
         val jsonRequest = search(index, query)
           .size(20)
-          .sortBy(sortBy(TestDocument.intField).missing(First))
+          .sort(sortBy(TestDocument.intField).missing(First))
           .from(10) match {
           case r: ElasticRequest.Search => r.toJson
         }
@@ -120,7 +120,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
         val jsonRequest = search(index, query)
           .size(20)
           .highlights(highlight(TestDocument.intField))
-          .sortBy(sortBy(TestDocument.intField).missing(First))
+          .sort(sortBy(TestDocument.intField).missing(First))
           .from(10) match {
           case r: ElasticRequest.Search => r.toJson
         }
@@ -158,7 +158,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
           .aggregate(termsAggregation(name = "aggregation", field = "day_of_week"))
           .size(20)
           .highlights(highlight(TestDocument.intField))
-          .sortBy(sortBy(TestDocument.intField).missing(First))
+          .sort(sortBy(TestDocument.intField).missing(First))
           .from(10) match {
           case r: ElasticRequest.SearchAndAggregate => r.toJson
         }
@@ -198,7 +198,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
 
         assert(jsonRequest)(equalTo(expected.toJson))
       },
-      test("successfully encode update by query request with query to JSON") {
+      test("successfully encode update by query request to JSON") {
         val jsonRequest = updateByQuery(
           index = index,
           query = term(TestDocument.stringField, Some("keyword"), "StringField"),

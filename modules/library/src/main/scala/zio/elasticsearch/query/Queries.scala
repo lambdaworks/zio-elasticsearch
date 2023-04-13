@@ -17,7 +17,6 @@
 package zio.elasticsearch.query
 
 import zio.elasticsearch.ElasticPrimitive._
-import zio.elasticsearch.InnerHits
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.schema.Schema
@@ -131,14 +130,14 @@ private[elasticsearch] final case class Nested[S](
   path: String,
   query: ElasticQuery[_],
   ignoreUnmapped: Option[Boolean],
-  innerHits: Option[InnerHits],
+  innerHitsField: Option[InnerHits],
   scoreMode: Option[ScoreMode]
 ) extends NestedQuery[S] { self =>
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
   def innerHits(innerHits: InnerHits): NestedQuery[S] =
-    self.copy(innerHits = Some(innerHits))
+    self.copy(innerHitsField = Some(innerHits))
 
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
@@ -148,7 +147,7 @@ private[elasticsearch] final case class Nested[S](
           "query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))
         ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
           "ignore_unmapped" -> Json.Bool(_)
-        ) ++ innerHits.map { innerHits =>
+        ) ++ innerHitsField.map { innerHits =>
           "inner_hits" -> Obj(
             innerHits.from.map("from" -> Num(_)).toList
               ++ innerHits.size.map("size" -> Num(_))

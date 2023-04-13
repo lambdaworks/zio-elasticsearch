@@ -14,9 +14,13 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query
 
-final case class InnerHits(from: Option[Int] = None, name: Option[String] = None, size: Option[Int] = None) { self =>
+private[elasticsearch] final case class InnerHits(
+  from: Option[Int] = None,
+  name: Option[String] = None,
+  size: Option[Int] = None
+) { self =>
   def from(value: Int): InnerHits =
     self.copy(from = Some(value))
 

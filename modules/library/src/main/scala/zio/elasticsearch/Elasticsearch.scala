@@ -36,19 +36,19 @@ trait Elasticsearch {
 }
 
 object Elasticsearch {
-  def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
+  final def execute[A](request: ElasticRequest[A]): RIO[Elasticsearch, A] =
     ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
-  def stream(request: SearchRequest): ZStream[Elasticsearch, Throwable, Item] =
+  final def stream(request: SearchRequest): ZStream[Elasticsearch, Throwable, Item] =
     ZStream.serviceWithStream[Elasticsearch](_.stream(request))
 
-  def stream(request: SearchRequest, config: StreamConfig): ZStream[Elasticsearch, Throwable, Item] =
+  final def stream(request: SearchRequest, config: StreamConfig): ZStream[Elasticsearch, Throwable, Item] =
     ZStream.serviceWithStream[Elasticsearch](_.stream(request, config))
 
-  def streamAs[A: Schema](request: SearchRequest): ZStream[Elasticsearch, Throwable, A] =
+  final def streamAs[A: Schema](request: SearchRequest): ZStream[Elasticsearch, Throwable, A] =
     ZStream.serviceWithStream[Elasticsearch](_.streamAs[A](request))
 
-  def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): ZStream[Elasticsearch, Throwable, A] =
+  final def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): ZStream[Elasticsearch, Throwable, A] =
     ZStream.serviceWithStream[Elasticsearch](_.streamAs[A](request, config))
 
   lazy val layer: URLayer[Executor, Elasticsearch] =

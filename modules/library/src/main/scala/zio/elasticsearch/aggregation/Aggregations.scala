@@ -30,7 +30,9 @@ sealed trait ElasticAggregation { self =>
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
 
-sealed trait MultipleAggregations extends ElasticAggregation with WithAgg
+sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
+  def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations
+}
 
 private[elasticsearch] final case class Multiple(aggregations: List[SingleElasticAggregation])
     extends MultipleAggregations { self =>

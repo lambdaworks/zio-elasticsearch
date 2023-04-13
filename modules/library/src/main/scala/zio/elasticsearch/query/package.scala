@@ -38,7 +38,7 @@ package object query {
   }
 
   private[elasticsearch] trait HasInnerHits[Q <: HasInnerHits[Q]] {
-    def innerHitsEmpty: Q = innerHits(InnerHits())
+    final def innerHits: Q = innerHits(InnerHits())
     def innerHits(innerHits: InnerHits): Q
   }
 
