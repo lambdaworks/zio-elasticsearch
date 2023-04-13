@@ -17,6 +17,7 @@
 package zio.elasticsearch
 
 import zio.elasticsearch.query._
+import zio.schema.Schema
 
 import ElasticPrimitive.ElasticPrimitive
 
@@ -38,8 +39,11 @@ object ElasticQuery {
   def exists(field: String): ExistsQuery[Any] =
     Exists(field = field)
 
-  def filter[S](queries: ElasticQuery[S]*): BoolQuery[S] =
+  def filter[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
+
+  def filter(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+    Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
   def matchAll: MatchAllQuery =
     MatchAll(boost = None)
@@ -50,11 +54,17 @@ object ElasticQuery {
   def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
-  def must[S](queries: ElasticQuery[S]*): BoolQuery[S] =
+  def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
 
-  def mustNot[S](queries: ElasticQuery[S]*): BoolQuery[S] =
+  def must(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+    Bool[Any](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
+
+  def mustNot[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
+
+  def mustNot(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+    Bool[Any](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
   def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
     Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None, innerHits = None)
@@ -71,8 +81,11 @@ object ElasticQuery {
   def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
 
-  def should[S](queries: ElasticQuery[S]*): BoolQuery[S] =
+  def should[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
+
+  def should(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+    Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
   def startsWith[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
     Wildcard(
