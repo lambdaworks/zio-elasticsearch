@@ -48,6 +48,12 @@ object FieldDSLSpec extends ZIOSpecDefault {
       ),
       test("properly encode single field with suffix using accessor")(
         assertTrue(TestSubDocument.stringField.withSuffix("keyword").toString == "stringField.keyword")
+      ),
+      test("properly encode single field with keyword suffix")(
+        assertTrue(Field[Any, String](None, "name").keyword.toString == "name.keyword")
+      ),
+      test("properly encode single field with raw suffix")(
+        assertTrue(Field[Any, String](None, "name").raw.toString == "name.raw")
       )
     )
 }

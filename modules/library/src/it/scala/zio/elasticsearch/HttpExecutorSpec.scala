@@ -60,7 +60,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
-                      field = TestDocument.stringField.withSuffix("keyword")
+                      field = TestDocument.stringField.keyword
                     )
                   aggsRes <- Executor
                                .execute(
@@ -90,7 +90,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation = multipleAggregations.aggregations(
                                   termsAggregation(
                                     name = "aggregationString",
-                                    field = TestDocument.stringField.withSuffix("keyword")
+                                    field = TestDocument.stringField.keyword
                                   ),
                                   termsAggregation(name = "aggregationInt", field = "intField.keyword")
                                 )
@@ -121,7 +121,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   aggregation = termsAggregation(
                                   name = "aggregationString",
-                                  field = TestDocument.stringField.withSuffix("keyword")
+                                  field = TestDocument.stringField.keyword
                                 )
                                   .withSubAgg(termsAggregation(name = "aggregationInt", field = "intField.keyword"))
                   aggsRes <- Executor
@@ -154,7 +154,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = matchAll
                   aggregation = termsAggregation(
                                   name = "aggregationString",
-                                  field = TestDocument.stringField.withSuffix("keyword")
+                                  field = TestDocument.stringField.keyword
                                 ).withAgg(termsAggregation("aggregationInt", "intField"))
                   res <- Executor.execute(
                            ElasticRequest
@@ -190,7 +190,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 query = matchAll
                 aggregation = termsAggregation(
                                 name = "aggregationString",
-                                field = TestDocument.stringField.withSuffix("keyword")
+                                field = TestDocument.stringField.keyword
                               ).withAgg(termsAggregation("aggregationInt", "intField"))
                 res <- Executor
                          .execute(
@@ -240,7 +240,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
-                      field = TestDocument.stringField.withSuffix("keyword")
+                      field = TestDocument.stringField.keyword
                     ).withAgg(termsAggregation("aggregationInt", "intField.keyword"))
                   res <- Executor.execute(
                            ElasticRequest
@@ -277,7 +277,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
-                      field = TestDocument.stringField.withSuffix("keyword")
+                      field = TestDocument.stringField.keyword
                     ).withSubAgg(
                       termsAggregation(name = "aggregationInt", field = "intField")
                     )
@@ -529,7 +529,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = ElasticQuery.contains(
-                            field = TestDocument.stringField.withSuffix("keyword"),
+                            field = TestDocument.stringField.keyword,
                             value = firstDocument.stringField.take(3)
                           )
                   res <- Executor
@@ -555,7 +555,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = ElasticQuery.startsWith(
-                            field = TestDocument.stringField.withSuffix("keyword"),
+                            field = TestDocument.stringField.keyword,
                             value = firstDocument.stringField.take(3)
                           )
                   res <- Executor
@@ -582,7 +582,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = wildcard(
-                            field = TestDocument.stringField.withSuffix("keyword"),
+                            field = TestDocument.stringField.keyword,
                             value = s"${firstDocument.stringField.take(2)}*${firstDocument.stringField.takeRight(2)}"
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
@@ -1330,7 +1330,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     ElasticRequest
                       .updateByQuery(
                         index = updateByQueryIndex,
-                        query = term(field = TestDocument.stringField.withSuffix("keyword"), value = "StringField"),
+                        query = term(field = TestDocument.stringField.keyword, value = "StringField"),
                         script = Script("ctx._source['intField']++")
                       )
                       .refreshTrue

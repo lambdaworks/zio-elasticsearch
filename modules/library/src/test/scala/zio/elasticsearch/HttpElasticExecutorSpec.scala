@@ -225,7 +225,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             ElasticRequest
               .updateByQuery(
                 index = index,
-                query = term(field = TestDocument.stringField.withSuffix("keyword"), value = "StringField"),
+                query = term(field = TestDocument.stringField.keyword, value = "StringField"),
                 script = Script("ctx._source['intField']++")
               )
               .conflicts(Proceed)

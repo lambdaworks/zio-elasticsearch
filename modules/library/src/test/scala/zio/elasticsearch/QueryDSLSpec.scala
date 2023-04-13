@@ -48,7 +48,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39)))
         },
         test("successfully create type-safe Match query with suffix using `matches` method") {
-          val query = matches(field = TestSubDocument.stringField.withSuffix("keyword"), value = "StringField")
+          val query = matches(field = TestSubDocument.stringField.keyword, value = "StringField")
 
           assert(query)(equalTo(Match[TestSubDocument, String](field = "stringField.keyword", value = "StringField")))
         },
@@ -487,7 +487,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create empty type-safe Range Query with suffix") {
-          val query = range(field = TestSubDocument.stringField.withSuffix("keyword"))
+          val query = range(field = TestSubDocument.stringField.keyword)
 
           assert(query)(
             equalTo(
@@ -612,7 +612,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create type-safe Term Query with suffix") {
-          val query = term(field = TestSubDocument.stringField.withSuffix("keyword"), value = "StringField")
+          val query = term(field = TestSubDocument.stringField.keyword, value = "StringField")
 
           assert(query)(
             equalTo(
