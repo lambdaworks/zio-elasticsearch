@@ -16,7 +16,7 @@ import zio.test._
 
 import java.time.LocalDate
 
-object ElasticRequestsDSLSpec extends ZIOSpecDefault {
+object ElasticRequestDSLSpec extends ZIOSpecDefault {
 
   private val query = ElasticQuery.range(TestDocument.intField).gte(10)
   private val index = IndexName("index")
