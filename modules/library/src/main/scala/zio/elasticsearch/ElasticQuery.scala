@@ -51,7 +51,7 @@ object ElasticQuery {
   final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
     Match(field = field.toString, value = value)
 
-  def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
+  final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
   final def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
