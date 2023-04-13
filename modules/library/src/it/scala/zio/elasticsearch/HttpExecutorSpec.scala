@@ -536,8 +536,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = ElasticQuery.contains(
-                            field = TestDocument.stringField,
-                            multiField = Some("keyword"),
+                            field = TestDocument.stringField.withSuffix("keyword"),
                             value = firstDocument.stringField.take(3)
                           )
                   res <- Executor
@@ -563,8 +562,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = ElasticQuery.startsWith(
-                            field = TestDocument.stringField,
-                            multiField = Some("keyword"),
+                            field = TestDocument.stringField.withSuffix("keyword"),
                             value = firstDocument.stringField.take(3)
                           )
                   res <- Executor
@@ -591,8 +589,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = wildcard(
-                            field = TestDocument.stringField,
-                            multiField = Some("keyword"),
+                            field = TestDocument.stringField.withSuffix("keyword"),
                             value = s"${firstDocument.stringField.take(2)}*${firstDocument.stringField.takeRight(2)}"
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
@@ -1340,8 +1337,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     ElasticRequest
                       .updateByQuery(
                         index = updateByQueryIndex,
-                        query =
-                          term(field = TestDocument.stringField, multiField = Some("keyword"), value = "StringField"),
+                        query = term(field = TestDocument.stringField.withSuffix("keyword"), value = "StringField"),
                         script = Script("ctx._source['intField']++")
                       )
                       .refreshTrue
