@@ -304,7 +304,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           )
@@ -319,7 +319,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           )
@@ -338,7 +338,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -349,7 +349,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Max),
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -360,7 +360,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Min),
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -371,7 +371,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.None),
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           ) &&
@@ -382,7 +382,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Sum),
                 ignoreUnmapped = None,
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           )
@@ -397,7 +397,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = Some(true),
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           )
@@ -412,7 +412,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = Some(false),
-                innerHitsConfig = None
+                innerHitsField = None
               )
             )
           )
@@ -427,7 +427,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHitsConfig = Some(InnerHits(None, None, None))
+                innerHitsField = Some(InnerHits(None, None, None))
               )
             )
           )
@@ -442,7 +442,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHitsConfig = Some(InnerHits(from = Some(0), name = Some("name"), size = Some(3)))
+                innerHitsField = Some(InnerHits(from = Some(0), name = Some("name"), size = Some(3)))
               )
             )
           )
