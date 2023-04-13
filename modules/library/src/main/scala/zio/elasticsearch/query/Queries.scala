@@ -20,6 +20,7 @@ import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.InnerHits
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
+import zio.schema.Schema
 
 import scala.annotation.unused
 
@@ -31,13 +32,21 @@ sealed trait ElasticQuery[-S] { self =>
 }
 
 sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] {
-  def filter(queries: ElasticQuery[S]*): BoolQuery[S]
+  def filter[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
-  def must(queries: ElasticQuery[S]*): BoolQuery[S]
+  def filter(queries: ElasticQuery[Any]*): BoolQuery[S]
 
-  def mustNot(queries: ElasticQuery[S]*): BoolQuery[S]
+  def must[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
-  def should(queries: ElasticQuery[S]*): BoolQuery[S]
+  def must(queries: ElasticQuery[Any]*): BoolQuery[S]
+
+  def mustNot[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
+
+  def mustNot(queries: ElasticQuery[Any]*): BoolQuery[S]
+
+  def should[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
+
+  def should(queries: ElasticQuery[Any]*): BoolQuery[S]
 }
 
 private[elasticsearch] final case class Bool[S](
@@ -50,13 +59,22 @@ private[elasticsearch] final case class Bool[S](
   def boost(value: Double): BoolQuery[S] =
     self.copy(boost = Some(value))
 
-  def filter(queries: ElasticQuery[S]*): BoolQuery[S] =
+  def filter[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
     self.copy(filter = filter ++ queries)
 
-  def must(queries: ElasticQuery[S]*): BoolQuery[S] =
+  def filter(queries: ElasticQuery[Any]*): BoolQuery[S] =
+    self.copy(filter = filter ++ queries)
+
+  def must[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
     self.copy(must = must ++ queries)
 
-  def mustNot(queries: ElasticQuery[S]*): BoolQuery[S] =
+  def must(queries: ElasticQuery[Any]*): BoolQuery[S] =
+    self.copy(must = must ++ queries)
+
+  def mustNot[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
+    self.copy(mustNot = mustNot ++ queries)
+
+  def mustNot(queries: ElasticQuery[Any]*): BoolQuery[S] =
     self.copy(mustNot = mustNot ++ queries)
 
   def paramsToJson(fieldPath: Option[String]): Json = {
@@ -72,7 +90,10 @@ private[elasticsearch] final case class Bool[S](
     Obj("bool" -> Obj(boolFields: _*))
   }
 
-  def should(queries: ElasticQuery[S]*): BoolQuery[S] =
+  def should[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
+    self.copy(should = should ++ queries)
+
+  def should(queries: ElasticQuery[Any]*): BoolQuery[S] =
     self.copy(should = should ++ queries)
 }
 
