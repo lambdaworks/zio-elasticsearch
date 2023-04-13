@@ -60,8 +60,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
-                      field = TestDocument.stringField,
-                      multiField = Some("keyword")
+                      field = TestDocument.stringField.withSuffix("keyword")
                     )
                   aggsRes <- Executor
                                .execute(
@@ -91,8 +90,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation = multipleAggregations.aggregations(
                                   termsAggregation(
                                     name = "aggregationString",
-                                    field = TestDocument.stringField,
-                                    multiField = Some("keyword")
+                                    field = TestDocument.stringField.withSuffix("keyword")
                                   ),
                                   termsAggregation(name = "aggregationInt", field = "intField.keyword")
                                 )
@@ -123,8 +121,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   aggregation = termsAggregation(
                                   name = "aggregationString",
-                                  field = TestDocument.stringField,
-                                  multiField = Some("keyword")
+                                  field = TestDocument.stringField.withSuffix("keyword")
                                 )
                                   .withSubAgg(termsAggregation(name = "aggregationInt", field = "intField.keyword"))
                   aggsRes <- Executor
@@ -157,8 +154,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query = matchAll
                   aggregation = termsAggregation(
                                   name = "aggregationString",
-                                  field = TestDocument.stringField,
-                                  multiField = Some("keyword")
+                                  field = TestDocument.stringField.withSuffix("keyword")
                                 ).withAgg(termsAggregation("aggregationInt", "intField"))
                   res <- Executor.execute(
                            ElasticRequest
@@ -194,8 +190,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 query = matchAll
                 aggregation = termsAggregation(
                                 name = "aggregationString",
-                                field = TestDocument.stringField,
-                                multiField = Some("keyword")
+                                field = TestDocument.stringField.withSuffix("keyword")
                               ).withAgg(termsAggregation("aggregationInt", "intField"))
                 res <- Executor
                          .execute(
@@ -245,8 +240,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
-                      field = TestDocument.stringField,
-                      multiField = Some("keyword")
+                      field = TestDocument.stringField.withSuffix("keyword")
                     ).withAgg(termsAggregation("aggregationInt", "intField.keyword"))
                   res <- Executor.execute(
                            ElasticRequest
@@ -283,8 +277,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
-                      field = TestDocument.stringField,
-                      multiField = Some("keyword")
+                      field = TestDocument.stringField.withSuffix("keyword")
                     ).withSubAgg(
                       termsAggregation(name = "aggregationInt", field = "intField")
                     )
