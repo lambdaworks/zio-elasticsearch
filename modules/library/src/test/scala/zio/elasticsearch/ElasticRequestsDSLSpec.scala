@@ -201,7 +201,7 @@ object ElasticRequestsDSLSpec extends ZIOSpecDefault {
       test("successfully encode update by query request to JSON") {
         val jsonRequest = updateByQuery(
           index = index,
-          query = term(TestDocument.stringField, Some("keyword"), "StringField"),
+          query = term(TestDocument.stringField.withSuffix("keyword"), "StringField"),
           script = Script("ctx._source['intField']++")
         ) match { case r: UpdateByQuery => r.toJson }
 

@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.schema.{AccessorBuilder, Schema}
 
 import scala.annotation.tailrec
@@ -34,6 +35,9 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
 
     loop(self, Nil).mkString
   }
+
+  def withSuffix[A1 >: A: ElasticPrimitive](suffix: String): Field[S, A1] =
+    self.copy(name = name + s".$suffix")
 }
 
 object FieldAccessorBuilder extends AccessorBuilder {
