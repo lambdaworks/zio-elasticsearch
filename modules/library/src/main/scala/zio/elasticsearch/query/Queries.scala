@@ -130,14 +130,14 @@ private[elasticsearch] final case class Nested[S](
   path: String,
   query: ElasticQuery[_],
   ignoreUnmapped: Option[Boolean],
-  innerHits: Option[InnerHits],
+  innerHitsConfig: Option[InnerHits],
   scoreMode: Option[ScoreMode]
 ) extends NestedQuery[S] { self =>
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
   def innerHits(innerHits: InnerHits): NestedQuery[S] =
-    self.copy(innerHits = Some(innerHits))
+    self.copy(innerHitsConfig = Some(innerHits))
 
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
@@ -147,7 +147,7 @@ private[elasticsearch] final case class Nested[S](
           "query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))
         ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
           "ignore_unmapped" -> Json.Bool(_)
-        ) ++ innerHits.map { innerHits =>
+        ) ++ innerHitsConfig.map { innerHits =>
           "inner_hits" -> Obj(
             innerHits.from.map("from" -> Num(_)).toList
               ++ innerHits.size.map("size" -> Num(_))

@@ -40,6 +40,6 @@ package object request {
   }
 
   private[elasticsearch] trait WithSort[R <: WithSort[R]] {
-    def sortBy(sorts: Sort*): R
+    def sort(sorts: Sort*): R
   }
 }

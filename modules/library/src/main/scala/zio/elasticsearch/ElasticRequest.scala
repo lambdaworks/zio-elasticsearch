@@ -40,46 +40,46 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
-  def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
+  final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
     Aggregate(index = index, aggregation = aggregation)
 
-  def bulk(requests: BulkableRequest[_]*): BulkRequest =
+  final def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
 
-  def count(index: IndexName): CountRequest =
+  final def count(index: IndexName): CountRequest =
     Count(index = index, query = None, routing = None)
 
-  def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
+  final def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
     Count(index = index, query = Some(query), routing = None)
 
-  def create[A: Schema](index: IndexName, doc: A): CreateRequest =
+  final def create[A: Schema](index: IndexName, doc: A): CreateRequest =
     Create(index = index, document = Document.from(doc), refresh = None, routing = None)
 
-  def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithIdRequest =
+  final def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithIdRequest =
     CreateWithId(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
-  def createIndex(name: IndexName): CreateIndexRequest =
+  final def createIndex(name: IndexName): CreateIndexRequest =
     CreateIndex(name = name, definition = None)
 
-  def createIndex(name: IndexName, definition: String): CreateIndexRequest =
+  final def createIndex(name: IndexName, definition: String): CreateIndexRequest =
     CreateIndex(name = name, definition = Some(definition))
 
-  def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest =
+  final def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest =
     DeleteById(index = index, id = id, refresh = None, routing = None)
 
-  def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQueryRequest =
+  final def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQueryRequest =
     DeleteByQuery(index = index, query = query, refresh = None, routing = None)
 
-  def deleteIndex(name: IndexName): DeleteIndexRequest =
+  final def deleteIndex(name: IndexName): DeleteIndexRequest =
     DeleteIndex(name = name)
 
-  def exists(index: IndexName, id: DocumentId): ExistRequest =
+  final def exists(index: IndexName, id: DocumentId): ExistRequest =
     Exists(index = index, id = id, routing = None)
 
-  def getById(index: IndexName, id: DocumentId): GetByIdRequest =
+  final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
     GetById(index = index, id = id, refresh = None, routing = None)
 
-  def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
+  final def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(
       index = index,
       query = query,
@@ -91,7 +91,11 @@ object ElasticRequest {
       size = None
     )
 
-  def search(index: IndexName, query: ElasticQuery[_], aggregation: ElasticAggregation): SearchAndAggregateRequest =
+  final def search(
+    index: IndexName,
+    query: ElasticQuery[_],
+    aggregation: ElasticAggregation
+  ): SearchAndAggregateRequest =
     SearchAndAggregate(
       index = index,
       query = query,
@@ -104,7 +108,7 @@ object ElasticRequest {
       size = None
     )
 
-  def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
+  final def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
     Update(
       index = index,
       id = id,
@@ -115,16 +119,16 @@ object ElasticRequest {
       upsert = None
     )
 
-  def updateAllByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
+  final def updateAllByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
     UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
 
-  def updateByQuery(index: IndexName, query: ElasticQuery[_], script: Script): UpdateByQueryRequest =
+  final def updateByQuery(index: IndexName, query: ElasticQuery[_], script: Script): UpdateByQueryRequest =
     UpdateByQuery(index = index, script = script, conflicts = None, query = Some(query), refresh = None, routing = None)
 
-  def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
+  final def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
     Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
 
-  def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
+  final def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
   sealed trait AggregateRequest extends ElasticRequest[AggregationResult]
@@ -376,7 +380,7 @@ object ElasticRequest {
     def size(value: Int): SearchRequest =
       self.copy(size = Some(value))
 
-    def sortBy(sorts: Sort*): SearchRequest =
+    def sort(sorts: Sort*): SearchRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {
@@ -432,7 +436,7 @@ object ElasticRequest {
     def searchAfter(value: Json): SearchAndAggregateRequest =
       self.copy(searchAfter = Some(value))
 
-    def sortBy(sorts: Sort*): SearchAndAggregateRequest =
+    def sort(sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ sorts.toSet)
 
     def toJson: Json = {

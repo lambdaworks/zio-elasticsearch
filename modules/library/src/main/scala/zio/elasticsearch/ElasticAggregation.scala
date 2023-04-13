@@ -19,12 +19,16 @@ package zio.elasticsearch
 import zio.elasticsearch.aggregation._
 
 object ElasticAggregation {
-  def multipleAggregations: MultipleAggregations =
+  final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Nil)
 
-  def termsAggregation(name: String, field: Field[_, String], multiField: Option[String] = None): TermsAggregation =
+  final def termsAggregation(
+    name: String,
+    field: Field[_, String],
+    multiField: Option[String] = None
+  ): TermsAggregation =
     Terms(name = name, field = field.toString ++ multiField.map("." ++ _).getOrElse(""), subAggregations = Nil)
 
-  def termsAggregation(name: String, field: String): TermsAggregation =
+  final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, subAggregations = Nil)
 }

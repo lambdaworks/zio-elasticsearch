@@ -22,7 +22,7 @@ import zio.schema.Schema
 import ElasticPrimitive.ElasticPrimitive
 
 object ElasticQuery {
-  def contains[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
+  final def contains[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
     Wildcard(
       field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
       value = s"*$value*",
@@ -30,64 +30,68 @@ object ElasticQuery {
       caseInsensitive = None
     )
 
-  def contains(field: String, value: String): WildcardQuery[Any] =
+  final def contains(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
 
-  def exists[S](field: Field[S, _]): ExistsQuery[S] =
+  final def exists[S](field: Field[S, _]): ExistsQuery[S] =
     Exists(field = field.toString)
 
-  def exists(field: String): ExistsQuery[Any] =
+  final def exists(field: String): ExistsQuery[Any] =
     Exists(field = field)
 
-  def filter[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
+  final def filter[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
-  def filter(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+  final def filter(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
-  def matchAll: MatchAllQuery =
+  final def matchAll: MatchAllQuery =
     MatchAll(boost = None)
 
-  def matches[S, A: ElasticPrimitive](field: Field[S, A], multiField: Option[String] = None, value: A): MatchQuery[S] =
+  final def matches[S, A: ElasticPrimitive](
+    field: Field[S, A],
+    multiField: Option[String] = None,
+    value: A
+  ): MatchQuery[S] =
     Match(field = field.toString ++ multiField.map("." ++ _).getOrElse(""), value = value)
 
   def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
-  def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
+  final def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
 
-  def must(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+  final def must(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
 
-  def mustNot[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
+  final def mustNot[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
-  def mustNot(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+  final def mustNot(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
-  def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
-    Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None, innerHits = None)
+  final def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
+    Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsConfig = None)
 
-  def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
-    Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHits = None)
+  final def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
+    Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsConfig = None)
 
-  def range[S, A](
+  final def range[S, A](
     field: Field[S, A],
     multiField: Option[String] = None
   ): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
     Range.empty(field.toString ++ multiField.map("." ++ _).getOrElse(""))
 
-  def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
+  final def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
 
-  def should[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
+  final def should[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
-  def should(queries: ElasticQuery[Any]*): BoolQuery[Any] =
+  final def should(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
-  def startsWith[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
+  final def startsWith[S](field: Field[S, _], multiField: Option[String] = None, value: String): WildcardQuery[S] =
     Wildcard(
       field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
       value = s"$value*",
@@ -95,10 +99,14 @@ object ElasticQuery {
       caseInsensitive = None
     )
 
-  def startsWith(field: String, value: String): WildcardQuery[Any] =
+  final def startsWith(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"$value*", boost = None, caseInsensitive = None)
 
-  def term[S, A: ElasticPrimitive](field: Field[S, A], multiField: Option[String] = None, value: A): TermQuery[S] =
+  final def term[S, A: ElasticPrimitive](
+    field: Field[S, A],
+    multiField: Option[String] = None,
+    value: A
+  ): TermQuery[S] =
     Term(
       field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
       value = value,
@@ -106,10 +114,10 @@ object ElasticQuery {
       caseInsensitive = None
     )
 
-  def term[A: ElasticPrimitive](field: String, value: A): Term[Any, A] =
+  final def term[A: ElasticPrimitive](field: String, value: A): Term[Any, A] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
 
-  def wildcard[S](field: Field[S, _], multiField: Option[String] = None, value: String): Wildcard[S] =
+  final def wildcard[S](field: Field[S, _], multiField: Option[String] = None, value: String): Wildcard[S] =
     Wildcard(
       field = field.toString ++ multiField.map("." ++ _).getOrElse(""),
       value = value,
@@ -117,6 +125,6 @@ object ElasticQuery {
       caseInsensitive = None
     )
 
-  def wildcard(field: String, value: String): Wildcard[Any] =
+  final def wildcard(field: String, value: String): Wildcard[Any] =
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)
 }
