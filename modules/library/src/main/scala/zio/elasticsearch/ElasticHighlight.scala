@@ -21,15 +21,55 @@ import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.json.ast.Json
 
 object ElasticHighlight {
+<<<<<<< HEAD
+=======
+
+  /**
+   * Constructs a type-safe instance of [[Highlights]] using the type-safe field parameter.
+   *
+   * @param field
+   *   the [[Field]] object representing the type-safe field to highlight
+   * @return
+   *   returns an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   */
+>>>>>>> 798b70e (Add scaladoc for public api)
   final def highlight(field: Field[_, _]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, Map.empty)))
 
+  /**
+   * Constructs an instance of [[Highlights]] using the field parameter.
+   *
+   * @param field
+   *   the field to highlight
+   * @return
+   *   returns an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   */
   final def highlight(field: String): Highlights =
     Highlights(Chunk(HighlightField(field, Map.empty)))
 
+  /**
+   * Constructs a type-safe instance of [[Highlights]] using the specified parameters.
+   *
+   * @param field
+   *   the [[Field]] object representing the type-safe field to highlight
+   * @param config
+   *   a map of highlight options
+   * @return
+   *   returns an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   */
   final def highlight(field: Field[_, _], config: Map[String, Json]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, config)))
 
+  /**
+   * Constructs an instance of [[Highlights]] using the specified parameters.
+   *
+   * @param field
+   *   the field to highlight
+   * @param config
+   *   a map of highlight options
+   * @return
+   *   returns an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   */
   final def highlight(field: String, config: Map[String, Json]): Highlights =
     Highlights(Chunk(HighlightField(field, config)))
 }

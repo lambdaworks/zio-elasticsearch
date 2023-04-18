@@ -22,14 +22,14 @@ import zio.elasticsearch.script.Script
 object ElasticSort {
 
   /**
-   * Specifies a type-safe [[zio.elasticsearch.query.sort.SortByField]].
+   * Constructs a type-safe instance of [[SortByField]] using the specified parameters.
    *
    * @param field
-   *   a type-safe field which is used for sorting
+   *   the [[Field]] object representing the type-safe field to sort by
    * @tparam S
-   *   document on which fields query is executed
+   *   document by which field sort is performed
    * @return
-   *   returns specified SortByField.
+   *   returns an instance of [[SortByField]] that represents sort by field operation to be performed.
    */
   final def sortBy[S](field: Field[S, _]): SortByField =
     SortByFieldOptions(
@@ -42,49 +42,40 @@ object ElasticSort {
       unmappedType = None
     )
 
-  <<<<<<< HEAD
-  final def sortBy(field: String): SortByField =
-    =======
-
   /**
-   * Specifies [[zio.elasticsearch.query.sort.SortByField]].
+   * Constructs an instance of [[SortByField]] using the specified parameters.
    *
    * @param field
-   *   field which is used for sorting
+   *   the field to sort by
    * @return
-   *   returns specified SortByField.
+   *   returns an instance of [[SortByField]] that represents sort by field operation to be performed.
    */
-  def sortBy(field: String): SortByField =
-    >>>>>>> df390a8 (Backup)
-  SortByFieldOptions(
-    field = field,
-    format = None,
-    mode = None,
-    missing = None,
-    numericType = None,
-    order = None,
-    unmappedType = None
-  )
-
-  <<<<<<< HEAD
-  final def sortBy(script: Script, sourceType: SourceType): SortByScript =
-    =======
+  final def sortBy(field: String): SortByField =
+    SortByFieldOptions(
+      field = field,
+      format = None,
+      mode = None,
+      missing = None,
+      numericType = None,
+      order = None,
+      unmappedType = None
+    )
 
   /**
-   * Specifies [[zio.elasticsearch.query.sort.SortByScript]].
+   * Constructs an instance of [[SortByScript]] using the specified parameters.
    *
    * @param script
-   *   specifies [[zio.elasticsearch.script.Script]] that represents sort in this case
+   *   a [[Script]] object containing sort logic
    * @param sourceType
-   *   type of SortByScript source - [[zio.elasticsearch.query.sort.SourceType]]
+   *   type of script source - [[SourceType]]
    * @return
+   *   returns an instance of [[SortByScript]] that represents sort by script operation to be performed.
    */
-  def sortBy(script: Script, sourceType: SourceType): SortByScript =
-    >>>>>>> df390a8 (Backup)
-  SortByScriptOptions(
-    script = script,
-    sourceType = sourceType,
-    mode = None,
-    order = None
-  )
+  final def sortBy(script: Script, sourceType: SourceType): SortByScript =
+    SortByScriptOptions(
+      script = script,
+      sourceType = sourceType,
+      mode = None,
+      order = None
+    )
 }
