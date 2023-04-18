@@ -27,7 +27,6 @@ final case class Highlights(
   config: HighlightConfig = Map.empty,
   explicitFieldOrder: Boolean = false
 ) { self =>
-
   def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
 
   def withGlobalConfig(field: String, value: Json): Highlights =

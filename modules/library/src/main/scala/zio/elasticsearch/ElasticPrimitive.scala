@@ -20,7 +20,6 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Str}
 
 object ElasticPrimitive {
-
   sealed trait ElasticPrimitive[A] {
     def toJson(value: A): Json
   }

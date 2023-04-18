@@ -72,9 +72,7 @@ object ElasticQuery {
   final def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
 
-  final def range[S, A](
-    field: Field[S, A]
-  ): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
+  final def range[S, A](field: Field[S, A]): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
     Range.empty(field.toString)
 
   final def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =

@@ -60,9 +60,14 @@ private[elasticsearch] final case class Terms(
   field: String,
   subAggregations: List[SingleElasticAggregation]
 ) extends TermsAggregation { self =>
-
   def paramsToJson: Json =
     Obj(name -> paramsToJsonHelper(field, subAggregations))
+
+  def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, aggregation)
+
+  def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
+    self.copy(subAggregations = aggregation +: subAggregations)
 
   private def paramsToJsonHelper(currField: String, currSubAggs: List[SingleElasticAggregation]): Obj =
     if (currSubAggs.nonEmpty) {
@@ -75,10 +80,4 @@ private[elasticsearch] final case class Terms(
     } else {
       Obj("terms" -> Obj("field" -> currField.toJson))
     }
-
-  def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
-    multipleAggregations.aggregations(self, aggregation)
-
-  def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
-    self.copy(subAggregations = aggregation +: subAggregations)
 }

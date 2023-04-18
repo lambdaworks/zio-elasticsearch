@@ -215,7 +215,6 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   upper: UB,
   boost: Option[Double]
 ) extends RangeQuery[S, A, LB, UB] { self =>
-
   def boost(value: Double): RangeQuery[S, A, LB, UB] =
     self.copy(boost = Some(value))
 

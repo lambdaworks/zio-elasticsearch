@@ -21,7 +21,6 @@ import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.json.ast.Json
 
 object ElasticHighlight {
-
   final def highlight(field: Field[_, _]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, Map.empty)))
 
