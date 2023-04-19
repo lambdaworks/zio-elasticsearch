@@ -22,11 +22,40 @@ import zio.schema.{AccessorBuilder, Schema}
 import scala.annotation.tailrec
 
 private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]], name: String) { self =>
+
+  /**
+   * Creates a new [[Field]] that represents the path from this [[Field]] to the specified [[Field]].
+   *
+   * @param that
+   *   the target [[Field]]
+   * @tparam B
+   *   the type of the specified [[Field]]
+   * @return
+   *   a new [[Field]] that represents the path from this [[Field]] to the specified [[Field]]
+   */
   def /[B](that: Field[A, B]): Field[S, B] =
     Field(that.parent.map(self / _).orElse(Some(self)), that.name)
 
+  /**
+   * Creates a new [[Field]] that represents the current [[Field]] suffixed by `keyword`.
+   *
+   * @tparam A1
+   *   the underlying type of the current [[Field]], constrained by the [[ElasticPrimitive]], which specifies that it
+   *   must be a supertype of the field's value
+   * @return
+   *   a new [[Field]] that represents the current [[Field]] suffixed by `keyword`
+   */
   def keyword[A1 >: A: ElasticPrimitive]: Field[S, A1] = suffix[A1]("keyword")
 
+  /**
+   * Creates a new [[Field]] that represents the current [[Field]] suffixed by `raw`.
+   *
+   * @tparam A1
+   *   the underlying type of the current [[Field]], constrained by the [[ElasticPrimitive]], which specifies that it
+   *   must be a supertype of the field's value
+   * @return
+   *   a new [[Field]] that represents the current [[Field]] suffixed by `raw`
+   */
   def raw[A1 >: A: ElasticPrimitive]: Field[S, A1] = suffix[A1]("raw")
 
   override def toString: String = {
@@ -39,6 +68,17 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
     loop(self, Nil).mkString
   }
 
+  /**
+   * Appends a suffix to the name of the [[Field]] and returns a new instance of the [[Field]] with the updated name.
+   * The type of the field's value is preserved.
+   *
+   * @param suffix
+   * @tparam A1
+   *   the underlying type of the current [[Field]], constrained by the [[ElasticPrimitive]], which specifies that it
+   *   must be a supertype of the field's value
+   * @return
+   *   a new instance of the [[Field]] with the updated name.
+   */
   def suffix[A1 >: A: ElasticPrimitive](suffix: String): Field[S, A1] =
     self.copy(name = name + s".$suffix")
 }
