@@ -21,10 +21,10 @@ import zio.elasticsearch.aggregation._
 object ElasticAggregation {
 
   /**
-   * Constructs an instance of [[MultipleAggregations]] that is empty.
+   * Constructs an empty instance of the [[MultipleAggregations]].
    *
    * @return
-   *   returns an instance of empty [[MultipleAggregations]].
+   *   an instance of empty [[MultipleAggregations]].
    */
   final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Nil)
@@ -37,7 +37,7 @@ object ElasticAggregation {
    * @param field
    *   the [[Field]] object representing the type-safe field for which the aggregation will be executed
    * @return
-   *   returns an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
+   *   an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
    */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
     Terms(name = name, field = field.toString, subAggregations = Nil)
@@ -50,7 +50,7 @@ object ElasticAggregation {
    * @param field
    *   field for which terms aggregation will be executed
    * @return
-   *   returns an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
+   *   an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, subAggregations = Nil)

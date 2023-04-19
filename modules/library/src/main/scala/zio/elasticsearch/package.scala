@@ -34,23 +34,24 @@ package object elasticsearch {
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
 
     /**
-     * Executes the [[SearchRequest]] or the [[SearchAndAggregateRequest]] and retrieves the [[AggregationResponse]], if
-     * any.
+     * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] and retrieves the [[AggregationResponse]], if any.
      *
      * @param name
      *   the name of the aggregation to retrieve
      * @return
-     *   returns a `RIO` effect that, when executed, will produce an optional [[AggregationResponse]].
+     *   a [[RIO]] effect that, when executed, will produce an optional [[AggregationResponse]].
      */
     def aggregation(name: String): RIO[R, Option[AggregationResponse]] =
       zio.flatMap(_.aggregation(name))
 
     /**
-     * Executes the [[SearchRequest]] or the [[SearchAndAggregateRequest]] and retrieves the map of aggregation names
-     * and [[AggregationResponse]]s.
+     * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] and retrieves the map of aggregation names and
+     * [[AggregationResponse]]s.
      *
      * @return
-     *   returns a `RIO` effect that, when executed, will produce a Map of the aggregations name and response.
+     *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and response.
      */
     def aggregations: RIO[R, Map[String, AggregationResponse]] =
       zio.flatMap(_.aggregations)

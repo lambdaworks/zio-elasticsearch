@@ -29,7 +29,7 @@ object ElasticSort {
    * @tparam S
    *   document by which field sort is performed
    * @return
-   *   returns an instance of [[SortByField]] that represents sort by field operation to be performed.
+   *   an instance of [[SortByField]] that represents sort by field operation to be performed.
    */
   final def sortBy[S](field: Field[S, _]): SortByField =
     SortByFieldOptions(
@@ -48,7 +48,7 @@ object ElasticSort {
    * @param field
    *   the field to sort by
    * @return
-   *   returns an instance of [[SortByField]] that represents sort by field operation to be performed.
+   *   an instance of [[SortByField]] that represents sort by field operation to be performed.
    */
   final def sortBy(field: String): SortByField =
     SortByFieldOptions(
@@ -67,9 +67,11 @@ object ElasticSort {
    * @param script
    *   a [[Script]] object containing sort logic
    * @param sourceType
-   *   type of script source - [[SourceType]]
+   *   type of script source
+   *   - [[zio.elasticsearch.query.sort.SourceType.NumberType]]: for numbers scripts
+   *   - [[zio.elasticsearch.query.sort.SourceType.StringType]]: for text scripts
    * @return
-   *   returns an instance of [[SortByScript]] that represents sort by script operation to be performed.
+   *   an instance of [[SortByScript]] that represents sort by script operation to be performed.
    */
   final def sortBy(script: Script, sourceType: SourceType): SortByScript =
     SortByScriptOptions(

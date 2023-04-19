@@ -48,7 +48,7 @@ object ElasticRequest {
    * @param aggregation
    *   the desired [[ElasticAggregation]] to perform
    * @return
-   *   returns an instance of [[AggregateRequest]] that represents the aggregation to be performed.
+   *   an instance of [[AggregateRequest]] that represents the aggregation to be performed.
    */
   final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
     Aggregate(index = index, aggregation = aggregation)
@@ -59,7 +59,7 @@ object ElasticRequest {
    * @param requests
    *   a list of requests that will be executed as a bulk
    * @return
-   *   returns an instance of [[BulkRequest]] that represents the bulk operation to be performed.
+   *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
    */
   final def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
@@ -70,7 +70,7 @@ object ElasticRequest {
    * @param index
    *   the name of the index to count documents from
    * @return
-   *   returns an instance of `CountRequest` that represents the count operation to be performed.
+   *   an instance of [[CountRequest]] that represents the count operation to be performed.
    */
   final def count(index: IndexName): CountRequest =
     Count(index = index, query = None, routing = None)
@@ -83,7 +83,7 @@ object ElasticRequest {
    * @param query
    *   the [[ElasticQuery]] object to query documents that will be counted
    * @return
-   *   returns an instance of `CountRequest` that represents the count operation to be performed.
+   *   an instance of [[CountRequest]] that represents the count operation to be performed.
    */
   final def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
     Count(index = index, query = Some(query), routing = None)
@@ -98,7 +98,7 @@ object ElasticRequest {
    * @tparam A
    *   the type of the document to be created. An implicit `Schema` instance must be in scope for this type
    * @return
-   *   returns an instance of [[CreateRequest]] that represents the create operation to be performed.
+   *   an instance of [[CreateRequest]] that represents the create operation to be performed.
    */
   final def create[A: Schema](index: IndexName, doc: A): CreateRequest =
     Create(index = index, document = Document.from(doc), refresh = None, routing = None)
@@ -115,7 +115,7 @@ object ElasticRequest {
    * @tparam A
    *   the type of the document to be created. An implicit `Schema` instance must be in scope for this type
    * @return
-   *   returns an instance of [[CreateRequest]] that represents the create with id operation to be performed.
+   *   an instance of [[CreateRequest]] that represents the create with id operation to be performed.
    */
   final def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithIdRequest =
     CreateWithId(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -126,7 +126,7 @@ object ElasticRequest {
    * @param name
    *   the name of the index to be created
    * @return
-   *   returns an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
+   *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
    */
   final def createIndex(name: IndexName): CreateIndexRequest =
     CreateIndex(name = name, definition = None)
@@ -139,7 +139,7 @@ object ElasticRequest {
    * @param definition
    *   the settings for the index
    * @return
-   *   returns an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
+   *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
    */
   final def createIndex(name: IndexName, definition: String): CreateIndexRequest =
     CreateIndex(name = name, definition = Some(definition))
@@ -152,7 +152,7 @@ object ElasticRequest {
    * @param id
    *   the ID of the document to be deleted
    * @return
-   *   returns an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
+   *   an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
    */
   final def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest =
     DeleteById(index = index, id = id, refresh = None, routing = None)
@@ -165,7 +165,7 @@ object ElasticRequest {
    * @param query
    *   the [[ElasticQuery]] object to query documents which will be deleted
    * @return
-   *   returns an instance of [[DeleteByQueryRequest]] that represents delete by query operation to be performed.
+   *   an instance of [[DeleteByQueryRequest]] that represents delete by query operation to be performed.
    */
   final def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQueryRequest =
     DeleteByQuery(index = index, query = query, refresh = None, routing = None)
@@ -176,7 +176,7 @@ object ElasticRequest {
    * @param name
    *   the name of the index to be deleted
    * @return
-   *   returns an instance of [[DeleteIndexRequest]] that represents delete index operation to be performed.
+   *   an instance of [[DeleteIndexRequest]] that represents delete index operation to be performed.
    */
   final def deleteIndex(name: IndexName): DeleteIndexRequest =
     DeleteIndex(name = name)
@@ -189,7 +189,7 @@ object ElasticRequest {
    * @param id
    *   the ID of the document to check for existence
    * @return
-   *   returns an instance of [[ExistRequest]] that represents exists operation to be performed.
+   *   an instance of [[ExistRequest]] that represents exists operation to be performed.
    */
   final def exists(index: IndexName, id: DocumentId): ExistRequest =
     Exists(index = index, id = id, routing = None)
@@ -202,7 +202,7 @@ object ElasticRequest {
    * @param id
    *   the ID of the document to retrieve
    * @return
-   *   returns an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
+   *   an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
    */
   final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
     GetById(index = index, id = id, refresh = None, routing = None)
@@ -215,7 +215,7 @@ object ElasticRequest {
    * @param query
    *   the [[ElasticQuery]] object representing the search query to execute
    * @return
-   *   returns an instance of [[SearchRequest]] that represents search operation to be performed.
+   *   an instance of [[SearchRequest]] that represents search operation to be performed.
    */
   final def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(
@@ -239,8 +239,7 @@ object ElasticRequest {
    * @param aggregation
    *   a [[ElasticAggregation]] object for aggregating queried documents
    * @return
-   *   returns an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be
-   *   performed.
+   *   an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be performed.
    */
   final def search(
     index: IndexName,
@@ -271,7 +270,7 @@ object ElasticRequest {
    * @tparam A
    *   the type of the document to be updated. An implicit `Schema` instance must be in scope for this type
    * @return
-   *   returns an instance of [[UpdateRequest]] that represents update operation to be performed.
+   *   an instance of [[UpdateRequest]] that represents update operation to be performed.
    */
   final def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
     Update(
@@ -292,7 +291,7 @@ object ElasticRequest {
    * @param script
    *   a [[Script]] object containing the update logic to apply to all documents
    * @return
-   *   returns an instance of [[UpdateByQueryRequest]] that represents update all operation to be performed.
+   *   an instance of [[UpdateByQueryRequest]] that represents update all operation to be performed.
    */
   final def updateAllByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
     UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
@@ -307,7 +306,7 @@ object ElasticRequest {
    * @param script
    *   a [[Script]] object containing the update logic to apply to matching documents
    * @return
-   *   returns an instance of [[UpdateByQueryRequest]] that represents update by query operation to be performed.
+   *   an instance of [[UpdateByQueryRequest]] that represents update by query operation to be performed.
    */
   final def updateByQuery(index: IndexName, query: ElasticQuery[_], script: Script): UpdateByQueryRequest =
     UpdateByQuery(index = index, script = script, conflicts = None, query = Some(query), refresh = None, routing = None)
@@ -322,7 +321,7 @@ object ElasticRequest {
    * @param script
    *   a [[Script]] object containing the update logic to apply to the document
    * @return
-   *   returns an instance of [[UpdateRequest]] that represents update by script operation to be performed.
+   *   an instance of [[UpdateRequest]] that represents update by script operation to be performed.
    */
   final def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
     Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
@@ -339,7 +338,7 @@ object ElasticRequest {
    * @tparam A
    *   the type of the document to be created or updated. An implicit `Schema` instance must be in scope for this type
    * @return
-   *   returns an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
+   *   an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
    */
   final def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)

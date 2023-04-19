@@ -25,25 +25,25 @@ package object request {
      * Configures whether or not to refresh the index after the operation in the [[ElasticRequest]].
      *
      * @param value
-     *   `true` if the index should be refreshed after the operation, `false` otherwise
+     *   `true` if the index be refreshed after the operation, `false` otherwise
      * @return
-     *   returns a new instance of the [[ElasticRequest]] with the `refresh` value set.
+     *   an instance of the [[ElasticRequest]] enriched with the `refresh` parameter.
      */
     def refresh(value: Boolean): R
 
     /**
-     * Sets `refresh` parameter to `false` in the [[ElasticRequest]].
+     * Sets `refresh` parameter to `false` in the [[ElasticRequest]]. This method calls [[refresh(false)]].
      *
      * @return
-     *   returns a new instance of the [[ElasticRequest]] with the `refresh` value set to `false`.
+     *   a new instance of the [[ElasticRequest]] with the `refresh` parameter set to `false`.
      */
     final def refreshFalse: R = refresh(false)
 
     /**
-     * Sets `refresh` parameter to `true` in the [[ElasticRequest]].
+     * Sets `refresh` parameter to `true` in the [[ElasticRequest]]. This method calls [[refresh(true)]].
      *
      * @return
-     *   returns a new instance of the [[ElasticRequest]] with the `refresh` value set to `true`.
+     *   a new instance of the [[ElasticRequest]] with the `refresh` parameter set to `true`.
      */
     final def refreshTrue: R = refresh(true)
   }
@@ -56,7 +56,7 @@ package object request {
      * @param value
      *   the [[Routing]] value to set for the [[ElasticRequest]]
      * @return
-     *   returns a new instance of the [[ElasticRequest]] with the `routing` value set.
+     *   an instance of the [[ElasticRequest]] enriched with the `routing` parameter.
      */
     def routing(value: Routing): R
   }
@@ -65,12 +65,12 @@ package object request {
 
     /**
      * Sets the starting offset from where the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
-     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] should return results.
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] return results.
      *
      * @param value
-     *   the `Int` value to set the `from` parameter in the [[ElasticRequest]]
+     *   a non-negative number to set the `from` parameter in the [[ElasticRequest]]
      * @return
-     *   returns a new instance of the [[ElasticRequest]] type with the `from` parameter set.
+     *   an instance of the [[ElasticRequest]] enriched with the `from` parameter.
      */
     def from(value: Int): R
   }
@@ -78,12 +78,12 @@ package object request {
   private[elasticsearch] trait HasSize[R <: HasSize[R]] {
 
     /**
-     * Sets the number of results to return.
+     * Sets the maximum number of results.
      *
      * @param value
-     *   the `Int` value to set the `size` parameter in the [[ElasticRequest]]
+     *   a non-negative number to set the `size` parameter in the [[ElasticRequest]]
      * @return
-     *   returns a new instance of the [[ElasticRequest]] with the `size` value set.
+     *   an instance of the [[ElasticRequest]] enriched with the `size` parameter.
      */
     def size(value: Int): R
   }
@@ -97,7 +97,7 @@ package object request {
      * @param sorts
      *   one or more [[Sort]] objects that define the sorting criteria
      * @return
-     *   returns a new instance of the [[ElasticRequest]] with the sorting criteria set.
+     *   an instance of the [[ElasticRequest]] enriched with the sorting criteria.
      */
     def sort(sorts: Sort*): R
   }

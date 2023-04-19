@@ -26,55 +26,55 @@ import zio.{RIO, Task, URLayer, ZIO, ZLayer}
 trait Elasticsearch {
 
   /**
-   * Executes the specified [[ElasticRequest]] and returns the response as a Task.
+   * Executes the given [[ElasticRequest]].
    *
    * @param request
    *   the [[ElasticRequest]] to execute
    * @tparam A
    *   the type of the expected response
    * @return
-   *   returns a Task representing the response of the executed request.
+   *   a [[Task]] representing the response of the executed request.
    */
   def execute[A](request: ElasticRequest[A]): Task[A]
 
   /**
-   * Executes the given [[SearchRequest]] and emits the search results as a Stream.
+   * Executes the given [[SearchRequest]] as a stream.
    *
    * @param request
    *   the [[SearchRequest]] to execute
    * @return
-   *   returns a Stream of [[Item]].
+   *   a [[Stream]] of [[Item]].
    */
   def stream(request: SearchRequest): Stream[Throwable, Item]
 
   /**
-   * Executes a [[SearchRequest]] with a given [[StreamConfig]] and emits the search results as a Stream.
+   * Executes a [[SearchRequest]] with a given [[StreamConfig]].
    *
    * @param request
    *   the [[SearchRequest]] to execute
    * @param config
    *   the [[StreamConfig]] object that represents configuration options for the stream
    * @return
-   *   returns a Stream of [[Item]].
+   *   a Stream of [[Item]].
    */
   def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item]
 
   /**
-   * Executes a [[SearchRequest]] and returns a Stream of the resulting documents as `A`, where `A` is a case class that
-   * has an implicit `Schema` instance in scope.
+   * Executes a [[SearchRequest]] and a Stream of the resulting documents as `A`, where `A` is a case class that has an
+   * implicit `Schema` instance in scope.
    *
    * @param request
    *   the [[SearchRequest]] to execute
    * @tparam A
    *   the type of documents to be returned
    * @return
-   *   returns a Stream of the resulting documents as `A`.
+   *   a Stream of the resulting documents as `A`.
    */
   def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
 
   /**
-   * Executes a [[SearchRequest]] and returns a Stream of the resulting documents as `A`, where `A` is a case class that
-   * has an implicit `Schema` instance in scope.
+   * Executes a [[SearchRequest]] and a Stream of the resulting documents as `A`, where `A` is a case class that has an
+   * implicit `Schema` instance in scope.
    *
    * @param request
    *   the [[SearchRequest]] to execute
@@ -83,7 +83,7 @@ trait Elasticsearch {
    * @tparam A
    *   the type of documents to be returned
    * @return
-   *   returns a Stream of the resulting documents as `A`.
+   *   a Stream of the resulting documents as `A`.
    */
   def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A]
 }

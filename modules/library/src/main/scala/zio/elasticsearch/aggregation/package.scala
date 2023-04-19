@@ -25,7 +25,7 @@ package object aggregation {
      * @param subAgg
      *   the [[SingleElasticAggregation]] to add as sub-aggregation
      * @return
-     *   returns a new instance of the [[ElasticAggregation]] with the given sub-aggregation.
+     *   a new instance of the [[ElasticAggregation]] with the given sub-aggregation.
      */
     def withSubAgg(subAgg: SingleElasticAggregation): A
   }
@@ -38,8 +38,7 @@ package object aggregation {
      * @param agg
      *   the [[SingleElasticAggregation]] to add
      * @return
-     *   returns a new instance of [[MultipleAggregations]] with the specified aggregation added to its list of
-     *   aggregations.
+     *   a new instance of [[MultipleAggregations]] with the specified aggregation added to its list of aggregations.
      */
     def withAgg(agg: SingleElasticAggregation): MultipleAggregations
   }

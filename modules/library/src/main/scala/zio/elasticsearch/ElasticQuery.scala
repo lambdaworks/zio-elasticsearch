@@ -33,7 +33,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @return
-   *   returns an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
+   *   an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(
@@ -51,7 +51,7 @@ object ElasticQuery {
    * @param value
    *   text value that will be used for the query in the pattern that represents `contains`
    * @return
-   *   returns an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
+   *   an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def contains(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
@@ -64,7 +64,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @return
-   *   returns an instance of [[ExistsQuery]] that represents the exists query to be performed.
+   *   an instance of [[ExistsQuery]] that represents the exists query to be performed.
    */
   final def exists[S](field: Field[S, _]): ExistsQuery[S] =
     Exists(field = field.toString)
@@ -75,31 +75,31 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @return
-   *   returns an instance of [[ExistsQuery]] that represents the exists query to be performed.
+   *   an instance of [[ExistsQuery]] that represents the exists query to be performed.
    */
   final def exists(field: String): ExistsQuery[Any] =
     Exists(field = field)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that must satisfy the criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `filter` inside of the `Bool` query
    * @tparam S
    *   document for which field query is executed. An implicit `Schema` instance must be in scope
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with filter to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that must satisfy the criteria.
    */
   final def filter[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that must satisfy the criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `filter` inside of the `Bool` query
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with filter to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that must satisfy the criteria.
    */
   final def filter(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
@@ -108,7 +108,7 @@ object ElasticQuery {
    * Constructs an instance of [[MatchAllQuery]].
    *
    * @return
-   *   returns an instance of [[MatchAllQuery]] that represents the match all query to be performed.
+   *   an instance of [[MatchAllQuery]] that represents the match all query to be performed.
    */
   final def matchAll: MatchAllQuery =
     MatchAll(boost = None)
@@ -123,9 +123,9 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @tparam A
-   *   the type of the value to be matched. A json decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
-   *   returns an instance of [[MatchQuery]] that represents the match query to be performed.
+   *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
   final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
     Match(field = field.toString, value = value)
@@ -138,57 +138,59 @@ object ElasticQuery {
    * @param value
    *   the value to be matched, represented by an instance of type `A`
    * @tparam A
-   *   the type of the value to be matched. A json decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
-   *   returns an instance of [[MatchQuery]] that represents the match query to be performed.
+   *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
   final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that must satisfy the criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `must` inside of the `Bool` query
    * @tparam S
    *   document for which field query is executed. An implicit `Schema` instance must be in scope
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with must to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that must satisfy the criteria.
    */
   final def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that must satisfy the criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `must` inside of the `Bool` query
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with must to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that must satisfy the criteria.
    */
   final def must(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that must not satisfy the criteria using the specified
+   * parameters.
    *
    * @param queries
    *   a list of queries to add to `mustNot` inside of the `Bool` query
    * @tparam S
    *   document for which field query is executed. An implicit `Schema` instance must be in scope
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with must not to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that must not satisfy the criteria.
    */
   final def mustNot[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that must not satisfy the criteria using the specified
+   * parameters.
    *
    * @param queries
    *   a list of queries to add to `mustNot` inside of the `Bool` query
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with must not to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that must not satisfy the criteria.
    */
   final def mustNot(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
@@ -205,7 +207,7 @@ object ElasticQuery {
    * @tparam A
    *   the type of the value that will be used for the query
    * @return
-   *   returns an instance of [[NestedQuery]] that represents the nested query to be performed.
+   *   an instance of [[NestedQuery]] that represents the nested query to be performed.
    */
   final def nested[S, A](path: Field[S, Seq[A]], query: ElasticQuery[A]): NestedQuery[S] =
     Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
@@ -218,7 +220,7 @@ object ElasticQuery {
    * @param query
    *   the [[ElasticQuery]] object representing the query to execute on nested objects.
    * @return
-   *   returns an instance of [[NestedQuery]] that represents the nested query to be performed.
+   *   an instance of [[NestedQuery]] that represents the nested query to be performed.
    */
   final def nested(path: String, query: ElasticQuery[_]): NestedQuery[Any] =
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
@@ -233,7 +235,7 @@ object ElasticQuery {
    * @tparam A
    *   the type of the value that will be used for the query
    * @return
-   *   returns an instance of [[RangeQuery]] that represents the range query to be performed.
+   *   an instance of [[RangeQuery]] that represents the range query to be performed.
    */
   final def range[S, A](field: Field[S, A]): RangeQuery[S, A, Unbounded.type, Unbounded.type] =
     Range.empty(field.toString)
@@ -244,31 +246,33 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @return
-   *   returns an instance of [[RangeQuery]] that represents the range query to be performed.
+   *   an instance of [[RangeQuery]] that represents the range query to be performed.
    */
   final def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that should satisfy the criteria using the specified
+   * parameters.
    *
    * @param queries
    *   a list of queries to add to `should` inside of the `Bool` query
    * @tparam S
    *   document for which field query is executed. An implicit `Schema` instance must be in scope
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with should to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that should satisfy the criteria.
    */
   final def should[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
     Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
   /**
-   * Constructs an instance of [[BoolQuery]] using the specified parameters.
+   * Constructs an instance of [[BoolQuery]] with queries that should satisfy the criteria using the specified
+   * parameters.
    *
    * @param queries
    *   a list of queries to add to `should` inside of the `Bool` query
    * @return
-   *   returns an instance of [[BoolQuery]] that represents the bool query with should to be performed.
+   *   an instance of [[BoolQuery]] that represents the bool query with queries that should satisfy the criteria.
    */
   final def should(queries: ElasticQuery[Any]*): BoolQuery[Any] =
     Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
@@ -283,7 +287,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed in the pattern that represents `startsWith`
    * @return
-   *   returns an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
+   *   an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =
     Wildcard(
@@ -301,7 +305,7 @@ object ElasticQuery {
    * @param value
    *   text value that will be used for the query in the pattern that represents `startsWith`
    * @return
-   *   returns an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
+   *   an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def startsWith(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = s"$value*", boost = None, caseInsensitive = None)
@@ -316,9 +320,9 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @tparam A
-   *   the type of the value that will be used for the query. A json decoder must be in scope for this type
+   *   the type of value that will be used for the query. A JSON decoder must be in scope for this type
    * @return
-   *   returns an instance of [[TermQuery]] that represents the term query to be performed.
+   *   an instance of [[TermQuery]] that represents the term query to be performed.
    */
   final def term[S, A: ElasticPrimitive](field: Field[S, A], value: A): TermQuery[S] =
     Term(
@@ -336,9 +340,9 @@ object ElasticQuery {
    * @param value
    *   the value that will be used for the query, represented by an instance of type `A`
    * @tparam A
-   *   the type of the value that will be used for the query. A json decoder must be in scope for this type
+   *   the type of value that will be used for the query. A JSON decoder must be in scope for this type
    * @return
-   *   returns an instance of [[TermQuery]] that represents the term query to be performed.
+   *   an instance of [[TermQuery]] that represents the term query to be performed.
    */
   final def term[A: ElasticPrimitive](field: String, value: A): Term[Any, A] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
@@ -353,7 +357,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @return
-   *   returns an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
+   *   an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def wildcard[S](field: Field[S, _], value: String): Wildcard[S] =
     Wildcard(
@@ -371,7 +375,7 @@ object ElasticQuery {
    * @param value
    *   text value that will be used for the query
    * @return
-   *   returns an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
+   *   an instance of [[WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def wildcard(field: String, value: String): Wildcard[Any] =
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)
