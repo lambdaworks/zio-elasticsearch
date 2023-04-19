@@ -21,8 +21,6 @@ import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.json.ast.Json
 
 object ElasticHighlight {
-<<<<<<< HEAD
-=======
 
   /**
    * Constructs a type-safe instance of [[Highlights]] using the type-safe field parameter.
@@ -32,7 +30,6 @@ object ElasticHighlight {
    * @return
    *   returns an instance of [[Highlights]] with a chunk of [[HighlightField]].
    */
->>>>>>> 798b70e (Add scaladoc for public api)
   final def highlight(field: Field[_, _]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, Map.empty)))
 
