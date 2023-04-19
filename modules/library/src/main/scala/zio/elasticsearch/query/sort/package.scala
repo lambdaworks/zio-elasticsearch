@@ -18,26 +18,96 @@ package zio.elasticsearch.query
 
 package object sort {
   private[elasticsearch] trait WithFormat[S <: WithFormat[S]] {
+
+    /**
+     * Sets the date format for the [[SortByField]]. This method is only applicable to fields of type `date`.
+     *
+     * @param value
+     *   the `date` format to set
+     * @return
+     *   an instance of the [[SortByField]] enriched with the `format` parameter.
+     */
     def format(value: String): S
   }
 
   private[elasticsearch] trait WithMode[S <: WithMode[S]] {
+
+    /**
+     * Sets the `mode` parameter for the [[Sort]]. The `mode` parameter controls how Elasticsearch selects a single
+     * value from a set of sorted documents. The default `mode` is `Average`.
+     *
+     * @param value
+     *   the [[SortMode]] used to pick a value among the sorted set of documents
+     *   - [[SortMode.Avg]]: Use the average of all values as sort value. Only applicable for number based array fields.
+     *   - [[SortMode.Max]]: Pick the highest value.
+     *   - [[SortMode.Median]]: Use the median of all values as sort value. Only applicable for number based array
+     *     fields.
+     *   - [[SortMode.Min]]: Pick the lowest value.
+     *   - [[SortMode.Sum]]: Use the sum of all values as sort value. Only applicable for number based array fields.
+     * @return
+     *   an instance of the [[Sort]] enriched with the `mode` parameter.
+     */
     def mode(value: SortMode): S
   }
 
   private[elasticsearch] trait WithMissing[S <: WithMissing[S]] {
+
+    /**
+     * Sets the value to use when a document is missing a value for the field being sorted.
+     *
+     * @param value
+     *   the `missing` value behaviour
+     *   - [[Missing.First]]: Treated as first.
+     *   - [[Missing.Last]]: Treated as last.
+     * @return
+     *   an instance of the [[SortByField]] enriched with the `missing` parameter.
+     */
     def missing(value: Missing): S
   }
 
   private[elasticsearch] trait WithNumericType[S <: WithNumericType[S]] {
+
+    /**
+     * Sets the `numeric type` that should be used for sorting the field. With `numeric type` it is possible to cast the
+     * values from one type to another.
+     *
+     * @param value
+     *   the [[NumericType]] that should be used for sorting the field.
+     *   - [[NumericType.Date]]: Converts values do Date.
+     *   - [[NumericType.DateNanos]]: Convert values do DateNanos.
+     *   - [[NumericType.Double]]: Convert values do Double.
+     *   - [[NumericType.Long]]: Convert values do Long.
+     * @return
+     *   an instance of the [[SortByField]] enriched with the `numeric type` parameter.
+     */
     def numericType(value: NumericType): S
   }
 
   private[elasticsearch] trait WithOrder[S <: WithOrder[S]] {
+
+    /**
+     * Sets the `sort order` of the field.
+     *
+     * @param value
+     *   the [[SortOrder]] of the field
+     *   - [[SortOrder.Asc]]: Sets Ascending sorting order.
+     *   - [[SortOrder.Desc]]: Sets Descending sorting order.
+     * @return
+     *   an instance of the [[Sort]] enriched with the `sort order` parameter.
+     */
     def order(value: SortOrder): S
   }
 
   private[elasticsearch] trait WithUnmappedType[S <: WithUnmappedType[S]] {
+
+    /**
+     * Sets the `unmapped type` which is used when the mapped field doesn't exist in the index.
+     *
+     * @param value
+     *   the type to use when the mapped field doesn't exist in the index
+     * @return
+     *   an instance of the [[SortByField]] enriched with the `unmapped type` parameter.
+     */
     def unmappedType(value: String): S
   }
 }

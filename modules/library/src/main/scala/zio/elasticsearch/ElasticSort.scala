@@ -68,8 +68,8 @@ object ElasticSort {
    *   a [[Script]] object containing sort logic
    * @param sourceType
    *   type of script source
-   *   - [[zio.elasticsearch.query.sort.SourceType.NumberType]]: for numbers scripts
-   *   - [[zio.elasticsearch.query.sort.SourceType.StringType]]: for text scripts
+   *   - [[SourceType.NumberType]]: Used for numbers scripts.
+   *   - [[SourceType.StringType]]: Used for text scripts.
    * @return
    *   an instance of [[SortByScript]] that represents sort by script operation to be performed.
    */

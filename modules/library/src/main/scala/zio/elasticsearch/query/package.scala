@@ -124,11 +124,11 @@ package object query {
      *
      * @param scoreMode
      *   the [[ScoreMode]] to use for the [[NestedQuery]]
-     *   - [[zio.elasticsearch.query.ScoreMode.Avg]]: average mode
-     *   - [[zio.elasticsearch.query.ScoreMode.Max]]: max mode
-     *   - [[zio.elasticsearch.query.ScoreMode.Min]]: min mode
-     *   - [[zio.elasticsearch.query.ScoreMode.None]]: none mode
-     *   - [[zio.elasticsearch.query.ScoreMode.Sum]]: sum mode
+     *   - [[ScoreMode.Avg]]: average mode
+     *   - [[ScoreMode.Max]]: max mode
+     *   - [[ScoreMode.Min]]: min mode
+     *   - [[ScoreMode.None]]: none mode
+     *   - [[ScoreMode.Sum]]: sum mode
      * @return
      *   a new instance of the [[ElasticQuery]] with the specified [[ScoreMode]].
      */
