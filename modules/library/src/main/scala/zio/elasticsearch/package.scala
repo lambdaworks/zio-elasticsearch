@@ -16,7 +16,6 @@
 
 package zio
 
-import zio.elasticsearch.ElasticRequest.{SearchAndAggregateRequest, SearchRequest}
 import zio.elasticsearch.executor.response.AggregationResponse
 import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
 import zio.prelude.Newtype
