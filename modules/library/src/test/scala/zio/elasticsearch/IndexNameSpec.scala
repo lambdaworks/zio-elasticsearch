@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.utils._
+import zio.elasticsearch.utils.unsafeWrap
 import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test._
