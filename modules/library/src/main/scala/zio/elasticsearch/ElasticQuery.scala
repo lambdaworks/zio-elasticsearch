@@ -24,7 +24,8 @@ import ElasticPrimitive.ElasticPrimitive
 object ElasticQuery {
 
   /**
-   * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for
+   * matching documents containing a value that contains the specified value in the specified field.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -44,7 +45,8 @@ object ElasticQuery {
     )
 
   /**
-   * Constructs an instance of [[WildcardQuery]] using the specified parameters.
+   * Constructs an instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for matching
+   * documents containing a value that contains the specified value in the specified field.
    *
    * @param field
    *   the field for which query is specified for
@@ -57,7 +59,8 @@ object ElasticQuery {
     Wildcard(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
 
   /**
-   * Constructs a type-safe instance of [[ExistsQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[ExistsQuery]], that checks existence of the field, using the specified
+   * parameters.
    *
    * @param field
    *   the [[Field]] representing the type-safe field for which query is specified for
@@ -70,7 +73,7 @@ object ElasticQuery {
     Exists(field = field.toString)
 
   /**
-   * Constructs an instance of [[ExistsQuery]] using the specified parameters.
+   * Constructs an instance of [[ExistsQuery]], that checks existence of the field, using the specified parameters.
    *
    * @param field
    *   the field for which query is specified for
@@ -105,7 +108,7 @@ object ElasticQuery {
     Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
 
   /**
-   * Constructs an instance of [[MatchAllQuery]].
+   * Constructs an instance of [[MatchAllQuery]] used for matching all documents.
    *
    * @return
    *   an instance of [[MatchAllQuery]] that represents the match all query to be performed.
@@ -114,7 +117,8 @@ object ElasticQuery {
     MatchAll(boost = None)
 
   /**
-   * Constructs a type-safe instance of [[MatchQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[MatchQuery]] using the specified parameters. [[MatchQuery]] is used for
+   * matching a provided text, number, date or boolean value
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -131,7 +135,8 @@ object ElasticQuery {
     Match(field = field.toString, value = value)
 
   /**
-   * Constructs an instance of [[MatchQuery]] using the specified parameters.
+   * Constructs an instance of [[MatchQuery]] using the specified parameters. [[MatchQuery]] is used for matching a
+   * provided text, number, date or boolean value
    *
    * @param field
    *   the field for which query is specified for
@@ -213,7 +218,8 @@ object ElasticQuery {
     Nested(path = path.toString, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
 
   /**
-   * Constructs an instance of [[NestedQuery]] using the specified parameters.
+   * Constructs an instance of [[NestedQuery]] using the specified parameters. [[NestedQuery]] wraps another query to
+   * search nested fields.
    *
    * @param path
    *   the path to the field for which query is specified for
@@ -226,7 +232,8 @@ object ElasticQuery {
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
 
   /**
-   * Constructs a type-safe instance of [[RangeQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[RangeQuery]] using the specified parameters. [[NestedQuery]] wraps another
+   * query to search nested fields.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -278,7 +285,8 @@ object ElasticQuery {
     Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
 
   /**
-   * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for
+   * matching documents containing a value that starts with the specified value in the specified field.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -298,7 +306,8 @@ object ElasticQuery {
     )
 
   /**
-   * Constructs an instance of [[WildcardQuery]] using the specified parameters.
+   * Constructs an instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for matching
+   * documents containing a value that starts with the specified value in the specified field.
    *
    * @param field
    *   the field for which query is specified for
@@ -311,7 +320,8 @@ object ElasticQuery {
     Wildcard(field = field, value = s"$value*", boost = None, caseInsensitive = None)
 
   /**
-   * Constructs a type-safe instance of [[TermQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[TermQuery]] using the specified parameters. [[TermQuery]] is used for matching
+   * documents that contain an exact term in a provided field.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -333,7 +343,8 @@ object ElasticQuery {
     )
 
   /**
-   * Constructs a type-safe instance of [[TermQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[TermQuery]] using the specified parameters. [[TermQuery]] is used for matching
+   * documents that contain an exact term in a provided field.
    *
    * @param field
    *   the field for which query is specified for
@@ -348,7 +359,9 @@ object ElasticQuery {
     Term(field = field, value = value, boost = None, caseInsensitive = None)
 
   /**
-   * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for
+   * matching documents containing a value that contains, starts, or ends with the specified value in the specified
+   * field.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -368,7 +381,8 @@ object ElasticQuery {
     )
 
   /**
-   * Constructs an instance of [[WildcardQuery]] using the specified parameters.
+   * Constructs an instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for matching
+   * documents containing a value that contains, starts, or ends with the specified value in the specified field.
    *
    * @param field
    *   the field for which query is specified for

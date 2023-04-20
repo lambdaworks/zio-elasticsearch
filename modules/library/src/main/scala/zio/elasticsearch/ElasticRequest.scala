@@ -76,7 +76,7 @@ object ElasticRequest {
     Count(index = index, query = None, routing = None)
 
   /**
-   * Constructs an instance of [[CountRequest]] using the specified parameters.
+   * Constructs an instance of [[CountRequest]] for counting documents satisfy the query.
    *
    * @param index
    *   the name of the Elasticsearch index to count documents from
@@ -89,7 +89,7 @@ object ElasticRequest {
     Count(index = index, query = Some(query), routing = None)
 
   /**
-   * Constructs an instance of [[CreateRequest]] using the specified parameters.
+   * Constructs an instance of [[CreateRequest]] used for creating a document in the specified index.
    *
    * @param index
    *   the name of the index to create the document in
@@ -104,7 +104,8 @@ object ElasticRequest {
     Create(index = index, document = Document.from(doc), refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[CreateWithIdRequest]] using the specified parameters.
+   * Constructs an instance of [[CreateWithIdRequest]] used for creating a document with specified ID in the specified
+   * index.
    *
    * @param index
    *   the name of the index to create the document in
@@ -121,7 +122,7 @@ object ElasticRequest {
     CreateWithId(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[CreateIndexRequest]] using the specified parameters.
+   * Constructs an instance of [[CreateIndexRequest]] used for creating an empty index.
    *
    * @param name
    *   the name of the index to be created
@@ -132,7 +133,7 @@ object ElasticRequest {
     CreateIndex(name = name, definition = None)
 
   /**
-   * Constructs an instance of [[CreateIndexRequest]] using the specified parameters.
+   * Constructs an instance of [[CreateIndexRequest]] used for creating an index with a specified definition.
    *
    * @param name
    *   the name of the index to be created
@@ -145,7 +146,8 @@ object ElasticRequest {
     CreateIndex(name = name, definition = Some(definition))
 
   /**
-   * Constructs an instance of [[DeleteByIdRequest]] using the specified parameters.
+   * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document from the specified index by specified
+   * ID.
    *
    * @param index
    *   the name of the index to delete the document from
@@ -158,7 +160,8 @@ object ElasticRequest {
     DeleteById(index = index, id = id, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[DeleteByQueryRequest]] using the specified parameters.
+   * Constructs an instance of [[DeleteByQueryRequest]] used for deleting documents from the specified index by
+   * specified query.
    *
    * @param index
    *   the name of the index to delete documents from
@@ -171,7 +174,7 @@ object ElasticRequest {
     DeleteByQuery(index = index, query = query, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[DeleteIndexRequest]] using the specified parameters.
+   * Constructs an instance of [[DeleteIndexRequest]] used for deleting an index by specified name.
    *
    * @param name
    *   the name of the index to be deleted
@@ -182,7 +185,7 @@ object ElasticRequest {
     DeleteIndex(name = name)
 
   /**
-   * Constructs an instance of [[ExistRequest]] using the specified parameters.
+   * Constructs an instance of [[ExistRequest]] used for checking whether document exists.
    *
    * @param index
    *   the name of the index where the document may be located
@@ -195,7 +198,8 @@ object ElasticRequest {
     Exists(index = index, id = id, routing = None)
 
   /**
-   * Constructs an instance of [[GetByIdRequest]] using the specified parameters.
+   * Constructs an instance of [[GetByIdRequest]] used for retrieving the document from specified index, by specified
+   * ID.
    *
    * @param index
    *   the name of the index where the document is located
@@ -259,7 +263,7 @@ object ElasticRequest {
     )
 
   /**
-   * Constructs an instance of [[UpdateRequest]] using the specified parameters.
+   * Constructs an instance of [[UpdateRequest]] used for updating the document in the specified index, by specified ID.
    *
    * @param index
    *   the name of the index containing the document to update
@@ -284,7 +288,7 @@ object ElasticRequest {
     )
 
   /**
-   * Constructs an instance of [[UpdateByQueryRequest]] using the specified parameters.
+   * Constructs an instance of [[UpdateByQueryRequest]] used for updating all documents in the specified index.
    *
    * @param index
    *   the name of the index to update documents in
@@ -297,7 +301,8 @@ object ElasticRequest {
     UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[UpdateByQueryRequest]] using the specified parameters.
+   * Constructs an instance of [[UpdateByQueryRequest]] used for updating documents matching specified query in the
+   * specified index.
    *
    * @param index
    *   the name of the index to update documents in
@@ -312,7 +317,8 @@ object ElasticRequest {
     UpdateByQuery(index = index, script = script, conflicts = None, query = Some(query), refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[UpdateRequest]] using the specified parameters.
+   * Constructs an instance of [[UpdateRequest]] used for updating the document with specified ID in the specified
+   * index.
    *
    * @param index
    *   the name of the index containing the document to update
@@ -327,7 +333,8 @@ object ElasticRequest {
     Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
 
   /**
-   * Constructs an instance of [[CreateOrUpdateRequest]] using the specified parameters.
+   * Constructs an instance of [[CreateOrUpdateRequest]] used for creating or updating the document in the specified
+   * index with specified ID.
    *
    * @param index
    *   the name of the index to create or update the document in

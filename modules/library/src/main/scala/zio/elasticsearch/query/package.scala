@@ -65,10 +65,10 @@ package object query {
   private[elasticsearch] trait HasIgnoreUnmapped[Q <: HasIgnoreUnmapped[Q]] {
 
     /**
-     * Sets the `ignoreUnmapped` parameter to control whether to ignore unmapped fields and return empty hits
+     * Sets the `ignoreUnmapped` parameter to control whether to ignore unmapped fields and return empty hits.
      *
      * @param value
-     *   the `boolean` value for `ignore_unmapped` parameter
+     *   the `boolean` value for `ignoreUnmapped` parameter
      * @return
      *   a new instance of the [[ElasticQuery]] with the `ignoreUnmapped` value set.
      */
@@ -120,12 +120,11 @@ package object query {
      *
      * @param scoreMode
      *   the [[ScoreMode]] to use for the [[NestedQuery]]
-     *   - [[ScoreMode.Avg]]: Use the mean relevance score of all matching child objects.
-     *   - [[ScoreMode.Max]]: Uses the highest relevance score of all matching child objects.
-     *   - [[ScoreMode.Min]]: Uses the lowest relevance score of all matching child objects.
-     *   - [[ScoreMode.None]]: Do not use the relevance scores of matching child objects. The query assigns parent
-     *     documents a score of 0.
-     *   - [[ScoreMode.Sum]]: Add together the relevance scores of all matching child objects.
+     *   - [[ScoreMode.Avg]]: uses the mean relevance score of all matching child objects
+     *   - [[ScoreMode.Max]]: uses the highest relevance score of all matching child objects.
+     *   - [[ScoreMode.Min]]: uses the lowest relevance score of all matching child objects.
+     *   - [[ScoreMode.None]]: ignores relevance scores of matching child objects and uses 0 as a score
+     *   - [[ScoreMode.Sum]]: adds together the relevance scores of all matching child objects.
      * @return
      *   a new instance of the [[ElasticQuery]] with the specified [[ScoreMode]].
      */

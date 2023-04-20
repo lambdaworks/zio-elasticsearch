@@ -39,7 +39,7 @@ object ElasticHighlight {
    * @param field
    *   the field to highlight
    * @return
-   *   an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   *   an instance of [[Highlights]] with a single [[HighlightField]].
    */
   final def highlight(field: String): Highlights =
     Highlights(Chunk(HighlightField(field, Map.empty)))
@@ -52,7 +52,7 @@ object ElasticHighlight {
    * @param config
    *   a map of highlight options
    * @return
-   *   an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   *   an instance of [[Highlights]] with a single [[HighlightField]].
    */
   final def highlight(field: Field[_, _], config: Map[String, Json]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, config)))
@@ -65,7 +65,7 @@ object ElasticHighlight {
    * @param config
    *   a map of highlight options
    * @return
-   *   an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   *   an instance of [[Highlights]] with a single [[HighlightField]].
    */
   final def highlight(field: String, config: Map[String, Json]): Highlights =
     Highlights(Chunk(HighlightField(field, config)))

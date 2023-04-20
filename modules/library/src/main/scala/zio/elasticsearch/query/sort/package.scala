@@ -38,12 +38,12 @@ package object sort {
      *
      * @param value
      *   the [[SortMode]] used to pick a value among the sorted set of documents:
-     *   - [[SortMode.Avg]]: Use the average of all values as sort value. Only applicable for number based array fields.
-     *   - [[SortMode.Max]]: Pick the highest value.
-     *   - [[SortMode.Median]]: Use the median of all values as sort value. Only applicable for number based array
-     *     fields.
-     *   - [[SortMode.Min]]: Pick the lowest value.
-     *   - [[SortMode.Sum]]: Use the sum of all values as sort value. Only applicable for number based array fields.
+     *   - [[SortMode.Avg]]: uses the average of all values as sort value. Only applicable for number based array fields
+     *   - [[SortMode.Max]]: picks the highest value
+     *   - [[SortMode.Median]]: uses the median of all values as sort value. Only applicable for number based array
+     *     fields
+     *   - [[SortMode.Min]]: picks the lowest value
+     *   - [[SortMode.Sum]]: uses the sum of all values as sort value. Only applicable for number based array fields
      * @return
      *   an instance of the [[Sort]] enriched with the `mode` parameter.
      */
@@ -57,8 +57,8 @@ package object sort {
      *
      * @param value
      *   the `missing` value behaviour
-     *   - [[Missing.First]]: Treated as first.
-     *   - [[Missing.Last]]: Treated as last.
+     *   - [[Missing.First]]: treated as first
+     *   - [[Missing.Last]]: treated as last
      * @return
      *   an instance of the [[SortByField]] enriched with the `missing` parameter.
      */
@@ -73,10 +73,10 @@ package object sort {
      *
      * @param value
      *   the [[NumericType]] that should be used for sorting the field.
-     *   - [[NumericType.Date]]: Converts values do Date.
-     *   - [[NumericType.DateNanos]]: Convert values do DateNanos.
-     *   - [[NumericType.Double]]: Convert values do Double.
-     *   - [[NumericType.Long]]: Convert values do Long.
+     *   - [[NumericType.Date]]: converts values do Date
+     *   - [[NumericType.DateNanos]]: converts values do DateNanos
+     *   - [[NumericType.Double]]: converts values do Double
+     *   - [[NumericType.Long]]: converts values do Long
      * @return
      *   an instance of the [[SortByField]] enriched with the `numeric type` parameter.
      */
@@ -90,8 +90,8 @@ package object sort {
      *
      * @param value
      *   the [[SortOrder]] of the field
-     *   - [[SortOrder.Asc]]: Sets Ascending sorting order.
-     *   - [[SortOrder.Desc]]: Sets Descending sorting order.
+     *   - [[SortOrder.Asc]]: sets Ascending sorting order
+     *   - [[SortOrder.Desc]]: sets Descending sorting order
      * @return
      *   an instance of the [[Sort]] enriched with the `sort order` parameter.
      */

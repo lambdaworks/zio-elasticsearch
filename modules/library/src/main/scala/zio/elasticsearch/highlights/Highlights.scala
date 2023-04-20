@@ -29,7 +29,8 @@ final case class Highlights(
 ) { self =>
 
   /**
-   * Sets `explicitFieldOrder` parameter to `true` in the [[Highlights]].
+   * Sets `explicitFieldOrder` parameter to `true` in the [[Highlights]]. When `explicitFieldOrder` is set to `true`,
+   * highlight fields will be in the order they were specified
    *
    * @return
    *   a new instance of the [[Highlights]] with `explicitFieldOrder` set to `true`.

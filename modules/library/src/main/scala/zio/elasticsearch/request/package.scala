@@ -25,7 +25,7 @@ package object request {
      * Configures whether or not to refresh the index after the operation in the [[ElasticRequest]].
      *
      * @param value
-     *   should be `true` if the index be refreshed after the operation, `false` otherwise
+     *   should be `true` if the index should be refreshed after the executed operation, `false` otherwise
      * @return
      *   an instance of the [[ElasticRequest]] enriched with the `refresh` parameter.
      */
