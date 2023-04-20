@@ -55,26 +55,26 @@ trait Elasticsearch {
    * @param config
    *   the [[StreamConfig]] object that represents configuration options for the stream
    * @return
-   *   a Stream of [[Item]].
+   *   a [[Stream]] of [[Item]].
    */
   def stream(request: SearchRequest, config: StreamConfig): Stream[Throwable, Item]
 
   /**
-   * Executes a [[SearchRequest]] and a Stream of the resulting documents as `A`, where `A` is a case class that has an
-   * implicit `Schema` instance in scope.
+   * Executes a [[SearchRequest]] and stream resulting documents as `A`, where `A` is a case class that has an implicit
+   * `Schema` instance in scope.
    *
    * @param request
    *   the [[SearchRequest]] to execute
    * @tparam A
    *   the type of documents to be returned
    * @return
-   *   a Stream of the resulting documents as `A`.
+   *   a [[Stream]] of the resulting documents as `A`.
    */
   def streamAs[A: Schema](request: SearchRequest): Stream[Throwable, A]
 
   /**
-   * Executes a [[SearchRequest]] and a Stream of the resulting documents as `A`, where `A` is a case class that has an
-   * implicit `Schema` instance in scope.
+   * Executes a [[SearchRequest]] and stream resulting documents as `A`, where `A` is a case class that has an implicit
+   * `Schema` instance in scope.
    *
    * @param request
    *   the [[SearchRequest]] to execute
@@ -83,7 +83,7 @@ trait Elasticsearch {
    * @tparam A
    *   the type of documents to be returned
    * @return
-   *   a Stream of the resulting documents as `A`.
+   *   a [[Stream]] of the resulting documents as `A`.
    */
   def streamAs[A: Schema](request: SearchRequest, config: StreamConfig): Stream[Throwable, A]
 }

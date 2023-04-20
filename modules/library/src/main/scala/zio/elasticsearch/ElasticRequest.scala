@@ -235,9 +235,9 @@ object ElasticRequest {
    * @param index
    *   the name of the index to search and aggregate in
    * @param query
-   *   a [[ElasticQuery]] object for querying documents
+   *   an [[ElasticQuery]] object for querying documents
    * @param aggregation
-   *   a [[ElasticAggregation]] object for aggregating queried documents
+   *   an [[ElasticAggregation]] object for aggregating queried documents
    * @return
    *   an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be performed.
    */
@@ -302,7 +302,7 @@ object ElasticRequest {
    * @param index
    *   the name of the index to update documents in
    * @param query
-   *   a [[ElasticQuery]] object representing search query used to find documents to update
+   *   an [[ElasticQuery]] object representing a search query used to find documents to update
    * @param script
    *   a [[Script]] object containing the update logic to apply to matching documents
    * @return

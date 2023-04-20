@@ -28,7 +28,7 @@ object ElasticHighlight {
    * @param field
    *   the [[Field]] object representing the type-safe field to highlight
    * @return
-   *   an instance of [[Highlights]] with a chunk of [[HighlightField]].
+   *   an instance of [[Highlights]] with a single [[HighlightField]].
    */
   final def highlight(field: Field[_, _]): Highlights =
     Highlights(Chunk(HighlightField(field.toString, Map.empty)))

@@ -69,8 +69,7 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
   }
 
   /**
-   * Appends a suffix to the name of the [[Field]] and returns a new instance of the [[Field]] with the updated name.
-   * The type of the field's value is preserved.
+   * Appends a suffix to the name of the [[Field]]. The type of the field's value is preserved.
    *
    * @param suffix
    * @tparam A1

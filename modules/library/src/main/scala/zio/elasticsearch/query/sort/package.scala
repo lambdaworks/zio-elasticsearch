@@ -37,7 +37,7 @@ package object sort {
      * value from a set of sorted documents. The default `mode` is `Average`.
      *
      * @param value
-     *   the [[SortMode]] used to pick a value among the sorted set of documents
+     *   the [[SortMode]] used to pick a value among the sorted set of documents:
      *   - [[SortMode.Avg]]: Use the average of all values as sort value. Only applicable for number based array fields.
      *   - [[SortMode.Max]]: Pick the highest value.
      *   - [[SortMode.Median]]: Use the median of all values as sort value. Only applicable for number based array

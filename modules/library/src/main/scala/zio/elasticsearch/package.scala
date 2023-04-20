@@ -35,7 +35,7 @@ package object elasticsearch {
 
     /**
      * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
-     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] and retrieves the [[AggregationResponse]], if any.
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
      *
      * @param name
      *   the name of the aggregation to retrieve
@@ -47,8 +47,7 @@ package object elasticsearch {
 
     /**
      * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
-     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] and retrieves the map of aggregation names and
-     * [[AggregationResponse]]s.
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
      *
      * @return
      *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and response.
@@ -65,7 +64,7 @@ package object elasticsearch {
      * @tparam A
      *   the type to deserialize the document to
      * @return
-     *   returnes a `RIO` effect that, when executed, will fetch and deserialize the document as type `A`
+     *   a `RIO` effect that, when executed, is going to fetch and deserialize the document as type `A`
      */
     def documentAs[A: Schema]: RIO[R, F[A]] =
       zio.flatMap(_.documentAs[A])

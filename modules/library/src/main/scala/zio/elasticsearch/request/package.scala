@@ -25,14 +25,14 @@ package object request {
      * Configures whether or not to refresh the index after the operation in the [[ElasticRequest]].
      *
      * @param value
-     *   `true` if the index be refreshed after the operation, `false` otherwise
+     *   should be `true` if the index be refreshed after the operation, `false` otherwise
      * @return
      *   an instance of the [[ElasticRequest]] enriched with the `refresh` parameter.
      */
     def refresh(value: Boolean): R
 
     /**
-     * Sets `refresh` parameter to `false` in the [[ElasticRequest]]. This method calls [[refresh(false)]].
+     * Sets `refresh` parameter to `false` in the [[ElasticRequest]]. Same as [[refresh(false)]].
      *
      * @return
      *   a new instance of the [[ElasticRequest]] with the `refresh` parameter set to `false`.
@@ -40,7 +40,7 @@ package object request {
     final def refreshFalse: R = refresh(false)
 
     /**
-     * Sets `refresh` parameter to `true` in the [[ElasticRequest]]. This method calls [[refresh(true)]].
+     * Sets `refresh` parameter to `true` in the [[ElasticRequest]]. Same as [[refresh(true)]].
      *
      * @return
      *   a new instance of the [[ElasticRequest]] with the `refresh` parameter set to `true`.

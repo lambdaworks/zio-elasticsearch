@@ -46,8 +46,7 @@ package object query {
     def caseInsensitive(value: Boolean): Q
 
     /**
-     * Sets the `caseInsensitive` parameter to `false` for this [[ElasticQuery]]. This method calls
-     * [[caseInsensitive(false)]].
+     * Sets the `caseInsensitive` parameter to `false` for this [[ElasticQuery]]. Same as [[caseInsensitive(false)]].
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `caseInsensitive` value set to `false`.
@@ -55,8 +54,7 @@ package object query {
     final def caseInsensitiveFalse: Q = caseInsensitive(false)
 
     /**
-     * Sets the `caseInsensitive` parameter to `true` for this [[ElasticQuery]]. This method calls
-     * [[caseInsensitive(true)]].
+     * Sets the `caseInsensitive` parameter to `true` for this [[ElasticQuery]]. Same as [[caseInsensitive(true)]].
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `caseInsensitive` value set to `true`.
@@ -77,8 +75,7 @@ package object query {
     def ignoreUnmapped(value: Boolean): Q
 
     /**
-     * Sets the `ignoreUnmapped` parameter to `false` for this [[ElasticQuery]]. This method calls
-     * [[ignoreUnmapped(false)]].
+     * Sets the `ignoreUnmapped` parameter to `false` for this [[ElasticQuery]]. Same as [[ignoreUnmapped(false)]].
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `ignoreUnmapped` value set to `false`.
@@ -86,8 +83,7 @@ package object query {
     final def ignoreUnmappedFalse: Q = ignoreUnmapped(false)
 
     /**
-     * Sets the `ignoreUnmapped` parameter to `true` for this [[ElasticQuery]]. This method calls
-     * [[ignoreUnmapped(true)]].
+     * Sets the `ignoreUnmapped` parameter to `true` for this [[ElasticQuery]]. Same as [[ignoreUnmapped(true)]].
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `ignoreUnmapped` value set to `true`.
@@ -101,7 +97,7 @@ package object query {
      * Sets the inner hits for this [[ElasticQuery]] to the default `InnerHits()` value.
      *
      * @return
-     *   a new instance of the [[ElasticQuery]] with the inner hits set to the default value.
+     *   a new instance of the [[ElasticQuery]] with the default inner hits.
      */
     final def innerHits: Q = innerHits(InnerHits())
 
@@ -124,11 +120,12 @@ package object query {
      *
      * @param scoreMode
      *   the [[ScoreMode]] to use for the [[NestedQuery]]
-     *   - [[ScoreMode.Avg]]: average mode
-     *   - [[ScoreMode.Max]]: max mode
-     *   - [[ScoreMode.Min]]: min mode
-     *   - [[ScoreMode.None]]: none mode
-     *   - [[ScoreMode.Sum]]: sum mode
+     *   - [[ScoreMode.Avg]]: Use the mean relevance score of all matching child objects.
+     *   - [[ScoreMode.Max]]: Uses the highest relevance score of all matching child objects.
+     *   - [[ScoreMode.Min]]: Uses the lowest relevance score of all matching child objects.
+     *   - [[ScoreMode.None]]: Do not use the relevance scores of matching child objects. The query assigns parent
+     *     documents a score of 0.
+     *   - [[ScoreMode.Sum]]: Add together the relevance scores of all matching child objects.
      * @return
      *   a new instance of the [[ElasticQuery]] with the specified [[ScoreMode]].
      */
