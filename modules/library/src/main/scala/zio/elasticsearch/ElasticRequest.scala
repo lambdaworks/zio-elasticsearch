@@ -160,8 +160,8 @@ object ElasticRequest {
     DeleteById(index = index, id = id, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[DeleteByQueryRequest]] used for deleting documents from the specified index by
-   * specified query.
+   * Constructs an instance of [[DeleteByQueryRequest]] used for deleting documents from the specified index that
+   * satisfy specified query.
    *
    * @param index
    *   the name of the index to delete documents from
@@ -293,7 +293,7 @@ object ElasticRequest {
    * @param index
    *   the name of the index to update documents in
    * @param script
-   *   a [[Script]] object containing the update logic to apply to all documents
+   *   a [[Script]] object containing the update logic to apply
    * @return
    *   an instance of [[UpdateByQueryRequest]] that represents update all operation to be performed.
    */
@@ -301,7 +301,7 @@ object ElasticRequest {
     UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[UpdateByQueryRequest]] used for updating documents matching specified query in the
+   * Constructs an instance of [[UpdateByQueryRequest]] used for satisfying documents matching specified query in the
    * specified index.
    *
    * @param index
@@ -309,7 +309,7 @@ object ElasticRequest {
    * @param query
    *   an [[ElasticQuery]] object representing a search query used to find documents to update
    * @param script
-   *   a [[Script]] object containing the update logic to apply to matching documents
+   *   a [[Script]] object containing the update logic to apply
    * @return
    *   an instance of [[UpdateByQueryRequest]] that represents update by query operation to be performed.
    */

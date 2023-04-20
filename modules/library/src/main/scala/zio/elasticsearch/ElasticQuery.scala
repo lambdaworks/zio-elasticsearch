@@ -201,7 +201,8 @@ object ElasticQuery {
     Bool[Any](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
 
   /**
-   * Constructs a type-safe instance of [[NestedQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[NestedQuery]] using the specified parameters. [[NestedQuery]] wraps another
+   * query to search nested fields.
    *
    * @param path
    *   the [[Field]] object representing the type-safe path to the field for which query is specified for
@@ -232,8 +233,7 @@ object ElasticQuery {
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
 
   /**
-   * Constructs a type-safe instance of [[RangeQuery]] using the specified parameters. [[NestedQuery]] wraps another
-   * query to search nested fields.
+   * Constructs a type-safe unbounded instance of [[RangeQuery]] using the specified parameters.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -248,7 +248,7 @@ object ElasticQuery {
     Range.empty(field.toString)
 
   /**
-   * Constructs an instance of [[RangeQuery]] using the specified parameters.
+   * Constructs an unbounded instance of [[RangeQuery]] using the specified parameters.
    *
    * @param field
    *   the field for which query is specified for
@@ -360,8 +360,7 @@ object ElasticQuery {
 
   /**
    * Constructs a type-safe instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for
-   * matching documents containing a value that contains, starts, or ends with the specified value in the specified
-   * field.
+   * matching documents containing a value that matches a provided pattern value.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -382,7 +381,7 @@ object ElasticQuery {
 
   /**
    * Constructs an instance of [[WildcardQuery]] using the specified parameters. [[WildcardQuery]] is used for matching
-   * documents containing a value that contains, starts, or ends with the specified value in the specified field.
+   * documents containing a value that matches a provided pattern value.
    *
    * @param field
    *   the field for which query is specified for

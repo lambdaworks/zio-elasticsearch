@@ -72,11 +72,11 @@ package object sort {
      * values from one type to another.
      *
      * @param value
-     *   the [[NumericType]] that should be used for sorting the field.
-     *   - [[NumericType.Date]]: converts values do Date
-     *   - [[NumericType.DateNanos]]: converts values do DateNanos
-     *   - [[NumericType.Double]]: converts values do Double
-     *   - [[NumericType.Long]]: converts values do Long
+     *   the [[NumericType]] that should be used for sorting the field
+     *   - [[NumericType.Date]]: converts values to Date
+     *   - [[NumericType.DateNanos]]: converts values to DateNanos
+     *   - [[NumericType.Double]]: converts values to Double
+     *   - [[NumericType.Long]]: converts values to Long
      * @return
      *   an instance of the [[SortByField]] enriched with the `numeric type` parameter.
      */
@@ -90,8 +90,8 @@ package object sort {
      *
      * @param value
      *   the [[SortOrder]] of the field
-     *   - [[SortOrder.Asc]]: sets Ascending sorting order
-     *   - [[SortOrder.Desc]]: sets Descending sorting order
+     *   - [[SortOrder.Asc]]: sets ascending sorting order
+     *   - [[SortOrder.Desc]]: sets descending sorting order
      * @return
      *   an instance of the [[Sort]] enriched with the `sort order` parameter.
      */

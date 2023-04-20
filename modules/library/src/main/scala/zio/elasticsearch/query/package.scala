@@ -121,10 +121,10 @@ package object query {
      * @param scoreMode
      *   the [[ScoreMode]] to use for the [[NestedQuery]]
      *   - [[ScoreMode.Avg]]: uses the mean relevance score of all matching child objects
-     *   - [[ScoreMode.Max]]: uses the highest relevance score of all matching child objects.
-     *   - [[ScoreMode.Min]]: uses the lowest relevance score of all matching child objects.
+     *   - [[ScoreMode.Max]]: uses the highest relevance score of all matching child objects
+     *   - [[ScoreMode.Min]]: uses the lowest relevance score of all matching child objects
      *   - [[ScoreMode.None]]: ignores relevance scores of matching child objects and uses 0 as a score
-     *   - [[ScoreMode.Sum]]: adds together the relevance scores of all matching child objects.
+     *   - [[ScoreMode.Sum]]: adds together the relevance scores of all matching child objects
      * @return
      *   a new instance of the [[ElasticQuery]] with the specified [[ScoreMode]].
      */
