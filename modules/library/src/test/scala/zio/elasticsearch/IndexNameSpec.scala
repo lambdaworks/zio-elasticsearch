@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.utils._
 import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -26,8 +27,7 @@ object IndexNameSpec extends ZIOSpecDefault {
     suite("IndexName validation")(
       test("succeed for valid string") {
         check(genString(1, 255)) { name =>
-          // assert(IndexName.make(name))(equalTo(Validation.succeed(name)))
-          assert(name)(equalTo(name))
+          assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
         }
       },
       test("fail for string containing upper letter") {
@@ -35,41 +35,40 @@ object IndexNameSpec extends ZIOSpecDefault {
           val invalidName = s"${part1}A$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
-      } @@ TestAspect.ignore,
+      },
       test("fail for string containing character '*'") {
         check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
           val invalidName = s"$part1*$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
-      } @@ TestAspect.ignore,
+      },
       test("fail for string containing character ':'") {
         check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
           val invalidName = s"$part1:$part2"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
-      } @@ TestAspect.ignore,
+      },
       test("fail for empty string") {
         val name = ""
-        // assert(IndexName.make(name))(equalTo(IndexName(name)))
-        assert(name)(equalTo(""))
-      } @@ TestAspect.ignore,
+        assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
+      },
       test("fail for string starting with character '-'") {
         check(genString(1, 255)) { name =>
           val invalidName = s"-$name"
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         }
-      } @@ TestAspect.ignore,
+      },
       test("fail for string '.'") {
         val name = "."
         assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
-      } @@ TestAspect.ignore,
+      },
       test("fail for string longer than 255 bytes") {
         check(genString(256, 300)) { name =>
           assert(IndexName.make(name))(
             equalTo(Validation.fail(indexNameFailureMessage(name)))
           )
         }
-      } @@ TestAspect.ignore
+      }
     )
 
   private def indexNameFailureMessage(name: String): String =

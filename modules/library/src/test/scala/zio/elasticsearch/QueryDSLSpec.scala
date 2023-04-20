@@ -1534,13 +1534,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
             val req1 =
               ElasticRequest
                 .create[TestSubDocument](index, DocumentId("ETux1srpww2ObCx"), subDoc.copy(intField = 65))
-                .routing(Routing(subDoc.stringField))
-            val req2 = ElasticRequest.create[TestSubDocument](index, subDoc).routing(Routing(subDoc.stringField))
+                .routing(unsafeWrap(subDoc.stringField)(Routing))
+            val req2 =
+              ElasticRequest.create[TestSubDocument](index, subDoc).routing(unsafeWrap(subDoc.stringField)(Routing))
             val req3 = ElasticRequest
               .upsert[TestSubDocument](index, DocumentId("yMyEG8iFL5qx"), subDoc.copy(stringField = "StringField2"))
-              .routing(Routing(subDoc.stringField))
+              .routing(unsafeWrap(subDoc.stringField)(Routing))
             val req4 =
-              ElasticRequest.deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc")).routing(Routing(subDoc.stringField))
+              ElasticRequest
+                .deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
+                .routing(unsafeWrap(subDoc.stringField)(Routing))
             ElasticRequest.bulk(req1, req2, req3, req4) match {
               case r: Bulk => Some(r.body)
               case _       => None
