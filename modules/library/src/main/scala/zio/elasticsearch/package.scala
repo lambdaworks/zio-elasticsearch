@@ -32,14 +32,40 @@ package object elasticsearch {
   type Routing = Routing.Type
 
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
+
+    /**
+     * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce an optional [[AggregationResponse]].
+     */
     def aggregation(name: String): RIO[R, Option[AggregationResponse]] =
       zio.flatMap(_.aggregation(name))
 
+    /**
+     * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
+     * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and response.
+     */
     def aggregations: RIO[R, Map[String, AggregationResponse]] =
       zio.flatMap(_.aggregations)
   }
 
   final implicit class ZIODocumentOps[R, F[_]](zio: RIO[R, DocumentResult[F]]) {
+
+    /**
+     * Fetches and deserializes a document as a specific type.
+     *
+     * @tparam A
+     *   the type to deserialize the document to
+     * @return
+     *   a `RIO` effect that, when executed, is going to fetch and deserialize the document as type `A`
+     */
     def documentAs[A: Schema]: RIO[R, F[A]] =
       zio.flatMap(_.documentAs[A])
   }

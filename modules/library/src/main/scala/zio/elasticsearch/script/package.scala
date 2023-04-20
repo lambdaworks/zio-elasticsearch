@@ -18,10 +18,28 @@ package zio.elasticsearch
 
 package object script {
   private[elasticsearch] trait WithLang[S <: WithLang[S]] {
+
+    /**
+     * Sets the language used for analyzing the field values.
+     *
+     * @param value
+     *   the language used for analyzing the field values.
+     * @return
+     *   an instance of the [[Script]] enriched with the `lang` parameter.
+     */
     def lang(value: String): S
   }
 
   private[elasticsearch] trait WithParams[S <: WithParams[S]] {
+
+    /**
+     * Adds additional parameters to a script field.
+     *
+     * @param values
+     *   a sequence of pairs of parameter names and their values to be added to the script field
+     * @return
+     *   an instance of the [[Script]] enriched with the `params` parameter.
+     */
     def withParams(values: (String, Any)*): S
   }
 }

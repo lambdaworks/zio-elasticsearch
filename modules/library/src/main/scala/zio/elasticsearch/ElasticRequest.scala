@@ -40,45 +40,187 @@ sealed trait ElasticRequest[A]
 
 object ElasticRequest {
 
+  /**
+   * Constructs an instance of [[AggregateRequest]] using the specified parameters.
+   *
+   * @param index
+   *   the name of the Elasticsearch index to aggregate on
+   * @param aggregation
+   *   the desired [[ElasticAggregation]] to perform
+   * @return
+   *   an instance of [[AggregateRequest]] that represents the aggregation to be performed.
+   */
   final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
     Aggregate(index = index, aggregation = aggregation)
 
+  /**
+   * Constructs an instance of [[BulkRequest]] using the specified requests.
+   *
+   * @param requests
+   *   a list of requests that will be executed as a bulk
+   * @return
+   *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
+   */
   final def bulk(requests: BulkableRequest[_]*): BulkRequest =
     Bulk.of(requests = requests: _*)
 
+  /**
+   * Constructs an instance of [[CountRequest]] for whole specified index.
+   *
+   * @param index
+   *   the name of the index to count documents from
+   * @return
+   *   an instance of [[CountRequest]] that represents the count operation to be performed.
+   */
   final def count(index: IndexName): CountRequest =
     Count(index = index, query = None, routing = None)
 
+  /**
+   * Constructs an instance of [[CountRequest]] for counting documents satisfy the query.
+   *
+   * @param index
+   *   the name of the Elasticsearch index to count documents from
+   * @param query
+   *   the [[ElasticQuery]] object to query documents that will be counted
+   * @return
+   *   an instance of [[CountRequest]] that represents the count operation to be performed.
+   */
   final def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
     Count(index = index, query = Some(query), routing = None)
 
+  /**
+   * Constructs an instance of [[CreateRequest]] used for creating a document in the specified index.
+   *
+   * @param index
+   *   the name of the index to create the document in
+   * @param doc
+   *   the document to be created, represented by an instance of type `A`
+   * @tparam A
+   *   the type of the document to be created. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an instance of [[CreateRequest]] that represents the create operation to be performed.
+   */
   final def create[A: Schema](index: IndexName, doc: A): CreateRequest =
     Create(index = index, document = Document.from(doc), refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[CreateWithIdRequest]] used for creating a document with specified ID in the specified
+   * index.
+   *
+   * @param index
+   *   the name of the index to create the document in
+   * @param id
+   *   the ID of the new document
+   * @param doc
+   *   the document to be created, represented by an instance of type `A`
+   * @tparam A
+   *   the type of the document to be created. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an instance of [[CreateRequest]] that represents the create with id operation to be performed.
+   */
   final def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithIdRequest =
     CreateWithId(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[CreateIndexRequest]] used for creating an empty index.
+   *
+   * @param name
+   *   the name of the index to be created
+   * @return
+   *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
+   */
   final def createIndex(name: IndexName): CreateIndexRequest =
     CreateIndex(name = name, definition = None)
 
+  /**
+   * Constructs an instance of [[CreateIndexRequest]] used for creating an index with a specified definition.
+   *
+   * @param name
+   *   the name of the index to be created
+   * @param definition
+   *   the settings for the index
+   * @return
+   *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
+   */
   final def createIndex(name: IndexName, definition: String): CreateIndexRequest =
     CreateIndex(name = name, definition = Some(definition))
 
+  /**
+   * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document from the specified index by specified
+   * ID.
+   *
+   * @param index
+   *   the name of the index to delete the document from
+   * @param id
+   *   the ID of the document to be deleted
+   * @return
+   *   an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
+   */
   final def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest =
     DeleteById(index = index, id = id, refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[DeleteByQueryRequest]] used for deleting documents from the specified index that
+   * satisfy specified query.
+   *
+   * @param index
+   *   the name of the index to delete documents from
+   * @param query
+   *   the [[ElasticQuery]] object to query documents which will be deleted
+   * @return
+   *   an instance of [[DeleteByQueryRequest]] that represents delete by query operation to be performed.
+   */
   final def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQueryRequest =
     DeleteByQuery(index = index, query = query, refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[DeleteIndexRequest]] used for deleting an index by specified name.
+   *
+   * @param name
+   *   the name of the index to be deleted
+   * @return
+   *   an instance of [[DeleteIndexRequest]] that represents delete index operation to be performed.
+   */
   final def deleteIndex(name: IndexName): DeleteIndexRequest =
     DeleteIndex(name = name)
 
+  /**
+   * Constructs an instance of [[ExistRequest]] used for checking whether document exists.
+   *
+   * @param index
+   *   the name of the index where the document may be located
+   * @param id
+   *   the ID of the document to check for existence
+   * @return
+   *   an instance of [[ExistRequest]] that represents exists operation to be performed.
+   */
   final def exists(index: IndexName, id: DocumentId): ExistRequest =
     Exists(index = index, id = id, routing = None)
 
+  /**
+   * Constructs an instance of [[GetByIdRequest]] used for retrieving the document from specified index, by specified
+   * ID.
+   *
+   * @param index
+   *   the name of the index where the document is located
+   * @param id
+   *   the ID of the document to retrieve
+   * @return
+   *   an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
+   */
   final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
     GetById(index = index, id = id, refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[SearchRequest]] using the specified parameters.
+   *
+   * @param index
+   *   the name of the index to search in
+   * @param query
+   *   the [[ElasticQuery]] object representing the search query to execute
+   * @return
+   *   an instance of [[SearchRequest]] that represents search operation to be performed.
+   */
   final def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(
       index = index,
@@ -91,6 +233,18 @@ object ElasticRequest {
       size = None
     )
 
+  /**
+   * Constructs an instance of [[SearchAndAggregateRequest]] using the specified parameters.
+   *
+   * @param index
+   *   the name of the index to search and aggregate in
+   * @param query
+   *   an [[ElasticQuery]] object for querying documents
+   * @param aggregation
+   *   an [[ElasticAggregation]] object for aggregating queried documents
+   * @return
+   *   an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be performed.
+   */
   final def search(
     index: IndexName,
     query: ElasticQuery[_],
@@ -108,6 +262,20 @@ object ElasticRequest {
       size = None
     )
 
+  /**
+   * Constructs an instance of [[UpdateRequest]] used for updating the document in the specified index, by specified ID.
+   *
+   * @param index
+   *   the name of the index containing the document to update
+   * @param id
+   *   the ID of the document to update
+   * @param doc
+   *   the document to be updated, represented by an instance of type `A`
+   * @tparam A
+   *   the type of the document to be updated. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an instance of [[UpdateRequest]] that represents update operation to be performed.
+   */
   final def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
     Update(
       index = index,
@@ -119,15 +287,66 @@ object ElasticRequest {
       upsert = None
     )
 
+  /**
+   * Constructs an instance of [[UpdateByQueryRequest]] used for updating all documents in the specified index.
+   *
+   * @param index
+   *   the name of the index to update documents in
+   * @param script
+   *   a [[Script]] object containing the update logic to apply
+   * @return
+   *   an instance of [[UpdateByQueryRequest]] that represents update all operation to be performed.
+   */
   final def updateAllByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
     UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[UpdateByQueryRequest]] used for satisfying documents matching specified query in the
+   * specified index.
+   *
+   * @param index
+   *   the name of the index to update documents in
+   * @param query
+   *   an [[ElasticQuery]] object representing a search query used to find documents to update
+   * @param script
+   *   a [[Script]] object containing the update logic to apply
+   * @return
+   *   an instance of [[UpdateByQueryRequest]] that represents update by query operation to be performed.
+   */
   final def updateByQuery(index: IndexName, query: ElasticQuery[_], script: Script): UpdateByQueryRequest =
     UpdateByQuery(index = index, script = script, conflicts = None, query = Some(query), refresh = None, routing = None)
 
+  /**
+   * Constructs an instance of [[UpdateRequest]] used for updating the document with specified ID in the specified
+   * index.
+   *
+   * @param index
+   *   the name of the index containing the document to update
+   * @param id
+   *   the ID of the document to update
+   * @param script
+   *   a [[Script]] object containing the update logic to apply to the document
+   * @return
+   *   an instance of [[UpdateRequest]] that represents update by script operation to be performed.
+   */
   final def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
     Update(index = index, id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
 
+  /**
+   * Constructs an instance of [[CreateOrUpdateRequest]] used for creating or updating the document in the specified
+   * index with specified ID.
+   *
+   * @param index
+   *   the name of the index to create or update the document in
+   * @param id
+   *   the ID of the document to be created or updated
+   * @param doc
+   *   the document to be created or updated, represented by an instance of type `A`
+   * @tparam A
+   *   the type of the document to be created or updated. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
+   */
   final def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 

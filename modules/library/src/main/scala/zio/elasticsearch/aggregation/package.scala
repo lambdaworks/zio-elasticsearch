@@ -18,10 +18,28 @@ package zio.elasticsearch
 
 package object aggregation {
   private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A]] {
+
+    /**
+     * Adds a sub-aggregation to the aggregation.
+     *
+     * @param subAgg
+     *   the [[SingleElasticAggregation]] to add as sub-aggregation
+     * @return
+     *   a new instance of the [[ElasticAggregation]] with the given sub-aggregation.
+     */
     def withSubAgg(subAgg: SingleElasticAggregation): A
   }
 
   private[elasticsearch] trait WithAgg {
+
+    /**
+     * Adds a new aggregation to the list of aggregations represented as [[MultipleAggregations]].
+     *
+     * @param agg
+     *   the [[SingleElasticAggregation]] to add
+     * @return
+     *   a new instance of [[MultipleAggregations]] with the specified aggregation added to its list of aggregations.
+     */
     def withAgg(agg: SingleElasticAggregation): MultipleAggregations
   }
 }

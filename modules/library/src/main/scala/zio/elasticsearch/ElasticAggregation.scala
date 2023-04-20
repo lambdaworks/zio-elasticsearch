@@ -19,12 +19,39 @@ package zio.elasticsearch
 import zio.elasticsearch.aggregation._
 
 object ElasticAggregation {
+
+  /**
+   * Constructs an empty instance of the [[MultipleAggregations]].
+   *
+   * @return
+   *   an instance of empty [[MultipleAggregations]].
+   */
   final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Nil)
 
+  /**
+   * Constructs a type-safe instance of [[TermsAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   the name of the aggregation
+   * @param field
+   *   the [[Field]] object representing the type-safe field for which the aggregation will be executed
+   * @return
+   *   an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
+   */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
     Terms(name = name, field = field.toString, subAggregations = Nil)
 
+  /**
+   * Constructs an instance of [[TermsAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   field for which terms aggregation will be executed
+   * @return
+   *   an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
+   */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, subAggregations = Nil)
 }

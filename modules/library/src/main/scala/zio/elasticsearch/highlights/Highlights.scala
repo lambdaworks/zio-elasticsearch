@@ -27,20 +27,76 @@ final case class Highlights(
   config: HighlightConfig = Map.empty,
   explicitFieldOrder: Boolean = false
 ) { self =>
+
+  /**
+   * Sets `explicitFieldOrder` parameter to `true` in the [[Highlights]]. When `explicitFieldOrder` is set to `true`,
+   * highlight fields will be in the order they were specified.
+   *
+   * @return
+   *   a new instance of the [[Highlights]] with `explicitFieldOrder` set to `true`.
+   */
   def withExplicitFieldOrder: Highlights = self.copy(explicitFieldOrder = true)
 
+  /**
+   * Specifies configuration of the [[Highlights]].
+   *
+   * @param field
+   *   the name of the configuration parameter to add or update
+   * @param value
+   *   the value to add to the configuration parameter
+   * @return
+   *   a new instance of the [[Highlights]] with the specified configuration.
+   */
   def withGlobalConfig(field: String, value: Json): Highlights =
     self.copy(config = self.config.updated(field, value))
 
+  /**
+   * Adds a new type-safe [[HighlightField]] to the list of [[HighlightField]] for the [[Highlights]].
+   *
+   * @param field
+   *   the [[Field]] object which represents the type-safe name of the [[HighlightField]]
+   * @return
+   *   a new instance of the [[Highlights]] with the additional [[HighlightField]].
+   */
   def withHighlight(field: Field[_, _]): Highlights =
     self.copy(fields = HighlightField(field.toString, Map.empty) +: self.fields)
 
+  /**
+   * Adds a new [[HighlightField]] to the list of [[HighlightField]] for the [[Highlights]].
+   *
+   * @param field
+   *   the name of the [[HighlightField]]
+   * @return
+   *   a new instance of the [[Highlights]] with the additional [[HighlightField]].
+   */
   def withHighlight(field: String): Highlights =
     self.copy(fields = HighlightField(field, Map.empty) +: self.fields)
 
+  /**
+   * Adds a new type-safe [[HighlightField]] with its specific configuration to the list of [[HighlightField]] for the
+   * [[Highlights]].
+   *
+   * @param field
+   *   the [[Field]] object which represents the type-safe name of the [[HighlightField]]
+   * @param config
+   *   the configuration to apply to the [[HighlightField]]
+   * @return
+   *   a new instance of the [[Highlights]] with the additional [[HighlightField]] and its specific configuration.
+   */
   def withHighlight(field: Field[_, _], config: HighlightConfig): Highlights =
     self.copy(fields = HighlightField(field.toString, config) +: self.fields)
 
+  /**
+   * Adds a new [[HighlightField]] with its specific configuration to the list of [[HighlightField]] for the
+   * [[Highlights]].
+   *
+   * @param field
+   *   the name of the [[HighlightField]]
+   * @param config
+   *   the configuration to apply to the [[HighlightField]]
+   * @return
+   *   a new instance of the [[Highlights]] with the additional [[HighlightField]] and its specific configuration.
+   */
   def withHighlight(field: String, config: HighlightConfig): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)
 

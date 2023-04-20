@@ -20,6 +20,17 @@ import zio.elasticsearch.query.sort._
 import zio.elasticsearch.script.Script
 
 object ElasticSort {
+
+  /**
+   * Constructs a type-safe instance of [[SortByField]] using the specified parameters.
+   *
+   * @param field
+   *   the [[Field]] object representing the type-safe field to sort by
+   * @tparam S
+   *   document by which field sort is performed
+   * @return
+   *   an instance of [[SortByField]] that represents sort by field operation to be performed.
+   */
   final def sortBy[S](field: Field[S, _]): SortByField =
     SortByFieldOptions(
       field = field.toString,
@@ -31,6 +42,14 @@ object ElasticSort {
       unmappedType = None
     )
 
+  /**
+   * Constructs an instance of [[SortByField]] using the specified parameters.
+   *
+   * @param field
+   *   the field to sort by
+   * @return
+   *   an instance of [[SortByField]] that represents sort by field operation to be performed.
+   */
   final def sortBy(field: String): SortByField =
     SortByFieldOptions(
       field = field,
@@ -42,6 +61,18 @@ object ElasticSort {
       unmappedType = None
     )
 
+  /**
+   * Constructs an instance of [[SortByScript]] using the specified parameters.
+   *
+   * @param script
+   *   a [[Script]] object containing sort logic
+   * @param sourceType
+   *   type of script source
+   *   - [[SourceType.NumberType]]: Used for numbers scripts.
+   *   - [[SourceType.StringType]]: Used for text scripts.
+   * @return
+   *   an instance of [[SortByScript]] that represents sort by script operation to be performed.
+   */
   final def sortBy(script: Script, sourceType: SourceType): SortByScript =
     SortByScriptOptions(
       script = script,
