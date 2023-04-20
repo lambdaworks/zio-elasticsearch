@@ -20,7 +20,7 @@ import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 
-abstract class AssertedNewtypes {
+abstract class ValidatedNewtypes {
   object IndexName extends Newtype[String] {
     override def assertion = assertCustom { (string: String) => // scalafix:ok
       if (!IndexNameValidation.isValidIndexName(string)) {

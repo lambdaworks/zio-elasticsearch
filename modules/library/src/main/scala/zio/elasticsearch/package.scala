@@ -21,7 +21,7 @@ import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
 import zio.prelude.Newtype
 import zio.schema.Schema
 
-package object elasticsearch extends AssertedNewtypes {
+package object elasticsearch extends ValidatedNewtypes {
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 

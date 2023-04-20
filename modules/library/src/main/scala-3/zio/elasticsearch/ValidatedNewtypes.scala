@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.prelude.Assertion.isEmptyString
 import zio.prelude.{Newtype, NewtypeCustom}
 
-abstract class AssertedNewtypes {
+abstract class ValidatedNewtypes {
   object IndexName extends NewtypeCustom[String] {
     protected def validate(value: String) =
       IndexNameValidator.validate(value)
