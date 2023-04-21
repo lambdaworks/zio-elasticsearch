@@ -97,8 +97,8 @@ object RepositoriesElasticsearch {
   def remove(organization: String, id: String): RIO[RepositoriesElasticsearch, DeletionOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
 
-  def search(query: ElasticQuery[_], from: Int, size: Int): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
-    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.search(query, from, size))
+  def search(query: ElasticQuery[_], limit: Int, offset: Int): RIO[RepositoriesElasticsearch, List[GitHubRepo]] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.search(query, offset, limit))
 
   lazy val live: URLayer[Elasticsearch, RepositoriesElasticsearch] =
     ZLayer.fromFunction(RepositoriesElasticsearch(_))

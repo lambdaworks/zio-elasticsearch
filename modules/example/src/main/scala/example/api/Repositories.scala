@@ -31,7 +31,6 @@ import zio.http.model.Status.{
 }
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
-
 import CompoundOperator._
 import FilterOperator._
 
@@ -78,34 +77,9 @@ object Repositories {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(queryBody) =>
-              req.url.queryParams
-                .get("from")
-                .map(_.head)
-                .getOrElse("0")
-                .toIntOption
-                .toRight("The value of the from parameter is not an integer.")
-                .flatMap { from =>
-                  req.url.queryParams
-                    .get("size")
-                    .map(_.head)
-                    .getOrElse("10")
-                    .toIntOption
-                    .toRight("The value of the size parameter is not an integer.")
-                    .map { size =>
-                      RepositoriesElasticsearch
-                        .search(createElasticQuery(queryBody), from, size)
-                        .map(repositories => Response.json(repositories.toJson))
-                    }
-                }
-                .fold(
-                  errorMessage =>
-                    ZIO.succeed(
-                      Response
-                        .json(ErrorResponse.fromReasons(errorMessage).toJson)
-                        .setStatus(HttpBadRequest)
-                    ),
-                  value => value
-                )
+              RepositoriesElasticsearch
+                .search(createElasticQuery(queryBody), req.limit, req.offset)
+                .map(repositories => Response.json(repositories.toJson))
           }
           .orDie
 
