@@ -432,6 +432,31 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Search for maximum 15 repositories starting from the 11th one with more than 50 stars",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"IntCriteria\": {\n        \"field\": \"Stars\",\n        \"operator\": \"GreaterThan\",\n        \"value\": 50\n    }\n}\n"
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search?from=10&size=15",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"search"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"event": [
