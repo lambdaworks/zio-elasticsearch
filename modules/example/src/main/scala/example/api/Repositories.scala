@@ -79,7 +79,7 @@ object Repositories {
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(queryBody) =>
               RepositoriesElasticsearch
-                .search(createElasticQuery(queryBody), req.limit, req.offset)
+                .search(createElasticQuery(queryBody), req.offset, req.limit)
                 .map(repositories => Response.json(repositories.toJson))
           }
           .orDie
