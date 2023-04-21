@@ -83,7 +83,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"id\": \"1234567\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scrul-detector\",\n    \"url\": \"https://github.com/lambdaworks/scurl-detector\",\n    \"description\": \"Scala library that detects and extracts URLs from text.\",\n    \"lastCommitAt\": \"2022-12-01T14:27:11.436\",\n    \"stars\": 14,\n    \"forks\": 1\n}",
+					"raw": "{\n    \"id\": \"1234567\",\n    \"organization\": \"lambdaworks\",\n    \"name\": \"scurl-detector\",\n    \"url\": \"https://github.com/lambdaworks/scurl-detector\",\n    \"description\": \"Scala library that detects and extracts URLs from text.\",\n    \"lastCommitAt\": \"2022-12-01T14:27:11.436\",\n    \"stars\": 14,\n    \"forks\": 1\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -415,7 +415,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": \"And\",\n        \"filters\": [\n            {\n                \"StringCriteria\": {\n                    \"field\": \"Name\",\n                    \"operator\": \"StartsWith\",\n                    \"value\": \"scrul\"\n                }\n            },\n            {\n                \"StringCriteria\": {\n                    \"field\": \"Name\",\n                    \"operator\": \"Contains\",\n                    \"value\": \"detector\"\n                }\n            }\n        ]\n    }\n}"
+					"raw": "{\n    \"CompoundCriteria\": {\n        \"operator\": \"And\",\n        \"filters\": [\n            {\n                \"StringCriteria\": {\n                    \"field\": \"Name\",\n                    \"operator\": \"StartsWith\",\n                    \"value\": \"scurl\"\n                }\n            },\n            {\n                \"StringCriteria\": {\n                    \"field\": \"Name\",\n                    \"operator\": \"Contains\",\n                    \"value\": \"detector\"\n                }\n            }\n        ]\n    }\n}"
 				},
 				"url": {
 					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search",
@@ -428,6 +428,41 @@
 						"api",
 						"repositories",
 						"search"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Search for maximum 15 repositories starting from the 11th one with more than 50 stars",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"IntCriteria\": {\n        \"field\": \"Stars\",\n        \"operator\": \"GreaterThan\",\n        \"value\": 50\n    }\n}\n"
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search?limit=15&offset=10",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"search"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "15"
+						},
+						{
+							"key": "offset",
+							"value": "10"
+						}
 					]
 				}
 			},

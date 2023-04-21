@@ -17,6 +17,7 @@
 package example
 
 import zio.Chunk
+import zio.http.Request
 import zio.json._
 
 package object api {
@@ -34,6 +35,12 @@ package object api {
 
     def fromReasons(reasons: String*): ErrorResponse =
       new ErrorResponse(ErrorResponseData(Chunk.fromIterable(reasons)))
+  }
+
+  implicit final class RequestOps(private val req: Request) extends AnyVal {
+    def limit: Int = req.url.queryParams.get("limit").flatMap(_.headOption).flatMap(_.toIntOption).getOrElse(10)
+
+    def offset: Int = req.url.queryParams.get("offset").flatMap(_.headOption).flatMap(_.toIntOption).getOrElse(0)
   }
 
 }
