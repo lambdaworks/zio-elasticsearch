@@ -16,10 +16,9 @@
 
 package zio.elasticsearch
 
-import zio.prelude.Assertion.isEmptyString
-import zio.prelude.{Newtype, NewtypeCustom}
+import zio.prelude.NewtypeCustom
 
-abstract class ValidatedNewtypes {
+trait IndexNameNewtype {
   object IndexName extends NewtypeCustom[String] {
     protected def validate(value: String) =
       IndexNameValidator.validate(value)
@@ -27,10 +26,4 @@ abstract class ValidatedNewtypes {
     protected inline def validateInline(inline value: String) =
       ${ IndexNameValidator.validateInlineImpl('value) }
   }
-  type IndexName = IndexName.Type
-
-  object Routing extends Newtype[String] {
-    override inline def assertion = !isEmptyString // scalafix:ok
-  }
-  type Routing = Routing.Type
 }

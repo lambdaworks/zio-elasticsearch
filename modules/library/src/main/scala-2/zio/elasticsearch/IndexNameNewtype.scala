@@ -16,14 +16,15 @@
 
 package zio.elasticsearch
 
-import zio.prelude.Assertion.isEmptyString
 import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 
-abstract class ValidatedNewtypes {
+trait IndexNameNewtype {
   object IndexName extends Newtype[String] {
     override def assertion = assertCustom { (string: String) => // scalafix:ok
-      if (!IndexNameValidation.isValidIndexName(string)) {
+      if (IndexNameValidation.isValid(string)) {
+        Right(())
+      } else {
         Left(
           failure(
             s"""
@@ -38,15 +39,7 @@ abstract class ValidatedNewtypes {
                |""".stripMargin
           )
         )
-      } else {
-        Right(())
       }
     }
   }
-  type IndexName = IndexName.Type
-
-  object Routing extends Newtype[String] {
-    override def assertion = assert(!isEmptyString) // scalafix:ok
-  }
-  type Routing = Routing.Type
 }

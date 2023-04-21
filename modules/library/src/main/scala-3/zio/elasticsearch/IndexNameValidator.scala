@@ -32,7 +32,9 @@ object IndexNameValidator
           !equalsAny(string, ".", "..") &&
           string.getBytes().length <= 255
 
-      if (!isValid(string)) {
+      if (isValid(string)) {
+        Right(())
+      } else {
         Left(
           AssertionError.Failure(
             s"""
@@ -47,7 +49,5 @@ object IndexNameValidator
                |""".stripMargin
           )
         )
-      } else {
-        Right(())
       }
     })
