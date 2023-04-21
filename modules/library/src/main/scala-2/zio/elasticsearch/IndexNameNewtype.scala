@@ -21,8 +21,8 @@ import zio.prelude.Newtype
 
 trait IndexNameNewtype {
   object IndexName extends Newtype[String] {
-    override def assertion = assertCustom { (string: String) => // scalafix:ok
-      if (IndexNameValidation.isValid(string)) {
+    override def assertion = assertCustom { (name: String) => // scalafix:ok
+      if (IndexNameValidation.isValid(name)) {
         Right(())
       } else {
         Left(

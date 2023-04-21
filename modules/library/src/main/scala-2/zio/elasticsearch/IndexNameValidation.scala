@@ -20,13 +20,14 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
 
 object IndexNameValidation {
-  def isValid(string: String): Boolean =
-    string.toLowerCase == string &&
-      !startsWithAny(string, "+", "-", "_") &&
-      !containsAny(string = string, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
-      !equalsAny(string, ".", "..") &&
-      string.getBytes().length <= 255
+  def isValid(name: String): Boolean = {
+    def containsAny(string: String, params: List[String]): Boolean =
+      params.exists(StringUtils.contains(string, _))
 
-  private def containsAny(string: String, params: List[String]): Boolean =
-    params.exists(StringUtils.contains(string, _))
+    name.toLowerCase == name &&
+    !startsWithAny(name, "+", "-", "_") &&
+    !containsAny(string = name, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+    !equalsAny(name, ".", "..") &&
+    name.getBytes().length <= 255
+  }
 }

@@ -20,10 +20,10 @@ import zio.prelude.NewtypeCustom
 
 trait IndexNameNewtype {
   object IndexName extends NewtypeCustom[String] {
-    protected def validate(value: String) =
-      IndexNameValidator.validate(value)
+    protected def validate(name: String) =
+      IndexNameValidator.validate(name)
 
-    protected inline def validateInline(inline value: String) =
-      ${ IndexNameValidator.validateInlineImpl('value) }
+    protected inline def validateInline(inline name: String) =
+      ${ IndexNameValidator.validateInlineImpl('name) }
   }
 }

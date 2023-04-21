@@ -21,18 +21,18 @@ import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
 import zio.prelude.{AssertionError, Validator}
 
 object IndexNameValidator
-    extends Validator[String](string => {
+    extends Validator[String](name => {
       def containsAny(string: String, params: List[String]): Boolean =
         params.exists(StringUtils.contains(string, _))
 
-      def isValid(string: String): Boolean =
-        string.toLowerCase == string &&
-          !startsWithAny(string, "+", "-", "_") &&
-          !containsAny(string = string, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
-          !equalsAny(string, ".", "..") &&
-          string.getBytes().length <= 255
+      def isValid(name: String): Boolean =
+        name.toLowerCase == name &&
+          !startsWithAny(name, "+", "-", "_") &&
+          !containsAny(string = name, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+          !equalsAny(name, ".", "..") &&
+          name.getBytes().length <= 255
 
-      if (isValid(string)) {
+      if (isValid(name)) {
         Right(())
       } else {
         Left(
