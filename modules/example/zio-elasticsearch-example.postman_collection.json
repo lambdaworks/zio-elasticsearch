@@ -443,7 +443,7 @@
 					"raw": "{\n    \"IntCriteria\": {\n        \"field\": \"Stars\",\n        \"operator\": \"GreaterThan\",\n        \"value\": 50\n    }\n}\n"
 				},
 				"url": {
-					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search?from=10&size=15",
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/search?limit=15&offset=10",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -453,6 +453,16 @@
 						"api",
 						"repositories",
 						"search"
+					],
+					"query": [
+						{
+							"key": "limit",
+							"value": "15"
+						},
+						{
+							"key": "offset",
+							"value": "10"
+						}
 					]
 				}
 			},
