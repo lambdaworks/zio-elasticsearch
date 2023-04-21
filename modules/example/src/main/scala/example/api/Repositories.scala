@@ -78,9 +78,34 @@ object Repositories {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).setStatus(HttpBadRequest))
             case Right(queryBody) =>
-              RepositoriesElasticsearch
-                .search(createElasticQuery(queryBody))
-                .map(repositories => Response.json(repositories.toJson))
+              req.url.queryParams
+                .get("from")
+                .map(_.head)
+                .getOrElse("0")
+                .toIntOption
+                .toRight("The value of the from parameter is not an integer.")
+                .flatMap { from =>
+                  req.url.queryParams
+                    .get("size")
+                    .map(_.head)
+                    .getOrElse("10")
+                    .toIntOption
+                    .toRight("The value of the size parameter is not an integer.")
+                    .map { size =>
+                      RepositoriesElasticsearch
+                        .search(createElasticQuery(queryBody), from, size)
+                        .map(repositories => Response.json(repositories.toJson))
+                    }
+                }
+                .fold(
+                  errorMessage =>
+                    ZIO.succeed(
+                      Response
+                        .json(ErrorResponse.fromReasons(errorMessage).toJson)
+                        .setStatus(HttpBadRequest)
+                    ),
+                  value => value
+                )
           }
           .orDie
 
