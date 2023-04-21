@@ -21,7 +21,11 @@ import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
 import zio.prelude.Newtype
 import zio.schema.Schema
 
-package object elasticsearch extends ValidatedNewtypes {
+package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
+  type IndexName = IndexName.Type
+
+  type Routing = Routing.Type
+
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 
