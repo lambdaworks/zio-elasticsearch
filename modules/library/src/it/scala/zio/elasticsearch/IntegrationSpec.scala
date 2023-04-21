@@ -25,6 +25,7 @@ import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
 import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
+import zio.elasticsearch.utils.unsafeWrap
 
 import java.time.LocalDate
 
@@ -54,7 +55,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
   } yield ()).provide(elasticsearchLayer))
 
   def genIndexName: Gen[Any, IndexName] =
-    Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => IndexName(name.toLowerCase))
+    Gen.stringBounded(10, 40)(Gen.alphaChar).map(name => unsafeWrap(name.toLowerCase)(IndexName))
 
   def genDocumentId: Gen[Any, DocumentId] =
     Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))

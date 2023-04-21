@@ -21,15 +21,13 @@ import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
 import zio.prelude.Newtype
 import zio.schema.Schema
 
-package object elasticsearch {
-  object DocumentId extends Newtype[String]
-  type DocumentId = DocumentId.Type
-
-  object IndexName extends Newtype[String]
+package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
   type IndexName = IndexName.Type
 
-  object Routing extends Newtype[String]
   type Routing = Routing.Type
+
+  object DocumentId extends Newtype[String]
+  type DocumentId = DocumentId.Type
 
   final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
 
