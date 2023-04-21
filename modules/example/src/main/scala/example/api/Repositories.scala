@@ -31,6 +31,7 @@ import zio.http.model.Status.{
 }
 import zio.json.EncoderOps
 import zio.schema.codec.JsonCodec
+
 import CompoundOperator._
 import FilterOperator._
 
