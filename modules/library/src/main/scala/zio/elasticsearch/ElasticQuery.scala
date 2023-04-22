@@ -118,7 +118,7 @@ object ElasticQuery {
 
   /**
    * Constructs a type-safe instance of [[MatchQuery]] using the specified parameters. [[MatchQuery]] is used for
-   * matching a provided text, number, date or boolean value
+   * matching a provided text, number, date or boolean value.
    *
    * @param field
    *   the [[Field]] object representing the type-safe field for which query is specified for
@@ -136,7 +136,7 @@ object ElasticQuery {
 
   /**
    * Constructs an instance of [[MatchQuery]] using the specified parameters. [[MatchQuery]] is used for matching a
-   * provided text, number, date or boolean value
+   * provided text, number, date or boolean value.
    *
    * @param field
    *   the field for which query is specified for
@@ -149,6 +149,27 @@ object ElasticQuery {
    */
   final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
     Match(field = field, value = value)
+
+  /**
+   * Constructs a type-safe instance of [[MatchPhraseQuery]] using the specified parameters. [[MatchPhraseQuery]]
+   * analyzes the text and creates a phrase query out of the analyzed text.
+   *
+   * @param field
+   *   the [[Field]] object representing the type-safe field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `A`
+   * @tparam S
+   *   document for which field query is executed
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   * @return
+   *   an instance of [[MatchQuery]] that represents the match query to be performed.
+   */
+  final def matchPhrase[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchPhraseQuery[S] =
+    MatchPhrase(field = field.toString, value = value)
+
+  final def matchPhrase[A: ElasticPrimitive](field: String, value: A): MatchPhraseQuery[Any] =
+    MatchPhrase(field = field, value = value)
 
   /**
    * Constructs an instance of [[BoolQuery]] with queries that must satisfy the criteria using the specified parameters.
