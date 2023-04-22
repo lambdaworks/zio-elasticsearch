@@ -1,6 +1,7 @@
 {
   "automerge": true,
   "rebaseWhen": "conflicted",
+  "prTitle": "Update {{depName}} to {{newVersion}}",
   "packageRules": [
     {
       "matchManagers": [
