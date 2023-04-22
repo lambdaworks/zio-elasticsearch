@@ -3,7 +3,13 @@ id: overview_installation
 title: "Installation"
 ---
 
-To use ZIO Elasticsearch in your project, add the following to your `build.sbt` file:
+To use the latest stable version of ZIO Elasticsearch, add the following line to your `build.sbt` file:
+
+```scala
+libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "0.1.0"
+```
+
+However, if you want to use the latest version of the ZIO Elasticsearch library, add the following to your `build.sbt` file:
 
 ```scala mdoc:passthrough
 println(s"""```scala""")
