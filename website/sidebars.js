@@ -19,6 +19,7 @@ module.exports = {
                     'overview/queries/elastic_query_filter',
                     'overview/queries/elastic_query_match_all',
                     'overview/queries/elastic_query_matches',
+                    'overview/queries/elastic_query_match_phrase',
                     'overview/queries/elastic_query_must',
                     'overview/queries/elastic_query_must_not',
                     'overview/queries/elastic_query_nested',
