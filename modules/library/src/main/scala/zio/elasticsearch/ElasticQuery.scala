@@ -155,7 +155,7 @@ object ElasticQuery {
    * analyzes the text and creates a phrase query out of the analyzed text.
    *
    * @param field
-   *   the [[Field]] object representing the type-safe field for which query is specified for
+   *   the field for which query is specified for
    * @param value
    *   the value to be matched, represented by an instance of type `A`
    * @tparam S
