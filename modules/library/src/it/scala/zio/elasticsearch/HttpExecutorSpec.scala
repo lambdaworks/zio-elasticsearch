@@ -592,6 +592,30 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document using a match phrase query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  document = firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test")
+                  _ <-
+                    Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = matchPhrase(
+                            field = TestDocument.stringField,
+                            value = firstDocument.stringField
+                          )
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(document))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document using nested query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
