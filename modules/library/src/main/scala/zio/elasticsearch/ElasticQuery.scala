@@ -160,15 +160,28 @@ object ElasticQuery {
    *   the value to be matched, represented by an instance of type `A`
    * @tparam S
    *   document for which field query is executed
+   * @return
+   *   an instance of [[MatchQuery]] that represents the match query to be performed.
+   */
+  final def matchPhrase[S](field: Field[S, String], value: String): MatchPhraseQuery[S] =
+    MatchPhrase(field = field.toString, value = value)
+
+  /**
+   * Constructs an instance of [[MatchPhraseQuery]] using the specified parameters. [[MatchPhraseQuery]] analyzes the
+   * text and creates a phrase query out of the analyzed text.
+   *
+   * @param field
+   *   the [[Field]] object representing the type-safe field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `A`
+   * @tparam S
+   *   document for which field query is executed
    * @tparam A
    *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
    *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
-  final def matchPhrase[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchPhraseQuery[S] =
-    MatchPhrase(field = field.toString, value = value)
-
-  final def matchPhrase[A: ElasticPrimitive](field: String, value: A): MatchPhraseQuery[Any] =
+  final def matchPhrase(field: String, value: String): MatchPhraseQuery[Any] =
     MatchPhrase(field = field, value = value)
 
   /**

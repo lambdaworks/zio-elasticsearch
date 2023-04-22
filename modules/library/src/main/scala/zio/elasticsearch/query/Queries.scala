@@ -122,8 +122,7 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
 
 sealed trait MatchPhraseQuery[S] extends ElasticQuery[S]
 
-private[elasticsearch] final case class MatchPhrase[S, A: ElasticPrimitive](field: String, value: A)
-    extends MatchPhraseQuery[S] {
+private[elasticsearch] final case class MatchPhrase[S](field: String, value: String) extends MatchPhraseQuery[S] {
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj("match_phrase" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
 }
