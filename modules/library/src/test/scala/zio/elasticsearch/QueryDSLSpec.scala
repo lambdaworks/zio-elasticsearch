@@ -1029,6 +1029,89 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
+        test("successfully construct MatchPhrase query") {
+          val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
+          val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
+          val queryWithBoost   = matchPhrase(field = "stringField", value = "this is a test").boost(21.15)
+          val querySimpleTs    = matchPhrase(field = TestDocument.stringField, value = "this is a test")
+          val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
+          val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
+
+          assert(querySimple)(
+            equalTo(MatchPhrase[Any](field = "stringField", value = "this is a test", boost = None))
+          ) && assert(querySimpleTs)(
+            equalTo(MatchPhrase[TestDocument](field = "stringField", value = "this is a test", boost = None))
+          ) && assert(queryRaw)(
+            equalTo(MatchPhrase[Any](field = "stringField.raw", value = "this is a test", boost = None))
+          ) && assert(queryRawTs)(
+            equalTo(MatchPhrase[TestDocument](field = "stringField.raw", value = "this is a test", boost = None))
+          ) && assert(queryWithBoost)(
+            equalTo(MatchPhrase[Any](field = "stringField", value = "this is a test", boost = Some(21.15)))
+          ) && assert(queryWithBoostTs)(
+            equalTo(MatchPhrase[TestDocument](field = "stringField", value = "this is a test", boost = Some(21.15)))
+          )
+        },
+        test("successfully encode MatchPhrase query") {
+          val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
+          val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
+          val queryWithBoost   = matchPhrase(field = "stringField", value = "this is a test").boost(21.15)
+          val querySimpleTs    = matchPhrase(field = TestDocument.stringField, value = "this is a test")
+          val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
+          val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
+
+          val querySimpleExpectedJson =
+            """
+              |{
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField": "this is a test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val queryRawExpectedJson =
+            """
+              |{
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField.raw": "this is a test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val queryWithBoostExpectedJson =
+            """
+              |{
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField": "this is a test",
+              |      "boost": 21.15
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(querySimple.toJson)(equalTo(querySimpleExpectedJson.toJson)) && assert(querySimpleTs.toJson)(
+            equalTo(querySimpleExpectedJson.toJson)
+          ) &&
+          assert(queryRaw.toJson)(equalTo(queryRawExpectedJson.toJson)) && assert(queryRawTs.toJson)(
+            equalTo(queryRawExpectedJson.toJson)
+          ) &&
+          assert(queryWithBoost.toJson)(equalTo(queryWithBoostExpectedJson.toJson)) && assert(queryWithBoostTs.toJson)(
+            equalTo(queryWithBoostExpectedJson.toJson)
+          )
+        },
+        test("successfully create type-safe Match query using `matches` method") {
+          val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
+          val queryInt    = matches(field = TestSubDocument.intField, value = 39)
+
+          assert(queryString)(
+            equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField", boost = None))
+          ) &&
+          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39, boost = None)))
+        },
         test("properly encode Nested Query with MatchAll Query") {
           val query = nested(path = "customer", query = matchAll)
           val expected =
