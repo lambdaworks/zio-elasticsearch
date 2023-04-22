@@ -132,7 +132,7 @@ object ElasticQuery {
    *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
   final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
-    Match(field = field.toString, value = value)
+    Match(field = field.toString, value = value, boost = None)
 
   /**
    * Constructs an instance of [[MatchQuery]] using the specified parameters. [[MatchQuery]] is used for matching a
@@ -148,7 +148,7 @@ object ElasticQuery {
    *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
   final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
-    Match(field = field, value = value)
+    Match(field = field, value = value, boost = None)
 
   /**
    * Constructs a type-safe instance of [[MatchPhraseQuery]] using the specified parameters. [[MatchPhraseQuery]]
@@ -164,7 +164,7 @@ object ElasticQuery {
    *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
   final def matchPhrase[S](field: Field[S, String], value: String): MatchPhraseQuery[S] =
-    MatchPhrase(field = field.toString, value = value)
+    MatchPhrase(field = field.toString, value = value, boost = None)
 
   /**
    * Constructs an instance of [[MatchPhraseQuery]] using the specified parameters. [[MatchPhraseQuery]] analyzes the
@@ -182,7 +182,7 @@ object ElasticQuery {
    *   an instance of [[MatchQuery]] that represents the match query to be performed.
    */
   final def matchPhrase(field: String, value: String): MatchPhraseQuery[Any] =
-    MatchPhrase(field = field, value = value)
+    MatchPhrase(field = field, value = value, boost = None)
 
   /**
    * Constructs an instance of [[BoolQuery]] with queries that must satisfy the criteria using the specified parameters.

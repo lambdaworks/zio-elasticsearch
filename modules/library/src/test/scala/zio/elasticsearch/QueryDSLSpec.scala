@@ -36,21 +36,25 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryBool   = matches(field = "day_of_week", value = true)
           val queryLong   = matches(field = "day_of_week", value = 1L)
 
-          assert(queryString)(equalTo(Match[Any, String](field = "day_of_week", value = "Monday"))) &&
-          assert(queryBool)(equalTo(Match[Any, Boolean](field = "day_of_week", value = true))) &&
-          assert(queryLong)(equalTo(Match[Any, Long](field = "day_of_week", value = 1)))
+          assert(queryString)(equalTo(Match[Any, String](field = "day_of_week", value = "Monday", boost = None))) &&
+          assert(queryBool)(equalTo(Match[Any, Boolean](field = "day_of_week", value = true, boost = None))) &&
+          assert(queryLong)(equalTo(Match[Any, Long](field = "day_of_week", value = 1, boost = None)))
         },
         test("successfully create type-safe Match query using `matches` method") {
           val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
           val queryInt    = matches(field = TestSubDocument.intField, value = 39)
 
-          assert(queryString)(equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField"))) &&
-          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39)))
+          assert(queryString)(
+            equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField", boost = None))
+          ) &&
+          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39, boost = None)))
         },
         test("successfully create type-safe Match query with suffix using `matches` method") {
           val query = matches(field = TestSubDocument.stringField.keyword, value = "StringField")
 
-          assert(query)(equalTo(Match[TestSubDocument, String](field = "stringField.keyword", value = "StringField")))
+          assert(query)(
+            equalTo(Match[TestSubDocument, String](field = "stringField.keyword", value = "StringField", boost = None))
+          )
         },
         test("successfully create `Filter` query from two Match queries") {
           val query = filter(
@@ -62,8 +66,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
             equalTo(
               Bool[TestDocument](
                 filter = List(
-                  Match(field = "stringField", value = "StringField"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 must = Nil,
                 mustNot = Nil,
@@ -83,8 +87,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
             equalTo(
               Bool[TestDocument](
                 filter = List(
-                  Match(field = "stringField", value = "StringField"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 must = Nil,
                 mustNot = Nil,
@@ -106,8 +110,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
               Bool[TestDocument](
                 filter = Nil,
                 must = List(
-                  Match(field = "stringField", value = "StringField"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 mustNot = Nil,
                 should = Nil,
@@ -129,8 +133,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 filter = Nil,
                 must = Nil,
                 mustNot = List(
-                  Match(field = "stringField", value = "StringField"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 should = Nil,
                 boost = None
@@ -151,8 +155,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = Nil,
                 mustNot = Nil,
                 should = List(
-                  Match(field = "stringField", value = "StringField"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 boost = None
               )
@@ -172,12 +176,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
             equalTo(
               Bool[TestDocument](
                 filter = List(
-                  Match(field = "stringField", value = "StringField"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "stringField", value = "StringField", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
-                must = List(Match(field = "customer_age", value = 23)),
-                mustNot = List(Match(field = "intField", value = 17)),
-                should = List(Match(field = "customer_id", value = 1)),
+                must = List(Match(field = "customer_age", value = 23, boost = None)),
+                mustNot = List(Match(field = "intField", value = 17, boost = None)),
+                should = List(Match(field = "customer_id", value = 1, boost = None)),
                 boost = None
               )
             )
@@ -195,13 +199,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               Bool[TestDocument](
-                filter = List(Match(field = "intField", value = 1)),
+                filter = List(Match(field = "intField", value = 1, boost = None)),
                 must = List(
-                  Match(field = "stringField", value = "StringField1"),
-                  Match(field = "stringField", value = "StringField2")
+                  Match(field = "stringField", value = "StringField1", boost = None),
+                  Match(field = "stringField", value = "StringField2", boost = None)
                 ),
-                mustNot = List(Match(field = "intField", value = 17)),
-                should = List(Match(field = "doubleField", value = 23.0)),
+                mustNot = List(Match(field = "intField", value = 17, boost = None)),
+                should = List(Match(field = "doubleField", value = 23.0, boost = None)),
                 boost = None
               )
             )
@@ -219,13 +223,13 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               Bool[TestDocument](
-                filter = List(Match(field = "stringField", value = "StringField")),
-                must = List(Match(field = "intField", value = 17)),
+                filter = List(Match(field = "stringField", value = "StringField", boost = None)),
+                must = List(Match(field = "intField", value = 17, boost = None)),
                 mustNot = List(
-                  Match(field = "day_of_week", value = "Monday"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
-                should = List(Match(field = "intField", value = 23)),
+                should = List(Match(field = "intField", value = 23, boost = None)),
                 boost = None
               )
             )
@@ -243,12 +247,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               Bool[TestDocument](
-                filter = List(Match(field = "stringField", value = "StringField")),
-                must = List(Match(field = "intField", value = 23)),
-                mustNot = List(Match(field = "day_of_month", value = 17)),
+                filter = List(Match(field = "stringField", value = "StringField", boost = None)),
+                must = List(Match(field = "intField", value = 23, boost = None)),
+                mustNot = List(Match(field = "day_of_month", value = 17, boost = None)),
                 should = List(
-                  Match(field = "day_of_week", value = "Monday"),
-                  Match(field = "customer_gender", value = "MALE")
+                  Match(field = "day_of_week", value = "Monday", boost = None),
+                  Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 boost = None
               )
@@ -265,10 +269,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               Bool[TestDocument](
-                filter = List(Match(field = "intField", value = 1)),
-                must = List(Match(field = "doubleField", value = 23.0)),
-                mustNot = List(Match(field = "intField", value = 17)),
-                should = List(Match(field = "stringField", value = "StringField")),
+                filter = List(Match(field = "intField", value = 1, boost = None)),
+                must = List(Match(field = "doubleField", value = 23.0, boost = None)),
+                mustNot = List(Match(field = "intField", value = 17, boost = None)),
+                should = List(Match(field = "stringField", value = "StringField", boost = None)),
                 boost = Some(1.0)
               )
             )
