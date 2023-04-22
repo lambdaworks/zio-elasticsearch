@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-package example
+package example.api
 
-import zio.http.Request
+import zio.Chunk
+import zio.json.{DeriveJsonEncoder, JsonEncoder}
 
-package object api {
-  implicit final class RequestOps(private val req: Request) extends AnyVal {
-    def limit: Int = req.url.queryParams.get("limit").flatMap(_.headOption).flatMap(_.toIntOption).getOrElse(10)
+final case class ErrorResponse(errors: ErrorResponseData)
 
-    def offset: Int = req.url.queryParams.get("offset").flatMap(_.headOption).flatMap(_.toIntOption).getOrElse(0)
-  }
+object ErrorResponse {
+  implicit val encoder: JsonEncoder[ErrorResponse] = DeriveJsonEncoder.gen[ErrorResponse]
+
+  def fromReasons(reasons: String*): ErrorResponse =
+    new ErrorResponse(ErrorResponseData(Chunk.fromIterable(reasons)))
 }
