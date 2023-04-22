@@ -1,6 +1,12 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:base"
+  "automerge": true,
+  "rebaseWhen": "conflicted",
+  "packageRules": [
+    {
+      "matchManagers": [
+        "sbt"
+      ],
+      "enabled": false
+    }
   ]
 }
