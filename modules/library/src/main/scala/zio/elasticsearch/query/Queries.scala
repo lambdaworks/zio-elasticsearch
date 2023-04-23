@@ -100,14 +100,20 @@ sealed trait ExistsQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Exists[S](field: String) extends ExistsQuery[S] {
   def paramsToJson(fieldPath: Option[String]): Json =
-    Obj("exists" -> Obj("field" -> (fieldPath.map(_ + ".").getOrElse("") + field).toJson))
+    Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
 }
 
-sealed trait MatchQuery[S] extends ElasticQuery[S]
+sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
 
-private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
-  def paramsToJson(fieldPath: Option[String]): Json =
-    Obj("match" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> value.toJson))
+private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A, boost: Option[Double])
+    extends MatchQuery[S] { self =>
+  def boost(value: Double): MatchQuery[S] =
+    self.copy(boost = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json = {
+    val matchFields = Some(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson) ++ boost.map("boost" -> Num(_))
+    Obj("match" -> Obj(matchFields.toList: _*))
+  }
 }
 
 sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
@@ -118,6 +124,20 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
 
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
+}
+
+sealed trait MatchPhraseQuery[S] extends ElasticQuery[S] with HasBoost[MatchPhraseQuery[S]]
+
+private[elasticsearch] final case class MatchPhrase[S](field: String, value: String, boost: Option[Double])
+    extends MatchPhraseQuery[S] { self =>
+  def boost(value: Double): MatchPhraseQuery[S] =
+    self.copy(boost = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json = {
+    val matchPhraseFields =
+      Some(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson) ++ boost.map("boost" -> Num(_))
+    Obj("match_phrase" -> Obj(matchPhraseFields.toList: _*))
+  }
 }
 
 sealed trait NestedQuery[S]
@@ -240,7 +260,7 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
 
   def paramsToJson(fieldPath: Option[String]): Json = {
     val rangeFields = Some(
-      fieldPath.map(_ + ".").getOrElse("") + field -> Obj(List(lower.toJson, upper.toJson).flatten: _*)
+      fieldPath.foldRight(field)(_ + "." + _) -> Obj(List(lower.toJson, upper.toJson).flatten: _*)
     ) ++ boost.map("boost" -> Num(_))
     Obj("range" -> Obj(rangeFields.toList: _*))
   }
@@ -274,7 +294,7 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
     val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
     )
-    Obj("term" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> Obj(termFields.toList: _*)))
+    Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(termFields.toList: _*)))
   }
 }
 
@@ -299,6 +319,6 @@ private[elasticsearch] final case class Wildcard[S](
     val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
     )
-    Obj("wildcard" -> Obj(fieldPath.map(_ + ".").getOrElse("") + field -> Obj(wildcardFields.toList: _*)))
+    Obj("wildcard" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(wildcardFields.toList: _*)))
   }
 }
