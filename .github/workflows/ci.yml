@@ -2,13 +2,12 @@ name: CI
 
 env:
   JDK_JAVA_OPTIONS: -XX:+PrintCommandLineFlags # JDK_JAVA_OPTIONS is _the_ env. variable to use for modern Java
-  JVM_OPTS: -XX:+PrintCommandLineFlags # for Java 8 only (sadly, it is not modern enough for JDK_JAVA_OPTIONS)
 
 on:
   pull_request:
   push:
-    branches: ["main"]
-    tags: ["*"]
+    branches: [ "main" ]
+    tags: [ "*" ]
 
 jobs:
   lint:
@@ -37,8 +36,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: ["11", "17"]
-        scala: ["2.12.17", "2.13.10", "3.2.2"]
+        java: [ "11", "17" ]
+        scala: [ "2.12.17", "2.13.10", "3.2.2" ]
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v3.5.2
@@ -95,15 +94,25 @@ jobs:
 
   ci:
     runs-on: ubuntu-20.04
-    needs: [test, website, publishLocal]
+    needs: [ test, website, publishLocal ]
     steps:
       - name: Aggregate outcomes
         run: echo "build succeeded"
 
+  auto-approve:
+    runs-on: ubuntu-20.04
+    needs: [ ci ]
+    if: github.event_name == 'pull_request_target' && (github.actor == 'scala-steward' || github.actor == 'renovate[bot]')
+    steps:
+      - name: Auto approve
+        uses: hmarr/auto-approve-action@v3.2.1
+        with:
+          github-token: "${{ secrets.AUTO_APPROVE_GITHUB_ACCESS_TOKEN }}"
+
   publish:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
-    needs: [ci]
+    needs: [ ci ]
     if: github.event_name != 'pull_request'
     steps:
       - name: Checkout current branch

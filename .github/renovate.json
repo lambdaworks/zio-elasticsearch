@@ -1,6 +1,7 @@
 {
   "extends": ["config:base"],
   "rebaseWhen": "conflicted",
+  "schedule": ["every weekend"],
   "packageRules": [
     {
       "matchManagers": [
