@@ -1,8 +1,17 @@
 pull_request_rules:
-  - name: Merge Scala Steward's PRs
+  - name: Automatic merge of Scala Steward PRs
     conditions:
-      - "author=scala-steward"
-      - "status-success=ci"
+      - author=scala-steward
+      - "#approved-reviews-by>=1"
+      - status-success=ci
+    actions:
+      merge:
+        method: squash
+  - name: Automatic merge of Renovate PRs
+    conditions:
+      - author=renovate[bot]
+      - "#approved-reviews-by>=1"
+      - status-success=ci
     actions:
       merge:
         method: squash
