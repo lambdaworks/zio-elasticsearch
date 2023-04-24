@@ -21,36 +21,39 @@ import zio.elasticsearch.aggregation._
 object ElasticAggregation {
 
   /**
-   * Constructs an empty instance of the [[MultipleAggregations]].
+   * Constructs an empty instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]].
    *
    * @return
-   *   an instance of empty [[MultipleAggregations]].
+   *   an instance of empty [[zio.elasticsearch.aggregation.MultipleAggregations]].
    */
   final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Nil)
 
   /**
-   * Constructs a type-safe instance of [[TermsAggregation]] using the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified
+   * parameters.
    *
    * @param name
    *   the name of the aggregation
    * @param field
-   *   the [[Field]] object representing the type-safe field for which the aggregation will be executed
+   *   the type-safe field for which the aggregation will be executed
    * @return
-   *   an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] that represents terms aggregation to be
+   *   performed.
    */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
     Terms(name = name, field = field.toString, subAggregations = Nil)
 
   /**
-   * Constructs an instance of [[TermsAggregation]] using the specified parameters.
+   * Constructs an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified parameters.
    *
    * @param name
    *   aggregation name
    * @param field
    *   field for which terms aggregation will be executed
    * @return
-   *   an instance of [[TermsAggregation]] that represents terms aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] that represents terms aggregation to be
+   *   performed.
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, subAggregations = Nil)

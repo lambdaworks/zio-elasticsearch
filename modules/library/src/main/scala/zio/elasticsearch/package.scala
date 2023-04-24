@@ -38,7 +38,8 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      * @param name
      *   the name of the aggregation to retrieve
      * @return
-     *   a [[RIO]] effect that, when executed, will produce an optional [[AggregationResponse]].
+     *   a [[RIO]] effect that, when executed, will produce an optional
+     *   [[zio.elasticsearch.executor.response.AggregationResponse]].
      */
     def aggregation(name: String): RIO[R, Option[AggregationResponse]] =
       zio.flatMap(_.aggregation(name))

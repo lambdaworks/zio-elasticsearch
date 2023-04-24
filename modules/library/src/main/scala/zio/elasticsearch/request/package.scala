@@ -32,18 +32,22 @@ package object request {
     def refresh(value: Boolean): R
 
     /**
-     * Sets `refresh` parameter to `false` in the [[ElasticRequest]]. Same as [[refresh(false)]].
+     * Sets `refresh` parameter to `false` in the [[ElasticRequest]]. Same as [[refresh]](false).
      *
      * @return
      *   a new instance of the [[ElasticRequest]] with the `refresh` parameter set to `false`.
+     * @see
+     *   #refresh
      */
     final def refreshFalse: R = refresh(false)
 
     /**
-     * Sets `refresh` parameter to `true` in the [[ElasticRequest]]. Same as [[refresh(true)]].
+     * Sets `refresh` parameter to `true` in the [[ElasticRequest]]. Same as [[refresh]](true).
      *
      * @return
      *   a new instance of the [[ElasticRequest]] with the `refresh` parameter set to `true`.
+     * @see
+     *   #refresh
      */
     final def refreshTrue: R = refresh(true)
   }
@@ -95,7 +99,7 @@ package object request {
      * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
      *
      * @param sorts
-     *   one or more [[Sort]] objects that define the sorting criteria
+     *   one or more [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
      * @return
      *   an instance of the [[ElasticRequest]] enriched with the sorting criteria.
      */

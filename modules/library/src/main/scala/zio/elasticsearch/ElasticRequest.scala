@@ -293,7 +293,7 @@ object ElasticRequest {
    * @param index
    *   the name of the index to update documents in
    * @param script
-   *   a [[Script]] object containing the update logic to apply
+   *   a script containing the update logic to apply
    * @return
    *   an instance of [[UpdateByQueryRequest]] that represents update all operation to be performed.
    */
@@ -309,7 +309,7 @@ object ElasticRequest {
    * @param query
    *   an [[ElasticQuery]] object representing a search query used to find documents to update
    * @param script
-   *   a [[Script]] object containing the update logic to apply
+   *   a script containing the update logic to apply
    * @return
    *   an instance of [[UpdateByQueryRequest]] that represents update by query operation to be performed.
    */
@@ -325,7 +325,7 @@ object ElasticRequest {
    * @param id
    *   the ID of the document to update
    * @param script
-   *   a [[Script]] object containing the update logic to apply to the document
+   *   a script containing the update logic to apply to the document
    * @return
    *   an instance of [[UpdateRequest]] that represents update by script operation to be performed.
    */
