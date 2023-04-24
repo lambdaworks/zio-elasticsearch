@@ -22,14 +22,15 @@ import zio.elasticsearch.script.Script
 object ElasticSort {
 
   /**
-   * Constructs a type-safe instance of [[SortByField]] using the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.sort.SortByField]] using the specified parameters.
    *
    * @param field
-   *   the [[Field]] object representing the type-safe field to sort by
+   *   the type-safe field to sort by
    * @tparam S
    *   document by which field sort is performed
    * @return
-   *   an instance of [[SortByField]] that represents sort by field operation to be performed.
+   *   an instance of [[zio.elasticsearch.query.sort.SortByField]] that represents sort by field operation to be
+   *   performed.
    */
   final def sortBy[S](field: Field[S, _]): SortByField =
     SortByFieldOptions(
@@ -43,12 +44,13 @@ object ElasticSort {
     )
 
   /**
-   * Constructs an instance of [[SortByField]] using the specified parameters.
+   * Constructs an instance of [[zio.elasticsearch.query.sort.SortByField]] using the specified parameters.
    *
    * @param field
    *   the field to sort by
    * @return
-   *   an instance of [[SortByField]] that represents sort by field operation to be performed.
+   *   an instance of [[zio.elasticsearch.query.sort.SortByField]] that represents sort by field operation to be
+   *   performed.
    */
   final def sortBy(field: String): SortByField =
     SortByFieldOptions(
@@ -62,16 +64,17 @@ object ElasticSort {
     )
 
   /**
-   * Constructs an instance of [[SortByScript]] using the specified parameters.
+   * Constructs an instance of [[zio.elasticsearch.query.sort.SortByScript]] using the specified parameters.
    *
    * @param script
-   *   a [[Script]] object containing sort logic
+   *   a script containing sort logic
    * @param sourceType
    *   type of script source
-   *   - [[SourceType.NumberType]]: Used for numbers scripts.
-   *   - [[SourceType.StringType]]: Used for text scripts.
+   *   - [[zio.elasticsearch.query.sort.SourceType.NumberType]]: Used for numbers scripts.
+   *   - [[zio.elasticsearch.query.sort.SourceType.StringType]]: Used for text scripts.
    * @return
-   *   an instance of [[SortByScript]] that represents sort by script operation to be performed.
+   *   an instance of [[zio.elasticsearch.query.sort.SortByScript]] that represents sort by script operation to be
+   *   performed.
    */
   final def sortBy(script: Script, sourceType: SourceType): SortByScript =
     SortByScriptOptions(

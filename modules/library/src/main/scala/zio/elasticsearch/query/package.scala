@@ -39,25 +39,29 @@ package object query {
      * the case of the characters in the query string. By default, queries are case-sensitive.
      *
      * @param value
-     *   the [[Boolean]] value for `caseInsensitive` parameter
+     *   the [[scala.Boolean]] value for `caseInsensitive` parameter
      * @return
      *   a new instance of the [[ElasticQuery]] with the `caseInsensitive` value set.
      */
     def caseInsensitive(value: Boolean): Q
 
     /**
-     * Sets the `caseInsensitive` parameter to `false` for this [[ElasticQuery]]. Same as [[caseInsensitive(false)]].
+     * Sets the `caseInsensitive` parameter to `false` for this [[ElasticQuery]]. Same as [[caseInsensitive]](false).
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `caseInsensitive` value set to `false`.
+     * @see
+     *   #caseInsensitive
      */
     final def caseInsensitiveFalse: Q = caseInsensitive(false)
 
     /**
-     * Sets the `caseInsensitive` parameter to `true` for this [[ElasticQuery]]. Same as [[caseInsensitive(true)]].
+     * Sets the `caseInsensitive` parameter to `true` for this [[ElasticQuery]]. Same as [[caseInsensitive]](true).
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `caseInsensitive` value set to `true`.
+     * @see
+     *   #caseInsensitive
      */
     final def caseInsensitiveTrue: Q = caseInsensitive(true)
   }
@@ -75,18 +79,22 @@ package object query {
     def ignoreUnmapped(value: Boolean): Q
 
     /**
-     * Sets the `ignoreUnmapped` parameter to `false` for this [[ElasticQuery]]. Same as [[ignoreUnmapped(false)]].
+     * Sets the `ignoreUnmapped` parameter to `false` for this [[ElasticQuery]]. Same as [[ignoreUnmapped]](false).
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `ignoreUnmapped` value set to `false`.
+     * @see
+     *   #ignoreUnmapped
      */
     final def ignoreUnmappedFalse: Q = ignoreUnmapped(false)
 
     /**
-     * Sets the `ignoreUnmapped` parameter to `true` for this [[ElasticQuery]]. Same as [[ignoreUnmapped(true)]].
+     * Sets the `ignoreUnmapped` parameter to `true` for this [[ElasticQuery]]. Same as [[ignoreUnmapped]](true).
      *
      * @return
      *   a new instance of the [[ElasticQuery]] with the `ignoreUnmapped` value set to `true`.
+     * @see
+     *   #ignoreUnmapped
      */
     final def ignoreUnmappedTrue: Q = ignoreUnmapped(true)
   }
