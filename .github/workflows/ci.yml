@@ -75,7 +75,7 @@ jobs:
       - name: Check Website Generation
         run: ./sbt docs/docusaurusCreateSite
 
-  publishLocal:
+  publish-local:
     runs-on: ubuntu-20.04
     timeout-minutes: 10
     steps:
@@ -94,20 +94,10 @@ jobs:
 
   ci:
     runs-on: ubuntu-20.04
-    needs: [ test, website, publishLocal ]
+    needs: [ test, website, publish-local ]
     steps:
       - name: Aggregate outcomes
         run: echo "build succeeded"
-
-  auto-approve:
-    runs-on: ubuntu-20.04
-    needs: [ ci ]
-    if: github.event_name == 'pull_request_target' && (github.actor == 'scala-steward' || github.actor == 'renovate[bot]')
-    steps:
-      - name: Auto approve
-        uses: hmarr/auto-approve-action@v3.2.1
-        with:
-          github-token: "${{ secrets.AUTO_APPROVE_GITHUB_ACCESS_TOKEN }}"
 
   publish:
     runs-on: ubuntu-20.04

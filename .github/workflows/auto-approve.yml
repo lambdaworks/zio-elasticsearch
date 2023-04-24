@@ -1,0 +1,14 @@
+name: Auto Approve
+
+on:
+  pull_request_target:
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    if: github.actor == 'scala-steward' || github.actor == 'renovate[bot]'
+    steps:
+      - name: Auto approve
+        uses: hmarr/auto-approve-action@v3.2.1
+        with:
+          github-token: "${{ secrets.AUTO_APPROVE_GITHUB_ACCESS_TOKEN }}"

@@ -1,7 +1,6 @@
 {
-  "extends": ["config:base"],
-  "rebaseWhen": "conflicted",
-  "schedule": ["every weekend"],
+  "commitMessageAction": "Update",
+  "commitMessageTopic": " {{depName}}",
   "packageRules": [
     {
       "matchManagers": [
@@ -9,5 +8,9 @@
       ],
       "enabled": false
     }
+  ],
+  "rebaseWhen": "conflicted",
+  "schedule": [
+    "every weekend"
   ]
 }
