@@ -42,4 +42,5 @@ trait IndexNameNewtype {
       }
     }
   }
+  type IndexName = IndexName.Type
 }
