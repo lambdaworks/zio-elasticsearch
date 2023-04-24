@@ -67,8 +67,8 @@ lazy val example =
     .settings(stdSettings("example"))
     .settings(scalacOptions += "-language:higherKinds")
     .settings(
-      crossScalaVersions -= Scala3,
-      publish / skip := true,
+      crossScalaVersions := List(Scala213),
+      publish / skip     := true,
       libraryDependencies ++= List(
         "dev.zio" %% "zio"                 % "2.0.13",
         "dev.zio" %% "zio-config"          % "3.0.7",
