@@ -26,4 +26,5 @@ trait IndexNameNewtype {
     protected inline def validateInline(inline name: String) =
       ${ IndexNameValidator.validateInlineImpl('name) }
   }
+  type IndexName = IndexName.Type
 }

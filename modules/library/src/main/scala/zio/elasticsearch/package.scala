@@ -22,10 +22,6 @@ import zio.prelude.Newtype
 import zio.schema.Schema
 
 package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
-  type IndexName = IndexName.Type
-
-  type Routing = Routing.Type
-
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 

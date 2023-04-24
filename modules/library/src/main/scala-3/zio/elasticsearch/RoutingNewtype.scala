@@ -23,4 +23,5 @@ trait RoutingNewtype {
   object Routing extends Newtype[String] {
     override inline def assertion = !isEmptyString // scalafix:ok
   }
+  type Routing = Routing.Type
 }
