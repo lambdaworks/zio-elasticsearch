@@ -18,7 +18,7 @@ package zio.elasticsearch.query.sort.options
 
 import zio.elasticsearch.query.sort.NumericType
 
-private[elasticsearch] trait WithNumericType[S <: WithNumericType[S]] {
+private[elasticsearch] trait HasNumericType[S <: HasNumericType[S]] {
 
   /**
    * Sets the `numeric type` that should be used for sorting the field. With `numeric type` it is possible to cast the

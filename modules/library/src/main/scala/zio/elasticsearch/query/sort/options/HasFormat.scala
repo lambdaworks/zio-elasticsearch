@@ -16,19 +16,16 @@
 
 package zio.elasticsearch.query.sort.options
 
-import zio.elasticsearch.query.sort.Missing
-
-private[elasticsearch] trait WithMissing[S <: WithMissing[S]] {
+private[elasticsearch] trait HasFormat[S <: HasFormat[S]] {
 
   /**
-   * Sets the value to use when a document is missing a value for the field being sorted.
+   * Sets the date format for the [[zio.elasticsearch.query.sort.SortByField]]. This method is only applicable to fields
+   * of type `date`.
    *
    * @param value
-   *   the `missing` value behaviour
-   *   - [[Missing.First]]: treated as first
-   *   - [[Missing.Last]]: treated as last
+   *   the `date` format to set
    * @return
-   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `missing` parameter.
+   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `format` parameter.
    */
-  def missing(value: Missing): S
+  def format(value: String): S
 }

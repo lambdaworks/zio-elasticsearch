@@ -552,7 +552,7 @@ object ElasticRequest {
       extends ElasticRequest[SearchResult]
       with HasFrom[SearchRequest]
       with HasRouting[SearchRequest]
-      with WithSort[SearchRequest]
+      with HasSort[SearchRequest]
       with HasSize[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
 
@@ -624,7 +624,7 @@ object ElasticRequest {
       with HasFrom[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
       with HasSize[SearchAndAggregateRequest]
-      with WithSort[SearchAndAggregateRequest] {
+      with HasSort[SearchAndAggregateRequest] {
     def highlights(value: Highlights): SearchAndAggregateRequest
 
     def searchAfter(value: Json): SearchAndAggregateRequest

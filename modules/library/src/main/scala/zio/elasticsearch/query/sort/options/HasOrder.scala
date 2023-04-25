@@ -16,16 +16,19 @@
 
 package zio.elasticsearch.query.sort.options
 
-private[elasticsearch] trait WithFormat[S <: WithFormat[S]] {
+import zio.elasticsearch.query.sort.SortOrder
+
+private[elasticsearch] trait HasOrder[S <: HasOrder[S]] {
 
   /**
-   * Sets the date format for the [[zio.elasticsearch.query.sort.SortByField]]. This method is only applicable to fields
-   * of type `date`.
+   * Sets the `sort order` of the field.
    *
    * @param value
-   *   the `date` format to set
+   *   the [[SortOrder]] of the field
+   *   - [[SortOrder.Asc]]: sets ascending sorting order
+   *   - [[SortOrder.Desc]]: sets descending sorting order
    * @return
-   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `format` parameter.
+   *   an instance of the [[zio.elasticsearch.query.sort.Sort]] enriched with the `sort order` parameter.
    */
-  def format(value: String): S
+  def order(value: SortOrder): S
 }

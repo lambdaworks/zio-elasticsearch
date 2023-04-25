@@ -16,15 +16,19 @@
 
 package zio.elasticsearch.query.sort.options
 
-private[elasticsearch] trait WithUnmappedType[S <: WithUnmappedType[S]] {
+import zio.elasticsearch.query.sort.Missing
+
+private[elasticsearch] trait HasMissing[S <: HasMissing[S]] {
 
   /**
-   * Sets the `unmapped type` which is used when the mapped field doesn't exist in the index.
+   * Sets the value to use when a document is missing a value for the field being sorted.
    *
    * @param value
-   *   the type to use when the mapped field doesn't exist in the index
+   *   the `missing` value behaviour
+   *   - [[Missing.First]]: treated as first
+   *   - [[Missing.Last]]: treated as last
    * @return
-   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `unmapped type` parameter.
+   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `missing` parameter.
    */
-  def unmappedType(value: String): S
+  def missing(value: Missing): S
 }

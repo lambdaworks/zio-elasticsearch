@@ -18,7 +18,7 @@ package zio.elasticsearch.query.sort.options
 
 import zio.elasticsearch.query.sort.SortMode
 
-private[elasticsearch] trait WithMode[S <: WithMode[S]] {
+private[elasticsearch] trait HasMode[S <: HasMode[S]] {
 
   /**
    * Sets the `mode` parameter for the [[zio.elasticsearch.query.sort.Sort]]. The `mode` parameter controls how

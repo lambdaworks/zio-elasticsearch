@@ -16,19 +16,15 @@
 
 package zio.elasticsearch.query.sort.options
 
-import zio.elasticsearch.query.sort.SortOrder
-
-private[elasticsearch] trait WithOrder[S <: WithOrder[S]] {
+private[elasticsearch] trait HasUnmappedType[S <: HasUnmappedType[S]] {
 
   /**
-   * Sets the `sort order` of the field.
+   * Sets the `unmapped type` which is used when the mapped field doesn't exist in the index.
    *
    * @param value
-   *   the [[SortOrder]] of the field
-   *   - [[SortOrder.Asc]]: sets ascending sorting order
-   *   - [[SortOrder.Desc]]: sets descending sorting order
+   *   the type to use when the mapped field doesn't exist in the index
    * @return
-   *   an instance of the [[zio.elasticsearch.query.sort.Sort]] enriched with the `sort order` parameter.
+   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `unmapped type` parameter.
    */
-  def order(value: SortOrder): S
+  def unmappedType(value: String): S
 }

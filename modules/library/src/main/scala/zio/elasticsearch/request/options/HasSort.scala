@@ -18,7 +18,7 @@ package zio.elasticsearch.request.options
 
 import zio.elasticsearch.query.sort.Sort
 
-private[elasticsearch] trait WithSort[R <: WithSort[R]] {
+private[elasticsearch] trait HasSort[R <: HasSort[R]] {
 
   /**
    * Sets the sorting criteria for the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
