@@ -283,9 +283,9 @@ private[elasticsearch] object Range {
 
 sealed trait TermQuery[S] extends ElasticQuery[S] with HasBoost[TermQuery[S]] with HasCaseInsensitive[TermQuery[S]]
 
-private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
+private[elasticsearch] final case class Term[S](
   field: String,
-  value: A,
+  value: String,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
 ) extends TermQuery[S] { self =>
