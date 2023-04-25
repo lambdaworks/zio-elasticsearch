@@ -24,9 +24,9 @@ import zio.schema.Schema
 import scala.annotation.unused
 
 sealed trait ElasticQuery[-S] { self =>
-  def paramsToJson(fieldPath: Option[String]): Json
+  private[elasticsearch] def paramsToJson(fieldPath: Option[String]): Json
 
-  final def toJson: Obj =
+  private[elasticsearch] final def toJson: Obj =
     Obj("query" -> self.paramsToJson(None))
 }
 
@@ -87,7 +87,8 @@ private[elasticsearch] final case class Bool[S](
         if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) else None,
         if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) else None,
         if (should.nonEmpty) Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)): _*)) else None,
-        boost.map("boost" -> Num(_))
+        boost.map("boost" -> Num(_)),
+        minimumShouldMatch.map("minimum_should_match" -> Num(_))
       ).collect { case Some(obj) => obj }
 
     Obj("bool" -> Obj(boolFields: _*))
