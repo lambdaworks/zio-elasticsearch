@@ -71,7 +71,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = Nil,
                 mustNot = Nil,
                 should = Nil,
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -92,7 +93,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = Nil,
                 mustNot = Nil,
                 should = Nil,
-                boost = Some(1.0)
+                boost = Some(1.0),
+                minimumShouldMatch = None
               )
             )
           )
@@ -114,7 +116,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 ),
                 mustNot = Nil,
                 should = Nil,
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -136,7 +139,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 should = Nil,
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -157,7 +161,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "stringField", value = "StringField", boost = None),
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -181,7 +186,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = List(Match(field = "customer_age", value = 23, boost = None)),
                 mustNot = List(Match(field = "intField", value = 17, boost = None)),
                 should = List(Match(field = "customer_id", value = 1, boost = None)),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -205,7 +211,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 ),
                 mustNot = List(Match(field = "intField", value = 17, boost = None)),
                 should = List(Match(field = "doubleField", value = 23.0, boost = None)),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -229,7 +236,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 should = List(Match(field = "intField", value = 23, boost = None)),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -253,7 +261,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "day_of_week", value = "Monday", boost = None),
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -272,7 +281,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = List(Match(field = "doubleField", value = 23.0, boost = None)),
                 mustNot = List(Match(field = "intField", value = 17, boost = None)),
                 should = List(Match(field = "stringField", value = "StringField", boost = None)),
-                boost = Some(1.0)
+                boost = Some(1.0),
+                minimumShouldMatch = None
               )
             )
           )

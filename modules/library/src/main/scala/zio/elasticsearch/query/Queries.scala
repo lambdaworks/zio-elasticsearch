@@ -30,7 +30,7 @@ sealed trait ElasticQuery[-S] { self =>
     Obj("query" -> self.paramsToJson(None))
 }
 
-sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] {
+sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] with HasMinimumShouldMatch[BoolQuery[S]] {
   def filter[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
   def filter(queries: ElasticQuery[Any]*): BoolQuery[S]
@@ -53,7 +53,8 @@ private[elasticsearch] final case class Bool[S](
   must: List[ElasticQuery[S]],
   mustNot: List[ElasticQuery[S]],
   should: List[ElasticQuery[S]],
-  boost: Option[Double]
+  boost: Option[Double],
+  minimumShouldMatch: Option[Int]
 ) extends BoolQuery[S] { self =>
   def boost(value: Double): BoolQuery[S] =
     self.copy(boost = Some(value))
@@ -63,6 +64,9 @@ private[elasticsearch] final case class Bool[S](
 
   def filter(queries: ElasticQuery[Any]*): BoolQuery[S] =
     self.copy(filter = filter ++ queries)
+
+  def minimumShouldMatch(value: Int): BoolQuery[S] =
+    self.copy(minimumShouldMatch = Some(value))
 
   def must[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
     self.copy(must = must ++ queries)
