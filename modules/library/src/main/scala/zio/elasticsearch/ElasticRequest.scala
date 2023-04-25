@@ -22,6 +22,7 @@ import zio.elasticsearch.highlights.Highlights
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
+import zio.elasticsearch.request.options._
 import zio.elasticsearch.result.{
   AggregationResult,
   GetResult,
@@ -370,7 +371,7 @@ object ElasticRequest {
       self.copy(routing = Some(value))
 
     lazy val body: String = requests.flatMap { r =>
-      r match {
+      (r: @unchecked) match {
         case Create(index, document, _, routing) =>
           List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", routing))), document.json)
         case CreateWithId(index, id, document, _, routing) =>

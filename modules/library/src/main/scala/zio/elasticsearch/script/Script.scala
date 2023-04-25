@@ -17,6 +17,7 @@
 package zio.elasticsearch.script
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.script.options._
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 
