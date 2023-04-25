@@ -71,7 +71,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = Nil,
                 mustNot = Nil,
                 should = Nil,
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -92,7 +93,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = Nil,
                 mustNot = Nil,
                 should = Nil,
-                boost = Some(1.0)
+                boost = Some(1.0),
+                minimumShouldMatch = None
               )
             )
           )
@@ -114,7 +116,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 ),
                 mustNot = Nil,
                 should = Nil,
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -136,7 +139,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 should = Nil,
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -157,7 +161,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "stringField", value = "StringField", boost = None),
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -181,7 +186,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = List(Match(field = "customer_age", value = 23, boost = None)),
                 mustNot = List(Match(field = "intField", value = 17, boost = None)),
                 should = List(Match(field = "customer_id", value = 1, boost = None)),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -205,7 +211,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 ),
                 mustNot = List(Match(field = "intField", value = 17, boost = None)),
                 should = List(Match(field = "doubleField", value = 23.0, boost = None)),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
@@ -229,12 +236,15 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 should = List(Match(field = "intField", value = 23, boost = None)),
-                boost = None
+                boost = None,
+                minimumShouldMatch = None
               )
             )
           )
         },
-        test("successfully create `Filter/Must/MustNot/Should` mixed query with Should containing two Match queries") {
+        test(
+          "successfully create `Filter/Must/MustNot/Should` mixed query with Should containing two Match queries and `minimumShouldMatch`"
+        ) {
           val query = filter(matches(field = TestDocument.stringField, value = "StringField"))
             .must(matches(field = TestDocument.intField, value = 23))
             .mustNot(matches(field = "day_of_month", value = 17))
@@ -242,6 +252,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               matches(field = "day_of_week", value = "Monday"),
               matches(field = "customer_gender", value = "MALE")
             )
+            .minimumShouldMatch(2)
 
           assert(query)(
             equalTo(
@@ -253,7 +264,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "day_of_week", value = "Monday", boost = None),
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
-                boost = None
+                boost = None,
+                minimumShouldMatch = Some(2)
               )
             )
           )
@@ -272,7 +284,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 must = List(Match(field = "doubleField", value = 23.0, boost = None)),
                 mustNot = List(Match(field = "intField", value = 17, boost = None)),
                 should = List(Match(field = "stringField", value = "StringField", boost = None)),
-                boost = Some(1.0)
+                boost = Some(1.0),
+                minimumShouldMatch = None
               )
             )
           )
@@ -978,6 +991,71 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |        }
               |      ],
               |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test(
+          "properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query and with both boost and minimumShouldMatch"
+        ) {
+          val query = filter(matches(field = "customer_age", value = 23))
+            .must(matches(field = "customer_id", value = 1))
+            .mustNot(matches(field = "day_of_month", value = 17))
+            .should(
+              matches(field = "day_of_week", value = "Monday"),
+              matches(field = "day_of_week", value = "Tuesday"),
+              matches(field = "day_of_week", value = "Wednesday")
+            )
+            .boost(1.0)
+            .minimumShouldMatch(2)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "bool": {
+              |      "filter": [
+              |        {
+              |          "match": {
+              |            "customer_age": 23
+              |          }
+              |        }
+              |      ],
+              |      "must": [
+              |        {
+              |          "match": {
+              |            "customer_id": 1
+              |          }
+              |        }
+              |      ],
+              |      "must_not": [
+              |        {
+              |          "match": {
+              |            "day_of_month": 17
+              |          }
+              |        }
+              |      ],
+              |      "should": [
+              |        {
+              |          "match": {
+              |            "day_of_week": "Monday"
+              |          }
+              |        },
+              |        {
+              |          "match": {
+              |            "day_of_week": "Tuesday"
+              |          }
+              |        },
+              |        {
+              |          "match": {
+              |            "day_of_week": "Wednesday"
+              |          }
+              |        }
+              |      ],
+              |      "boost": 1.0,
+              |      "minimum_should_match": 2
               |    }
               |  }
               |}

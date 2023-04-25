@@ -38,12 +38,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def contains[S](field: Field[S, _], value: String): WildcardQuery[S] =
-    Wildcard(
-      field = field.toString,
-      value = s"*$value*",
-      boost = None,
-      caseInsensitive = None
-    )
+    Wildcard(field = field.toString, value = s"*$value*", boost = None, caseInsensitive = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
@@ -99,7 +94,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def filter[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
+    Bool[S](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
@@ -112,7 +107,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def filter(queries: ElasticQuery[Any]*): BoolQuery[Any] =
-    Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None)
+    Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchAllQuery]] used for matching all documents.
@@ -202,7 +197,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def must[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
+    Bool[S](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
@@ -215,7 +210,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def must(queries: ElasticQuery[Any]*): BoolQuery[Any] =
-    Bool[Any](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None)
+    Bool[Any](filter = Nil, must = queries.toList, mustNot = Nil, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must not satisfy the criteria
@@ -230,7 +225,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def mustNot[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
+    Bool[S](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must not satisfy the criteria
@@ -243,7 +238,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def mustNot(queries: ElasticQuery[Any]*): BoolQuery[Any] =
-    Bool[Any](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None)
+    Bool[Any](filter = Nil, must = Nil, mustNot = queries.toList, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.NestedQuery]] using the specified parameters.
@@ -316,7 +311,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def should[S: Schema](queries: ElasticQuery[S]*): BoolQuery[S] =
-    Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
+    Bool[S](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that should satisfy the criteria using
@@ -329,7 +324,7 @@ object ElasticQuery {
    *   satisfy the criteria.
    */
   final def should(queries: ElasticQuery[Any]*): BoolQuery[Any] =
-    Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None)
+    Bool[Any](filter = Nil, must = Nil, mustNot = Nil, should = queries.toList, boost = None, minimumShouldMatch = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
@@ -346,12 +341,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def startsWith[S](field: Field[S, _], value: String): WildcardQuery[S] =
-    Wildcard(
-      field = field.toString,
-      value = s"$value*",
-      boost = None,
-      caseInsensitive = None
-    )
+    Wildcard(field = field.toString, value = s"$value*", boost = None, caseInsensitive = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
@@ -385,12 +375,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */
   final def term[S, A: ElasticPrimitive](field: Field[S, A], value: A): TermQuery[S] =
-    Term(
-      field = field.toString,
-      value = value,
-      boost = None,
-      caseInsensitive = None
-    )
+    Term(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.TermQuery]] using the specified parameters.
@@ -424,12 +409,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.WildcardQuery]] that represents the wildcard query to be performed.
    */
   final def wildcard[S](field: Field[S, _], value: String): Wildcard[S] =
-    Wildcard(
-      field = field.toString,
-      value = value,
-      boost = None,
-      caseInsensitive = None
-    )
+    Wildcard(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
