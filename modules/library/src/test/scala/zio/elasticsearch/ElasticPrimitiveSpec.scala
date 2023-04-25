@@ -7,9 +7,7 @@ import zio.test._
 
 import java.util.UUID
 
-object ElasticPrimitivesSpec extends ZIOSpecDefault {
-
-  private val fieldName = "fieldName"
+object ElasticPrimitiveSpec extends ZIOSpecDefault {
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("Elastic Primitives")(
@@ -38,4 +36,6 @@ object ElasticPrimitivesSpec extends ZIOSpecDefault {
         assert(matches(fieldName, uuid))(equalTo(Match[Any, UUID](fieldName, uuid, boost = None)))
       }
     )
+
+  private val fieldName = "fieldName"
 }
