@@ -627,7 +627,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("terms query") {
-          val termsQuery                    = terms("", "a", "b", "c")
+          val termsQuery                    = terms("stringField", "a", "b", "c")
           val termsQueryTs                  = terms(TestDocument.stringField, "a", "b", "c")
           val termsQueryWithSuffix          = terms(TestDocument.stringField.keyword, "a", "b", "c")
           val termsQueryWithBoost           = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
@@ -836,7 +836,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |    "term": {
               |      "stringField": {
               |        "value": "test",
-              |        "boost": 3.14
+              |        "boost": 3.14,
               |        "case_insensitive": false
               |      }
               |    }
