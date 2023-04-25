@@ -10,7 +10,6 @@ import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 import zio.{Chunk, Scope}
 
 object HighlightsSpec extends ZIOSpecDefault {
-
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Highlight")(
       suite("creating Highlight")(

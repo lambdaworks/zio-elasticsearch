@@ -31,7 +31,6 @@ import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
 
 object HttpElasticExecutorSpec extends SttpBackendStubSpec {
-
   def spec: Spec[TestEnvironment, Any] =
     suite("HttpExecutor")(
       test("aggregation request") {

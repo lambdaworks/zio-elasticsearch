@@ -22,7 +22,6 @@ import zio.test.Assertion.equalTo
 import zio.test._
 
 object IndexNameSpec extends ZIOSpecDefault {
-
   def spec: Spec[TestEnvironment, Any] =
     suite("IndexName validation")(
       test("succeed for valid string") {
