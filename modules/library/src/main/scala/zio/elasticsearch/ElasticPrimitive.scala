@@ -50,8 +50,8 @@ object ElasticPrimitive {
     def toJson(value: String): Json = Str(value)
   }
 
-  implicit object ElasticUUID extends  ElasticPrimitive[UUID] {
-    def toJson(value:UUID): Json = Str(value.toString)
+  implicit object ElasticUUID extends ElasticPrimitive[UUID] {
+    def toJson(value: UUID): Json = Str(value.toString)
   }
 
   final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {

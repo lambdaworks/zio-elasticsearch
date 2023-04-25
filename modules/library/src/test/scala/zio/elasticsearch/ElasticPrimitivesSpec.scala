@@ -10,6 +10,7 @@ import java.util.UUID
 object ElasticPrimitivesSpec extends ZIOSpecDefault {
 
   private val FieldName = "field_name"
+
   override def spec: Spec[TestEnvironment, Any] =
     suite("Elastic Primitives")(
       test("successfully create matches query with String") {
