@@ -633,8 +633,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                             .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated),
                           ElasticRequest
                             .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument)
-                            .refreshTrue
                         )
+                        .refreshTrue
                     )
                   query = terms(
                             field = TestDocument.stringField,
