@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.result
 
-package object result {
-  class ElasticException(message: String) extends RuntimeException(message)
+class ElasticException(message: String) extends RuntimeException(message)
 
-  final case class DecodingException(message: String) extends ElasticException(message)
+final case class DecodingException(message: String) extends ElasticException(message)
 
-  case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
+case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
 
-  final case class VersionConflictException(succeeded: Int, failed: Int)
-      extends ElasticException(
-        s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
-      )
-}
+final case class VersionConflictException(succeeded: Int, failed: Int)
+    extends ElasticException(
+      s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
+    )
