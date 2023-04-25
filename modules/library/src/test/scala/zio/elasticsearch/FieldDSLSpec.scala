@@ -20,7 +20,6 @@ import zio.elasticsearch.domain.{TestNestedField, TestSubDocument}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 
 object FieldDSLSpec extends ZIOSpecDefault {
-
   def spec: Spec[TestEnvironment, Any] =
     suite("Field DSL")(
       test("properly encode single field path")(

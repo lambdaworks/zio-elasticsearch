@@ -17,15 +17,10 @@ import zio.test._
 import java.time.LocalDate
 
 object ElasticRequestDSLSpec extends ZIOSpecDefault {
-
-  private val query = ElasticQuery.range(TestDocument.intField).gte(10)
-  private val index = IndexName("index")
-  private val docId = DocumentId("documentid")
-
   override def spec: Spec[TestEnvironment, Any] =
     suite("Elastic Requests JSON encoding")(
       test("successfully encode search request to JSON") {
-        val jsonRequest: Json = search(index, query) match {
+        val jsonRequest: Json = search(Index, Query) match {
           case r: ElasticRequest.Search => r.toJson
         }
         val expected =
@@ -44,7 +39,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode search request to JSON with search after parameter") {
-        val jsonRequest: Json = search(index, query).searchAfter(Arr(Str("12345"))) match {
+        val jsonRequest: Json = search(Index, Query).searchAfter(Arr(Str("12345"))) match {
           case r: ElasticRequest.Search => r.toJson
         }
         val expected =
@@ -66,7 +61,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode search request to JSON with size parameter") {
-        val jsonRequest: Json = search(index, query).size(20) match {
+        val jsonRequest: Json = search(Index, Query).size(20) match {
           case r: ElasticRequest.Search => r.toJson
         }
         val expected =
@@ -86,7 +81,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode search request to JSON with multiple parameters") {
-        val jsonRequest = search(index, query)
+        val jsonRequest = search(Index, Query)
           .size(20)
           .sort(sortBy(TestDocument.intField).missing(First))
           .from(10) match {
@@ -117,7 +112,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode search request to JSON with all parameters") {
-        val jsonRequest = search(index, query)
+        val jsonRequest = search(Index, Query)
           .size(20)
           .highlights(highlight(TestDocument.intField))
           .sort(sortBy(TestDocument.intField).missing(First))
@@ -154,7 +149,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode search and aggregate request to JSON with all parameters") {
-        val jsonRequest = search(index, query)
+        val jsonRequest = search(Index, Query)
           .aggregate(termsAggregation(name = "aggregation", field = "day_of_week"))
           .size(20)
           .highlights(highlight(TestDocument.intField))
@@ -200,7 +195,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
       },
       test("successfully encode update by query request to JSON") {
         val jsonRequest = updateByQuery(
-          index = index,
+          index = Index,
           query = term(TestDocument.stringField.keyword, "StringField"),
           script = Script("ctx._source['intField']++")
         ) match { case r: UpdateByQuery => r.toJson }
@@ -225,8 +220,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
       },
       test("successfully encode update request to JSON with all parameters - script") {
         val jsonRequest = updateByScript(
-          index = index,
-          id = docId,
+          index = Index,
+          id = DocId,
           script = Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
         ).orCreate[TestDocument](
           TestDocument(
@@ -261,8 +256,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
       },
       test("successfully encode update request to JSON with all parameters - doc") {
         val jsonRequest = update[TestDocument](
-          index = index,
-          id = docId,
+          index = Index,
+          id = DocId,
           doc = TestDocument(
             stringField = "stringField1",
             subDocumentList = Nil,
@@ -303,4 +298,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       }
     )
+
+  private val Query = ElasticQuery.range(TestDocument.intField).gte(10)
+  private val Index = IndexName("index")
+  private val DocId = DocumentId("documentid")
 }

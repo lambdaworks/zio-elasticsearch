@@ -27,7 +27,6 @@ import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
 object QueryDSLSpec extends ZIOSpecDefault {
-
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(

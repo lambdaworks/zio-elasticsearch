@@ -19,6 +19,8 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Str}
 
+import java.util.UUID
+
 object ElasticPrimitive {
   sealed trait ElasticPrimitive[A] {
     def toJson(value: A): Json
@@ -46,6 +48,10 @@ object ElasticPrimitive {
 
   implicit object ElasticString extends ElasticPrimitive[String] {
     def toJson(value: String): Json = Str(value)
+  }
+
+  implicit object ElasticUUID extends ElasticPrimitive[UUID] {
+    def toJson(value: UUID): Json = Str(value.toString)
   }
 
   final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {

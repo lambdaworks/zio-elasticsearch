@@ -9,7 +9,6 @@ import zio.test.Assertion.equalTo
 import zio.test._
 
 object AggregationSpec extends ZIOSpecDefault {
-
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Aggregations")(
       suite("creating ElasticAggregation")(
