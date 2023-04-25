@@ -586,7 +586,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("create term query") {
+        test("term query") {
           val termQuery                    = term("stringField", "test")
           val termQueryTs                  = term(TestDocument.stringField, "test")
           val termQueryWithSuffix          = term(TestDocument.stringField.keyword, "test")
@@ -626,75 +626,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("encode term query") {
-          val query                    = term(field = TestDocument.stringField, value = "test")
-          val queryWithBoost           = term(field = TestDocument.stringField, value = "test").boost(10.21)
-          val queryWithCaseInsensitive = term(field = TestDocument.stringField, value = "test").caseInsensitiveTrue
-          val queryWithAllParams =
-            term(field = TestDocument.stringField, value = "test").boost(3.14).caseInsensitiveFalse
-
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "term": {
-              |      "stringField": {
-              |        "value": "test"
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithBoost =
-            """
-              |{
-              |  "query": {
-              |    "term": {
-              |      "stringField": {
-              |        "value": "test",
-              |        "boost": 10.21
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithCaseInsensitive =
-            """
-              |{
-              |  "query": {
-              |    "term": {
-              |      "stringField": {
-              |        "value": "test",
-              |        "case_insensitive": true
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithAllParams =
-            """
-              |{
-              |  "query": {
-              |    "term": {
-              |      "stringField": {
-              |        "value": "test",
-              |        "boost": 3.14
-              |        "case_insensitive": false
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson)) &&
-          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
-          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
-          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
-        },
-        test("create terms query") {
+        test("terms query") {
           val termsQuery                    = terms("", "a", "b", "c")
           val termsQueryTs                  = terms(TestDocument.stringField, "a", "b", "c")
           val termsQueryWithSuffix          = terms(TestDocument.stringField.keyword, "a", "b", "c")
@@ -757,68 +689,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
               )
             )
           )
-        },
-        test("encode terms query") {
-          val query          = terms(field = TestDocument.stringField, values = "a", "b", "c")
-          val queryWithBoost = terms(field = TestDocument.stringField, values = "a", "b", "c").boost(10.21)
-          val queryWithCaseInsensitive =
-            terms(field = TestDocument.stringField, values = "a", "b", "c").caseInsensitiveTrue
-          val queryWithAllParams =
-            terms(field = TestDocument.stringField, values = "a", "b", "c").boost(3.14).caseInsensitiveFalse
-
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "terms": {
-              |      "stringField": [ "a", "b", "c" ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithBoost =
-            """
-              |{
-              |  "query": {
-              |    "terms": {
-              |      "stringField": [ "a", "b", "c" ],
-              |      "boost": 10.21
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithCaseInsensitive =
-            """
-              |{
-              |  "query": {
-              |    "terms": {
-              |      "stringField": [ "a", "b", "c" ],
-              |      "case_insensitive": true
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithAllParams =
-            """
-              |{
-              |  "query": {
-              |    "terms": {
-              |      "stringField": [ "a", "b", "c" ],
-              |      "boost": 3.14,
-              |      "case_insensitive": true
-              |    }
-              |  }
-              |}
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson)) &&
-          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
-          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
-          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("successfully create Wildcard Query") {
           val wildcardQuery1 = contains(field = "day_of_week", value = "M")
@@ -911,6 +781,136 @@ object QueryDSLSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding ElasticQuery as JSON")(
+        test("term query") {
+          val query                    = term(field = TestDocument.stringField, value = "test")
+          val queryWithBoost           = term(field = TestDocument.stringField, value = "test").boost(10.21)
+          val queryWithCaseInsensitive = term(field = TestDocument.stringField, value = "test").caseInsensitiveTrue
+          val queryWithAllParams =
+            term(field = TestDocument.stringField, value = "test").boost(3.14).caseInsensitiveFalse
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test",
+              |        "boost": 10.21
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithCaseInsensitive =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test",
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test",
+              |        "boost": 3.14
+              |        "case_insensitive": false
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("terms query") {
+          val query          = terms(field = TestDocument.stringField, values = "a", "b", "c")
+          val queryWithBoost = terms(field = TestDocument.stringField, values = "a", "b", "c").boost(10.21)
+          val queryWithCaseInsensitive =
+            terms(field = TestDocument.stringField, values = "a", "b", "c").caseInsensitiveTrue
+          val queryWithAllParams =
+            terms(field = TestDocument.stringField, values = "a", "b", "c").boost(3.14).caseInsensitiveFalse
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "terms": {
+              |      "stringField": [ "a", "b", "c" ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "query": {
+              |    "terms": {
+              |      "stringField": [ "a", "b", "c" ],
+              |      "boost": 10.21
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithCaseInsensitive =
+            """
+              |{
+              |  "query": {
+              |    "terms": {
+              |      "stringField": [ "a", "b", "c" ],
+              |      "case_insensitive": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "query": {
+              |    "terms": {
+              |      "stringField": [ "a", "b", "c" ],
+              |      "boost": 3.14,
+              |      "case_insensitive": false
+              |    }
+              |  }
+              |}
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("properly encode Match query") {
           val query = matches(field = "day_of_week", value = true)
           val expected =
