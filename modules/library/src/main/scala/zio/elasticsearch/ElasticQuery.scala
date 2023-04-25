@@ -376,7 +376,7 @@ object ElasticQuery {
     Term(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   /**
-   * Constructs a type-safe instance of [[zio.elasticsearch.query.TermQuery]] using the specified parameters.
+   * Constructs an instance of [[zio.elasticsearch.query.TermQuery]] using the specified parameters.
    * [[zio.elasticsearch.query.TermQuery]] is used for matching documents that contain an exact term in a provided
    * field.
    *
@@ -389,6 +389,40 @@ object ElasticQuery {
    */
   final def term(field: String, value: String): Term[Any] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.TermsQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.TermsQuery]] is used for matching documents that contain one or more term in a provided
+   * field. The terms query is the same as [[zio.elasticsearch.query.TermQuery]], except you can search for multiple
+   * values.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param values
+   *   a list of terms that should be find in the provided field
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
+   */
+  final def terms[S](field: Field[S, String], values: String*): Terms[S] =
+    Terms(field = field.toString, values = values.toList, boost = None, caseInsensitive = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.TermsQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.TermsQuery]] is used for matching documents that contain one or more term in a provided
+   * field. The terms query is the same as [[zio.elasticsearch.query.TermQuery]], except you can search for multiple
+   * values.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param values
+   *   a list of terms that should be find in the provided field
+   * @return
+   *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
+   */
+  final def terms(field: String, values: String*): Terms[Any] =
+    Terms(field = field, values = values.toList, boost = None, caseInsensitive = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
