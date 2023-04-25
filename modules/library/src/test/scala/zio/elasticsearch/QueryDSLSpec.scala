@@ -242,7 +242,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("successfully create `Filter/Must/MustNot/Should` mixed query with Should containing two Match queries") {
+        test(
+          "successfully create `Filter/Must/MustNot/Should` mixed query with Should containing two Match queries and `minimumShouldMatch`"
+        ) {
           val query = filter(matches(field = TestDocument.stringField, value = "StringField"))
             .must(matches(field = TestDocument.intField, value = 23))
             .mustNot(matches(field = "day_of_month", value = 17))
@@ -250,6 +252,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               matches(field = "day_of_week", value = "Monday"),
               matches(field = "customer_gender", value = "MALE")
             )
+            .minimumShouldMatch(2)
 
           assert(query)(
             equalTo(
@@ -262,7 +265,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   Match(field = "customer_gender", value = "MALE", boost = None)
                 ),
                 boost = None,
-                minimumShouldMatch = None
+                minimumShouldMatch = Some(2)
               )
             )
           )
