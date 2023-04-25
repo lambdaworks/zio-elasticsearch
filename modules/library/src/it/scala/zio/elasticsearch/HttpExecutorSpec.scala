@@ -31,9 +31,9 @@ import zio.elasticsearch.result.{Item, UpdateByQueryResult}
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json.{Arr, Str}
 import zio.stream.{Sink, ZSink}
-import zio.test.Assertion._
-import zio.test.TestAspect._
 import zio.test._
+import zio.test.TestAspect._
+import zio.test.Assertion._
 
 import java.time.LocalDate
 import scala.util.Random
@@ -535,7 +535,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query))
                            .documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(firstDocument))
+                } yield assert(res)(contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -561,7 +561,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query))
                            .documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(firstDocument))
+                } yield assert(res)(contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -586,7 +586,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             value = s"${firstDocument.stringField.take(2)}*${firstDocument.stringField.takeRight(2)}"
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(firstDocument))
+                } yield assert(res)(contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -610,7 +610,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             value = firstDocument.stringField
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(document))
+                } yield assert(res)(contains(document))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -634,7 +634,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     nested(path = TestDocument.subDocumentList, query = matchAll)
                   res <-
                     Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(Assertion.hasSameElements(List(firstDocument, secondDocument)))
+                } yield assert(res)(hasSameElements(List(firstDocument, secondDocument)))
             }
           } @@ around(
             Executor.execute(
@@ -643,6 +643,58 @@ object HttpExecutorSpec extends IntegrationSpec {
                 """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
               )
             ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using should with satisfying minimumShouldMatch condition") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = should(
+                            matches(TestDocument.stringField, firstDocument.stringField),
+                            matches(TestDocument.intField, firstDocument.intField),
+                            matches(TestDocument.doubleField, firstDocument.doubleField + 1)
+                          ).minimumShouldMatch(2)
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(contains(firstDocument))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using should without satisfying minimumShouldMatch condition") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = should(
+                            matches(TestDocument.stringField, firstDocument.stringField),
+                            matches(TestDocument.intField, firstDocument.intField + 1),
+                            matches(TestDocument.doubleField, firstDocument.doubleField + 1)
+                          ).minimumShouldMatch(2)
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(isEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
@@ -668,7 +720,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res =
                     items.map(_.innerHitAs[TestSubDocument]("subDocumentList")).collect { case Right(value) => value }
                 } yield assert(res)(
-                  Assertion.hasSameElements(List(firstDocument.subDocumentList, secondDocument.subDocumentList))
+                  hasSameElements(List(firstDocument.subDocumentList, secondDocument.subDocumentList))
                 )
             }
           } @@ around(

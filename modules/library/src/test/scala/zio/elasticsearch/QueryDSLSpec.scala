@@ -998,6 +998,71 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
+        test(
+          "properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query and with both boost and minimumShouldMatch"
+        ) {
+          val query = filter(matches(field = "customer_age", value = 23))
+            .must(matches(field = "customer_id", value = 1))
+            .mustNot(matches(field = "day_of_month", value = 17))
+            .should(
+              matches(field = "day_of_week", value = "Monday"),
+              matches(field = "day_of_week", value = "Tuesday"),
+              matches(field = "day_of_week", value = "Wednesday")
+            )
+            .boost(1.0)
+            .minimumShouldMatch(2)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "bool": {
+              |      "filter": [
+              |        {
+              |          "match": {
+              |            "customer_age": 23
+              |          }
+              |        }
+              |      ],
+              |      "must": [
+              |        {
+              |          "match": {
+              |            "customer_id": 1
+              |          }
+              |        }
+              |      ],
+              |      "must_not": [
+              |        {
+              |          "match": {
+              |            "day_of_month": 17
+              |          }
+              |        }
+              |      ],
+              |      "should": [
+              |        {
+              |          "match": {
+              |            "day_of_week": "Monday"
+              |          }
+              |        },
+              |        {
+              |          "match": {
+              |            "day_of_week": "Tuesday"
+              |          }
+              |        },
+              |        {
+              |          "match": {
+              |            "day_of_week": "Wednesday"
+              |          }
+              |        }
+              |      ],
+              |      "boost": 1.0,
+              |      "minimum_should_match": 2
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
         test("properly encode Exists Query") {
           val query = exists(field = "day_of_week")
           val expected =
