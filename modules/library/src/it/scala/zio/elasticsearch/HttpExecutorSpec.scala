@@ -535,7 +535,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query))
                            .documentAs[TestDocument]
-                } yield assert(res)(contains(firstDocument))
+                } yield assert(res)(Assertion.contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -561,7 +561,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query))
                            .documentAs[TestDocument]
-                } yield assert(res)(contains(firstDocument))
+                } yield assert(res)(Assertion.contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -586,7 +586,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             value = s"${firstDocument.stringField.take(2)}*${firstDocument.stringField.takeRight(2)}"
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(contains(firstDocument))
+                } yield assert(res)(Assertion.contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -610,7 +610,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             value = firstDocument.stringField
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(contains(document))
+                } yield assert(res)(Assertion.contains(document))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -665,7 +665,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             matches(TestDocument.doubleField, firstDocument.doubleField + 1)
                           ).minimumShouldMatch(2)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(contains(firstDocument))
+                } yield assert(res)(Assertion.contains(firstDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
