@@ -638,8 +638,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                     )
                   query = terms(
                             field = TestDocument.stringField,
-                            values = firstDocument.stringField,
-                            secondDocument.stringField
+                            values = firstDocument.stringField.toLowerCase,
+                            secondDocument.stringField.toLowerCase
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield assert(res)(hasSameElements(List(firstDocumentUpdated, secondDocumentUpdated)))
