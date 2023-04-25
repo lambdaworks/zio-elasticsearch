@@ -120,7 +120,7 @@ package object query {
     def innerHits(innerHits: InnerHits): Q
   }
 
-  private[elasticsearch] trait HasMinimumShouldMatch[Q <: HasBoost[Q]] {
+  private[elasticsearch] trait HasMinimumShouldMatch[Q <: HasMinimumShouldMatch[Q]] {
 
     /**
      * Sets the `minimumShouldMatch` parameter for this [[ElasticQuery]]. The `minimumShouldMatch` value is the number
