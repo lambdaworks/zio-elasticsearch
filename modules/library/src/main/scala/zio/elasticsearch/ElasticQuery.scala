@@ -406,7 +406,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
   final def terms[S](field: Field[S, String], values: String*): Terms[S] =
-    Terms(field = field.toString, values = values.toList, boost = None, caseInsensitive = None)
+    Terms(field = field.toString, values = values.toList, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.TermsQuery]] using the specified parameters.
@@ -422,7 +422,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
   final def terms(field: String, values: String*): Terms[Any] =
-    Terms(field = field, values = values.toList, boost = None, caseInsensitive = None)
+    Terms(field = field, values = values.toList, boost = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.

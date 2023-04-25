@@ -303,24 +303,19 @@ private[elasticsearch] final case class Term[S](
   }
 }
 
-sealed trait TermsQuery[S] extends ElasticQuery[S] with HasBoost[TermsQuery[S]] with HasCaseInsensitive[TermsQuery[S]]
+sealed trait TermsQuery[S] extends ElasticQuery[S] with HasBoost[TermsQuery[S]]
 
 private[elasticsearch] final case class Terms[S](
   field: String,
   values: List[String],
-  boost: Option[Double],
-  caseInsensitive: Option[Boolean]
+  boost: Option[Double]
 ) extends TermsQuery[S] { self =>
   def boost(value: Double): TermsQuery[S] =
     self.copy(boost = Some(value))
 
-  def caseInsensitive(value: Boolean): TermsQuery[S] =
-    self.copy(caseInsensitive = Some(value))
-
   def paramsToJson(fieldPath: Option[String]): Json = {
-    val termsFields = Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)): _*)) ++ boost.map(
-      "boost" -> Num(_)
-    ) ++ caseInsensitive.map("case_insensitive" -> Json.Bool(_))
+    val termsFields =
+      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)): _*)) ++ boost.map("boost" -> Num(_))
     Obj("terms" -> Obj(termsFields.toList: _*))
   }
 }
