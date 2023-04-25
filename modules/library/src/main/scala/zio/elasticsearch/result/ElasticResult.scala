@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.result
 
-import zio.elasticsearch.executor.response.AggregationResponse
+import zio.elasticsearch.executor.response.{AggregationResponse, SearchWithAggregationsResponse}
 import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
@@ -59,7 +59,7 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
 
 final class SearchResult private[elasticsearch] (
   private val hits: List[Item],
-  private val lastSort: Option[Json]
+  private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[List] {
   def documentAs[A: Schema]: IO[DecodingException, List[A]] =
     ZIO.fromEither {
@@ -70,13 +70,15 @@ final class SearchResult private[elasticsearch] (
 
   lazy val items: UIO[List[Item]] = ZIO.succeed(hits)
 
-  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(lastSort)
+  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(fullResponse.lastSortField)
+
+  lazy val response: UIO[SearchWithAggregationsResponse] = ZIO.succeed(fullResponse)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
-  private val aggs: Map[String, AggregationResponse],
-  private val lastSort: Option[Json]
+  private val aggs: Map[String, AggregationResponse], // todo if we keep full response we might lose this as well?
+  private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[List]
     with AggregationsResult {
   def aggregation(name: String): Task[Option[AggregationResponse]] =
@@ -96,5 +98,7 @@ final class SearchAndAggregateResult private[elasticsearch] (
 
   lazy val items: UIO[List[Item]] = ZIO.succeed(hits)
 
-  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(lastSort)
+  lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(fullResponse.lastSortField)
+
+  lazy val response: UIO[SearchWithAggregationsResponse] = ZIO.succeed(fullResponse)
 }

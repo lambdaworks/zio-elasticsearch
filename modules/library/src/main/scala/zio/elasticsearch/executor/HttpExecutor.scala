@@ -318,7 +318,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .response(asJson[GetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => result.Item(r.source))))
+        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => Item(r.source))))
         case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
         case _            => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
@@ -338,13 +338,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              value.resultsWithHighlights match {
+              value.resultsWithHighlightsAndSort match {
                 case Nil =>
                   ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   ZIO.succeed(
                     (
-                      itemFromResultsWithHighlights(value.resultsWithHighlights),
+                      itemFromResultsWithHighlights(value.resultsWithHighlightsAndSort),
                       value.scrollId.orElse(Some(scrollId))
                     )
                   )
@@ -372,8 +372,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 .fromEither(value.innerHitsResults)
                 .map { innerHitsResults =>
                   new SearchResult(
-                    itemFromResultsWithHighlightsAndInnerHits(value.resultsWithHighlights, innerHitsResults).toList,
-                    value.lastSortField
+                    itemFromResultsWithHighlightsAndInnerHits(
+                      value.resultsWithHighlightsAndSort,
+                      innerHitsResults
+                    ).toList,
+                    value
                   )
                 }
                 .mapError(error => DecodingException(s"Could not parse inner_hits: $error"))
@@ -415,7 +418,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             body => {
-              body.resultsWithHighlights match {
+              body.resultsWithHighlightsAndSort match {
                 case Nil => ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   body.pitId match {
@@ -424,7 +427,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                         case Some(newSearchAfter) =>
                           ZIO.succeed(
                             (
-                              itemFromResultsWithHighlights(body.resultsWithHighlights),
+                              itemFromResultsWithHighlights(body.resultsWithHighlightsAndSort),
                               Some((newPitId, Some(newSearchAfter)))
                             )
                           )
@@ -470,11 +473,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value =>
               ZIO.succeed(
                 new SearchAndAggregateResult(
-                  value.resultsWithHighlights.map { case (source, highlight) =>
-                    Item(source, highlight)
+                  value.resultsWithHighlightsAndSort.map { case (source, highlight, sort) =>
+                    Item(raw = source, highlight = highlight, sort = sort)
                   },
                   value.aggs,
-                  value.lastSortField
+                  value
                 )
               )
           )
@@ -501,7 +504,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
               ZIO.succeed(
-                (itemFromResultsWithHighlights(value.resultsWithHighlights), value.scrollId)
+                (itemFromResultsWithHighlights(value.resultsWithHighlightsAndSort), value.scrollId)
               )
           )
         case _ =>
@@ -580,17 +583,17 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
     }
 
-  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json])]): Chunk[Item] =
-    Chunk.fromIterable(results).map { case (source, highlight) =>
-      Item(source, highlight)
+  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json], Option[Json])]): Chunk[Item] =
+    Chunk.fromIterable(results).map { case (source, highlight, sort) =>
+      Item(raw = source, highlight = highlight, sort = sort)
     }
 
   private def itemFromResultsWithHighlightsAndInnerHits(
-    results: List[(Json, Option[Json])],
+    results: List[(Json, Option[Json], Option[Json])],
     innerHits: List[Map[String, List[Json]]]
   ): Chunk[Item] =
-    Chunk.fromIterable(results).zip(innerHits).map { case ((source, highlight), innerHits) =>
-      Item(source, highlight, innerHits)
+    Chunk.fromIterable(results).zip(innerHits).map { case ((source, highlight, sort), innerHits) =>
+      Item(raw = source, highlight = highlight, innerHits = innerHits, sort = sort)
     }
 
   private def sendRequest(

@@ -28,7 +28,8 @@ import zio.schema.codec.JsonCodec.JsonDecoder
 final case class Item(
   raw: Json,
   private val highlight: Option[Json] = None,
-  private val innerHits: Map[String, List[Json]] = Map.empty
+  private val innerHits: Map[String, List[Json]] = Map.empty,
+  sort: Option[Json] = None
 ) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 
