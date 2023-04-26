@@ -73,7 +73,7 @@ private[elasticsearch] object TermsAggregationBucket {
     val docCount = allFields("doc_count").asInstanceOf[Int]
     val subAggs = allFields.collect {
       case (field, data) if field != "key" && field != "doc_count" =>
-        field match {
+        (field: @unchecked) match {
           case str if str.contains("terms#") =>
             (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
         }

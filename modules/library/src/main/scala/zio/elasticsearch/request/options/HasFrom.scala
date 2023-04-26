@@ -14,9 +14,18 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.request.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+private[elasticsearch] trait HasFrom[R <: HasFrom[R]] {
+
+  /**
+   * Sets the starting offset from where the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
+   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] return results.
+   *
+   * @param value
+   *   a non-negative number to set the `from` parameter in the [[zio.elasticsearch.ElasticRequest]]
+   * @return
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] enriched with the `from` parameter.
+   */
+  def from(value: Int): R
 }

@@ -17,6 +17,7 @@
 package zio.elasticsearch.query.sort
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.query.sort.options._
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
@@ -27,12 +28,12 @@ sealed trait Sort {
 
 sealed trait SortByField
     extends Sort
-    with WithFormat[SortByField]
-    with WithMissing[SortByField]
-    with WithMode[SortByField]
-    with WithNumericType[SortByField]
-    with WithOrder[SortByField]
-    with WithUnmappedType[SortByField] {
+    with HasFormat[SortByField]
+    with HasMissing[SortByField]
+    with HasMode[SortByField]
+    with HasNumericType[SortByField]
+    with HasOrder[SortByField]
+    with HasUnmappedType[SortByField] {
   def paramsToJson: Json
 }
 
@@ -77,7 +78,7 @@ private[elasticsearch] final case class SortByFieldOptions(
     self.copy(unmappedType = Some(value))
 }
 
-sealed trait SortByScript extends Sort with WithMode[SortByScript] with WithOrder[SortByScript]
+sealed trait SortByScript extends Sort with HasMode[SortByScript] with HasOrder[SortByScript]
 
 private[elasticsearch] final case class SortByScriptOptions(
   script: Script,

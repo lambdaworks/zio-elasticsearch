@@ -14,9 +14,20 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.request.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+import zio.elasticsearch.query.sort.Sort
+
+private[elasticsearch] trait HasSort[R <: HasSort[R]] {
+
+  /**
+   * Sets the sorting criteria for the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
+   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   *
+   * @param sorts
+   *   one or more [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
+   * @return
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] enriched with the sorting criteria.
+   */
+  def sort(sorts: Sort*): R
 }

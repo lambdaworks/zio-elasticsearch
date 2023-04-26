@@ -18,6 +18,7 @@ package zio.elasticsearch.aggregation
 
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.aggregation.options._
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 

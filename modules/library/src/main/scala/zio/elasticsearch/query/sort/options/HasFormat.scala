@@ -14,9 +14,18 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.query.sort.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+private[elasticsearch] trait HasFormat[S <: HasFormat[S]] {
+
+  /**
+   * Sets the date format for the [[zio.elasticsearch.query.sort.SortByField]]. This method is only applicable to fields
+   * of type `date`.
+   *
+   * @param value
+   *   the `date` format to set
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `format` parameter.
+   */
+  def format(value: String): S
 }

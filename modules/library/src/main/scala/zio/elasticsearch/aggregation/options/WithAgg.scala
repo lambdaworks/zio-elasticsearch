@@ -14,9 +14,19 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.aggregation.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+import zio.elasticsearch.aggregation.{MultipleAggregations, SingleElasticAggregation}
+
+private[elasticsearch] trait WithAgg {
+
+  /**
+   * Adds a new aggregation to the list of aggregations represented as [[MultipleAggregations]].
+   *
+   * @param agg
+   *   the [[SingleElasticAggregation]] to add
+   * @return
+   *   a new instance of [[MultipleAggregations]] with the specified aggregation added to its list of aggregations.
+   */
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations
 }

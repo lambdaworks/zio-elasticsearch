@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.script.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+private[elasticsearch] trait HasLang[S <: HasLang[S]] {
+
+  /**
+   * Sets the language used for analyzing the field values.
+   *
+   * @param value
+   *   the language used for analyzing the field values.
+   * @return
+   *   an instance of the [[zio.elasticsearch.script.Script]] enriched with the `lang` parameter.
+   */
+  def lang(value: String): S
 }

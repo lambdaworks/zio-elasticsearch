@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.query.sort.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+import zio.elasticsearch.query.sort.SortOrder
+
+private[elasticsearch] trait HasOrder[S <: HasOrder[S]] {
+
+  /**
+   * Sets the `sort order` of the field.
+   *
+   * @param value
+   *   the [[SortOrder]] of the field
+   *   - [[SortOrder.Asc]]: sets ascending sorting order
+   *   - [[SortOrder.Desc]]: sets descending sorting order
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.sort.Sort]] enriched with the `sort order` parameter.
+   */
+  def order(value: SortOrder): S
 }

@@ -17,6 +17,7 @@
 package zio.elasticsearch.script
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.script.options._
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 
@@ -24,8 +25,8 @@ private[elasticsearch] final case class Script(
   source: String,
   params: Map[String, Any],
   lang: Option[String]
-) extends WithLang[Script]
-    with WithParams[Script] { self =>
+) extends HasLang[Script]
+    with HasParams[Script] { self =>
   def lang(value: String): Script =
     self.copy(lang = Some(value))
 

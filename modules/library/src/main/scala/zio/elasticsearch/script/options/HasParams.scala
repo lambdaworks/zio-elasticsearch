@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.script.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+private[elasticsearch] trait HasParams[S <: HasParams[S]] {
+
+  /**
+   * Adds additional parameters to a script field.
+   *
+   * @param values
+   *   a sequence of pairs of parameter names and their values to be added to the script field
+   * @return
+   *   an instance of the [[zio.elasticsearch.script.Script]] enriched with the `params` parameter.
+   */
+  def withParams(values: (String, Any)*): S
 }

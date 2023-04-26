@@ -14,9 +14,19 @@
  * limitations under the License.
  */
 
+package zio.elasticsearch.request.options
+
 import zio.elasticsearch._
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+private[elasticsearch] trait HasRouting[R <: HasRouting[R]] {
+
+  /**
+   * Specifies a `routing` value to be used for this [[zio.elasticsearch.ElasticRequest]].
+   *
+   * @param value
+   *   the [[Routing]] value to set for the [[zio.elasticsearch.ElasticRequest]]
+   * @return
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] enriched with the `routing` parameter.
+   */
+  def routing(value: Routing): R
 }

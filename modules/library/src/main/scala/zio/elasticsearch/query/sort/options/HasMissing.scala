@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.query.sort.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+import zio.elasticsearch.query.sort.Missing
+
+private[elasticsearch] trait HasMissing[S <: HasMissing[S]] {
+
+  /**
+   * Sets the value to use when a document is missing a value for the field being sorted.
+   *
+   * @param value
+   *   the `missing` value behaviour
+   *   - [[Missing.First]]: treated as first
+   *   - [[Missing.Last]]: treated as last
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `missing` parameter.
+   */
+  def missing(value: Missing): S
 }

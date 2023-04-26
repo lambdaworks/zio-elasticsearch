@@ -14,9 +14,15 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.result
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
-}
+class ElasticException(message: String) extends RuntimeException(message)
+
+final case class DecodingException(message: String) extends ElasticException(message)
+
+case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
+
+final case class VersionConflictException(succeeded: Int, failed: Int)
+    extends ElasticException(
+      s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
+    )

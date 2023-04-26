@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch._
+package zio.elasticsearch.request.options
 
-package object example {
-  final val Index: IndexName     = IndexName("repositories")
-  final val organization: String = "zio"
+private[elasticsearch] trait HasSize[R <: HasSize[R]] {
+
+  /**
+   * Sets the maximum number of results.
+   *
+   * @param value
+   *   a non-negative number to set the `size` parameter in the [[zio.elasticsearch.ElasticRequest]]
+   * @return
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] enriched with the `size` parameter.
+   */
+  def size(value: Int): R
 }

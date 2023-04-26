@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch
+package zio.elasticsearch.query.sort.options
 
-package object result {
-  class ElasticException(message: String) extends RuntimeException(message)
+private[elasticsearch] trait HasUnmappedType[S <: HasUnmappedType[S]] {
 
-  final case class DecodingException(message: String) extends ElasticException(message)
-
-  case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
-
-  final case class VersionConflictException(succeeded: Int, failed: Int)
-      extends ElasticException(
-        s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
-      )
+  /**
+   * Sets the `unmapped type` which is used when the mapped field doesn't exist in the index.
+   *
+   * @param value
+   *   the type to use when the mapped field doesn't exist in the index
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.sort.SortByField]] enriched with the `unmapped type` parameter.
+   */
+  def unmappedType(value: String): S
 }
