@@ -27,6 +27,7 @@ module.exports = {
                     'overview/queries/elastic_query_should',
                     'overview/queries/elastic_query_starts_with',
                     'overview/queries/elastic_query_term',
+                    'overview/queries/elastic_query_terms',
                     'overview/queries/elastic_query_wildcard',
                 ],
             },

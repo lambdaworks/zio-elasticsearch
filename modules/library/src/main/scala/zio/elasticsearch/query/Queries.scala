@@ -283,9 +283,9 @@ private[elasticsearch] object Range {
 
 sealed trait TermQuery[S] extends ElasticQuery[S] with HasBoost[TermQuery[S]] with HasCaseInsensitive[TermQuery[S]]
 
-private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
+private[elasticsearch] final case class Term[S](
   field: String,
-  value: A,
+  value: String,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
 ) extends TermQuery[S] { self =>
@@ -300,6 +300,23 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
       "case_insensitive" -> Json.Bool(_)
     )
     Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(termFields.toList: _*)))
+  }
+}
+
+sealed trait TermsQuery[S] extends ElasticQuery[S] with HasBoost[TermsQuery[S]]
+
+private[elasticsearch] final case class Terms[S](
+  field: String,
+  values: List[String],
+  boost: Option[Double]
+) extends TermsQuery[S] { self =>
+  def boost(value: Double): TermsQuery[S] =
+    self.copy(boost = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json = {
+    val termsFields =
+      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)): _*)) ++ boost.map("boost" -> Num(_))
+    Obj("terms" -> Obj(termsFields.toList: _*))
   }
 }
 
