@@ -122,10 +122,38 @@ private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: Str
 }
 
 sealed trait HasParentQuery[S] extends ElasticQuery[S] with HasIgnoreUnmapped[HasParentQuery[S]] {
+
+  /**
+   * Sets the `score` parameter parameter for the [[HasParentQuery]].
+   *
+   * Indicates whether the relevance score of a matching parent document is aggregated into its child documents.
+   * Defaults to false.
+   *
+   * @param value
+   *   the [[scala.Boolean]] value for `score` parameter
+   * @return
+   *   a new instance of the [[HasParentQuery]] with the `score` value set.
+   */
   def withScore(value: Boolean): HasParentQuery[S]
 
+  /**
+   * Sets the `score` parameter to `false` for this [[HasParentQuery]]. Same as [[withScore]](false).
+   *
+   * @return
+   *   a new instance of the [[HasParentQuery]] with the `score` value set to `false`.
+   * @see
+   *   #withScore
+   */
   final def withScoreFalse: HasParentQuery[S] = withScore(false)
 
+  /**
+   * Sets the `score` parameter to `true` for this [[HasParentQuery]]. Same as [[withScore]](true).
+   *
+   * @return
+   *   a new instance of the [[HasParentQuery]] with the `score` value set to `true`.
+   * @see
+   *   #withScore
+   */
   final def withScoreTrue: HasParentQuery[S] = withScore(true)
 
 }
