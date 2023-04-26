@@ -113,9 +113,9 @@ object ElasticQuery {
    * Constructs an instance of [[zio.elasticsearch.query.HasParent]] using the specified parameters.
    *
    * @param parentType
-   *   a name of the parent relationship mapped for the join field.
+   *   a name of the parent relationship mapped for the join field
    * @param query
-   *   query you wish to run on parent documents of the parent_type field.
+   *   query you wish to run on parent documents of the `parent_type` field
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -128,9 +128,9 @@ object ElasticQuery {
    * Constructs an instance of [[zio.elasticsearch.query.HasParent]] using the specified parameters.
    *
    * @param parentType
-   *   a name of the parent relationship mapped for the join field.
+   *   a name of the parent relationship mapped for the join field
    * @param query
-   *   query you wish to run on parent documents of the parent_type field.
+   *   query you wish to run on parent documents of the parent_type field
    * @return
    *   an instance of [[zio.elasticsearch.query.HasParent]] that represents the has parent query to be performed.
    */

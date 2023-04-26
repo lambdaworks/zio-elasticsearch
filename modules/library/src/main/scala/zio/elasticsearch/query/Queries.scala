@@ -124,9 +124,9 @@ private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: Str
 sealed trait HasParentQuery[S] extends ElasticQuery[S] with HasIgnoreUnmapped[HasParentQuery[S]] {
   def withScore(value: Boolean): HasParentQuery[S]
 
-  def withScoreTrue: HasParentQuery[S] = withScore(true)
+  final def withScoreFalse: HasParentQuery[S] = withScore(false)
 
-  def withScoreFalse: HasParentQuery[S] = withScore(false)
+  final def withScoreTrue: HasParentQuery[S] = withScore(true)
 
 }
 
@@ -137,10 +137,10 @@ private[elasticsearch] final case class HasParent[S](
   score: Option[Boolean] = None
 ) extends HasParentQuery[S] { self =>
 
-  override def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
+  def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
-  override def paramsToJson(fieldPath: Option[String]): Json =
+  def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "has_parent" -> Obj(
         List(

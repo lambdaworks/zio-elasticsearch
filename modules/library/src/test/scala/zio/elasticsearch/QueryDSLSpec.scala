@@ -782,10 +782,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create HasParent query") {
-          val hasParentQuery = hasParent("parent", matchAll)
-          val hasParentQueryScoreTrue = hasParent("parent", matchAll).withScoreTrue
-          val hasParentQueryScoreFalse = hasParent("parent", matchAll).withScoreFalse
-          val hasParentQueryIgnoreUnmappedTrue = hasParent("parent", matchAll).ignoreUnmappedTrue
+          val hasParentQuery                    = hasParent("parent", matchAll)
+          val hasParentQueryScoreTrue           = hasParent("parent", matchAll).withScoreTrue
+          val hasParentQueryScoreFalse          = hasParent("parent", matchAll).withScoreFalse
+          val hasParentQueryIgnoreUnmappedTrue  = hasParent("parent", matchAll).ignoreUnmappedTrue
           val hasParentQueryIgnoreUnmappedFalse = hasParent("parent", matchAll).ignoreUnmappedFalse
 
           assert(hasParentQuery)(
@@ -799,7 +799,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) && assert(hasParentQueryIgnoreUnmappedFalse)(
             equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = None))
           )
-        },
+        }
       ),
       suite("encoding ElasticQuery as JSON")(
         test("properly encode Match query") {
