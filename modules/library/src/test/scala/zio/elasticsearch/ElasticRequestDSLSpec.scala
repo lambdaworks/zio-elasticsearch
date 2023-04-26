@@ -229,7 +229,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             subDocumentList = Nil,
             dateField = LocalDate.parse("2020-10-10"),
             intField = 1,
-            doubleField = 1.0
+            doubleField = 1.0,
+            booleanField = true
           )
         ) match { case r: Update => r.toJson }
 
@@ -247,7 +248,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |    "subDocumentList": [],
             |    "dateField": "2020-10-10",
             |    "intField": 1,
-            |    "doubleField": 1.0
+            |    "doubleField": 1.0,
+            |    "booleanField": true
             |  }
             |}
             |""".stripMargin
@@ -263,7 +265,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             subDocumentList = Nil,
             dateField = LocalDate.parse("2020-10-10"),
             intField = 1,
-            doubleField = 1.0
+            doubleField = 1.0,
+            booleanField = true
           )
         ).orCreate[TestDocument](
           TestDocument(
@@ -271,7 +274,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             subDocumentList = Nil,
             dateField = LocalDate.parse("2020-11-11"),
             intField = 2,
-            doubleField = 2.0
+            doubleField = 2.0,
+            booleanField = false
           )
         ) match { case r: Update => r.toJson }
 
@@ -283,14 +287,16 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |    "subDocumentList": [],
             |    "dateField": "2020-10-10",
             |    "intField": 1,
-            |    "doubleField": 1.0
+            |    "doubleField": 1.0,
+            |    "booleanField": true
             |  },
             |  "upsert": {
             |    "stringField": "stringField2",
             |    "subDocumentList": [],
             |    "dateField": "2020-11-11",
             |    "intField": 2,
-            |    "doubleField": 2.0
+            |    "doubleField": 2.0,
+            |    "booleanField": false
             |  }
             |}
             |""".stripMargin

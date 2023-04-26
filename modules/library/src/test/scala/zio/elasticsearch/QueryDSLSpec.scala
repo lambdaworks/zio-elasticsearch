@@ -30,305 +30,372 @@ object QueryDSLSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
       suite("creating ElasticQuery")(
-        test("successfully create Match query using `matches` method") {
-          val queryString = matches(field = "day_of_week", value = "Monday")
-          val queryBool   = matches(field = "day_of_week", value = true)
-          val queryLong   = matches(field = "day_of_week", value = 1L)
+        suite("bool")(
+          test("filter") {
+            val query = filter(matches(TestDocument.stringField, "test"), matches(field = "testField", "test field"))
+            val queryWithBoost =
+              filter(matches(TestDocument.stringField, "test").boost(3.14), matches(TestDocument.intField, 22))
+                .boost(10.21)
 
-          assert(queryString)(equalTo(Match[Any, String](field = "day_of_week", value = "Monday", boost = None))) &&
-          assert(queryBool)(equalTo(Match[Any, Boolean](field = "day_of_week", value = true, boost = None))) &&
-          assert(queryLong)(equalTo(Match[Any, Long](field = "day_of_week", value = 1, boost = None)))
+            assert(query)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = List(
+                    Match(field = "stringField", value = "test", boost = None),
+                    Match(field = "testField", value = "test field", boost = None)
+                  ),
+                  must = Nil,
+                  mustNot = Nil,
+                  should = Nil,
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) && assert(queryWithBoost)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = List(
+                    Match(field = "stringField", value = "test", boost = Some(3.14)),
+                    Match(field = "intField", value = 22, boost = None)
+                  ),
+                  must = Nil,
+                  mustNot = Nil,
+                  should = Nil,
+                  boost = Some(10.21),
+                  minimumShouldMatch = None
+                )
+              )
+            )
+          },
+          test("must") {
+            val query = must(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val queryWithBoost =
+              must(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22)).boost(10.21)
+
+            assert(query)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = List(
+                    Match(field = "stringField", value = "test", boost = None),
+                    Match(field = "testField", value = "test field", boost = None)
+                  ),
+                  mustNot = Nil,
+                  should = Nil,
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) && assert(queryWithBoost)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = List(
+                    Match(field = "stringField.keyword", value = "test", boost = None),
+                    Match(field = "intField", value = 22, boost = None)
+                  ),
+                  mustNot = Nil,
+                  should = Nil,
+                  boost = Some(10.21),
+                  minimumShouldMatch = None
+                )
+              )
+            )
+          },
+          test("mustNot") {
+            val query = mustNot(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val queryWithBoost =
+              mustNot(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22))
+                .boost(10.21)
+
+            assert(query)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = Nil,
+                  mustNot = List(
+                    Match(field = "stringField", value = "test", boost = None),
+                    Match(field = "testField", value = "test field", boost = None)
+                  ),
+                  should = Nil,
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) && assert(queryWithBoost)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = Nil,
+                  mustNot = List(
+                    Match(field = "stringField.keyword", value = "test", boost = None),
+                    Match(field = "intField", value = 22, boost = None)
+                  ),
+                  should = Nil,
+                  boost = Some(10.21),
+                  minimumShouldMatch = None
+                )
+              )
+            )
+          },
+          test("should") {
+            val query = should(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val queryWithBoost =
+              should(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22)).boost(10.21)
+            val queryWithMinimumShouldMatch = should(
+              matches(TestDocument.stringField.keyword, "test"),
+              matches(TestDocument.intField, 22),
+              exists(TestDocument.booleanField)
+            ).minimumShouldMatch(2)
+            val queryWithAllParams = should(
+              matches(TestDocument.stringField.keyword, "test"),
+              matches(TestDocument.intField, 22),
+              exists(TestDocument.booleanField)
+            ).boost(3.14).minimumShouldMatch(2)
+
+            assert(query)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = Nil,
+                  mustNot = Nil,
+                  should = List(
+                    Match(field = "stringField", value = "test", boost = None),
+                    Match(field = "testField", value = "test field", boost = None)
+                  ),
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) && assert(queryWithBoost)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = Nil,
+                  mustNot = Nil,
+                  should = List(
+                    Match(field = "stringField.keyword", value = "test", boost = None),
+                    Match(field = "intField", value = 22, boost = None)
+                  ),
+                  boost = Some(10.21),
+                  minimumShouldMatch = None
+                )
+              )
+            ) && assert(queryWithMinimumShouldMatch)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = Nil,
+                  mustNot = Nil,
+                  should = List(
+                    Match(field = "stringField.keyword", value = "test", boost = None),
+                    Match(field = "intField", value = 22, boost = None),
+                    Exists(field = "booleanField")
+                  ),
+                  boost = None,
+                  minimumShouldMatch = Some(2)
+                )
+              )
+            ) && assert(queryWithAllParams)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = Nil,
+                  mustNot = Nil,
+                  should = List(
+                    Match(field = "stringField.keyword", value = "test", boost = None),
+                    Match(field = "intField", value = 22, boost = None),
+                    Exists(field = "booleanField")
+                  ),
+                  boost = Some(3.14),
+                  minimumShouldMatch = Some(2)
+                )
+              )
+            )
+          },
+          test("filter + must + mustNot + should") {
+            val query1 =
+              filter(matchPhrase(TestDocument.stringField, "test")).must(matches(TestDocument.booleanField, true))
+            val query2 = must(terms(TestDocument.stringField, "a", "b", "c"))
+              .mustNot(matches(TestDocument.doubleField, 3.14), matches("testField", true), exists("anotherTestField"))
+            val query3 = must(terms(TestDocument.stringField, "a", "b", "c"))
+              .should(range(TestDocument.intField).gt(1).lte(100), matches(TestDocument.stringField, "test"))
+              .mustNot(matches(TestDocument.intField, 50))
+            val queryWithBoost              = query1.boost(3.14)
+            val queryWithMinimumShouldMatch = query2.minimumShouldMatch(2)
+            val queryWithAllParams          = query3.boost(3.14).minimumShouldMatch(3)
+
+            assert(query1)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = List(MatchPhrase(field = "stringField", value = "test", boost = None)),
+                  must = List(Match(field = "booleanField", value = true, boost = None)),
+                  mustNot = Nil,
+                  should = Nil,
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) &&
+            assert(query2)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
+                  mustNot = List(
+                    Match(field = "doubleField", value = 3.14, boost = None),
+                    Match(field = "testField", value = "test", boost = None),
+                    Exists("anotherTestField")
+                  ),
+                  should = Nil,
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) &&
+            assert(query3)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
+                  mustNot = List(Match(field = "intField", value = 50, boost = None)),
+                  should = List(
+                    Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
+                    Match(field = "testField", value = "test", boost = None)
+                  ),
+                  boost = None,
+                  minimumShouldMatch = None
+                )
+              )
+            ) &&
+            assert(queryWithBoost)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = List(MatchPhrase(field = "stringField", value = "test", boost = None)),
+                  must = List(Match(field = "booleanField", value = true, boost = None)),
+                  mustNot = Nil,
+                  should = Nil,
+                  boost = Some(3.14),
+                  minimumShouldMatch = None
+                )
+              )
+            ) &&
+            assert(queryWithMinimumShouldMatch)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
+                  mustNot = List(
+                    Match(field = "doubleField", value = 3.14, boost = None),
+                    Match(field = "testField", value = "test", boost = None),
+                    Exists("anotherTestField")
+                  ),
+                  should = Nil,
+                  boost = None,
+                  minimumShouldMatch = Some(2)
+                )
+              )
+            ) &&
+            assert(queryWithAllParams)(
+              equalTo(
+                Bool[TestDocument](
+                  filter = Nil,
+                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
+                  mustNot = List(Match(field = "intField", value = 50, boost = None)),
+                  should = List(
+                    Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
+                    Match(field = "testField", value = "test", boost = None)
+                  ),
+                  boost = Some(3.14),
+                  minimumShouldMatch = Some(3)
+                )
+              )
+            )
+          }
+        ),
+        test("exists") {
+          val query   = exists("testField")
+          val queryTs = exists(TestDocument.intField)
+
+          assert(query)(equalTo(Exists[Any](field = "testField"))) &&
+          assert(queryTs)(equalTo(Exists[TestDocument](field = "intField")))
         },
-        test("successfully create type-safe Match query using `matches` method") {
-          val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
-          val queryInt    = matches(field = TestSubDocument.intField, value = 39)
+        test("matchAll") {
+          val query          = matchAll
+          val queryWithBoost = matchAll.boost(3.14)
 
-          assert(queryString)(
-            equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField", boost = None))
+          assert(query)(equalTo(MatchAll(boost = None))) && assert(queryWithBoost)(
+            equalTo(MatchAll(boost = Some(3.14)))
+          )
+        },
+        test("matches") {
+          val queryString     = matches("stringField", "test")
+          val queryBool       = matches("booleanField", true)
+          val queryInt        = matches("intField", 1)
+          val queryStringTs   = matches(TestDocument.stringField, value = "test")
+          val queryBoolTs     = matches(TestDocument.booleanField, value = true)
+          val queryIntTs      = matches(TestDocument.intField, value = 1)
+          val queryWithSuffix = matches(TestDocument.stringField.raw, "test")
+          val queryWithBoost  = matches(TestDocument.doubleField, 3.14).boost(10.21)
+
+          assert(queryString)(equalTo(Match[Any, String](field = "stringField", value = "test", boost = None))) &&
+          assert(queryBool)(equalTo(Match[Any, Boolean](field = "booleanField", value = true, boost = None))) &&
+          assert(queryInt)(equalTo(Match[Any, Int](field = "intField", value = 1, boost = None))) &&
+          assert(queryStringTs)(
+            equalTo(Match[TestDocument, String](field = "stringField", value = "test", boost = None))
           ) &&
-          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39, boost = None)))
-        },
-        test("successfully create type-safe Match query with suffix using `matches` method") {
-          val query = matches(field = TestSubDocument.stringField.keyword, value = "StringField")
-
-          assert(query)(
-            equalTo(Match[TestSubDocument, String](field = "stringField.keyword", value = "StringField", boost = None))
+          assert(queryBoolTs)(
+            equalTo(Match[TestDocument, Boolean](field = "booleanField", value = true, boost = None))
+          ) &&
+          assert(queryIntTs)(equalTo(Match[TestDocument, Int](field = "intField", value = 1, boost = None))) &&
+          assert(queryWithSuffix)(
+            equalTo(Match[TestDocument, String](field = "stringField.raw", value = "test", boost = None))
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(Match[TestDocument, Double](field = "doubleField", value = 3.14, boost = Some(10.21)))
           )
         },
-        test("successfully create `Filter` query from two Match queries") {
-          val query = filter(
-            matches(field = TestDocument.stringField, value = "StringField"),
-            matches(field = "customer_gender", value = "MALE")
-          )
+        test("matchPhrase") {
+          val query           = matchPhrase(field = "stringField", value = "this is a test")
+          val queryTs         = matchPhrase(field = TestDocument.stringField, value = "this is a test")
+          val queryWithSuffix = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
+          val queryWithBoost  = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
 
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(
-                  Match(field = "stringField", value = "StringField", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                must = Nil,
-                mustNot = Nil,
-                should = Nil,
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
+          assert(query)(equalTo(MatchPhrase[Any](field = "stringField", value = "this is a test", boost = None))) &&
+          assert(queryTs)(
+            equalTo(MatchPhrase[TestDocument](field = "stringField", value = "this is a test", boost = None))
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(MatchPhrase[TestDocument](field = "stringField.raw", value = "this is a test", boost = None))
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(MatchPhrase[TestDocument](field = "stringField", value = "this is a test", boost = Some(21.15)))
           )
         },
-        test("successfully create `Filter` query with boost from two Match queries") {
-          val query = filter(
-            matches(field = TestDocument.stringField, value = "StringField"),
-            matches(field = "customer_gender", value = "MALE")
-          ).boost(1.0)
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(
-                  Match(field = "stringField", value = "StringField", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                must = Nil,
-                mustNot = Nil,
-                should = Nil,
-                boost = Some(1.0),
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create `Must` query from two Match queries") {
-          val query =
-            must(
-              matches(field = TestDocument.stringField, value = "StringField"),
-              matches(field = "customer_gender", value = "MALE")
-            )
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = Nil,
-                must = List(
-                  Match(field = "stringField", value = "StringField", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                mustNot = Nil,
-                should = Nil,
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create `MustNot` query from two Match queries") {
-          val query =
-            mustNot(
-              matches(field = TestDocument.stringField, value = "StringField"),
-              matches(field = "customer_gender", value = "MALE")
-            )
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = Nil,
-                must = Nil,
-                mustNot = List(
-                  Match(field = "stringField", value = "StringField", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                should = Nil,
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create `Should` query from two Match queries") {
-          val query = should(
-            matches(field = TestDocument.stringField, value = "StringField"),
-            matches(field = "customer_gender", value = "MALE")
-          )
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = Nil,
-                must = Nil,
-                mustNot = Nil,
-                should = List(
-                  Match(field = "stringField", value = "StringField", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create `Filter/Must/MustNot/Should` mixed query with Filter containing two Match queries") {
-          val query = filter(
-            matches(field = TestDocument.stringField, value = "StringField"),
-            matches(field = "customer_gender", value = "MALE")
-          )
-            .must(matches(field = "customer_age", value = 23))
-            .mustNot(matches(field = TestDocument.intField, value = 17))
-            .should(matches(field = "customer_id", value = 1))
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(
-                  Match(field = "stringField", value = "StringField", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                must = List(Match(field = "customer_age", value = 23, boost = None)),
-                mustNot = List(Match(field = "intField", value = 17, boost = None)),
-                should = List(Match(field = "customer_id", value = 1, boost = None)),
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create `Filter/Must/MustNot/Should` mixed query with Must containing two Match queries") {
-          val query = filter(matches(field = TestDocument.intField, value = 1))
-            .must(
-              matches(field = TestDocument.stringField, value = "StringField1"),
-              matches(field = TestDocument.stringField, value = "StringField2")
-            )
-            .mustNot(matches(field = TestDocument.intField, value = 17))
-            .should(matches(field = TestDocument.doubleField, value = 23.0))
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(Match(field = "intField", value = 1, boost = None)),
-                must = List(
-                  Match(field = "stringField", value = "StringField1", boost = None),
-                  Match(field = "stringField", value = "StringField2", boost = None)
-                ),
-                mustNot = List(Match(field = "intField", value = 17, boost = None)),
-                should = List(Match(field = "doubleField", value = 23.0, boost = None)),
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create `Filter/Must/MustNot/Should` mixed query with MustNot containing two Match queries") {
-          val query = filter(matches(field = TestDocument.stringField, value = "StringField"))
-            .must(matches(field = TestDocument.intField, value = 17))
-            .mustNot(
-              matches(field = "day_of_week", value = "Monday"),
-              matches(field = "customer_gender", value = "MALE")
-            )
-            .should(matches(field = TestDocument.intField, value = 23))
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(Match(field = "stringField", value = "StringField", boost = None)),
-                must = List(Match(field = "intField", value = 17, boost = None)),
-                mustNot = List(
-                  Match(field = "day_of_week", value = "Monday", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                should = List(Match(field = "intField", value = 23, boost = None)),
-                boost = None,
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test(
-          "successfully create `Filter/Must/MustNot/Should` mixed query with Should containing two Match queries and `minimumShouldMatch`"
-        ) {
-          val query = filter(matches(field = TestDocument.stringField, value = "StringField"))
-            .must(matches(field = TestDocument.intField, value = 23))
-            .mustNot(matches(field = "day_of_month", value = 17))
-            .should(
-              matches(field = "day_of_week", value = "Monday"),
-              matches(field = "customer_gender", value = "MALE")
-            )
-            .minimumShouldMatch(2)
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(Match(field = "stringField", value = "StringField", boost = None)),
-                must = List(Match(field = "intField", value = 23, boost = None)),
-                mustNot = List(Match(field = "day_of_month", value = 17, boost = None)),
-                should = List(
-                  Match(field = "day_of_week", value = "Monday", boost = None),
-                  Match(field = "customer_gender", value = "MALE", boost = None)
-                ),
-                boost = None,
-                minimumShouldMatch = Some(2)
-              )
-            )
-          )
-        },
-        test("successfully create `Filter/Must/MustNot/Should` mixed query with boost") {
-          val query = filter(matches(field = TestDocument.intField, value = 1))
-            .must(matches(field = TestDocument.doubleField, value = 23.0))
-            .mustNot(matches(field = TestDocument.intField, value = 17))
-            .should(matches(field = TestDocument.stringField, value = "StringField"))
-            .boost(1.0)
-
-          assert(query)(
-            equalTo(
-              Bool[TestDocument](
-                filter = List(Match(field = "intField", value = 1, boost = None)),
-                must = List(Match(field = "doubleField", value = 23.0, boost = None)),
-                mustNot = List(Match(field = "intField", value = 17, boost = None)),
-                should = List(Match(field = "stringField", value = "StringField", boost = None)),
-                boost = Some(1.0),
-                minimumShouldMatch = None
-              )
-            )
-          )
-        },
-        test("successfully create Exists Query") {
-          val query = exists(field = "day_of_week")
-
-          assert(query)(equalTo(Exists[Any](field = "day_of_week")))
-        },
-        test("successfully create Exists Query with accessor") {
-          val query = exists(field = TestSubDocument.stringField)
-
-          assert(query)(equalTo(Exists[TestSubDocument](field = "stringField")))
-        },
-        test("successfully create MatchAll Query") {
-          val query = matchAll
-
-          assert(query)(equalTo(MatchAll(None)))
-        },
-        test("successfully create MatchAll Query with boost") {
-          val query = matchAll.boost(1.0)
-
-          assert(query)(equalTo(MatchAll(boost = Some(1.0))))
-        },
-        test("successfully create Nested Query with MatchAll Query") {
-          val query = nested(path = "customer", query = matchAll)
+        test("nested") {
+          val query                   = nested("testField", matchAll)
+          val queryTs                 = nested(TestDocument.subDocumentList, matchAll)
+          val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
+          val queryWithInnerHits =
+            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits.from(0).name("innerHitName").size(3))
+          val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
+          val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
+          val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
+            .innerHits(InnerHits.name("innerHitName"))
+            .scoreMode(ScoreMode.Max)
 
           assert(query)(
             equalTo(
               Nested[Any](
-                path = "customer",
+                path = "testField",
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
                 innerHitsField = None
               )
             )
-          )
-        },
-        test("successfully create type-safe Nested Query with MatchAll Query") {
-          val query = nested(path = TestDocument.subDocumentList, query = matchAll)
-
-          assert(query)(
+          ) &&
+          assert(queryTs)(
             equalTo(
               Nested[TestDocument](
                 path = "subDocumentList",
@@ -338,284 +405,93 @@ object QueryDSLSpec extends ZIOSpecDefault {
                 innerHitsField = None
               )
             )
-          )
-        },
-        test("successfully create Nested Query with MatchAll Query and score_mode") {
-          val queryAvg  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
-          val queryMax  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Max)
-          val queryMin  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Min)
-          val queryNone = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.None)
-          val querySum  = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Sum)
-
-          assert(queryAvg)(
-            equalTo(
-              Nested[Any](
-                path = "customer",
-                query = MatchAll(boost = None),
-                scoreMode = Some(ScoreMode.Avg),
-                ignoreUnmapped = None,
-                innerHitsField = None
-              )
-            )
           ) &&
-          assert(queryMax)(
+          assert(queryWithIgnoreUnmapped)(
             equalTo(
-              Nested[Any](
-                path = "customer",
-                query = MatchAll(boost = None),
-                scoreMode = Some(ScoreMode.Max),
-                ignoreUnmapped = None,
-                innerHitsField = None
-              )
-            )
-          ) &&
-          assert(queryMin)(
-            equalTo(
-              Nested[Any](
-                path = "customer",
-                query = MatchAll(boost = None),
-                scoreMode = Some(ScoreMode.Min),
-                ignoreUnmapped = None,
-                innerHitsField = None
-              )
-            )
-          ) &&
-          assert(queryNone)(
-            equalTo(
-              Nested[Any](
-                path = "customer",
-                query = MatchAll(boost = None),
-                scoreMode = Some(ScoreMode.None),
-                ignoreUnmapped = None,
-                innerHitsField = None
-              )
-            )
-          ) &&
-          assert(querySum)(
-            equalTo(
-              Nested[Any](
-                path = "customer",
-                query = MatchAll(boost = None),
-                scoreMode = Some(ScoreMode.Sum),
-                ignoreUnmapped = None,
-                innerHitsField = None
-              )
-            )
-          )
-        },
-        test("successfully create Nested Query with MatchAll Query and ignore_unmapped") {
-          val query = nested(path = "customer", query = matchAll).ignoreUnmappedTrue
-
-          assert(query)(
-            equalTo(
-              Nested[Any](
-                path = "customer",
+              Nested[TestDocument](
+                path = "subDocumentList",
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = Some(true),
                 innerHitsField = None
               )
             )
-          )
-        },
-        test("successfully create Nested Query with MatchAll Query, score_mode and ignore_unmapped") {
-          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg).ignoreUnmappedFalse
-
-          assert(query)(
+          ) &&
+          assert(queryWithInnerHits)(
             equalTo(
-              Nested[Any](
-                path = "customer",
+              Nested[TestDocument](
+                path = "subDocumentList",
                 query = MatchAll(boost = None),
-                scoreMode = Some(ScoreMode.Avg),
-                ignoreUnmapped = Some(false),
-                innerHitsField = None
+                scoreMode = None,
+                ignoreUnmapped = None,
+                innerHitsField = Some(InnerHits(from = Some(0), name = Some("innerHitName"), size = Some(3)))
               )
             )
-          )
-        },
-        test("successfully create Nested Query with MatchAll Query and inner hits with empty body") {
-          val query = nested(path = "customer", query = matchAll).innerHits
-
-          assert(query)(
+          ) &&
+          assert(queryWithInnerHitsEmpty)(
             equalTo(
-              Nested[Any](
-                path = "customer",
+              Nested[TestDocument](
+                path = "subDocumentList",
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
                 innerHitsField = Some(InnerHits(None, None, None))
               )
             )
-          )
-        },
-        test("successfully create Nested Query with MatchAll Query and inner hits with from, size and name fields") {
-          val query = nested(path = "customer", query = matchAll).innerHits(InnerHits.from(0).name("name").size(3))
-
-          assert(query)(
+          ) &&
+          assert(queryWithScoreMode)(
             equalTo(
-              Nested[Any](
-                path = "customer",
+              Nested[TestDocument](
+                path = "subDocumentList",
                 query = MatchAll(boost = None),
-                scoreMode = None,
+                scoreMode = Some(ScoreMode.Avg),
                 ignoreUnmapped = None,
-                innerHitsField = Some(InnerHits(from = Some(0), name = Some("name"), size = Some(3)))
-              )
-            )
-          )
-        },
-        test("successfully create empty Range Query") {
-          val query = range(field = "customer_age")
-
-          assert(query)(
-            equalTo(
-              Range[Any, Any, Unbounded.type, Unbounded.type](
-                field = "customer_age",
-                lower = Unbounded,
-                upper = Unbounded,
-                boost = None
-              )
-            )
-          )
-        },
-        test("successfully create empty type-safe Range Query") {
-          val queryString = range(field = TestSubDocument.stringField)
-          val queryInt    = range(field = TestSubDocument.intField)
-
-          assert(queryString)(
-            equalTo(
-              Range[TestSubDocument, String, Unbounded.type, Unbounded.type](
-                field = "stringField",
-                lower = Unbounded,
-                upper = Unbounded,
-                boost = None
+                innerHitsField = None
               )
             )
           ) &&
-          assert(queryInt)(
+          assert(queryWithAllParams)(
             equalTo(
-              Range[TestSubDocument, Int, Unbounded.type, Unbounded.type](
-                field = "intField",
-                lower = Unbounded,
-                upper = Unbounded,
-                boost = None
+              Nested[TestDocument](
+                path = "subDocumentList",
+                query = MatchAll(boost = None),
+                scoreMode = Some(ScoreMode.Max),
+                ignoreUnmapped = Some(false),
+                innerHitsField = Some(InnerHits(name = Some("innerHitName")))
               )
             )
           )
         },
-        test("successfully create empty type-safe Range Query with suffix") {
-          val query = range(field = TestSubDocument.stringField.keyword)
+        test("term") {
+          val query                    = term("stringField", "test")
+          val queryTs                  = term(TestDocument.stringField, "test")
+          val queryWithSuffix          = term(TestDocument.stringField.keyword, "test")
+          val queryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
+          val queryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryAllParams           = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
 
           assert(query)(
-            equalTo(
-              Range[TestSubDocument, String, Unbounded.type, Unbounded.type](
-                field = "stringField.keyword",
-                lower = Unbounded,
-                upper = Unbounded,
-                boost = None
-              )
-            )
-          )
-        },
-        test("successfully create Range Query with upper bound") {
-          val query = range(field = "customer_age").lt(23)
-
-          assert(query)(
-            equalTo(
-              Range[Any, Int, Unbounded.type, LessThan[Int]](
-                field = "customer_age",
-                lower = Unbounded,
-                upper = LessThan(23),
-                boost = None
-              )
-            )
-          )
-        },
-        test("successfully create Range Query with lower bound") {
-          val query = range(field = "customer_age").gt(23)
-
-          assert(query)(
-            equalTo(
-              Range[Any, Int, GreaterThan[Int], Unbounded.type](
-                field = "customer_age",
-                lower = GreaterThan(23),
-                upper = Unbounded,
-                boost = None
-              )
-            )
-          )
-        },
-        test("successfully create Range Query with inclusive upper bound") {
-          val query = range(field = "customer_age").lte(23)
-
-          assert(query)(
-            equalTo(
-              Range[Any, Int, Unbounded.type, LessThanOrEqualTo[Int]](
-                field = "customer_age",
-                lower = Unbounded,
-                upper = LessThanOrEqualTo(23),
-                boost = None
-              )
-            )
-          )
-        },
-        test("successfully create Range Query with inclusive lower bound") {
-          val query = range(field = "customer_age").gte(23)
-
-          assert(query)(
-            equalTo(
-              Range[Any, Int, GreaterThanOrEqualTo[Int], Unbounded.type](
-                field = "customer_age",
-                lower = GreaterThanOrEqualTo(23),
-                upper = Unbounded,
-                boost = None
-              )
-            )
-          )
-        },
-        test("successfully create Range Query with both upper and lower bound") {
-          val query = range(field = "customer_age").gte(23).lt(50)
-
-          assert(query)(
-            equalTo(
-              Range[Any, Int, GreaterThanOrEqualTo[Int], LessThan[Int]](
-                field = "customer_age",
-                lower = GreaterThanOrEqualTo(23),
-                upper = LessThan(50),
-                boost = None
-              )
-            )
-          )
-        },
-        test("term query") {
-          val termQuery                    = term("stringField", "test")
-          val termQueryTs                  = term(TestDocument.stringField, "test")
-          val termQueryWithSuffix          = term(TestDocument.stringField.keyword, "test")
-          val termQueryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
-          val termQueryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
-          val termQueryAllParams           = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
-
-          assert(termQuery)(
             equalTo(Term[Any](field = "stringField", value = "test", boost = None, caseInsensitive = None))
           ) &&
-          assert(termQueryTs)(
+          assert(queryTs)(
             equalTo(Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = None))
           ) &&
-          assert(termQueryWithSuffix)(
+          assert(queryWithSuffix)(
             equalTo(
               Term[TestDocument](field = "stringField.keyword", value = "test", boost = None, caseInsensitive = None)
             )
           ) &&
-          assert(termQueryWithBoost)(
+          assert(queryWithBoost)(
             equalTo(
               Term[TestDocument](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
             )
           ) &&
-          assert(termQueryWithCaseInsensitive)(
+          assert(queryWithCaseInsensitive)(
             equalTo(
               Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
             )
           ) &&
-          assert(termQueryAllParams)(
+          assert(queryAllParams)(
             equalTo(
               Term[TestDocument](
                 field = "stringField",
@@ -626,113 +502,193 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("terms query") {
-          val termsQuery           = terms("stringField", "a", "b", "c")
-          val termsQueryTs         = terms(TestDocument.stringField, "a", "b", "c")
-          val termsQueryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
-          val termsQueryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
+        test("terms") {
+          val query           = terms("stringField", "a", "b", "c")
+          val queryTs         = terms(TestDocument.stringField, "a", "b", "c")
+          val queryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
+          val queryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
-          assert(termsQuery)(
-            equalTo(
-              Terms[Any](field = "stringField", values = List("a", "b", "c"), boost = None)
-            )
-          ) &&
-          assert(termsQueryTs)(
+          assert(query)(equalTo(Terms[Any](field = "stringField", values = List("a", "b", "c"), boost = None))) &&
+          assert(queryTs)(
             equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = None))
           ) &&
-          assert(termsQueryWithSuffix)(
+          assert(queryWithSuffix)(
             equalTo(Terms[TestDocument](field = "stringField.keyword", values = List("a", "b", "c"), boost = None))
           ) &&
-          assert(termsQueryWithBoost)(
+          assert(queryWithBoost)(
             equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = Some(10.21)))
           )
         },
-        test("successfully create Wildcard Query") {
-          val wildcardQuery1 = contains(field = "day_of_week", value = "M")
-          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M")
-          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*")
+        test("range") {
+          val query                    = range("testField")
+          val queryString              = range(TestDocument.stringField)
+          val queryInt                 = range(TestDocument.intField)
+          val queryWithSuffix          = range(TestDocument.stringField.suffix("test"))
+          val queryLowerBound          = range(TestDocument.doubleField).gt(3.14)
+          val queryUpperBound          = range(TestDocument.doubleField).lt(10.21)
+          val queryInclusiveLowerBound = range(TestDocument.intField).gte(10)
+          val queryInclusiveUpperBound = range(TestDocument.intField).lte(21)
+          val queryMixedBounds         = queryLowerBound.lte(21.0)
+          val queryWithBoostParam      = queryMixedBounds.boost(2.8)
 
-          assert(wildcardQuery1)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "*M*", boost = None, caseInsensitive = None))
+          assert(query)(
+            equalTo(
+              Range[Any, Any, Unbounded.type, Unbounded.type](
+                field = "testField",
+                lower = Unbounded,
+                upper = Unbounded,
+                boost = None
+              )
+            )
           ) &&
-          assert(wildcardQuery2)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+          assert(queryString)(
+            equalTo(
+              Range[TestDocument, String, Unbounded.type, Unbounded.type](
+                field = "stringField",
+                lower = Unbounded,
+                upper = Unbounded,
+                boost = None
+              )
+            )
           ) &&
-          assert(wildcardQuery3)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = None))
+          assert(queryInt)(
+            equalTo(
+              Range[TestDocument, Int, Unbounded.type, Unbounded.type](
+                field = "intField",
+                lower = Unbounded,
+                upper = Unbounded,
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Range[TestDocument, String, Unbounded.type, Unbounded.type](
+                field = "stringField.test",
+                lower = Unbounded,
+                upper = Unbounded,
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryLowerBound)(
+            equalTo(
+              Range[TestDocument, Double, GreaterThan[Double], Unbounded.type](
+                field = "doubleField",
+                lower = GreaterThan(3.14),
+                upper = Unbounded,
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryUpperBound)(
+            equalTo(
+              Range[TestDocument, Double, Unbounded.type, LessThan[Double]](
+                field = "doubleField",
+                lower = Unbounded,
+                upper = LessThan(10.21),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryInclusiveLowerBound)(
+            equalTo(
+              Range[TestDocument, Int, GreaterThanOrEqualTo[Int], Unbounded.type](
+                field = "intField",
+                lower = GreaterThanOrEqualTo(10),
+                upper = Unbounded,
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryInclusiveUpperBound)(
+            equalTo(
+              Range[TestDocument, Int, Unbounded.type, LessThanOrEqualTo[Int]](
+                field = "intField",
+                lower = Unbounded,
+                upper = LessThanOrEqualTo(21),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryMixedBounds)(
+            equalTo(
+              Range[TestDocument, Double, GreaterThan[Double], LessThanOrEqualTo[Double]](
+                field = "doubleField",
+                lower = GreaterThan(3.14),
+                upper = LessThanOrEqualTo(21.0),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryWithBoostParam)(
+            equalTo(
+              Range[TestDocument, Double, GreaterThan[Double], LessThanOrEqualTo[Double]](
+                field = "doubleField",
+                lower = GreaterThan(3.14),
+                upper = LessThanOrEqualTo(21),
+                boost = Some(2.8)
+              )
+            )
           )
         },
-        test("successfully create type-safe Wildcard Query") {
-          val wildcardQuery1 = contains(field = TestSubDocument.stringField, value = "M")
-          val wildcardQuery2 = startsWith(field = TestSubDocument.stringField, value = "M")
-          val wildcardQuery3 = wildcard(field = TestSubDocument.stringField, value = "M*")
+        test("wildcard") {
+          val query                    = wildcard("testField", "test")
+          val queryContains            = contains("testField", "test")
+          val queryStartsWith          = startsWith("testField", "test")
+          val queryTs                  = wildcard(TestDocument.stringField, "test")
+          val queryContainsTs          = contains(TestDocument.stringField, "test")
+          val queryStartsWithTs        = startsWith(TestDocument.stringField, "test")
+          val queryWithSuffix          = wildcard(TestDocument.stringField.raw, "test")
+          val queryWithBoost           = wildcard(TestDocument.stringField, "test").boost(10.21)
+          val queryWithCaseInsensitive = wildcard(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryAllParams           = wildcard(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
 
-          assert(wildcardQuery1)(
+          assert(query)(
+            equalTo(Wildcard[Any](field = "testField", value = "test", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryContains)(
+            equalTo(Wildcard[Any](field = "testField", value = "*test*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryStartsWith)(
+            equalTo(Wildcard[Any](field = "testField", value = "test*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryTs)(
+            equalTo(Wildcard[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryContainsTs)(
             equalTo(
-              Wildcard[TestSubDocument](field = "stringField", value = "*M*", boost = None, caseInsensitive = None)
+              Wildcard[TestDocument](field = "stringField", value = "*test*", boost = None, caseInsensitive = None)
             )
           ) &&
-          assert(wildcardQuery2)(
+          assert(queryStartsWithTs)(
             equalTo(
-              Wildcard[TestSubDocument](field = "stringField", value = "M*", boost = None, caseInsensitive = None)
+              Wildcard[TestDocument](field = "stringField", value = "test*", boost = None, caseInsensitive = None)
             )
           ) &&
-          assert(wildcardQuery3)(
+          assert(queryWithSuffix)(
             equalTo(
-              Wildcard[TestSubDocument](field = "stringField", value = "M*", boost = None, caseInsensitive = None)
-            )
-          )
-        },
-        test("successfully create Wildcard Query with boost") {
-          val wildcardQuery1 = contains(field = "day_of_week", value = "M").boost(1.0)
-          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").boost(1.0)
-          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
-
-          assert(wildcardQuery1)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = None))
-          ) &&
-          assert(wildcardQuery2)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
-          ) &&
-          assert(wildcardQuery3)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = None))
-          )
-        },
-        test("successfully create case insensitive Wildcard Query") {
-          val wildcardQuery1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
-          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").caseInsensitiveTrue
-          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
-
-          assert(wildcardQuery1)(
-            equalTo(
-              Wildcard[Any](field = "day_of_week", value = "*M*", boost = None, caseInsensitive = Some(true))
+              Wildcard[TestDocument](field = "stringField.raw", value = "test", boost = None, caseInsensitive = None)
             )
           ) &&
-          assert(wildcardQuery2)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
-          ) &&
-          assert(wildcardQuery3)(
-            equalTo(Wildcard[Any](field = "day_of_week", value = "M*", boost = None, caseInsensitive = Some(true)))
-          )
-        },
-        test("successfully create case insensitive Wildcard Query with boost") {
-          val wildcardQuery1 = contains(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
-          val wildcardQuery2 = startsWith(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
-          val wildcardQuery3 = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
-
-          assert(wildcardQuery1)(
+          assert(queryWithBoost)(
             equalTo(
-              Wildcard[Any](field = "day_of_week", value = "*M*", boost = Some(1.0), caseInsensitive = Some(true))
+              Wildcard[TestDocument](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
             )
           ) &&
-          assert(wildcardQuery2)(
+          assert(queryWithCaseInsensitive)(
             equalTo(
-              Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
+              Wildcard[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
             )
           ) &&
-          assert(wildcardQuery3)(
+          assert(queryAllParams)(
             equalTo(
-              Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
+              Wildcard[TestDocument](
+                field = "stringField",
+                value = "test",
+                boost = Some(3.14),
+                caseInsensitive = Some(false)
+              )
             )
           )
         },
@@ -797,7 +753,56 @@ object QueryDSLSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding ElasticQuery as JSON")(
-        test("term query") {
+        test("matchPhrase") {
+          val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
+          val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
+          val queryWithBoost   = matchPhrase(field = "stringField", value = "this is a test").boost(21.15)
+          val querySimpleTs    = matchPhrase(field = TestDocument.stringField, value = "this is a test")
+          val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
+          val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
+
+          val querySimpleExpectedJson =
+            """
+              |{
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField": "this is a test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val queryRawExpectedJson =
+            """
+              |{
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField.raw": "this is a test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val queryWithBoostExpectedJson =
+            """
+              |{
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField": "this is a test",
+              |      "boost": 21.15
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(querySimple.toJson)(equalTo(querySimpleExpectedJson.toJson)) &&
+          assert(querySimpleTs.toJson)(equalTo(querySimpleExpectedJson.toJson)) &&
+          assert(queryRaw.toJson)(equalTo(queryRawExpectedJson.toJson)) &&
+          assert(queryRawTs.toJson)(equalTo(queryRawExpectedJson.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(queryWithBoostExpectedJson.toJson)) &&
+          assert(queryWithBoostTs.toJson)(equalTo(queryWithBoostExpectedJson.toJson))
+        },
+        test("term") {
           val query                    = term(field = TestDocument.stringField, value = "test")
           val queryWithBoost           = term(field = TestDocument.stringField, value = "test").boost(10.21)
           val queryWithCaseInsensitive = term(field = TestDocument.stringField, value = "test").caseInsensitiveTrue
@@ -865,7 +870,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
           assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
-        test("terms query") {
+        test("terms") {
           val query          = terms(field = TestDocument.stringField, values = "a", "b", "c")
           val queryWithBoost = terms(field = TestDocument.stringField, values = "a", "b", "c").boost(10.21)
 
@@ -1061,9 +1066,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test(
-          "properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query and with boost"
-        ) {
+        test("properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query, boost") {
           val query = filter(matches(field = "customer_age", value = 23))
             .must(matches(field = "customer_id", value = 1))
             .mustNot(matches(field = "day_of_month", value = 17))
@@ -1111,7 +1114,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJson)(equalTo(expected.toJson))
         },
         test(
-          "properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query and with both boost and minimumShouldMatch"
+          "properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query and with boost, minimumShouldMatch"
         ) {
           val query = filter(matches(field = "customer_age", value = 23))
             .must(matches(field = "customer_id", value = 1))
@@ -1217,80 +1220,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("successfully construct MatchPhrase query") {
-          val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
-          val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
-          val queryWithBoost   = matchPhrase(field = "stringField", value = "this is a test").boost(21.15)
-          val querySimpleTs    = matchPhrase(field = TestDocument.stringField, value = "this is a test")
-          val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
-          val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
-
-          assert(querySimple)(
-            equalTo(MatchPhrase[Any](field = "stringField", value = "this is a test", boost = None))
-          ) && assert(querySimpleTs)(
-            equalTo(MatchPhrase[TestDocument](field = "stringField", value = "this is a test", boost = None))
-          ) && assert(queryRaw)(
-            equalTo(MatchPhrase[Any](field = "stringField.raw", value = "this is a test", boost = None))
-          ) && assert(queryRawTs)(
-            equalTo(MatchPhrase[TestDocument](field = "stringField.raw", value = "this is a test", boost = None))
-          ) && assert(queryWithBoost)(
-            equalTo(MatchPhrase[Any](field = "stringField", value = "this is a test", boost = Some(21.15)))
-          ) && assert(queryWithBoostTs)(
-            equalTo(MatchPhrase[TestDocument](field = "stringField", value = "this is a test", boost = Some(21.15)))
-          )
-        },
-        test("successfully encode MatchPhrase query") {
-          val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
-          val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
-          val queryWithBoost   = matchPhrase(field = "stringField", value = "this is a test").boost(21.15)
-          val querySimpleTs    = matchPhrase(field = TestDocument.stringField, value = "this is a test")
-          val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
-          val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
-
-          val querySimpleExpectedJson =
-            """
-              |{
-              |  "query": {
-              |    "match_phrase": {
-              |      "stringField": "this is a test"
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val queryRawExpectedJson =
-            """
-              |{
-              |  "query": {
-              |    "match_phrase": {
-              |      "stringField.raw": "this is a test"
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val queryWithBoostExpectedJson =
-            """
-              |{
-              |  "query": {
-              |    "match_phrase": {
-              |      "stringField": "this is a test",
-              |      "boost": 21.15
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(querySimple.toJson)(equalTo(querySimpleExpectedJson.toJson)) && assert(querySimpleTs.toJson)(
-            equalTo(querySimpleExpectedJson.toJson)
-          ) &&
-          assert(queryRaw.toJson)(equalTo(queryRawExpectedJson.toJson)) && assert(queryRawTs.toJson)(
-            equalTo(queryRawExpectedJson.toJson)
-          ) &&
-          assert(queryWithBoost.toJson)(equalTo(queryWithBoostExpectedJson.toJson)) && assert(queryWithBoostTs.toJson)(
-            equalTo(queryWithBoostExpectedJson.toJson)
-          )
         },
         test("successfully create type-safe Match query using `matches` method") {
           val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
