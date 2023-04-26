@@ -35,6 +35,7 @@ import zio.elasticsearch._
 import zio.elasticsearch.executor.response.{
   CountResponse,
   CreateResponse,
+  DocumentWithHighlightsAndSort,
   GetResponse,
   SearchWithAggregationsResponse,
   UpdateByQueryResponse
@@ -344,7 +345,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 case _ =>
                   ZIO.succeed(
                     (
-                      itemFromResultsWithHighlights(value.resultsWithHighlightsAndSort),
+                      itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
                       value.scrollId.orElse(Some(scrollId))
                     )
                   )
@@ -372,7 +373,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 .fromEither(value.innerHitsResults)
                 .map { innerHitsResults =>
                   new SearchResult(
-                    itemFromResultsWithHighlightsAndInnerHits(
+                    itemsFromDocumentsWithHighlightsSortAndInnerHits(
                       value.resultsWithHighlightsAndSort,
                       innerHitsResults
                     ).toList,
@@ -427,7 +428,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                         case Some(newSearchAfter) =>
                           ZIO.succeed(
                             (
-                              itemFromResultsWithHighlights(body.resultsWithHighlightsAndSort),
+                              itemsFromDocumentsWithHighlights(body.resultsWithHighlightsAndSort),
                               Some((newPitId, Some(newSearchAfter)))
                             )
                           )
@@ -473,9 +474,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value =>
               ZIO.succeed(
                 new SearchAndAggregateResult(
-                  value.resultsWithHighlightsAndSort.map { case (source, highlight, sort) =>
-                    Item(raw = source, highlight = highlight, sort = sort)
-                  },
+                  itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort).toList,
                   value.aggs,
                   value
                 )
@@ -504,7 +503,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
               ZIO.succeed(
-                (itemFromResultsWithHighlights(value.resultsWithHighlightsAndSort), value.scrollId)
+                (itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort), value.scrollId)
               )
           )
         case _ =>
@@ -583,17 +582,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
     }
 
-  private def itemFromResultsWithHighlights(results: List[(Json, Option[Json], Option[Json])]): Chunk[Item] =
-    Chunk.fromIterable(results).map { case (source, highlight, sort) =>
-      Item(raw = source, highlight = highlight, sort = sort)
-    }
+  private def itemsFromDocumentsWithHighlights(results: List[DocumentWithHighlightsAndSort]): Chunk[Item] =
+    Chunk.fromIterable(results).map(r => Item(raw = r.source, highlight = r.highlight, sort = r.sort))
 
-  private def itemFromResultsWithHighlightsAndInnerHits(
-    results: List[(Json, Option[Json], Option[Json])],
+  private def itemsFromDocumentsWithHighlightsSortAndInnerHits(
+    results: List[DocumentWithHighlightsAndSort],
     innerHits: List[Map[String, List[Json]]]
   ): Chunk[Item] =
-    Chunk.fromIterable(results).zip(innerHits).map { case ((source, highlight, sort), innerHits) =>
-      Item(raw = source, highlight = highlight, innerHits = innerHits, sort = sort)
+    Chunk.fromIterable(results).zip(innerHits).map { case (r, innerHits) =>
+      Item(raw = r.source, highlight = r.highlight, innerHits = innerHits, sort = r.sort)
     }
 
   private def sendRequest(

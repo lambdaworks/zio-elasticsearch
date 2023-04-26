@@ -73,6 +73,8 @@ final class SearchResult private[elasticsearch] (
   lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(fullResponse.lastSortField)
 
   lazy val response: UIO[SearchWithAggregationsResponse] = ZIO.succeed(fullResponse)
+
+  lazy val total: UIO[Long] = ZIO.succeed(fullResponse.hits.total.value)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
@@ -101,4 +103,6 @@ final class SearchAndAggregateResult private[elasticsearch] (
   lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(fullResponse.lastSortField)
 
   lazy val response: UIO[SearchWithAggregationsResponse] = ZIO.succeed(fullResponse)
+
+  lazy val total: UIO[Long] = ZIO.succeed(fullResponse.hits.total.value)
 }
