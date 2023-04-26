@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.query.options
 
-trait HasBoost[Q <: HasBoost[Q]] {
+private[elasticsearch] trait HasBoost[Q <: HasBoost[Q]] {
 
   /**
    * Sets the `boost` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `boost` value is a positive

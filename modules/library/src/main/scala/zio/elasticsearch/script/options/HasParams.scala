@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.script.options
 
-private[elasticsearch] trait WithParams[S <: WithParams[S]] {
+private[elasticsearch] trait HasParams[S <: HasParams[S]] {
 
   /**
    * Adds additional parameters to a script field.

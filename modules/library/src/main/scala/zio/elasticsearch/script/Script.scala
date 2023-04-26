@@ -25,8 +25,8 @@ private[elasticsearch] final case class Script(
   source: String,
   params: Map[String, Any],
   lang: Option[String]
-) extends WithLang[Script]
-    with WithParams[Script] { self =>
+) extends HasLang[Script]
+    with HasParams[Script] { self =>
   def lang(value: String): Script =
     self.copy(lang = Some(value))
 

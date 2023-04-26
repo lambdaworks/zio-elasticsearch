@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.script.options
 
-private[elasticsearch] trait WithLang[S <: WithLang[S]] {
+private[elasticsearch] trait HasLang[S <: HasLang[S]] {
 
   /**
    * Sets the language used for analyzing the field values.

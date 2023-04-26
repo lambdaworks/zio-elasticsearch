@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import zio.elasticsearch.IndexName
+import zio.elasticsearch._
 
 package object example {
   final val Index: IndexName     = IndexName("repositories")
