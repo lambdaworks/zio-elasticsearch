@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.request.options
 
-import zio.elasticsearch.Routing
+import zio.elasticsearch._
 
 private[elasticsearch] trait HasRouting[R <: HasRouting[R]] {
 
