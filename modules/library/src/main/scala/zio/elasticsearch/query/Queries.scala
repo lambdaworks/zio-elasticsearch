@@ -191,7 +191,7 @@ private[elasticsearch] final case class HasParent[S](
 sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A, boost: Option[Double])
-  extends MatchQuery[S] { self =>
+    extends MatchQuery[S] { self =>
   def boost(value: Double): MatchQuery[S] =
     self.copy(boost = Some(value))
 
