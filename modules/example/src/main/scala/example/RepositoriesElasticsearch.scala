@@ -17,15 +17,36 @@
 package example
 
 import zio._
+import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch._
+import zio.elasticsearch.aggregation.AggregationOrder
 import zio.elasticsearch.query.ElasticQuery
+import zio.elasticsearch.query.sort.SortOrder
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
-  def findAll(): Task[List[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
+  def findAll(): Task[List[GitHubRepo]] = {
+    val x = elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
+
+    for {
+      x <-
+        elasticsearch
+          .execute(
+            ElasticRequest
+              .aggregate(
+                Index,
+                termsAggregation("AggrName", "forks")
+                  .size(2)
+                  .withAgg(termsAggregation("AggrName22222", "stars").withSubAgg(termsAggregation("Aggr333", "forks")))
+                  .withAgg(termsAggregation("aggr4444", "stars"))
+              )
+          )
+          .aggregations
+      _ = println(x)
+    } yield (List())
+  }
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {

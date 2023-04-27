@@ -42,7 +42,7 @@ object ElasticAggregation {
    *   performed.
    */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
-    Terms(name = name, field = field.toString, subAggregations = Nil)
+    Terms(name = name, field = field.toString, order = Set.empty, subAggregations = Nil, size = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified parameters.
@@ -56,5 +56,5 @@ object ElasticAggregation {
    *   performed.
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
-    Terms(name = name, field = field, subAggregations = Nil)
+    Terms(name = name, field = field, order = Set.empty, subAggregations = Nil, size = None)
 }
