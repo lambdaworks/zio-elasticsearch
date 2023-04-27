@@ -373,12 +373,12 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryTs)(equalTo(Exists[TestDocument](field = "intField")))
         },
         test("hasChild") {
-          val query = hasChild("child", matchAll)
+          val query                   = hasChild("child", matchAll)
           val queryWithIgnoreUnmapped = hasChild("child", matchAll).ignoreUnmappedTrue
-          val queryWithInnerHits = hasChild("child", matchAll).innerHits
-          val queryWithMaxChildren = hasChild("child", matchAll).maxChildren(5)
-          val queryWithMinChildren = hasChild("child", matchAll).minChildren(1)
-          val queryWithScoreMode = hasChild("child", matchAll).scoreMode(ScoreMode.Avg)
+          val queryWithInnerHits      = hasChild("child", matchAll).innerHits
+          val queryWithMaxChildren    = hasChild("child", matchAll).maxChildren(5)
+          val queryWithMinChildren    = hasChild("child", matchAll).minChildren(1)
+          val queryWithScoreMode      = hasChild("child", matchAll).scoreMode(ScoreMode.Avg)
           val queryWithAllParams = hasChild("child", matchAll)
             .scoreMode(ScoreMode.Avg)
             .ignoreUnmappedTrue
@@ -840,10 +840,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
         test("hasChild") {
           hasChild("child", matches("field", "value"))
           val queryWithIgnoreUnmapped = hasChild("child", matches("field", "value")).ignoreUnmappedTrue
-          val queryWithInnerHits = hasChild("child", matches("field", "value")).innerHits
-          val queryWithMaxChildren = hasChild("child", matches("field", "value")).maxChildren(5)
-          val queryWithMinChildren = hasChild("child", matches("field", "value")).minChildren(1)
-          val queryWithScoreMode = hasChild("child", matches("field", "value")).scoreMode(ScoreMode.Avg)
+          val queryWithInnerHits      = hasChild("child", matches("field", "value")).innerHits
+          val queryWithMaxChildren    = hasChild("child", matches("field", "value")).maxChildren(5)
+          val queryWithMinChildren    = hasChild("child", matches("field", "value")).minChildren(1)
+          val queryWithScoreMode      = hasChild("child", matches("field", "value")).scoreMode(ScoreMode.Avg)
           val queryWithAllParams = hasChild("child", matches("field", "value"))
             .scoreMode(ScoreMode.Avg)
             .ignoreUnmappedTrue
@@ -973,11 +973,11 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
-            assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson)) &&
-            assert(queryWithMaxChildren.toJson)(equalTo(expectedWithMaxChildren.toJson)) &&
-            assert(queryWithMinChildren.toJson)(equalTo(expectedWithMinChildren.toJson)) &&
-            assert(queryWithScoreMode.toJson)(equalTo(expectedWithScoreMode.toJson)) &&
-            assert(queryWithAllParams.toJson)(equalTo(expectedFullQuery.toJson))
+          assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson)) &&
+          assert(queryWithMaxChildren.toJson)(equalTo(expectedWithMaxChildren.toJson)) &&
+          assert(queryWithMinChildren.toJson)(equalTo(expectedWithMinChildren.toJson)) &&
+          assert(queryWithScoreMode.toJson)(equalTo(expectedWithScoreMode.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedFullQuery.toJson))
         },
         test("hasParent") {
           val query =
@@ -1077,10 +1077,10 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson)(equalTo(expected.toJson)) &&
-            assert(queryWithScore.toJson)(equalTo(expectedWithScore.toJson)) &&
-            assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
-            assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson)) &&
-            assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
+          assert(queryWithScore.toJson)(equalTo(expectedWithScore.toJson)) &&
+          assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
+          assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson)) &&
+          assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
         },
         test("matchPhrase") {
           val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
