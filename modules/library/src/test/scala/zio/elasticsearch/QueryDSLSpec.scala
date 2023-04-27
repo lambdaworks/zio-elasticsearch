@@ -754,6 +754,46 @@ object QueryDSLSpec extends ZIOSpecDefault {
           ) && assert(hasParentQueryIgnoreUnmappedFalse)(
             equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = None))
           )
+        },
+        test("successfully create HasChild query") {
+          val query                   = hasChild("child", matchAll)
+          val queryWithIgnoreUnmapped = hasChild("child", matchAll).ignoreUnmappedTrue
+          val queryWithInnerHits      = hasChild("child", matchAll).innerHits
+          val queryWithMaxChildren    = hasChild("child", matchAll).maxChildren(5)
+          val queryWithMinChildren    = hasChild("child", matchAll).minChildren(1)
+          val queryWithScoreMode      = hasChild("child", matchAll).scoreMode(ScoreMode.Avg)
+          val fullQuery = hasChild("child", matchAll)
+            .scoreMode(ScoreMode.Avg)
+            .ignoreUnmappedTrue
+            .innerHits
+            .maxChildren(5)
+            .minChildren(1)
+
+          assert(query)(
+            equalTo(HasChild[Any](childType = "child", query = matchAll))
+          ) && assert(queryWithIgnoreUnmapped)(
+            equalTo(HasChild[Any](childType = "child", query = matchAll, ignoreUnmapped = Some(true)))
+          ) && assert(queryWithInnerHits)(
+            equalTo(HasChild[Any](childType = "child", query = matchAll, innerHitsField = Some(InnerHits())))
+          ) && assert(queryWithMaxChildren)(
+            equalTo(HasChild[Any](childType = "child", query = matchAll, maxChildren = Some(5)))
+          ) && assert(queryWithMinChildren)(
+            equalTo(HasChild[Any](childType = "child", query = matchAll, minChildren = Some(1)))
+          ) && assert(queryWithScoreMode)(
+            equalTo(HasChild[Any](childType = "child", query = matchAll, scoreMode = Some(ScoreMode.Avg)))
+          ) && assert(fullQuery)(
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = Some(true),
+                innerHitsField = Some(InnerHits()),
+                maxChildren = Some(5),
+                minChildren = Some(1),
+                scoreMode = Some(ScoreMode.Avg)
+              )
+            )
+          )
         }
       ),
       suite("encoding ElasticQuery as JSON")(
@@ -1725,6 +1765,149 @@ object QueryDSLSpec extends ZIOSpecDefault {
                |""".stripMargin
 
           assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
+        },
+        test("successfully encode HasChild query") {
+          val query                   = hasChild("child", matches("field", "value"))
+          val queryWithIgnoreUnmapped = hasChild("child", matches("field", "value")).ignoreUnmappedTrue
+          val queryWithInnerHits      = hasChild("child", matches("field", "value")).innerHits
+          val queryWithMaxChildren    = hasChild("child", matches("field", "value")).maxChildren(5)
+          val queryWithMinChildren    = hasChild("child", matches("field", "value")).minChildren(1)
+          val queryWithScoreMode      = hasChild("child", matches("field", "value")).scoreMode(ScoreMode.Avg)
+          val fullQuery = hasChild("child", matches("field", "value"))
+            .scoreMode(ScoreMode.Avg)
+            .ignoreUnmappedTrue
+            .innerHits
+            .maxChildren(5)
+            .minChildren(1)
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithIgnoreUnmapped =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "ignore_unmapped": true,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithInnerHits =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "inner_hits": {},
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMaxChildren =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "max_children": 5,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMinChildren =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "min_children": 1,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithScoreMode =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "score_mode": "avg",
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedFullQuery =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "score_mode": "avg",
+              |      "ignore_unmapped": true,
+              |      "inner_hits": {},
+              |      "max_children": 5,
+              |      "min_children": 1,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
+          assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson)) &&
+          assert(queryWithMaxChildren.toJson)(equalTo(expectedWithMaxChildren.toJson)) &&
+          assert(queryWithMinChildren.toJson)(equalTo(expectedWithMinChildren.toJson)) &&
+          assert(queryWithScoreMode.toJson)(equalTo(expectedWithScoreMode.toJson)) &&
+          assert(fullQuery.toJson)(equalTo(expectedFullQuery.toJson))
         },
         test("successfully encode HasParent query") {
           val query =
