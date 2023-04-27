@@ -41,7 +41,7 @@ private[elasticsearch] final case class Multiple(aggregations: List[SingleElasti
     self.copy(aggregations = self.aggregations ++ aggregations)
 
   def paramsToJson: Json =
-    aggregations.map(_.paramsToJson).reduce((agg1, agg2) => agg1.merge(agg2))
+    aggregations.map(_.paramsToJson).reduce(_ merge _)
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     self.copy(aggregations = agg +: aggregations)
@@ -104,10 +104,10 @@ private[elasticsearch] final case class Terms(
 
     val subAggsJson =
       if (self.subAggregations.nonEmpty)
-        Obj("aggs" -> self.subAggregations.map(agg => agg.paramsToJson).reduce((agg1, agg2) => agg1.merge(agg2)))
+        Obj("aggs" -> self.subAggregations.map(agg => agg.paramsToJson).reduce(_ merge _))
       else
         Obj()
 
-    Obj("terms" -> Obj("field" -> self.field.toJson).merge(orderJson).merge(sizeJson)).merge(subAggsJson)
+    Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson
   }
 }
