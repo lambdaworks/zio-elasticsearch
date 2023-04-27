@@ -22,14 +22,18 @@ import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
 private[elasticsearch] trait HasOrder[A <: HasOrder[A]] {
 
   /**
-   * Sets the `order` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]].
+   * Sets the `order` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]]. At least one
+   * [[zio.elasticsearch.aggregation.AggregationOrder]] must be specified.
    *
+   * @param requiredOrder
+   *   the required [[zio.elasticsearch.aggregation.AggregationOrder]] object defining the sort order for the
+   *   aggregation results
    * @param orders
    *   a list of [[zio.elasticsearch.aggregation.AggregationOrder]] defining the sort order for the aggregation results
    * @return
    *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `order` parameter.
    */
-  def order(orders: AggregationOrder*): A
+  def orderBy(requiredOrder: AggregationOrder, orders: AggregationOrder*): A
 
   /**
    * Sets the `order` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]] using the `_count` field in
@@ -39,7 +43,7 @@ private[elasticsearch] trait HasOrder[A <: HasOrder[A]] {
    *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `order` parameter.
    */
   final def orderByCountAsc: A =
-    order(AggregationOrder("_count", Asc))
+    orderBy(AggregationOrder("_count", Asc))
 
   /**
    * Sets the `order` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]] using the `_count` field in
@@ -49,7 +53,7 @@ private[elasticsearch] trait HasOrder[A <: HasOrder[A]] {
    *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `order` parameter.
    */
   final def orderByCountDesc: A =
-    order(AggregationOrder("_count", Desc))
+    orderBy(AggregationOrder("_count", Desc))
 
   /**
    * Sets the `order` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]] using the `_key` field in
@@ -59,7 +63,7 @@ private[elasticsearch] trait HasOrder[A <: HasOrder[A]] {
    *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `order` parameter.
    */
   final def orderByKeyAsc: A =
-    order(AggregationOrder("_key", Asc))
+    orderBy(AggregationOrder("_key", Asc))
 
   /**
    * Sets the `order` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]] using the `_key` field in
@@ -69,5 +73,5 @@ private[elasticsearch] trait HasOrder[A <: HasOrder[A]] {
    *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `order` parameter.
    */
   final def orderByKeyDesc: A =
-    order(AggregationOrder("_key", Desc))
+    orderBy(AggregationOrder("_key", Desc))
 }

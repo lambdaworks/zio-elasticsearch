@@ -281,7 +281,7 @@ object AggregationSpec extends ZIOSpecDefault {
         },
         test("properly encode Terms aggregation with order") {
           val aggregation =
-            termsAggregation(name = "aggregation", field = "day_of_week").order(AggregationOrder("_key", Desc))
+            termsAggregation(name = "aggregation", field = "day_of_week").orderBy(AggregationOrder("_key", Desc))
           val expected =
             """
               |{
