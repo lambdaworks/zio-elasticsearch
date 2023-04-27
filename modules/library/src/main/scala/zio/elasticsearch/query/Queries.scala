@@ -129,7 +129,7 @@ sealed trait HasChildQuery[S]
   def maxChildren(value: Int): HasChildQuery[S]
 
   /**
-   * Sets the `minChildren` parameter parameter for the [[HasChildQuery]].
+   * Sets the `minChildren` parameter for the [[HasChildQuery]].
    *
    * Indicates minimum number of child documents that match the query required to match the query for a returned parent
    * document. If the parent document does not meet this limit, it is excluded from the search results.

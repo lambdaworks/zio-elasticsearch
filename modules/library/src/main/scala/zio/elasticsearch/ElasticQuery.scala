@@ -114,13 +114,12 @@ object ElasticQuery {
    * @param childType
    *   a name of the child relationship mapped for the join field
    * @param query
-   *   query you wish to run on child documents of the child `type` field
+   *   the [[ElasticQuery]] object representing query you wish to run on child documents of the child `type` field
    * @tparam S
    *   document for which field query is executed
    * @return
-   *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the has parent query to be performed.
+   *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the `has child query` to be performed.
    */
-
   final def hasChild[S: Schema](childType: String, query: ElasticQuery[S]): HasChildQuery[S] =
     HasChild(childType = childType, query = query)
 
@@ -130,9 +129,9 @@ object ElasticQuery {
    * @param childType
    *   a name of the child relationship mapped for the join field
    * @param query
-   *   query you wish to run on child documents of the child `type` field
+   *   the [[ElasticQuery]] object representing query you wish to run on child documents of the child `type` field
    * @return
-   *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the has parent query to be performed.
+   *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the `has child query` to be performed.
    */
   final def hasChild(childType: String, query: ElasticQuery[Any]): HasChildQuery[Any] =
     HasChild(childType = childType, query = query)
@@ -143,7 +142,7 @@ object ElasticQuery {
    * @param parentType
    *   a name of the parent relationship mapped for the join field
    * @param query
-   *   query you wish to run on parent documents of the `parent_type` field
+   *   the [[ElasticQuery]] object representing query you wish to run on parent documents of the `parent_type` field
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -158,7 +157,7 @@ object ElasticQuery {
    * @param parentType
    *   a name of the parent relationship mapped for the join field
    * @param query
-   *   query you wish to run on parent documents of the `parent_type` field
+   *   the [[ElasticQuery]] object representing query you wish to run on parent documents of the `parent_type` field
    * @return
    *   an instance of [[zio.elasticsearch.query.HasParentQuery]] that represents the has parent query to be performed.
    */
