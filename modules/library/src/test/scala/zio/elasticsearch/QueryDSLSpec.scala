@@ -244,7 +244,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
                   mustNot = List(
                     Match(field = "doubleField", value = 3.14, boost = None),
-                    Match(field = "testField", value = "test", boost = None),
+                    Match(field = "testField", value = true, boost = None),
                     Exists("anotherTestField")
                   ),
                   should = Nil,
@@ -261,7 +261,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   mustNot = List(Match(field = "intField", value = 50, boost = None)),
                   should = List(
                     Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
-                    Match(field = "testField", value = "test", boost = None)
+                    Match(field = "stringField", value = "test", boost = None)
                   ),
                   boost = None,
                   minimumShouldMatch = None
@@ -287,7 +287,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
                   mustNot = List(
                     Match(field = "doubleField", value = 3.14, boost = None),
-                    Match(field = "testField", value = "test", boost = None),
+                    Match(field = "testField", value = true, boost = None),
                     Exists("anotherTestField")
                   ),
                   should = Nil,
@@ -304,7 +304,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
                   mustNot = List(Match(field = "intField", value = 50, boost = None)),
                   should = List(
                     Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
-                    Match(field = "testField", value = "test", boost = None)
+                    Match(field = "stringField", value = "test", boost = None)
                   ),
                   boost = Some(3.14),
                   minimumShouldMatch = Some(3)
@@ -313,6 +313,58 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           }
         ),
+        test("contains") {
+          val query                    = contains("testField", "test")
+          val queryTs                  = contains(TestDocument.stringField, "test")
+          val queryWithSuffix          = contains(TestDocument.stringField.raw, "test")
+          val queryWithBoost           = contains(TestDocument.stringField, "test").boost(10.21)
+          val queryWithCaseInsensitive = contains(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryAllParams           = contains(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
+
+          assert(query)(
+            equalTo(Wildcard[Any](field = "testField", value = "*test*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryTs)(
+            equalTo(
+              Wildcard[TestDocument](field = "stringField", value = "*test*", boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Wildcard[TestDocument](field = "stringField.raw", value = "*test*", boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              Wildcard[TestDocument](
+                field = "stringField",
+                value = "*test*",
+                boost = Some(10.21),
+                caseInsensitive = None
+              )
+            )
+          ) &&
+          assert(queryWithCaseInsensitive)(
+            equalTo(
+              Wildcard[TestDocument](
+                field = "stringField",
+                value = "*test*",
+                boost = None,
+                caseInsensitive = Some(true)
+              )
+            )
+          ) &&
+          assert(queryAllParams)(
+            equalTo(
+              Wildcard[TestDocument](
+                field = "stringField",
+                value = "*test*",
+                boost = Some(3.14),
+                caseInsensitive = Some(false)
+              )
+            )
+          )
+        },
         test("exists") {
           val query   = exists("testField")
           val queryTs = exists(TestDocument.intField)
@@ -462,63 +514,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("term") {
-          val query                    = term("stringField", "test")
-          val queryTs                  = term(TestDocument.stringField, "test")
-          val queryWithSuffix          = term(TestDocument.stringField.keyword, "test")
-          val queryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
-          val queryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
-          val queryAllParams           = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
-
-          assert(query)(
-            equalTo(Term[Any](field = "stringField", value = "test", boost = None, caseInsensitive = None))
-          ) &&
-          assert(queryTs)(
-            equalTo(Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = None))
-          ) &&
-          assert(queryWithSuffix)(
-            equalTo(
-              Term[TestDocument](field = "stringField.keyword", value = "test", boost = None, caseInsensitive = None)
-            )
-          ) &&
-          assert(queryWithBoost)(
-            equalTo(
-              Term[TestDocument](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
-            )
-          ) &&
-          assert(queryWithCaseInsensitive)(
-            equalTo(
-              Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
-            )
-          ) &&
-          assert(queryAllParams)(
-            equalTo(
-              Term[TestDocument](
-                field = "stringField",
-                value = "test",
-                boost = Some(3.14),
-                caseInsensitive = Some(false)
-              )
-            )
-          )
-        },
-        test("terms") {
-          val query           = terms("stringField", "a", "b", "c")
-          val queryTs         = terms(TestDocument.stringField, "a", "b", "c")
-          val queryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
-          val queryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
-
-          assert(query)(equalTo(Terms[Any](field = "stringField", values = List("a", "b", "c"), boost = None))) &&
-          assert(queryTs)(
-            equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = None))
-          ) &&
-          assert(queryWithSuffix)(
-            equalTo(Terms[TestDocument](field = "stringField.keyword", values = List("a", "b", "c"), boost = None))
-          ) &&
-          assert(queryWithBoost)(
-            equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = Some(10.21)))
-          )
-        },
         test("range") {
           val query                    = range("testField")
           val queryString              = range(TestDocument.stringField)
@@ -632,13 +627,113 @@ object QueryDSLSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("startsWith") {
+          val query                    = startsWith("testField", "test")
+          val queryTs                  = startsWith(TestDocument.stringField, "test")
+          val queryWithSuffix          = startsWith(TestDocument.stringField.raw, "test")
+          val queryWithBoost           = startsWith(TestDocument.stringField, "test").boost(10.21)
+          val queryWithCaseInsensitive = startsWith(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryAllParams           = startsWith(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
+
+          assert(query)(
+            equalTo(Wildcard[Any](field = "testField", value = "test*", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryTs)(
+            equalTo(
+              Wildcard[TestDocument](field = "stringField", value = "test*", boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Wildcard[TestDocument](field = "stringField.raw", value = "test*", boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              Wildcard[TestDocument](
+                field = "stringField",
+                value = "test*",
+                boost = Some(10.21),
+                caseInsensitive = None
+              )
+            )
+          ) &&
+          assert(queryWithCaseInsensitive)(
+            equalTo(
+              Wildcard[TestDocument](field = "stringField", value = "test*", boost = None, caseInsensitive = Some(true))
+            )
+          ) &&
+          assert(queryAllParams)(
+            equalTo(
+              Wildcard[TestDocument](
+                field = "stringField",
+                value = "test*",
+                boost = Some(3.14),
+                caseInsensitive = Some(false)
+              )
+            )
+          )
+        },
+        test("term") {
+          val query                    = term("stringField", "test")
+          val queryTs                  = term(TestDocument.stringField, "test")
+          val queryWithSuffix          = term(TestDocument.stringField.keyword, "test")
+          val queryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
+          val queryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryAllParams           = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
+
+          assert(query)(
+            equalTo(Term[Any](field = "stringField", value = "test", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryTs)(
+            equalTo(Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Term[TestDocument](field = "stringField.keyword", value = "test", boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              Term[TestDocument](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithCaseInsensitive)(
+            equalTo(
+              Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
+            )
+          ) &&
+          assert(queryAllParams)(
+            equalTo(
+              Term[TestDocument](
+                field = "stringField",
+                value = "test",
+                boost = Some(3.14),
+                caseInsensitive = Some(false)
+              )
+            )
+          )
+        },
+        test("terms") {
+          val query           = terms("stringField", "a", "b", "c")
+          val queryTs         = terms(TestDocument.stringField, "a", "b", "c")
+          val queryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
+          val queryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
+
+          assert(query)(equalTo(Terms[Any](field = "stringField", values = List("a", "b", "c"), boost = None))) &&
+          assert(queryTs)(
+            equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = None))
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(Terms[TestDocument](field = "stringField.keyword", values = List("a", "b", "c"), boost = None))
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = Some(10.21)))
+          )
+        },
         test("wildcard") {
           val query                    = wildcard("testField", "test")
-          val queryContains            = contains("testField", "test")
-          val queryStartsWith          = startsWith("testField", "test")
           val queryTs                  = wildcard(TestDocument.stringField, "test")
-          val queryContainsTs          = contains(TestDocument.stringField, "test")
-          val queryStartsWithTs        = startsWith(TestDocument.stringField, "test")
           val queryWithSuffix          = wildcard(TestDocument.stringField.raw, "test")
           val queryWithBoost           = wildcard(TestDocument.stringField, "test").boost(10.21)
           val queryWithCaseInsensitive = wildcard(TestDocument.stringField, "test").caseInsensitiveTrue
@@ -647,24 +742,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(Wildcard[Any](field = "testField", value = "test", boost = None, caseInsensitive = None))
           ) &&
-          assert(queryContains)(
-            equalTo(Wildcard[Any](field = "testField", value = "*test*", boost = None, caseInsensitive = None))
-          ) &&
-          assert(queryStartsWith)(
-            equalTo(Wildcard[Any](field = "testField", value = "test*", boost = None, caseInsensitive = None))
-          ) &&
           assert(queryTs)(
             equalTo(Wildcard[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = None))
-          ) &&
-          assert(queryContainsTs)(
-            equalTo(
-              Wildcard[TestDocument](field = "stringField", value = "*test*", boost = None, caseInsensitive = None)
-            )
-          ) &&
-          assert(queryStartsWithTs)(
-            equalTo(
-              Wildcard[TestDocument](field = "stringField", value = "test*", boost = None, caseInsensitive = None)
-            )
           ) &&
           assert(queryWithSuffix)(
             equalTo(
