@@ -41,7 +41,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       dateField = LocalDate.parse("2020-10-11"),
       intField = 10,
       doubleField = 10.0,
-      booleanField = false
+      booleanField = true
     )
 
   val secondDoc: TestDocument =
@@ -51,7 +51,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       dateField = LocalDate.parse("2020-12-12"),
       intField = 12,
       doubleField = 12.0,
-      booleanField = false
+      booleanField = true
     )
 
   private val url = "http://localhost:9200"
@@ -251,7 +251,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          "dateField": "2020-10-11",
         |          "intField": 10,
         |          "doubleField": 10.0,
-        |          "booleanField": false
+        |          "booleanField": true
         |        }
         |      }
         |    ]
