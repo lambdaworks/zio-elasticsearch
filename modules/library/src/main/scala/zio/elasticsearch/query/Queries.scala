@@ -121,7 +121,10 @@ private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: Str
   }
 }
 
-sealed trait HasParentQuery[S] extends ElasticQuery[S] with HasIgnoreUnmapped[HasParentQuery[S]] {
+sealed trait HasParentQuery[S]
+    extends ElasticQuery[S]
+    with HasIgnoreUnmapped[HasParentQuery[S]]
+    with HasInnerHits[HasParentQuery[S]] {
 
   /**
    * Sets the `score` parameter parameter for the [[HasParentQuery]].
@@ -162,11 +165,15 @@ private[elasticsearch] final case class HasParent[S](
   parentType: String,
   query: ElasticQuery[S],
   ignoreUnmapped: Option[Boolean] = None,
+  innerHitsField: Option[InnerHits] = None,
   score: Option[Boolean] = None
 ) extends HasParentQuery[S] { self =>
 
   def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
+
+  override def innerHits(innerHits: InnerHits): HasParentQuery[S] =
+    self.copy(innerHitsField = Some(innerHits))
 
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
@@ -175,13 +182,23 @@ private[elasticsearch] final case class HasParent[S](
           Some("parent_type" -> Str(parentType)),
           Some("query"       -> query.paramsToJson(None)),
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
-          score.map("score" -> Json.Bool(_))
+          score.map("score" -> Json.Bool(_)),
+          innerHitsField.map(_.toStringJsonPair)
         ).flatten: _*
       )
     )
 
   def withScore(value: Boolean): HasParent[S] =
     self.copy(score = Some(value))
+
+  /**
+   * Sets the inner hits configuration for the [[NestedQuery]].
+   *
+   * @param innerHits
+   *   the configuration for inner hits
+   * @return
+   *   a new instance of the [[ElasticQuery]] with the specified inner hits configuration.
+   */
 }
 
 sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
@@ -231,17 +248,12 @@ private[elasticsearch] final case class Nested[S](
     Obj(
       "nested" -> Obj(
         List(
-          "path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path)),
-          "query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))
-        ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
-          "ignore_unmapped" -> Json.Bool(_)
-        ) ++ innerHitsField.map { innerHits =>
-          "inner_hits" -> Obj(
-            innerHits.from.map("from" -> Num(_)).toList
-              ++ innerHits.size.map("size" -> Num(_))
-              ++ innerHits.name.map("name" -> Str(_)): _*
-          )
-        }: _*
+          Some("path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path))),
+          Some("query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
+          scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)),
+          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          innerHitsField.map(_.toStringJsonPair)
+        ).flatten: _*
       )
     )
 

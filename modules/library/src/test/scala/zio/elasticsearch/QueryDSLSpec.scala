@@ -1754,6 +1754,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
             hasParent(parentType = "parent", query = matches("field", "value")).ignoreUnmappedFalse
           val queryWithScoreAndIgnoreUnmapped =
             hasParent(parentType = "parent", query = matches("field", "value")).withScoreTrue.ignoreUnmappedTrue
+          val queryWithInnerHits =
+            hasParent(parentType = "parent", query = matches("field", "value")).innerHits
 
           val expected =
             """
@@ -1823,10 +1825,28 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithInnerHits =
+            """
+              |{
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      },
+              |      "inner_hits": {}
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryWithScore.toJson)(equalTo(expectedWithScore.toJson)) &&
           assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
-          assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson))
+          assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson)) &&
+          assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
         }
       )
     )
