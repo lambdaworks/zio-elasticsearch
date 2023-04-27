@@ -202,7 +202,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |    ],
         |    "dateField": "2020-10-11",
         |    "intField": 10,
-        |    "doubleField": 10.0
+        |    "doubleField": 10.0,
+        |    "booleanField": true
         |  }
         |}""".stripMargin,
       StatusCode.Ok
@@ -249,7 +250,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          ],
         |          "dateField": "2020-10-11",
         |          "intField": 10,
-        |          "doubleField": 10.0
+        |          "doubleField": 10.0,
+        |          "booleanField": false
         |        }
         |      }
         |    ]
@@ -299,7 +301,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          ],
         |          "dateField": "2020-10-11",
         |          "intField": 10,
-        |          "doubleField": 10.0
+        |          "doubleField": 10.0,
+        |          "booleanField": true
         |        }
         |      }
         |    ]

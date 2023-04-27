@@ -29,7 +29,7 @@ import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 object QueryDSLSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Query DSL")(
-      suite("creating ElasticQuery")(
+      suite("constructing ElasticQuery")(
         suite("bool")(
           test("filter") {
             val query = filter(matches(TestDocument.stringField, "test"), matches(field = "testField", "test field"))
