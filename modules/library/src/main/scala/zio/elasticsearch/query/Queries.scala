@@ -108,19 +108,6 @@ private[elasticsearch] final case class Exists[S](field: String) extends ExistsQ
     Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
 }
 
-sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
-
-private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A, boost: Option[Double])
-    extends MatchQuery[S] { self =>
-  def boost(value: Double): MatchQuery[S] =
-    self.copy(boost = Some(value))
-
-  def paramsToJson(fieldPath: Option[String]): Json = {
-    val matchFields = Some(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson) ++ boost.map("boost" -> Num(_))
-    Obj("match" -> Obj(matchFields.toList: _*))
-  }
-}
-
 sealed trait HasParentQuery[S]
     extends ElasticQuery[S]
     with HasIgnoreUnmapped[HasParentQuery[S]]
@@ -199,6 +186,19 @@ private[elasticsearch] final case class HasParent[S](
    * @return
    *   a new instance of the [[ElasticQuery]] with the specified inner hits configuration.
    */
+}
+
+sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
+
+private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A, boost: Option[Double])
+  extends MatchQuery[S] { self =>
+  def boost(value: Double): MatchQuery[S] =
+    self.copy(boost = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json = {
+    val matchFields = Some(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson) ++ boost.map("boost" -> Num(_))
+    Obj("match" -> Obj(matchFields.toList: _*))
+  }
 }
 
 sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
