@@ -93,10 +93,10 @@ private[elasticsearch] final case class Terms(
         case orders if orders.isEmpty =>
           Obj()
         case orders if orders.size == 1 =>
-          Obj("order" -> Obj(orders.head.orderKey -> orders.head.order.toString.toJson))
+          Obj("order" -> Obj(orders.head.value -> orders.head.order.toString.toJson))
         case orders =>
-          Obj("order" -> Arr(orders.toList.collect { case AggregationOrder(key, order) =>
-            Obj(key -> order.toString.toJson)
+          Obj("order" -> Arr(orders.toList.collect { case AggregationOrder(value, order) =>
+            Obj(value -> order.toString.toJson)
           }: _*))
       }
 
@@ -104,7 +104,7 @@ private[elasticsearch] final case class Terms(
 
     val subAggsJson =
       if (self.subAggregations.nonEmpty)
-        Obj("aggs" -> self.subAggregations.map(agg => agg.paramsToJson).reduce(_ merge _))
+        Obj("aggs" -> self.subAggregations.map(_.paramsToJson).reduce(_ merge _))
       else
         Obj()
 

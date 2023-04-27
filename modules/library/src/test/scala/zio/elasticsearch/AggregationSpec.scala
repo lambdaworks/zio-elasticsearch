@@ -4,7 +4,7 @@ import zio.Scope
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.TestSubDocument
-import zio.elasticsearch.query.sort.SortOrder.Desc
+import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -51,15 +51,17 @@ object AggregationSpec extends ZIOSpecDefault {
           "successfully create type-safe Terms aggregation with multi-field using `terms` method and order parameter"
         ) {
           val aggregation =
-            termsAggregation(name = "aggregation", field = TestSubDocument.stringField.keyword)
-              .order(AggregationOrder("_key", Desc))
+            termsAggregation(
+              name = "aggregation",
+              field = TestSubDocument.stringField.keyword
+            ).orderByKeyDesc.orderByCountAsc
 
           assert(aggregation)(
             equalTo(
               Terms(
                 name = "aggregation",
                 field = "stringField.keyword",
-                order = Set(AggregationOrder("_key", Desc)),
+                order = Set(AggregationOrder("_key", Desc), AggregationOrder("_count", Asc)),
                 subAggregations = Nil,
                 size = None
               )
@@ -89,8 +91,10 @@ object AggregationSpec extends ZIOSpecDefault {
           "successfully create type-safe Terms aggregation with multi-field with all params"
         ) {
           val aggregation =
-            termsAggregation(name = "aggregation", field = TestSubDocument.stringField.keyword)
-              .order(AggregationOrder("_key", Desc))
+            termsAggregation(
+              name = "aggregation",
+              field = TestSubDocument.stringField.keyword
+            ).orderByCountDesc.orderByKeyAsc
               .size(5)
 
           assert(aggregation)(
@@ -98,7 +102,7 @@ object AggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField.keyword",
-                order = Set(AggregationOrder("_key", Desc)),
+                order = Set(AggregationOrder("_count", Desc), AggregationOrder("_key", Asc)),
                 subAggregations = Nil,
                 size = Some(5)
               )
