@@ -55,9 +55,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
       )
       .toEitherWith(_.mkString(", "))
 
-  lazy val results: List[Json] = hits.hits.map(_.source)
-
-  lazy val resultsWithHighlights: List[(Json, Option[Json])] = hits.hits.map(h => (h.source, h.highlight))
+  lazy val resultsWithHighlightsAndSort: List[DocumentWithHighlightsAndSort] =
+    hits.hits.map(h => DocumentWithHighlightsAndSort(h.source, h.highlight, h.sort))
 
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 
@@ -90,3 +89,9 @@ private[elasticsearch] object SearchWithAggregationsResponse {
   implicit val decoder: JsonDecoder[SearchWithAggregationsResponse] =
     DeriveJsonDecoder.gen[SearchWithAggregationsResponse]
 }
+
+private[elasticsearch] case class DocumentWithHighlightsAndSort(
+  source: Json,
+  highlight: Option[Json],
+  sort: Option[Json]
+)
