@@ -79,7 +79,7 @@ final class SearchResult private[elasticsearch] (
 
 final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: List[Item],
-  private val aggs: Map[String, AggregationResponse], // todo if we keep full response we might lose this as well?
+  private val aggs: Map[String, AggregationResponse],
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[List]
     with AggregationsResult {
