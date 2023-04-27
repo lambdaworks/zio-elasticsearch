@@ -49,9 +49,9 @@ private[elasticsearch] final case class Multiple(aggregations: List[SingleElasti
 
 sealed trait TermsAggregation
     extends SingleElasticAggregation
+    with HasOrder[TermsAggregation]
     with WithSubAgg[TermsAggregation]
-    with WithAgg
-    with HasOrder[TermsAggregation] {
+    with WithAgg {
 
   /**
    * Sets the maximum number of terms to be returned by the aggregation. By default, the [[TermsAggregation]] returns
