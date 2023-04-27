@@ -109,6 +109,75 @@ private[elasticsearch] final case class Exists[S](field: String) extends ExistsQ
     Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
 }
 
+sealed trait HasChildQuery[S]
+    extends ElasticQuery[S]
+    with HasIgnoreUnmapped[HasChildQuery[S]]
+    with HasInnerHits[HasChildQuery[S]]
+    with HasScoreMode[HasChildQuery[S]] {
+
+  /**
+   * Sets the `maxChildren` parameter for the [[HasChildQuery]].
+   *
+   * Indicates maximum number of child documents that match the query allowed for a returned parent document. If the
+   * parent document exceeds this limit, it is excluded from the search results.
+   *
+   * @param value
+   *   the [[scala.Int]] value for `score` parameter
+   * @return
+   *   a new instance of the [[HasChildQuery]] with the `score` value set.
+   */
+  def maxChildren(value: Int): HasChildQuery[S]
+
+  /**
+   * Sets the `minChildren` parameter for the [[HasChildQuery]].
+   *
+   * Indicates minimum number of child documents that match the query required to match the query for a returned parent
+   * document. If the parent document does not meet this limit, it is excluded from the search results.
+   *
+   * @param value
+   *   the [[scala.Int]] value for `score` parameter
+   * @return
+   *   a new instance of the [[HasChildQuery]] with the `score` value set.
+   */
+  def minChildren(value: Int): HasChildQuery[S]
+}
+
+private[elasticsearch] final case class HasChild[S](
+  childType: String,
+  query: ElasticQuery[S],
+  ignoreUnmapped: Option[Boolean] = None,
+  innerHitsField: Option[InnerHits] = None,
+  maxChildren: Option[Int] = None,
+  minChildren: Option[Int] = None,
+  scoreMode: Option[ScoreMode] = None
+) extends HasChildQuery[S] { self =>
+
+  def ignoreUnmapped(value: Boolean): HasChildQuery[S] = self.copy(ignoreUnmapped = Some(value))
+
+  def innerHits(innerHits: InnerHits): HasChildQuery[S] = self.copy(innerHitsField = Some(innerHits))
+
+  def maxChildren(value: Int): HasChildQuery[S] = self.copy(maxChildren = Some(value))
+
+  def minChildren(value: Int): HasChildQuery[S] = self.copy(minChildren = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj(
+      "has_child" -> Obj(
+        List(
+          Some("type"  -> Str(childType)),
+          Some("query" -> query.paramsToJson(None)),
+          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          innerHitsField.map(_.toStringJsonPair),
+          maxChildren.map("max_children" -> Json.Num(_)),
+          minChildren.map("min_children" -> Json.Num(_)),
+          scoreMode.map(sm => "score_mode" -> Json.Str(sm.toString.toLowerCase))
+        ).flatten: _*
+      )
+    )
+
+  def scoreMode(value: ScoreMode): HasChildQuery[S] = self.copy(scoreMode = Some(value))
+}
+
 sealed trait HasParentQuery[S]
     extends ElasticQuery[S]
     with HasIgnoreUnmapped[HasParentQuery[S]]
@@ -155,7 +224,8 @@ private[elasticsearch] final case class HasParent[S](
   ignoreUnmapped: Option[Boolean] = None,
   innerHitsField: Option[InnerHits] = None,
   score: Option[Boolean] = None
-) extends HasParentQuery[S] { self =>
+) extends HasParentQuery[S] {
+  self =>
 
   def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
@@ -178,15 +248,6 @@ private[elasticsearch] final case class HasParent[S](
 
   def withScore(value: Boolean): HasParent[S] =
     self.copy(score = Some(value))
-
-  /**
-   * Sets the inner hits configuration for the [[NestedQuery]].
-   *
-   * @param innerHits
-   *   the configuration for inner hits
-   * @return
-   *   a new instance of the [[ElasticQuery]] with the specified inner hits configuration.
-   */
 }
 
 sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
