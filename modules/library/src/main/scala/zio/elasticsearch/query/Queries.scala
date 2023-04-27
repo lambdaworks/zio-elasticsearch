@@ -159,7 +159,7 @@ private[elasticsearch] final case class HasParent[S](
   def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
-  override def innerHits(innerHits: InnerHits): HasParentQuery[S] =
+  def innerHits(innerHits: InnerHits): HasParentQuery[S] =
     self.copy(innerHitsField = Some(innerHits))
 
   def paramsToJson(fieldPath: Option[String]): Json =
