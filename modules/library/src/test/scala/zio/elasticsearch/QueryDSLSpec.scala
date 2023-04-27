@@ -1767,7 +1767,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
         },
         test("successfully encode HasChild query") {
-          val query                   = hasChild("child", matches("field", "value"))
+          hasChild("child", matches("field", "value"))
           val queryWithIgnoreUnmapped = hasChild("child", matches("field", "value")).ignoreUnmappedTrue
           val queryWithInnerHits      = hasChild("child", matches("field", "value")).innerHits
           val queryWithMaxChildren    = hasChild("child", matches("field", "value")).maxChildren(5)
@@ -1780,21 +1780,20 @@ object QueryDSLSpec extends ZIOSpecDefault {
             .maxChildren(5)
             .minChildren(1)
 
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "has_child": {
-              |      "type": "child",
-              |      "query": {
-              |        "match": {
-              |         "field" : "value"
-              |        }
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
+          """
+            |{
+            |  "query": {
+            |    "has_child": {
+            |      "type": "child",
+            |      "query": {
+            |        "match": {
+            |         "field" : "value"
+            |        }
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
 
           val expectedWithIgnoreUnmapped =
             """
