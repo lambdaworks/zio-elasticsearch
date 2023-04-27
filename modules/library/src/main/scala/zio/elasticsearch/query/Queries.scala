@@ -116,9 +116,9 @@ sealed trait HasChildQuery[S]
     with HasScoreMode[HasChildQuery[S]] {
 
   /**
-   * Sets the `maxChildren` parameter parameter for the [[HasChildQuery]].
+   * Sets the `maxChildren` parameter for the [[HasChildQuery]].
    *
-   * Indicates maximum number of child documents that match the query allowed for a returned parent document If the
+   * Indicates maximum number of child documents that match the query allowed for a returned parent document. If the
    * parent document exceeds this limit, it is excluded from the search results.
    *
    * @param value
