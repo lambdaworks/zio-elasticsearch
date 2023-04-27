@@ -110,6 +110,34 @@ object ElasticQuery {
     Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.query.HasParent]] using the specified parameters.
+   *
+   * @param parentType
+   *   a name of the parent relationship mapped for the join field
+   * @param query
+   *   query you wish to run on parent documents of the `parent_type` field
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.HasParent]] that represents the has parent query to be performed.
+   */
+  final def hasParent[S: Schema](parentType: String, query: ElasticQuery[S]): HasParentQuery[S] =
+    HasParent(parentType = parentType, query = query)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.HasParent]] using the specified parameters.
+   *
+   * @param parentType
+   *   a name of the parent relationship mapped for the join field
+   * @param query
+   *   query you wish to run on parent documents of the `parent_type` field
+   * @return
+   *   an instance of [[zio.elasticsearch.query.HasParent]] that represents the has parent query to be performed.
+   */
+  final def hasParent(parentType: String, query: ElasticQuery[Any]): HasParentQuery[Any] =
+    HasParent[Any](parentType = parentType, query = query)
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchAllQuery]] used for matching all documents.
    *
    * @return

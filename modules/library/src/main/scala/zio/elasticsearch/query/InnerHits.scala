@@ -16,6 +16,9 @@
 
 package zio.elasticsearch.query
 
+import zio.json.ast.Json
+import zio.json.ast.Json.{Num, Obj, Str}
+
 private[elasticsearch] final case class InnerHits(
   from: Option[Int] = None,
   name: Option[String] = None,
@@ -29,6 +32,11 @@ private[elasticsearch] final case class InnerHits(
 
   def size(value: Int): InnerHits =
     self.copy(size = Some(value))
+
+  def toStringJsonPair: (String, Json) =
+    "inner_hits" -> Obj(
+      List(from.map("from" -> Num(_)), size.map("size" -> Num(_)), name.map("name" -> Str(_))).flatten: _*
+    )
 }
 
 object InnerHits {

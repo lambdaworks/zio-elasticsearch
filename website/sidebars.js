@@ -17,6 +17,7 @@ module.exports = {
                     'overview/queries/elastic_query_contains',
                     'overview/queries/elastic_query_exists',
                     'overview/queries/elastic_query_filter',
+                    'overview/queries/elastic_query_has_parent',
                     'overview/queries/elastic_query_match_all',
                     'overview/queries/elastic_query_matches',
                     'overview/queries/elastic_query_match_phrase',

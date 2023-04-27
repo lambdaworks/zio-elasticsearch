@@ -735,6 +735,25 @@ object QueryDSLSpec extends ZIOSpecDefault {
               Wildcard[Any](field = "day_of_week", value = "M*", boost = Some(1.0), caseInsensitive = Some(true))
             )
           )
+        },
+        test("successfully create HasParent query") {
+          val hasParentQuery                    = hasParent("parent", matchAll)
+          val hasParentQueryScoreTrue           = hasParent("parent", matchAll).withScoreTrue
+          val hasParentQueryScoreFalse          = hasParent("parent", matchAll).withScoreFalse
+          val hasParentQueryIgnoreUnmappedTrue  = hasParent("parent", matchAll).ignoreUnmappedTrue
+          val hasParentQueryIgnoreUnmappedFalse = hasParent("parent", matchAll).ignoreUnmappedFalse
+
+          assert(hasParentQuery)(
+            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = None))
+          ) && assert(hasParentQueryScoreTrue)(
+            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = Some(true)))
+          ) && assert(hasParentQueryScoreFalse)(
+            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = Some(false)))
+          ) && assert(hasParentQueryIgnoreUnmappedTrue)(
+            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(true), score = None))
+          ) && assert(hasParentQueryIgnoreUnmappedFalse)(
+            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = None))
+          )
         }
       ),
       suite("encoding ElasticQuery as JSON")(
@@ -1706,6 +1725,109 @@ object QueryDSLSpec extends ZIOSpecDefault {
                |""".stripMargin
 
           assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
+        },
+        test("successfully encode HasParent query") {
+          val query =
+            hasParent(parentType = "parent", query = matches("field", "value"))
+          val queryWithScore =
+            hasParent(parentType = "parent", query = matches("field", "value")).withScoreFalse
+          val queryWithIgnoreUnmapped =
+            hasParent(parentType = "parent", query = matches("field", "value")).ignoreUnmappedFalse
+          val queryWithScoreAndIgnoreUnmapped =
+            hasParent(parentType = "parent", query = matches("field", "value")).withScoreTrue.ignoreUnmappedTrue
+          val queryWithInnerHits =
+            hasParent(parentType = "parent", query = matches("field", "value")).innerHits
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithScore =
+            """
+              |{
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "score": false,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithIgnoreUnmapped =
+            """
+              |{
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "ignore_unmapped": false,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithScoreAndIgnoreUnmapped =
+            """
+              |{
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "score": true,
+              |      "ignore_unmapped": true,
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithInnerHits =
+            """
+              |{
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "query": {
+              |        "match": {
+              |         "field" : "value"
+              |        }
+              |      },
+              |      "inner_hits": {}
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithScore.toJson)(equalTo(expectedWithScore.toJson)) &&
+          assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
+          assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson)) &&
+          assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
         }
       )
     )

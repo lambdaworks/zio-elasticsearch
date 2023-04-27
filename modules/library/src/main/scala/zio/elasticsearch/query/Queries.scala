@@ -109,6 +109,86 @@ private[elasticsearch] final case class Exists[S](field: String) extends ExistsQ
     Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
 }
 
+sealed trait HasParentQuery[S]
+    extends ElasticQuery[S]
+    with HasIgnoreUnmapped[HasParentQuery[S]]
+    with HasInnerHits[HasParentQuery[S]] {
+
+  /**
+   * Sets the `score` parameter parameter for the [[HasParentQuery]].
+   *
+   * Indicates whether the relevance score of a matching parent document is aggregated into its child documents.
+   * Defaults to false.
+   *
+   * @param value
+   *   the [[scala.Boolean]] value for `score` parameter
+   * @return
+   *   a new instance of the [[HasParentQuery]] with the `score` value set.
+   */
+  def withScore(value: Boolean): HasParentQuery[S]
+
+  /**
+   * Sets the `score` parameter to `false` for this [[HasParentQuery]]. Same as [[withScore]](false).
+   *
+   * @return
+   *   a new instance of the [[HasParentQuery]] with the `score` value set to `false`.
+   * @see
+   *   #withScore
+   */
+  final def withScoreFalse: HasParentQuery[S] = withScore(false)
+
+  /**
+   * Sets the `score` parameter to `true` for this [[HasParentQuery]]. Same as [[withScore]](true).
+   *
+   * @return
+   *   a new instance of the [[HasParentQuery]] with the `score` value set to `true`.
+   * @see
+   *   #withScore
+   */
+  final def withScoreTrue: HasParentQuery[S] = withScore(true)
+
+}
+
+private[elasticsearch] final case class HasParent[S](
+  parentType: String,
+  query: ElasticQuery[S],
+  ignoreUnmapped: Option[Boolean] = None,
+  innerHitsField: Option[InnerHits] = None,
+  score: Option[Boolean] = None
+) extends HasParentQuery[S] { self =>
+
+  def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
+    self.copy(ignoreUnmapped = Some(value))
+
+  def innerHits(innerHits: InnerHits): HasParentQuery[S] =
+    self.copy(innerHitsField = Some(innerHits))
+
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj(
+      "has_parent" -> Obj(
+        List(
+          Some("parent_type" -> Str(parentType)),
+          Some("query"       -> query.paramsToJson(None)),
+          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          score.map("score" -> Json.Bool(_)),
+          innerHitsField.map(_.toStringJsonPair)
+        ).flatten: _*
+      )
+    )
+
+  def withScore(value: Boolean): HasParent[S] =
+    self.copy(score = Some(value))
+
+  /**
+   * Sets the inner hits configuration for the [[NestedQuery]].
+   *
+   * @param innerHits
+   *   the configuration for inner hits
+   * @return
+   *   a new instance of the [[ElasticQuery]] with the specified inner hits configuration.
+   */
+}
+
 sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A, boost: Option[Double])
@@ -169,17 +249,12 @@ private[elasticsearch] final case class Nested[S](
     Obj(
       "nested" -> Obj(
         List(
-          "path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path)),
-          "query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))
-        ) ++ scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)) ++ ignoreUnmapped.map(
-          "ignore_unmapped" -> Json.Bool(_)
-        ) ++ innerHitsField.map { innerHits =>
-          "inner_hits" -> Obj(
-            innerHits.from.map("from" -> Num(_)).toList
-              ++ innerHits.size.map("size" -> Num(_))
-              ++ innerHits.name.map("name" -> Str(_)): _*
-          )
-        }: _*
+          Some("path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path))),
+          Some("query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
+          scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)),
+          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          innerHitsField.map(_.toStringJsonPair)
+        ).flatten: _*
       )
     )
 
