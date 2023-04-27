@@ -41,7 +41,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       dateField = LocalDate.parse("2020-10-11"),
       intField = 10,
       doubleField = 10.0,
-      booleanField = true
+      booleanField = false
     )
 
   val secondDoc: TestDocument =
