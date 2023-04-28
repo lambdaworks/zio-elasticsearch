@@ -72,8 +72,8 @@ private[elasticsearch] final case class Terms(
   subAggregations: List[SingleElasticAggregation],
   size: Option[Int]
 ) extends TermsAggregation { self =>
-  def orderBy(requiredOrder: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
-    self.copy(order = order + requiredOrder ++ orders.toSet)
+  def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
+    self.copy(order = self.order + order ++ orders.toSet)
 
   def paramsToJson: Json =
     Obj(name -> paramsToJsonHelper)
@@ -92,7 +92,7 @@ private[elasticsearch] final case class Terms(
       order.toList match {
         case Nil =>
           Obj()
-        case ::(o, Nil) =>
+        case o :: Nil =>
           Obj("order" -> Obj(o.value -> o.order.toString.toJson))
         case orders =>
           Obj("order" -> Arr(orders.collect { case AggregationOrder(value, order) =>
