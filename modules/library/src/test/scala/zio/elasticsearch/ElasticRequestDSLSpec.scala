@@ -296,7 +296,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |    "dateField": "2020-11-11",
             |    "intField": 2,
             |    "doubleField": 2.0,
-            |    "booleanField": true
+            |    "booleanField": false
             |  }
             |}
             |""".stripMargin

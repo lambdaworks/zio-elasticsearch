@@ -1082,6 +1082,21 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson)) &&
           assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
         },
+        test("matches") {
+          val query = matches(field = "day_of_week", value = true)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "match": {
+              |      "day_of_week": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
         test("matchPhrase") {
           val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
           val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
@@ -1229,21 +1244,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
-        test("properly encode Match query") {
-          val query = matches(field = "day_of_week", value = true)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "match": {
-              |      "day_of_week": true
-              |    }
-              |  }
-              |}
-              |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
         test("properly encode Bool Query with Filter containing `Match` leaf query") {
           val query = filter(matches(field = "day_of_week", value = "Monday"))
           val expected =
@@ -1507,7 +1508,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test("properly encode Exists Query") {
+        test("exists") {
           val query = exists(field = "day_of_week")
           val expected =
             """
@@ -1522,7 +1523,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test("properly encode MatchAll Query") {
+        test("matchAll") {
           val query = matchAll
           val expected =
             """
@@ -1535,7 +1536,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test("properly encode MatchAll Query with boost") {
+        test("matchAll (boost)") {
           val query = matchAll.boost(1.0)
           val expected =
             """
@@ -1550,7 +1551,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
-        test("successfully create type-safe Match query using `matches` method") {
+        test("matches (type-safe)") {
           val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
           val queryInt    = matches(field = TestSubDocument.intField, value = 39)
 
@@ -1984,7 +1985,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query2.toJson)(equalTo(expected23.toJson)) &&
           assert(query3.toJson)(equalTo(expected23.toJson))
         },
-        test("properly encode Bulk request body") {
+        test("bulk") {
           val bulkQuery = IndexName.make("users").map { index =>
             val nestedField = TestNestedField("NestedField", 1)
             val subDoc = TestSubDocument(
