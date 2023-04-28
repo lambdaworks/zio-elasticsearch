@@ -226,7 +226,7 @@ object ElasticRequest {
     Search(
       index = index,
       query = query,
-      sortBy = Set.empty,
+      sortBy = Nil,
       from = None,
       highlights = None,
       routing = None,
@@ -255,7 +255,7 @@ object ElasticRequest {
       index = index,
       query = query,
       aggregation = aggregation,
-      sortBy = Set.empty,
+      sortBy = Nil,
       from = None,
       highlights = None,
       routing = None,
@@ -564,7 +564,7 @@ object ElasticRequest {
   private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
-    sortBy: Set[Sort],
+    sortBy: List[Sort],
     from: Option[Int],
     highlights: Option[Highlights],
     routing: Option[Routing],
@@ -601,7 +601,7 @@ object ElasticRequest {
       self.copy(size = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchRequest =
-      self.copy(sortBy = sortBy + sort ++ sorts.toSet)
+      self.copy(sortBy = (sortBy :+ sort) ++ sorts.toList)
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
@@ -613,7 +613,7 @@ object ElasticRequest {
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
       val sortJson: Json =
-        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
+        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
 
       fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge searchAfterJson
     }
@@ -634,7 +634,7 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
-    sortBy: Set[Sort],
+    sortBy: List[Sort],
     from: Option[Int],
     highlights: Option[Highlights],
     routing: Option[Routing],
@@ -657,7 +657,7 @@ object ElasticRequest {
       self.copy(searchAfter = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchAndAggregateRequest =
-      self.copy(sortBy = sortBy + sort ++ sorts.toSet)
+      self.copy(sortBy = (sortBy :+ sort) ++ sorts.toList)
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
@@ -669,7 +669,7 @@ object ElasticRequest {
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
       val sortJson: Json =
-        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.toList.map(_.paramsToJson): _*)) else Obj()
+        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
 
       fromJson merge
         sizeJson merge
