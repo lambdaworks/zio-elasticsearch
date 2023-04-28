@@ -21,7 +21,7 @@ import zio.elasticsearch.ElasticAggregation.{maxAggregation, multipleAggregation
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
+import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.MaxAggregationResponse
 import zio.elasticsearch.query.sort.SortMode.Max
@@ -31,6 +31,7 @@ import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{Item, UpdateByQueryResult}
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json.{Arr, Str}
+import zio.schema.codec.JsonCodec
 import zio.stream.{Sink, ZSink}
 import zio.test._
 import zio.test.TestAspect._
@@ -501,6 +502,76 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .execute(ElasticRequest.search(firstSearchIndex, query).from(0).size(2))
                            .documentAs[TestDocument]
                 } yield assert(res.length)(equalTo(2))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for documents with source filtering") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument)
+                           .refreshTrue
+                       )
+                  query = range(TestDocument.doubleField).gte(100.0)
+                  res <- Executor
+                           .execute(ElasticRequest.search(firstSearchIndex, query).includes(PartialTestDocument.schema))
+                  items <- res.items
+                } yield assert(items.map(item => Right(item.raw)))(
+                  hasSameElements(
+                    List(firstDocument, secondDocument, thirdDocument).map(document =>
+                      TestDocument.schema.migrate(PartialTestDocument.schema).flatMap(_(document)).flatMap {
+                        partialDocument =>
+                          JsonCodec.jsonEncoder(PartialTestDocument.schema).toJsonAST(partialDocument)
+                      }
+                    )
+                  )
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("fail if an excluded source field is attempted to be decoded") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                val result =
+                  for {
+                    _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                    _ <- Executor.execute(
+                           ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                         )
+                    _ <- Executor.execute(
+                           ElasticRequest.upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         )
+                    _ <- Executor.execute(
+                           ElasticRequest
+                             .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument)
+                             .refreshTrue
+                         )
+                    query = range(TestDocument.doubleField).gte(100.0)
+                    _ <- Executor
+                           .execute(ElasticRequest.search(firstSearchIndex, query).excludes("intField"))
+                           .documentAs[TestDocument]
+                  } yield ()
+
+                assertZIO(result.exit)(
+                  fails(
+                    isSubtype[Exception](
+                      assertException("Could not parse all documents successfully: .intField(missing)")
+                    )
+                  )
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

@@ -80,6 +80,87 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
 
         assert(jsonRequest)(equalTo(expected.toJson))
       },
+      test("successfully encode search request to JSON with excludes") {
+        val jsonRequest: Json = search(Index, Query).excludes("subDocumentList") match {
+          case r: ElasticRequest.Search => r.toJson
+        }
+        val expected =
+          """
+            |{
+            |  "_source" : {
+            |    "excludes" : [
+            |      "subDocumentList"
+            |    ]
+            |  },
+            |  "query" : {
+            |    "range" : {
+            |      "intField" : {
+            |       "gte" : 10
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(jsonRequest)(equalTo(expected.toJson))
+      },
+      test("successfully encode search request to JSON with includes") {
+        val jsonRequest: Json = search(Index, Query).includes("stringField", "doubleField") match {
+          case r: ElasticRequest.Search => r.toJson
+        }
+        val expected =
+          """
+            |{
+            |  "_source" : {
+            |    "includes" : [
+            |      "stringField",
+            |      "doubleField"
+            |    ]
+            |  },
+            |  "query" : {
+            |    "range" : {
+            |      "intField" : {
+            |       "gte" : 10
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(jsonRequest)(equalTo(expected.toJson))
+      },
+      test("successfully encode search request to JSON with includes using a schema") {
+        val jsonRequest: Json = search(Index, Query).includes(TestDocument.schema) match {
+          case r: ElasticRequest.Search => r.toJson
+        }
+        val expected =
+          """
+            |{
+            |  "_source" : {
+            |    "includes" : [
+            |      "stringField",
+            |      "subDocumentList.stringField",
+            |      "subDocumentList.nestedField.stringField",
+            |      "subDocumentList.nestedField.longField",
+            |      "subDocumentList.intField",
+            |      "subDocumentList.intFieldList",
+            |      "dateField",
+            |      "intField",
+            |      "doubleField"
+            |    ]
+            |  },
+            |  "query" : {
+            |    "range" : {
+            |      "intField" : {
+            |       "gte" : 10
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(jsonRequest)(equalTo(expected.toJson))
+      },
       test("successfully encode search request to JSON with multiple parameters") {
         val jsonRequest = search(Index, Query)
           .size(20)
@@ -116,12 +197,18 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
           .size(20)
           .highlights(highlight(TestDocument.intField))
           .sort(sortBy(TestDocument.intField).missing(First))
-          .from(10) match {
+          .from(10)
+          .includes()
+          .excludes() match {
           case r: ElasticRequest.Search => r.toJson
         }
         val expected =
           """
             |{
+            |  "_source" : {
+            |    "includes" : [],
+            |    "excludes" : []
+            |  },
             |  "query" : {
             |    "range" : {
             |      "intField" : {
@@ -154,12 +241,18 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
           .size(20)
           .highlights(highlight(TestDocument.intField))
           .sort(sortBy(TestDocument.intField).missing(First))
-          .from(10) match {
+          .from(10)
+          .includes()
+          .excludes() match {
           case r: ElasticRequest.SearchAndAggregate => r.toJson
         }
         val expected =
           """
             |{
+            |  "_source" : {
+            |    "includes" : [],
+            |    "excludes" : []
+            |  },
             |  "query" : {
             |    "range" : {
             |      "intField" : {
