@@ -46,6 +46,7 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("HTTP Executor")(
         suite("aggregation")(
           test("aggregate using max aggregation") {
+            val expectedResponse = ("aggregationInt", MaxAggregationResponse(20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -63,7 +64,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
                                .aggregations
-                } yield assert(aggsRes.head)(equalTo("aggregationInt", MaxAggregationResponse(20.0)))
+                } yield assert(aggsRes.head)(equalTo(expectedResponse))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
