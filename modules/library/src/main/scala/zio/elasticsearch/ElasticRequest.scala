@@ -228,8 +228,10 @@ object ElasticRequest {
       index = index,
       query = query,
       sortBy = Chunk.empty,
+      excluded = None,
       from = None,
       highlights = None,
+      included = None,
       routing = None,
       searchAfter = None,
       size = None
@@ -257,8 +259,10 @@ object ElasticRequest {
       query = query,
       aggregation = aggregation,
       sortBy = Chunk.empty,
+      excluded = None,
       from = None,
       highlights = None,
+      included = None,
       routing = None,
       searchAfter = None,
       size = None
@@ -553,11 +557,16 @@ object ElasticRequest {
       extends ElasticRequest[SearchResult]
       with HasFrom[SearchRequest]
       with HasRouting[SearchRequest]
+      with HasSize[SearchRequest]
       with HasSort[SearchRequest]
-      with HasSize[SearchRequest] {
+      with HasSourceFiltering[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
 
+    def excludes(fields: String*): SearchRequest
+
     def highlights(value: Highlights): SearchRequest
+
+    def includes(fields: String*): SearchRequest
 
     def searchAfter(value: Json): SearchRequest
   }
@@ -566,31 +575,40 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
+    excluded: Option[List[String]],
     from: Option[Int],
     highlights: Option[Highlights],
+    included: Option[List[String]],
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchRequest { self =>
-
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
       SearchAndAggregate(
         index = index,
         query = query,
         aggregation = aggregation,
         sortBy = sortBy,
+        excluded = excluded,
         from = from,
         highlights = highlights,
+        included = included,
         routing = routing,
         searchAfter = None,
         size = size
       )
+
+    def excludes(fields: String*): SearchRequest =
+      self.copy(excluded = excluded.map(_ ++ fields).orElse(Some(fields.toList)))
 
     def from(value: Int): SearchRequest =
       self.copy(from = Some(value))
 
     def highlights(value: Highlights): SearchRequest =
       self.copy(highlights = Some(value))
+
+    def includes(fields: String*): SearchRequest =
+      self.copy(included = included.map(_ ++ fields).orElse(Some(fields.toList)))
 
     def routing(value: Routing): SearchRequest =
       self.copy(routing = Some(value))
@@ -616,7 +634,16 @@ object ElasticRequest {
       val sortJson: Json =
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
 
-      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge searchAfterJson
+      val sourceJson: Json =
+        included
+          .map(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
+          .map { included =>
+            included merge excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
+          }
+          .orElse(excluded.map(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*))))
+          .fold(Obj())(filters => Obj("_source" -> filters))
+
+      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge searchAfterJson merge sourceJson
     }
   }
 
@@ -625,7 +652,8 @@ object ElasticRequest {
       with HasFrom[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
       with HasSize[SearchAndAggregateRequest]
-      with HasSort[SearchAndAggregateRequest] {
+      with HasSort[SearchAndAggregateRequest]
+      with HasSourceFiltering[SearchAndAggregateRequest] {
     def highlights(value: Highlights): SearchAndAggregateRequest
 
     def searchAfter(value: Json): SearchAndAggregateRequest
@@ -636,17 +664,25 @@ object ElasticRequest {
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
     sortBy: Chunk[Sort],
+    excluded: Option[List[String]],
     from: Option[Int],
     highlights: Option[Highlights],
+    included: Option[List[String]],
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
+    def excludes(fields: String*): SearchAndAggregateRequest =
+      self.copy(excluded = excluded.map(_ ++ fields).orElse(Some(fields.toList)))
+
     def from(value: Int): SearchAndAggregateRequest =
       self.copy(from = Some(value))
 
     def highlights(value: Highlights): SearchAndAggregateRequest =
       self.copy(highlights = Some(value))
+
+    def includes(fields: String*): SearchAndAggregateRequest =
+      self.copy(included = included.map(_ ++ fields).orElse(Some(fields.toList)))
 
     def routing(value: Routing): SearchAndAggregateRequest =
       self.copy(routing = Some(value))
@@ -672,13 +708,23 @@ object ElasticRequest {
       val sortJson: Json =
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
 
+      val sourceJson: Json =
+        included
+          .map(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
+          .map { included =>
+            included merge excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
+          }
+          .orElse(excluded.map(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*))))
+          .fold(Obj())(filters => Obj("_source" -> filters))
+
       fromJson merge
         sizeJson merge
         highlightsJson merge
         sortJson merge
         self.query.toJson merge
         aggregation.toJson merge
-        searchAfterJson
+        searchAfterJson merge
+        sourceJson
     }
   }
 
