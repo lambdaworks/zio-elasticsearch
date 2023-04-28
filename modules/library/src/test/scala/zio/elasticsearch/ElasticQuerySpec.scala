@@ -26,10 +26,10 @@ import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
-object QueryDSLSpec extends ZIOSpecDefault {
+object ElasticQuerySpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
-    suite("Query DSL")(
-      suite("constructing ElasticQuery")(
+    suite("ElasticQuery")(
+      suite("constructing")(
         suite("bool")(
           test("filter") {
             val query = filter(matches(TestDocument.stringField, "test"), matches(field = "testField", "test field"))
@@ -836,7 +836,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           )
         }
       ),
-      suite("encoding ElasticQuery as JSON")(
+      suite("encoding as JSON")(
         suite("bool")(
           test("filter") {
             val query = filter(matches(field = "day_of_week", value = "Monday"))
@@ -1101,7 +1101,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           }
         ),
         test("bulk") {
-          val bulkQuery = IndexName.make("users").map { index =>
+          val query = IndexName.make("users").map { index =>
             val nestedField = TestNestedField("NestedField", 1)
             val subDoc = TestSubDocument(
               stringField = "StringField",
@@ -1128,7 +1128,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
             }
           }
 
-          val expectedBody =
+          val expected =
             """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "StringField" } }
                |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":65,"intFieldList":[]}
                |{ "create" : { "_index" : "users", "routing" : "StringField" } }
@@ -1138,25 +1138,106 @@ object QueryDSLSpec extends ZIOSpecDefault {
                |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "StringField" } }
                |""".stripMargin
 
-          assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
+          assert(query)(equalTo(Validation.succeed(Some(expected))))
         },
-        test("exists") {
-          val query = exists(field = "day_of_week")
+        test("contains") {
+          val query                    = contains(TestDocument.stringField, "test")
+          val queryWithBoost           = contains(TestDocument.stringField, "test").boost(3.14)
+          val queryWithCaseInsensitive = contains(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryWithAllParams       = contains(TestDocument.stringField, "test").boost(39.2).caseInsensitiveFalse
+
           val expected =
             """
               |{
               |  "query": {
-              |    "exists": {
-              |      "field": "day_of_week"
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*"
+              |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
+          val expectedWithBoost =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*",
+              |        "boost": 3.14
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithCaseInsensitive =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*",
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*",
+              |        "boost": 39.2,
+              |        "case_insensitive": false
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("exists") {
+          val query   = exists("testField")
+          val queryTs = exists(TestDocument.dateField)
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "exists": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "query": {
+              |    "exists": {
+              |      "field": "dateField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson)(equalTo(expectedTs.toJson))
         },
         test("hasChild") {
-          hasChild("child", matches("field", "value"))
+          val query                   = hasChild("child", matches(TestDocument.stringField, "test"))
           val queryWithIgnoreUnmapped = hasChild("child", matches("field", "value")).ignoreUnmappedTrue
           val queryWithInnerHits      = hasChild("child", matches("field", "value")).innerHits
           val queryWithMaxChildren    = hasChild("child", matches("field", "value")).maxChildren(5)
@@ -1169,20 +1250,21 @@ object QueryDSLSpec extends ZIOSpecDefault {
             .maxChildren(5)
             .minChildren(1)
 
-          """
-            |{
-            |  "query": {
-            |    "has_child": {
-            |      "type": "child",
-            |      "query": {
-            |        "match": {
-            |         "field" : "value"
-            |        }
-            |      }
-            |    }
-            |  }
-            |}
-            |""".stripMargin
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "query": {
+              |        "match": {
+              |          "stringField" : "test"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
 
           val expectedWithIgnoreUnmapped =
             """
@@ -1193,7 +1275,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "ignore_unmapped": true,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1210,7 +1292,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "inner_hits": {},
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1227,7 +1309,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "max_children": 5,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1244,7 +1326,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "min_children": 1,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1261,7 +1343,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "score_mode": "avg",
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1269,7 +1351,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedFullQuery =
+          val expectedWithAllParams =
             """
               |{
               |  "query": {
@@ -1282,7 +1364,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "min_children": 1,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1290,24 +1372,21 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
           assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson)) &&
           assert(queryWithMaxChildren.toJson)(equalTo(expectedWithMaxChildren.toJson)) &&
           assert(queryWithMinChildren.toJson)(equalTo(expectedWithMinChildren.toJson)) &&
           assert(queryWithScoreMode.toJson)(equalTo(expectedWithScoreMode.toJson)) &&
-          assert(queryWithAllParams.toJson)(equalTo(expectedFullQuery.toJson))
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("hasParent") {
-          val query =
-            hasParent(parentType = "parent", query = matches("field", "value"))
-          val queryWithScore =
-            hasParent(parentType = "parent", query = matches("field", "value")).withScoreFalse
-          val queryWithIgnoreUnmapped =
-            hasParent(parentType = "parent", query = matches("field", "value")).ignoreUnmappedFalse
+          val query                   = hasParent("parent", matches(TestDocument.stringField, "test"))
+          val queryWithScore          = hasParent("parent", matches("field", "value")).withScoreFalse
+          val queryWithIgnoreUnmapped = hasParent("parent", matches("field", "value")).ignoreUnmappedFalse
           val queryWithScoreAndIgnoreUnmapped =
-            hasParent(parentType = "parent", query = matches("field", "value")).withScoreTrue.ignoreUnmappedTrue
-          val queryWithInnerHits =
-            hasParent(parentType = "parent", query = matches("field", "value")).innerHits
+            hasParent("parent", matches("field", "value")).withScoreTrue.ignoreUnmappedTrue
+          val queryWithInnerHits = hasParent("parent", matches("field", "value")).innerHits
 
           val expected =
             """
@@ -1317,7 +1396,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "parent_type": "parent",
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "stringField" : "test"
               |        }
               |      }
               |    }
@@ -1334,7 +1413,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "score": false,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1351,7 +1430,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "ignore_unmapped": false,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1369,7 +1448,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "ignore_unmapped": true,
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      }
               |    }
@@ -1385,7 +1464,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |      "parent_type": "parent",
               |      "query": {
               |        "match": {
-              |         "field" : "value"
+              |          "field" : "value"
               |        }
               |      },
               |      "inner_hits": {}
@@ -1401,7 +1480,9 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
         },
         test("matchAll") {
-          val query = matchAll
+          val query          = matchAll
+          val queryWithBoost = matchAll.boost(3.14)
+
           val expected =
             """
               |{
@@ -1411,46 +1492,75 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("matchAll (boost)") {
-          val query = matchAll.boost(1.0)
-          val expected =
+          val expectedWithBoost =
             """
               |{
               |  "query": {
               |    "match_all": {
-              |      "boost": 1.0
+              |      "boost": 3.14
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("matches") {
-          val query = matches(field = "day_of_week", value = true)
+          val query          = matches("testField", true)
+          val queryTsInt     = matches(TestDocument.intField, 39)
+          val queryTsString  = matches(TestDocument.stringField, "test")
+          val queryWithBoost = matches(TestDocument.doubleField, 39.2).boost(3.14)
+
           val expected =
             """
               |{
               |  "query": {
               |    "match": {
-              |      "day_of_week": true
+              |      "testField": true
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("matches (type-safe)") {
-          val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
-          val queryInt    = matches(field = TestSubDocument.intField, value = 39)
+          val expectedTsInt =
+            """
+              |{
+              |  "query": {
+              |    "match": {
+              |      "intField": 39
+              |    }
+              |  }
+              |}
+              |""".stripMargin
 
-          assert(queryString)(
-            equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField", boost = None))
-          ) &&
-          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39, boost = None)))
+          val expectedTsString =
+            """
+              |{
+              |  "query": {
+              |    "match": {
+              |      "stringField": "test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "query": {
+              |    "match": {
+              |      "doubleField": 39.2,
+              |      "boost": 3.14
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryTsInt.toJson)(equalTo(expectedTsInt.toJson)) &&
+          assert(queryTsString.toJson)(equalTo(expectedTsString.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("matchPhrase") {
           val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
@@ -1460,7 +1570,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
           val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
 
-          val querySimpleExpectedJson =
+          val expectedSimple =
             """
               |{
               |  "query": {
@@ -1471,7 +1581,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val queryRawExpectedJson =
+          val expectedRaw =
             """
               |{
               |  "query": {
@@ -1482,7 +1592,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val queryWithBoostExpectedJson =
+          val expectedWithBoost =
             """
               |{
               |  "query": {
@@ -1494,15 +1604,16 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(querySimple.toJson)(equalTo(querySimpleExpectedJson.toJson)) &&
-          assert(querySimpleTs.toJson)(equalTo(querySimpleExpectedJson.toJson)) &&
-          assert(queryRaw.toJson)(equalTo(queryRawExpectedJson.toJson)) &&
-          assert(queryRawTs.toJson)(equalTo(queryRawExpectedJson.toJson)) &&
-          assert(queryWithBoost.toJson)(equalTo(queryWithBoostExpectedJson.toJson)) &&
-          assert(queryWithBoostTs.toJson)(equalTo(queryWithBoostExpectedJson.toJson))
+          assert(querySimple.toJson)(equalTo(expectedSimple.toJson)) &&
+          assert(querySimpleTs.toJson)(equalTo(expectedSimple.toJson)) &&
+          assert(queryRaw.toJson)(equalTo(expectedRaw.toJson)) &&
+          assert(queryRawTs.toJson)(equalTo(expectedRaw.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithBoostTs.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("nested") {
           val query = nested(path = "customer", query = matchAll)
+
           val expected =
             """
               |{
@@ -1786,12 +1897,78 @@ object QueryDSLSpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson))
         },
+        test("startsWith") {
+          val query                    = startsWith(TestDocument.stringField, "test")
+          val queryWithBoost           = startsWith(TestDocument.stringField, "test").boost(3.14)
+          val queryWithCaseInsensitive = startsWith(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryWithAllParams       = startsWith(TestDocument.stringField, "test").boost(39.2).caseInsensitiveFalse
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*",
+              |        "boost": 3.14
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithCaseInsensitive =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*",
+              |        "case_insensitive": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*",
+              |        "boost": 39.2,
+              |        "case_insensitive": false
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("term") {
-          val query                    = term(field = TestDocument.stringField, value = "test")
-          val queryWithBoost           = term(field = TestDocument.stringField, value = "test").boost(10.21)
-          val queryWithCaseInsensitive = term(field = TestDocument.stringField, value = "test").caseInsensitiveTrue
-          val queryWithAllParams =
-            term(field = TestDocument.stringField, value = "test").boost(3.14).caseInsensitiveFalse
+          val query                    = term(TestDocument.stringField, "test")
+          val queryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
+          val queryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryWithAllParams       = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
 
           val expected =
             """
@@ -1855,8 +2032,8 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("terms") {
-          val query          = terms(field = TestDocument.stringField, values = "a", "b", "c")
-          val queryWithBoost = terms(field = TestDocument.stringField, values = "a", "b", "c").boost(10.21)
+          val query          = terms(TestDocument.stringField, "a", "b", "c")
+          val queryWithBoost = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
           val expected =
             """
@@ -1885,97 +2062,45 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("wildcard") {
-          val query1 = contains(field = "day_of_week", value = "M")
-          val query2 = startsWith(field = "day_of_week", value = "M")
-          val query3 = wildcard(field = "day_of_week", value = "M*")
-          val expected1 =
+          val query                    = wildcard(TestDocument.stringField, "[a-zA-Z]+")
+          val queryWithBoost           = wildcard(TestDocument.stringField, "[a-zA-Z]+").boost(3.14)
+          val queryWithCaseInsensitive = wildcard(TestDocument.stringField, "[a-zA-Z]+").caseInsensitiveTrue
+          val queryWithAllParams       = wildcard(TestDocument.stringField, "[a-zA-Z]+").boost(39.2).caseInsensitiveFalse
+
+          val expected =
             """
               |{
               |  "query": {
               |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "*M*"
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expected23 =
-            """
-              |{
-              |  "query": {
-              |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "M*"
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+"
               |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query1.toJson)(equalTo(expected1.toJson)) &&
-          assert(query2.toJson)(equalTo(expected23.toJson)) &&
-          assert(query3.toJson)(equalTo(expected23.toJson))
-        },
-        test("wildcard (boost)") {
-          val query1 = contains(field = "day_of_week", value = "M").boost(1.0)
-          val query2 = startsWith(field = "day_of_week", value = "M").boost(1.0)
-          val query3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
-          val expected1 =
+          val expectedWithBoost =
             """
               |{
               |  "query": {
               |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "*M*",
-              |        "boost": 1.0
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expected23 =
-            """
-              |{
-              |  "query": {
-              |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "M*",
-              |        "boost": 1.0
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+",
+              |        "boost": 3.14
               |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query1.toJson)(equalTo(expected1.toJson)) &&
-          assert(query2.toJson)(equalTo(expected23.toJson)) &&
-          assert(query3.toJson)(equalTo(expected23.toJson))
-        },
-        test("wildcard (case insensitive)") {
-          val query1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
-          val query2 = startsWith(field = "day_of_week", value = "M").caseInsensitiveTrue
-          val query3 = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
-          val expected1 =
+          val expectedWithCaseInsensitive =
             """
               |{
               |  "query": {
               |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "*M*",
-              |        "case_insensitive": true
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expected23 =
-            """
-              |{
-              |  "query": {
-              |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "M*",
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+",
               |        "case_insensitive": true
               |      }
               |    }
@@ -1983,46 +2108,25 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query1.toJson)(equalTo(expected1.toJson)) &&
-          assert(query2.toJson)(equalTo(expected23.toJson)) &&
-          assert(query3.toJson)(equalTo(expected23.toJson))
-        },
-        test("wildcard (case insensitive, boost)") {
-          val query1 = contains(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
-          val query2 = startsWith(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
-          val query3 = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
-          val expected1 =
+          val expectedWithAllParams =
             """
               |{
               |  "query": {
               |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "*M*",
-              |        "boost": 1.0,
-              |        "case_insensitive": true
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expected23 =
-            """
-              |{
-              |  "query": {
-              |    "wildcard": {
-              |      "day_of_week": {
-              |        "value": "M*",
-              |        "boost": 1.0,
-              |        "case_insensitive": true
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+",
+              |        "boost": 39.2,
+              |        "case_insensitive": false
               |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query1.toJson)(equalTo(expected1.toJson)) &&
-          assert(query2.toJson)(equalTo(expected23.toJson)) &&
-          assert(query3.toJson)(equalTo(expected23.toJson))
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         }
       )
     )
