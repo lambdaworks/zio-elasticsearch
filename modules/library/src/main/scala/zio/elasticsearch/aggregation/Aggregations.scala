@@ -20,12 +20,12 @@ import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.options._
 import zio.json.ast.Json
-import zio.json.ast.Json.Obj
+import zio.json.ast.Json.{Arr, Obj}
 
 sealed trait ElasticAggregation { self =>
-  def paramsToJson: Json
+  private[elasticsearch] def paramsToJson: Json
 
-  final def toJson: Json =
+  private[elasticsearch] final def toJson: Json =
     Obj("aggs" -> paramsToJson)
 }
 
@@ -41,28 +41,45 @@ private[elasticsearch] final case class Multiple(aggregations: List[SingleElasti
     self.copy(aggregations = self.aggregations ++ aggregations)
 
   def paramsToJson: Json =
-    Obj(aggregations.map { case Terms(name, field, subAggregations) =>
-      (
-        name,
-        Obj(("terms" -> Obj("field" -> field.toJson)) :: subAggregations.map { agg =>
-          "aggs" -> agg.paramsToJson
-        }: _*)
-      )
-    }: _*)
+    aggregations.map(_.paramsToJson).reduce(_ merge _)
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     self.copy(aggregations = agg +: aggregations)
 }
 
-sealed trait TermsAggregation extends SingleElasticAggregation with WithSubAgg[TermsAggregation] with WithAgg
+sealed trait TermsAggregation
+    extends SingleElasticAggregation
+    with HasOrder[TermsAggregation]
+    with WithSubAgg[TermsAggregation]
+    with WithAgg {
+
+  /**
+   * Sets the maximum number of terms to be returned by the aggregation. By default, the [[TermsAggregation]] returns
+   * the top ten terms with the most documents.
+   *
+   * @param value
+   *   a non-negative number to set the `size` parameter in the [[zio.elasticsearch.aggregation.TermsAggregation]]
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.TermsAggregation]] enriched with the `size` parameter.
+   */
+  def size(value: Int): TermsAggregation
+}
 
 private[elasticsearch] final case class Terms(
   name: String,
   field: String,
-  subAggregations: List[SingleElasticAggregation]
+  order: Set[AggregationOrder],
+  subAggregations: List[SingleElasticAggregation],
+  size: Option[Int]
 ) extends TermsAggregation { self =>
+  def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
+    self.copy(order = self.order + order ++ orders.toSet)
+
   def paramsToJson: Json =
-    Obj(name -> paramsToJsonHelper(field, subAggregations))
+    Obj(name -> paramsToJsonHelper)
+
+  def size(value: Int): TermsAggregation =
+    self.copy(size = Some(value))
 
   def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, aggregation)
@@ -70,15 +87,27 @@ private[elasticsearch] final case class Terms(
   def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
 
-  private def paramsToJsonHelper(currField: String, currSubAggs: List[SingleElasticAggregation]): Obj =
-    if (currSubAggs.nonEmpty) {
-      Obj(
-        "terms" -> Obj("field" -> currField.toJson),
-        "aggs" -> Obj(currSubAggs.map { case termsAgg: Terms =>
-          (termsAgg.name, paramsToJsonHelper(termsAgg.field, termsAgg.subAggregations))
-        }: _*)
-      )
-    } else {
-      Obj("terms" -> Obj("field" -> currField.toJson))
-    }
+  private def paramsToJsonHelper: Obj = {
+    val orderJson: Json =
+      order.toList match {
+        case Nil =>
+          Obj()
+        case o :: Nil =>
+          Obj("order" -> Obj(o.value -> o.order.toString.toJson))
+        case orders =>
+          Obj("order" -> Arr(orders.collect { case AggregationOrder(value, order) =>
+            Obj(value -> order.toString.toJson)
+          }: _*))
+      }
+
+    val sizeJson = size.fold(Obj())(s => Obj("size" -> s.toJson))
+
+    val subAggsJson =
+      if (self.subAggregations.nonEmpty)
+        Obj("aggs" -> self.subAggregations.map(_.paramsToJson).reduce(_ merge _))
+      else
+        Obj()
+
+    Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson
+  }
 }

@@ -4,6 +4,7 @@ import zio.Scope
 import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.TestSubDocument
+import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -16,14 +17,18 @@ object AggregationSpec extends ZIOSpecDefault {
           val aggregation = termsAggregation(name = "aggregation", field = "day_of_week")
 
           assert(aggregation)(
-            equalTo(Terms(name = "aggregation", field = "day_of_week", subAggregations = Nil))
+            equalTo(
+              Terms(name = "aggregation", field = "day_of_week", order = Set.empty, subAggregations = Nil, size = None)
+            )
           )
         },
         test("successfully create type-safe Terms aggregation using `terms` method") {
           val aggregation = termsAggregation(name = "aggregation", field = TestSubDocument.stringField)
 
           assert(aggregation)(
-            equalTo(Terms(name = "aggregation", field = "stringField", subAggregations = Nil))
+            equalTo(
+              Terms(name = "aggregation", field = "stringField", order = Set.empty, subAggregations = Nil, size = None)
+            )
           )
         },
         test("successfully create type-safe Terms aggregation with multi-field using `terms` method") {
@@ -31,7 +36,77 @@ object AggregationSpec extends ZIOSpecDefault {
             termsAggregation(name = "aggregation", field = TestSubDocument.stringField.keyword)
 
           assert(aggregation)(
-            equalTo(Terms(name = "aggregation", field = "stringField.keyword", subAggregations = Nil))
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "stringField.keyword",
+                order = Set.empty,
+                subAggregations = Nil,
+                size = None
+              )
+            )
+          )
+        },
+        test(
+          "successfully create type-safe Terms aggregation with multi-field using `terms` method and order parameter"
+        ) {
+          val aggregation =
+            termsAggregation(
+              name = "aggregation",
+              field = TestSubDocument.stringField.keyword
+            ).orderByKeyDesc.orderByCountAsc
+
+          assert(aggregation)(
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "stringField.keyword",
+                order = Set(AggregationOrder("_key", Desc), AggregationOrder("_count", Asc)),
+                subAggregations = Nil,
+                size = None
+              )
+            )
+          )
+        },
+        test(
+          "successfully create type-safe Terms aggregation with multi-field using `terms` method and size parameter"
+        ) {
+          val aggregation =
+            termsAggregation(name = "aggregation", field = TestSubDocument.stringField.keyword)
+              .size(5)
+
+          assert(aggregation)(
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "stringField.keyword",
+                order = Set.empty,
+                subAggregations = Nil,
+                size = Some(5)
+              )
+            )
+          )
+        },
+        test(
+          "successfully create type-safe Terms aggregation with multi-field with all params"
+        ) {
+          val aggregation =
+            termsAggregation(
+              name = "aggregation",
+              field = TestSubDocument.stringField.keyword
+            ).orderByCountDesc.orderByKeyAsc
+              .size(5)
+
+          assert(aggregation)(
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "stringField.keyword",
+                order = Set(AggregationOrder("_count", Desc), AggregationOrder("_key", Asc)),
+                subAggregations = Nil,
+                size = Some(5)
+              )
+            )
           )
         },
         test("successfully create Multiple aggregations using `multipleAggregations` method with two `terms`") {
@@ -44,8 +119,20 @@ object AggregationSpec extends ZIOSpecDefault {
             equalTo(
               Multiple(
                 List(
-                  Terms(name = "firstAggregation", field = "day_of_week", subAggregations = Nil),
-                  Terms(name = "secondAggregation", field = "customer_age", subAggregations = Nil)
+                  Terms(
+                    name = "firstAggregation",
+                    field = "day_of_week",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  ),
+                  Terms(
+                    name = "secondAggregation",
+                    field = "customer_age",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  )
                 )
               )
             )
@@ -65,8 +152,20 @@ object AggregationSpec extends ZIOSpecDefault {
             equalTo(
               Multiple(
                 List(
-                  Terms(name = "firstAggregation", field = "day_of_week", subAggregations = Nil),
-                  Terms(name = "secondAggregation", field = "customer_age", subAggregations = Nil)
+                  Terms(
+                    name = "firstAggregation",
+                    field = "day_of_week",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  ),
+                  Terms(
+                    name = "secondAggregation",
+                    field = "customer_age",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  )
                 )
               )
             )
@@ -74,9 +173,27 @@ object AggregationSpec extends ZIOSpecDefault {
             equalTo(
               Multiple(
                 List(
-                  Terms(name = "thirdAggregation", field = "day_of_month", subAggregations = Nil),
-                  Terms(name = "firstAggregation", field = "day_of_week", subAggregations = Nil),
-                  Terms(name = "secondAggregation", field = "customer_age", subAggregations = Nil)
+                  Terms(
+                    name = "thirdAggregation",
+                    field = "day_of_month",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  ),
+                  Terms(
+                    name = "firstAggregation",
+                    field = "day_of_week",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  ),
+                  Terms(
+                    name = "secondAggregation",
+                    field = "customer_age",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  )
                 )
               )
             )
@@ -99,19 +216,44 @@ object AggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "firstAggregation",
                 field = "day_of_week",
-                subAggregations = List(Terms(name = "secondAggregation", field = "customer_age", subAggregations = Nil))
+                order = Set.empty,
+                subAggregations = List(
+                  Terms(
+                    name = "secondAggregation",
+                    field = "customer_age",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  )
+                ),
+                size = None
               )
             )
           ) && assert(aggregation2)(
             equalTo(
               Multiple(
                 List(
-                  Terms(name = "firstAggregation", field = "day_of_week", subAggregations = Nil),
+                  Terms(
+                    name = "firstAggregation",
+                    field = "day_of_week",
+                    order = Set.empty,
+                    subAggregations = Nil,
+                    size = None
+                  ),
                   Terms(
                     name = "secondAggregation",
                     field = "customer_age",
-                    subAggregations =
-                      List(Terms(name = "thirdAggregation", field = "day_of_month", subAggregations = Nil))
+                    order = Set.empty,
+                    subAggregations = List(
+                      Terms(
+                        name = "thirdAggregation",
+                        field = "day_of_month",
+                        order = Set.empty,
+                        subAggregations = Nil,
+                        size = None
+                      )
+                    ),
+                    size = None
                   )
                 )
               )
@@ -129,6 +271,45 @@ object AggregationSpec extends ZIOSpecDefault {
               |    "aggregation": {
               |      "terms": {
               |        "field": "day_of_week"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Terms aggregation with order") {
+          val aggregation =
+            termsAggregation(name = "aggregation", field = "day_of_week").orderBy(AggregationOrder("_key", Desc))
+          val expected =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "terms": {
+              |        "field": "day_of_week",
+              |        "order": {
+              |          "_key": "desc"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson))
+        },
+        test("properly encode Terms aggregation with size") {
+          val aggregation = termsAggregation(name = "aggregation", field = "day_of_week").size(5)
+          val expected =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "terms": {
+              |        "field": "day_of_week",
+              |        "size": 5
               |      }
               |    }
               |  }
