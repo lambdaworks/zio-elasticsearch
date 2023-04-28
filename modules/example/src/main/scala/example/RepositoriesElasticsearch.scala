@@ -17,6 +17,7 @@
 package example
 
 import zio._
+import zio.elasticsearch.ElasticAggregation.{maxAggregation, termsAggregation}
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch._
 import zio.elasticsearch.query.ElasticQuery
@@ -24,8 +25,23 @@ import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
-  def findAll(): Task[List[GitHubRepo]] =
+  def findAll(): Task[List[GitHubRepo]] = {
     elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
+
+    for {
+      x <- elasticsearch
+             .execute(
+               ElasticRequest.aggregate(
+                 Index,
+                 termsAggregation("aggrTerms", GitHubRepo.organization)
+                   .withSubAgg(maxAggregation("aggMax", GitHubRepo.forks).missing(10.24))
+               )
+             )
+             .aggregations
+      _ = println(x)
+    } yield (List())
+
+  }
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
