@@ -600,8 +600,8 @@ object ElasticRequest {
     def size(value: Int): SearchRequest =
       self.copy(size = Some(value))
 
-    def sort(sorts: Sort*): SearchRequest =
-      self.copy(sortBy = sortBy ++ sorts.toSet)
+    def sort(sort: Sort, sorts: Sort*): SearchRequest =
+      self.copy(sortBy = sortBy + sort ++ sorts.toSet)
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
@@ -656,8 +656,8 @@ object ElasticRequest {
     def searchAfter(value: Json): SearchAndAggregateRequest =
       self.copy(searchAfter = Some(value))
 
-    def sort(sorts: Sort*): SearchAndAggregateRequest =
-      self.copy(sortBy = sortBy ++ sorts.toSet)
+    def sort(sort: Sort, sorts: Sort*): SearchAndAggregateRequest =
+      self.copy(sortBy = sortBy + sort ++ sorts.toSet)
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
