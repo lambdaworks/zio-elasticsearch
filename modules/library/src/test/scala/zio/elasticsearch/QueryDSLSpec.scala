@@ -837,6 +837,324 @@ object QueryDSLSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding ElasticQuery as JSON")(
+        suite("bool")(
+          test("filter") {
+            val query = filter(matches(field = "day_of_week", value = "Monday"))
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("filter (boost)") {
+            val query = filter(matches(field = "day_of_week", value = "Monday")).boost(1.0)
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |    "filter": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ],
+                |      "boost": 1.0
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("must") {
+            val query = must(matches(field = "day_of_week", value = "Monday"))
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("mustNot") {
+            val query = mustNot(matches(field = "day_of_week", value = "Monday"))
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("should") {
+            val query = should(matches(field = "day_of_week", value = "Monday"))
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("filter + must + mustNot + should") {
+            val query = filter(matches(field = "customer_age", value = 23))
+              .must(matches(field = "customer_id", value = 1))
+              .mustNot(matches(field = "day_of_month", value = 17))
+              .should(matches(field = "day_of_week", value = "Monday"))
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match": {
+                |            "customer_age": 23
+                |          }
+                |        }
+                |      ],
+                |      "must": [
+                |        {
+                |          "match": {
+                |            "customer_id": 1
+                |          }
+                |        }
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "day_of_month": 17
+                |          }
+                |        }
+                |      ],
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("filter + must + mustNot + should (boost)") {
+            val query = filter(matches(field = "customer_age", value = 23))
+              .must(matches(field = "customer_id", value = 1))
+              .mustNot(matches(field = "day_of_month", value = 17))
+              .should(matches(field = "day_of_week", value = "Monday"))
+              .boost(1.0)
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match": {
+                |            "customer_age": 23
+                |          }
+                |        }
+                |      ],
+                |      "must": [
+                |        {
+                |          "match": {
+                |            "customer_id": 1
+                |          }
+                |        }
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "day_of_month": 17
+                |          }
+                |        }
+                |      ],
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        }
+                |      ],
+                |      "boost": 1.0
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          },
+          test("filter + must + mustNot + should (boost, minimumShouldMatch") {
+            val query = filter(matches(field = "customer_age", value = 23))
+              .must(matches(field = "customer_id", value = 1))
+              .mustNot(matches(field = "day_of_month", value = 17))
+              .should(
+                matches(field = "day_of_week", value = "Monday"),
+                matches(field = "day_of_week", value = "Tuesday"),
+                matches(field = "day_of_week", value = "Wednesday")
+              )
+              .boost(1.0)
+              .minimumShouldMatch(2)
+            val expected =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match": {
+                |            "customer_age": 23
+                |          }
+                |        }
+                |      ],
+                |      "must": [
+                |        {
+                |          "match": {
+                |            "customer_id": 1
+                |          }
+                |        }
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "day_of_month": 17
+                |          }
+                |        }
+                |      ],
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "day_of_week": "Monday"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "day_of_week": "Tuesday"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "day_of_week": "Wednesday"
+                |          }
+                |        }
+                |      ],
+                |      "boost": 1.0,
+                |      "minimum_should_match": 2
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            assert(query.toJson)(equalTo(expected.toJson))
+          }
+        ),
+        test("bulk") {
+          val bulkQuery = IndexName.make("users").map { index =>
+            val nestedField = TestNestedField("NestedField", 1)
+            val subDoc = TestSubDocument(
+              stringField = "StringField",
+              nestedField = nestedField,
+              intField = 100,
+              intFieldList = Nil
+            )
+            val req1 =
+              ElasticRequest
+                .create[TestSubDocument](index, DocumentId("ETux1srpww2ObCx"), subDoc.copy(intField = 65))
+                .routing(unsafeWrap(subDoc.stringField)(Routing))
+            val req2 =
+              ElasticRequest.create[TestSubDocument](index, subDoc).routing(unsafeWrap(subDoc.stringField)(Routing))
+            val req3 = ElasticRequest
+              .upsert[TestSubDocument](index, DocumentId("yMyEG8iFL5qx"), subDoc.copy(stringField = "StringField2"))
+              .routing(unsafeWrap(subDoc.stringField)(Routing))
+            val req4 =
+              ElasticRequest
+                .deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
+                .routing(unsafeWrap(subDoc.stringField)(Routing))
+            ElasticRequest.bulk(req1, req2, req3, req4) match {
+              case r: Bulk => Some(r.body)
+              case _       => None
+            }
+          }
+
+          val expectedBody =
+            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "StringField" } }
+               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":65,"intFieldList":[]}
+               |{ "create" : { "_index" : "users", "routing" : "StringField" } }
+               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
+               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx", "routing" : "StringField" } }
+               |{"stringField":"StringField2","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
+               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "StringField" } }
+               |""".stripMargin
+
+          assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
+        },
+        test("exists") {
+          val query = exists(field = "day_of_week")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "exists": {
+              |      "field": "day_of_week"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
         test("hasChild") {
           hasChild("child", matches("field", "value"))
           val queryWithIgnoreUnmapped = hasChild("child", matches("field", "value")).ignoreUnmappedTrue
@@ -1082,6 +1400,34 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryWithScoreAndIgnoreUnmapped.toJson)(equalTo(expectedWithScoreAndIgnoreUnmapped.toJson)) &&
           assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson))
         },
+        test("matchAll") {
+          val query = matchAll
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "match_all": {}
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("matchAll (boost)") {
+          val query = matchAll.boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "match_all": {
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
         test("matches") {
           val query = matches(field = "day_of_week", value = true)
           val expected =
@@ -1096,6 +1442,15 @@ object QueryDSLSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("matches (type-safe)") {
+          val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
+          val queryInt    = matches(field = TestSubDocument.intField, value = 39)
+
+          assert(queryString)(
+            equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField", boost = None))
+          ) &&
+          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39, boost = None)))
         },
         test("matchPhrase") {
           val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
@@ -1145,6 +1500,291 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(queryRawTs.toJson)(equalTo(queryRawExpectedJson.toJson)) &&
           assert(queryWithBoost.toJson)(equalTo(queryWithBoostExpectedJson.toJson)) &&
           assert(queryWithBoostTs.toJson)(equalTo(queryWithBoostExpectedJson.toJson))
+        },
+        test("nested") {
+          val query = nested(path = "customer", query = matchAll)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("nested 2") {
+          val query = nested(path = "customer", query = nested(path = "items", query = term("type", "clothing")))
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "nested": {
+              |          "path": "customer.items",
+              |          "query": {
+              |            "term": {
+              |              "customer.items.type": {
+              |                "value": "clothing"
+              |              }
+              |            }
+              |          }
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("nested (scoreMode)") {
+          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "score_mode": "avg"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("nested (ignoreUnmapped)") {
+          val query = nested(path = "customer", query = matchAll).ignoreUnmappedFalse
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "ignore_unmapped": false
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("nested (scoreMode, ignoreUnmapped)") {
+          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg).ignoreUnmappedFalse
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "score_mode": "avg",
+              |      "ignore_unmapped": false
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("nested (empty innerHits)") {
+          val query = nested(path = "customer", query = matchAll).innerHits
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "inner_hits": {}
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("nested (innerHits)") {
+          val query = nested(path = "customer", query = matchAll).innerHits(
+            InnerHits.from(0).size(3).name("name")
+          )
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "customer",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "inner_hits": {
+              |        "from": 0,
+              |        "size": 3,
+              |        "name": "name"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range") {
+          val query = range(field = "field")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (boost)") {
+          val query = range(field = "field").boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "field": {
+              |      },
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (lower bound)") {
+          val query = range(field = "customer_age").gt(23)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "customer_age": {
+              |        "gt": 23
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (upper bound)") {
+          val query = range(field = "customer_age").lt(23)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "customer_age": {
+              |        "lt": 23
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (inclusive lower bound)") {
+          val query = range(field = "expiry_date").gte("now")
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "expiry_date": {
+              |        "gte": "now"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (inclusive upper bound") {
+          val query = range(field = "customer_age").lte(100L)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "customer_age": {
+              |        "lte": 100
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (bounds)") {
+          val query = range(field = "customer_age").gte(10).lt(100)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "customer_age": {
+              |        "gte": 10,
+              |        "lt": 100
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
+        },
+        test("range (bounds, boost)") {
+          val query = range(field = "customer_age").gte(10).lt(100).boost(1.0)
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "customer_age": {
+              |        "gte": 10,
+              |        "lt": 100
+              |      },
+              |      "boost": 1.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson))
         },
         test("term") {
           val query                    = term(field = TestDocument.stringField, value = "test")
@@ -1244,608 +1884,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
-
-        test("properly encode Bool Query with Filter containing `Match` leaf query") {
-          val query = filter(matches(field = "day_of_week", value = "Monday"))
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "filter": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Bool Query with Filter containing `Match` leaf query with boost") {
-          val query = filter(matches(field = "day_of_week", value = "Monday")).boost(1.0)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |    "filter": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ],
-              |      "boost": 1.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Bool Query with Must containing `Match` leaf query") {
-          val query = must(matches(field = "day_of_week", value = "Monday"))
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "must": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Bool Query with MustNot containing `Match` leaf query") {
-          val query = mustNot(matches(field = "day_of_week", value = "Monday"))
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "must_not": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Bool Query with Should containing `Match` leaf query") {
-          val query = should(matches(field = "day_of_week", value = "Monday"))
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "should": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query") {
-          val query = filter(matches(field = "customer_age", value = 23))
-            .must(matches(field = "customer_id", value = 1))
-            .mustNot(matches(field = "day_of_month", value = 17))
-            .should(matches(field = "day_of_week", value = "Monday"))
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "filter": [
-              |        {
-              |          "match": {
-              |            "customer_age": 23
-              |          }
-              |        }
-              |      ],
-              |      "must": [
-              |        {
-              |          "match": {
-              |            "customer_id": 1
-              |          }
-              |        }
-              |      ],
-              |      "must_not": [
-              |        {
-              |          "match": {
-              |            "day_of_month": 17
-              |          }
-              |        }
-              |      ],
-              |      "should": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query, boost") {
-          val query = filter(matches(field = "customer_age", value = 23))
-            .must(matches(field = "customer_id", value = 1))
-            .mustNot(matches(field = "day_of_month", value = 17))
-            .should(matches(field = "day_of_week", value = "Monday"))
-            .boost(1.0)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "filter": [
-              |        {
-              |          "match": {
-              |            "customer_age": 23
-              |          }
-              |        }
-              |      ],
-              |      "must": [
-              |        {
-              |          "match": {
-              |            "customer_id": 1
-              |          }
-              |        }
-              |      ],
-              |      "must_not": [
-              |        {
-              |          "match": {
-              |            "day_of_month": 17
-              |          }
-              |        }
-              |      ],
-              |      "should": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        }
-              |      ],
-              |      "boost": 1.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test(
-          "properly encode Bool Query with Filter, Must, MustNot and Should containing `Match` leaf query and with boost, minimumShouldMatch"
-        ) {
-          val query = filter(matches(field = "customer_age", value = 23))
-            .must(matches(field = "customer_id", value = 1))
-            .mustNot(matches(field = "day_of_month", value = 17))
-            .should(
-              matches(field = "day_of_week", value = "Monday"),
-              matches(field = "day_of_week", value = "Tuesday"),
-              matches(field = "day_of_week", value = "Wednesday")
-            )
-            .boost(1.0)
-            .minimumShouldMatch(2)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "bool": {
-              |      "filter": [
-              |        {
-              |          "match": {
-              |            "customer_age": 23
-              |          }
-              |        }
-              |      ],
-              |      "must": [
-              |        {
-              |          "match": {
-              |            "customer_id": 1
-              |          }
-              |        }
-              |      ],
-              |      "must_not": [
-              |        {
-              |          "match": {
-              |            "day_of_month": 17
-              |          }
-              |        }
-              |      ],
-              |      "should": [
-              |        {
-              |          "match": {
-              |            "day_of_week": "Monday"
-              |          }
-              |        },
-              |        {
-              |          "match": {
-              |            "day_of_week": "Tuesday"
-              |          }
-              |        },
-              |        {
-              |          "match": {
-              |            "day_of_week": "Wednesday"
-              |          }
-              |        }
-              |      ],
-              |      "boost": 1.0,
-              |      "minimum_should_match": 2
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("exists") {
-          val query = exists(field = "day_of_week")
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "exists": {
-              |      "field": "day_of_week"
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("matchAll") {
-          val query = matchAll
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "match_all": {}
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("matchAll (boost)") {
-          val query = matchAll.boost(1.0)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "match_all": {
-              |      "boost": 1.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("matches (type-safe)") {
-          val queryString = matches(field = TestSubDocument.stringField, value = "StringField")
-          val queryInt    = matches(field = TestSubDocument.intField, value = 39)
-
-          assert(queryString)(
-            equalTo(Match[TestSubDocument, String](field = "stringField", value = "StringField", boost = None))
-          ) &&
-          assert(queryInt)(equalTo(Match[TestSubDocument, Int](field = "intField", value = 39, boost = None)))
-        },
-        test("properly encode Nested Query with MatchAll Query") {
-          val query = nested(path = "customer", query = matchAll)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode nested Nested Queries with Term Query") {
-          val query = nested(path = "customer", query = nested(path = "items", query = term("type", "clothing")))
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "nested": {
-              |          "path": "customer.items",
-              |          "query": {
-              |            "term": {
-              |              "customer.items.type": {
-              |                "value": "clothing"
-              |              }
-              |            }
-              |          }
-              |        }
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Nested Query with MatchAll Query and score_mode") {
-          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      },
-              |      "score_mode": "avg"
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Nested Query with MatchAll Query and ignore_unmapped") {
-          val query = nested(path = "customer", query = matchAll).ignoreUnmappedFalse
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      },
-              |      "ignore_unmapped": false
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Nested Query with MatchAll Query, score_mode and ignore_unmapped") {
-          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg).ignoreUnmappedFalse
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      },
-              |      "score_mode": "avg",
-              |      "ignore_unmapped": false
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Nested Query with MatchAll Query and inner hits with empty body") {
-          val query = nested(path = "customer", query = matchAll).innerHits
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      },
-              |      "inner_hits": {}
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Nested Query with MatchAll Query and inner hits with from, size and name fields") {
-          val query = nested(path = "customer", query = matchAll).innerHits(
-            InnerHits.from(0).size(3).name("name")
-          )
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      },
-              |      "inner_hits": {
-              |        "from": 0,
-              |        "size": 3,
-              |        "name": "name"
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Unbounded Range Query") {
-          val query = range(field = "field")
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "field": {
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Unbounded Range Query with boost") {
-          val query = range(field = "field").boost(1.0)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "field": {
-              |      },
-              |      "boost": 1.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Range Query with Lower Bound") {
-          val query = range(field = "customer_age").gt(23)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "customer_age": {
-              |        "gt": 23
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Range Query with Upper Bound") {
-          val query = range(field = "customer_age").lt(23)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "customer_age": {
-              |        "lt": 23
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Range Query with Inclusive Lower Bound") {
-          val query = range(field = "expiry_date").gte("now")
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "expiry_date": {
-              |        "gte": "now"
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Range Query with inclusive Upper Bound") {
-          val query = range(field = "customer_age").lte(100L)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "customer_age": {
-              |        "lte": 100
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Range Query with both Upper and Lower Bound") {
-          val query = range(field = "customer_age").gte(10).lt(100)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "customer_age": {
-              |        "gte": 10,
-              |        "lt": 100
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Range Query with both Upper and Lower Bound with boost") {
-          val query = range(field = "customer_age").gte(10).lt(100).boost(1.0)
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "range": {
-              |      "customer_age": {
-              |        "gte": 10,
-              |        "lt": 100
-              |      },
-              |      "boost": 1.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Wildcard query") {
+        test("wildcard") {
           val query1 = contains(field = "day_of_week", value = "M")
           val query2 = startsWith(field = "day_of_week", value = "M")
           val query3 = wildcard(field = "day_of_week", value = "M*")
@@ -1878,7 +1917,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query2.toJson)(equalTo(expected23.toJson)) &&
           assert(query3.toJson)(equalTo(expected23.toJson))
         },
-        test("properly encode Wildcard query with boost") {
+        test("wildcard (boost)") {
           val query1 = contains(field = "day_of_week", value = "M").boost(1.0)
           val query2 = startsWith(field = "day_of_week", value = "M").boost(1.0)
           val query3 = wildcard(field = "day_of_week", value = "M*").boost(1.0)
@@ -1913,7 +1952,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query2.toJson)(equalTo(expected23.toJson)) &&
           assert(query3.toJson)(equalTo(expected23.toJson))
         },
-        test("properly encode case insensitive Wildcard query") {
+        test("wildcard (case insensitive)") {
           val query1 = contains(field = "day_of_week", value = "M").caseInsensitiveTrue
           val query2 = startsWith(field = "day_of_week", value = "M").caseInsensitiveTrue
           val query3 = wildcard(field = "day_of_week", value = "M*").caseInsensitiveTrue
@@ -1948,7 +1987,7 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query2.toJson)(equalTo(expected23.toJson)) &&
           assert(query3.toJson)(equalTo(expected23.toJson))
         },
-        test("properly encode case insensitive Wildcard query with boost") {
+        test("wildcard (case insensitive, boost)") {
           val query1 = contains(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
           val query2 = startsWith(field = "day_of_week", value = "M").boost(1.0).caseInsensitiveTrue
           val query3 = wildcard(field = "day_of_week", value = "M*").boost(1.0).caseInsensitiveTrue
@@ -1984,46 +2023,6 @@ object QueryDSLSpec extends ZIOSpecDefault {
           assert(query1.toJson)(equalTo(expected1.toJson)) &&
           assert(query2.toJson)(equalTo(expected23.toJson)) &&
           assert(query3.toJson)(equalTo(expected23.toJson))
-        },
-        test("bulk") {
-          val bulkQuery = IndexName.make("users").map { index =>
-            val nestedField = TestNestedField("NestedField", 1)
-            val subDoc = TestSubDocument(
-              stringField = "StringField",
-              nestedField = nestedField,
-              intField = 100,
-              intFieldList = Nil
-            )
-            val req1 =
-              ElasticRequest
-                .create[TestSubDocument](index, DocumentId("ETux1srpww2ObCx"), subDoc.copy(intField = 65))
-                .routing(unsafeWrap(subDoc.stringField)(Routing))
-            val req2 =
-              ElasticRequest.create[TestSubDocument](index, subDoc).routing(unsafeWrap(subDoc.stringField)(Routing))
-            val req3 = ElasticRequest
-              .upsert[TestSubDocument](index, DocumentId("yMyEG8iFL5qx"), subDoc.copy(stringField = "StringField2"))
-              .routing(unsafeWrap(subDoc.stringField)(Routing))
-            val req4 =
-              ElasticRequest
-                .deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
-                .routing(unsafeWrap(subDoc.stringField)(Routing))
-            ElasticRequest.bulk(req1, req2, req3, req4) match {
-              case r: Bulk => Some(r.body)
-              case _       => None
-            }
-          }
-
-          val expectedBody =
-            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "StringField" } }
-               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":65,"intFieldList":[]}
-               |{ "create" : { "_index" : "users", "routing" : "StringField" } }
-               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
-               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx", "routing" : "StringField" } }
-               |{"stringField":"StringField2","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
-               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "StringField" } }
-               |""".stripMargin
-
-          assert(bulkQuery)(equalTo(Validation.succeed(Some(expectedBody))))
         }
       )
     )
