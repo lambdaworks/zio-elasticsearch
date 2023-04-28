@@ -31,9 +31,9 @@ trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
           case schema: Schema.Sequence[_, _, _] =>
             Schema.force(schema.elementSchema) match {
               case schema: Schema.Record[_] => loop(schema, prefix.map(_ + "." + field.name).orElse(Some(field.name)))
-              case s                        => List(prefix.fold[String](field.name)(_ + "." + field.name))
+              case _                        => List(prefix.fold[String](field.name)(_ + "." + field.name))
             }
-          case s => List(prefix.fold[String](field.name)(_ + "." + field.name))
+          case _ => List(prefix.fold[String](field.name)(_ + "." + field.name))
         }
       }
 
