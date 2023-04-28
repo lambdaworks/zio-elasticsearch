@@ -1,6 +1,6 @@
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticAggregation.{multipleAggregations, termsAggregation}
+import zio.elasticsearch.ElasticAggregation.{maxAggregation, multipleAggregations, termsAggregation}
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.query.sort.SortOrder
@@ -13,15 +13,28 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticAggregation")(
       suite("constructing")(
+        test("max") {
+          val aggregation            = maxAggregation("aggregation", "testField")
+          val aggregationTs          = maxAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw       = maxAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing = maxAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+
+          assert(aggregation)(equalTo(Max(name = "aggregation", field = "testField", missing = None))) &&
+          assert(aggregationTs)(equalTo(Max(name = "aggregation", field = "intField", missing = None))) &&
+          assert(aggregationTsRaw)(equalTo(Max(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregationWithMissing)(
+            equalTo(Max(name = "aggregation", field = "intField", missing = Some(20.0)))
+          )
+        },
         test("multiple") {
           val aggregation =
             multipleAggregations.aggregations(
               termsAggregation("first", TestDocument.stringField).orderByKeyDesc,
-              termsAggregation("second", "testField").size(5)
+              maxAggregation("second", "testField").missing(20.0)
             )
           val aggregationWithSubAggregation =
             termsAggregation("first", "testField")
-              .withSubAgg(termsAggregation("second", TestSubDocument.stringField.raw))
+              .withSubAgg(maxAggregation("second", TestSubDocument.intField.raw))
               .withAgg(termsAggregation("third", TestDocument.stringField))
 
           assert(aggregation)(
@@ -35,13 +48,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                     subAggregations = Nil,
                     size = None
                   ),
-                  Terms(
-                    name = "second",
-                    field = "testField",
-                    order = Set.empty,
-                    subAggregations = Nil,
-                    size = Some(5)
-                  )
+                  Max(name = "second", field = "testField", missing = Some(20.0))
                 )
               )
             )
@@ -55,12 +62,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                     field = "testField",
                     order = Set.empty,
                     subAggregations = List(
-                      Terms(
+                      Max(
                         name = "second",
-                        field = "stringField.raw",
-                        order = Set.empty,
-                        subAggregations = Nil,
-                        size = None
+                        field = "intField.raw",
+                        missing = None
                       )
                     ),
                     size = None
@@ -78,11 +83,13 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("subAggregation") {
-          val aggregation1 = termsAggregation("first", TestDocument.stringField).withSubAgg(
-            termsAggregation("second", TestSubDocument.stringField.raw)
+          val aggregation1 = termsAggregation(name = "first", field = TestDocument.stringField).withSubAgg(
+            termsAggregation(name = "second", field = TestSubDocument.stringField.raw)
           )
-          val aggregation2 = termsAggregation("first", TestDocument.stringField).withAgg(
-            termsAggregation("second", "testField").withSubAgg(termsAggregation("third", "anotherTestField"))
+          val aggregation2 = termsAggregation(name = "first", field = TestDocument.stringField).withAgg(
+            termsAggregation(name = "second", field = "testField").withSubAgg(
+              maxAggregation("third", "anotherTestField")
+            )
           )
 
           assert(aggregation1)(
@@ -119,12 +126,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                     field = "testField",
                     order = Set.empty,
                     subAggregations = List(
-                      Terms(
+                      Max(
                         name = "third",
                         field = "anotherTestField",
-                        order = Set.empty,
-                        subAggregations = Nil,
-                        size = None
+                        missing = None
                       )
                     ),
                     size = None
@@ -211,15 +216,64 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
+        test("max") {
+          val aggregation            = maxAggregation("aggregation", "testField")
+          val aggregationTs          = maxAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing = maxAggregation("aggregation", TestDocument.intField).missing(20.0)
+
+          val expected =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "max": {
+              |        "field": "testField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "max": {
+              |        "field": "intField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "max": {
+              |        "field": "intField",
+              |        "missing": 20.0
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
         test("multiple") {
           val aggregation =
             multipleAggregations.aggregations(
-              termsAggregation("first", TestDocument.stringField),
-              termsAggregation("second", "testField")
+              termsAggregation("first", TestDocument.stringField).orderByKeyDesc,
+              maxAggregation("second", "testField").missing(20.0)
             )
           val aggregationWithSubAggregation =
             termsAggregation("first", "testField")
-              .withSubAgg(termsAggregation("second", TestSubDocument.stringField.raw))
+              .withSubAgg(maxAggregation("second", TestSubDocument.intField.raw))
               .withAgg(termsAggregation("third", TestDocument.stringField))
 
           val expected =
@@ -228,12 +282,16 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggs": {
               |    "first": {
               |      "terms": {
-              |        "field": "stringField"
+              |        "field": "stringField",
+              |        "order": {
+              |          "_key": "desc"
+              |        }
               |      }
               |    },
               |    "second": {
-              |      "terms": {
-              |        "field": "testField"
+              |      "max": {
+              |        "field": "testField",
+              |        "missing": 20.0
               |      }
               |    }
               |  }
@@ -250,8 +308,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |      },
               |      "aggs": {
               |        "second": {
-              |          "terms": {
-              |            "field": "stringField.raw"
+              |          "max": {
+              |            "field": "intField.raw"
               |          }
               |        }
               |      }
@@ -271,7 +329,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         test("subAggregation") {
           val aggregation =
             termsAggregation("first", TestDocument.stringField)
-              .withSubAgg(termsAggregation("second", TestSubDocument.stringField.keyword))
+              .withSubAgg(maxAggregation("second", TestSubDocument.intField))
 
           val expected =
             """
@@ -283,8 +341,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |      },
               |      "aggs": {
               |        "second": {
-              |          "terms": {
-              |            "field": "stringField.keyword"
+              |          "max": {
+              |            "field": "intField"
               |          }
               |        }
               |      }
