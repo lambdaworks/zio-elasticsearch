@@ -1612,14 +1612,23 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoostTs.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("nested") {
-          val query = nested(path = "customer", query = matchAll)
+          val query                   = nested(TestDocument.subDocumentList, matchAll)
+          val queryWithNested         = nested(TestDocument.subDocumentList, nested("items", term("testField", "test")))
+          val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
+          val queryWithInnerHits =
+            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits.from(0).size(3).name("innerHitName"))
+          val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
+          val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
+          val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
+            .innerHits(InnerHits.from(10).size(20).name("innerHitName"))
+            .scoreMode(ScoreMode.Min)
 
           val expected =
             """
               |{
               |  "query": {
               |    "nested": {
-              |      "path": "customer",
+              |      "path": "subDocumentList",
               |      "query": {
               |        "match_all": {}
               |      }
@@ -1628,23 +1637,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("nested 2") {
-          val query = nested(path = "customer", query = nested(path = "items", query = term("type", "clothing")))
-          val expected =
+          val expectedWithNested =
             """
               |{
               |  "query": {
               |    "nested": {
-              |      "path": "customer",
+              |      "path": "subDocumentList",
               |      "query": {
               |        "nested": {
-              |          "path": "customer.items",
+              |          "path": "subDocumentList.items",
               |          "query": {
               |            "term": {
-              |              "customer.items.type": {
-              |                "value": "clothing"
+              |              "subDocumentList.items.testField": {
+              |                "value": "test"
               |              }
               |            }
               |          }
@@ -1655,74 +1660,46 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("nested (scoreMode)") {
-          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg)
-          val expected =
+          val expectedWithIgnoreUnmapped =
             """
               |{
               |  "query": {
               |    "nested": {
-              |      "path": "customer",
+              |      "path": "subDocumentList",
               |      "query": {
               |        "match_all": {}
               |      },
-              |      "score_mode": "avg"
+              |      "ignore_unmapped": true 
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("nested (ignoreUnmapped)") {
-          val query = nested(path = "customer", query = matchAll).ignoreUnmappedFalse
-          val expected =
+          val expectedWithInnerHits =
             """
               |{
               |  "query": {
               |    "nested": {
-              |      "path": "customer",
+              |      "path": "subDocumentList",
               |      "query": {
               |        "match_all": {}
               |      },
-              |      "ignore_unmapped": false
+              |      "inner_hits": {
+              |        "from": 0,
+              |        "size": 3,
+              |        "name": "innerHitName"
+              |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("nested (scoreMode, ignoreUnmapped)") {
-          val query = nested(path = "customer", query = matchAll).scoreMode(ScoreMode.Avg).ignoreUnmappedFalse
-          val expected =
+          val expectedWithInnerHitsEmpty =
             """
               |{
               |  "query": {
               |    "nested": {
-              |      "path": "customer",
-              |      "query": {
-              |        "match_all": {}
-              |      },
-              |      "score_mode": "avg",
-              |      "ignore_unmapped": false
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("nested (empty innerHits)") {
-          val query = nested(path = "customer", query = matchAll).innerHits
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "nested": {
-              |      "path": "customer",
+              |      "path": "subDocumentList",
               |      "query": {
               |        "match_all": {}
               |      },
@@ -1732,32 +1709,49 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
-        },
-        test("nested (innerHits)") {
-          val query = nested(path = "customer", query = matchAll).innerHits(
-            InnerHits.from(0).size(3).name("name")
-          )
-          val expected =
+          val expectedWithScoreMode =
             """
               |{
               |  "query": {
               |    "nested": {
-              |      "path": "customer",
+              |      "path": "subDocumentList",
               |      "query": {
               |        "match_all": {}
               |      },
+              |      "score_mode": "avg"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "ignore_unmapped": false,
+              |      "score_mode": "min",
               |      "inner_hits": {
-              |        "from": 0,
-              |        "size": 3,
-              |        "name": "name"
+              |        "from": 10,
+              |        "size": 20,
+              |        "name": "innerHitName"
               |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson)(equalTo(expected.toJson))
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryWithNested.toJson)(equalTo(expectedWithNested.toJson)) &&
+          assert(queryWithIgnoreUnmapped.toJson)(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
+          assert(queryWithInnerHits.toJson)(equalTo(expectedWithInnerHits.toJson)) &&
+          assert(queryWithInnerHitsEmpty.toJson)(equalTo(expectedWithInnerHitsEmpty.toJson)) &&
+          assert(queryWithScoreMode.toJson)(equalTo(expectedWithScoreMode.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("range") {
           val query = range(field = "field")
