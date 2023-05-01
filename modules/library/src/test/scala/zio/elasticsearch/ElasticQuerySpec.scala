@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.Scope
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.domain._
@@ -27,7 +26,7 @@ import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
 object ElasticQuerySpec extends ZIOSpecDefault {
-  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
+  def spec: Spec[TestEnvironment, Any] =
     suite("ElasticQuery")(
       suite("constructing")(
         suite("bool")(
