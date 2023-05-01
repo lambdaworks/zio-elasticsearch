@@ -448,9 +448,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryString     = matches("stringField", "test")
           val queryBool       = matches("booleanField", true)
           val queryInt        = matches("intField", 1)
-          val queryStringTs   = matches(TestDocument.stringField, value = "test")
-          val queryBoolTs     = matches(TestDocument.booleanField, value = true)
-          val queryIntTs      = matches(TestDocument.intField, value = 1)
+          val queryStringTs   = matches(TestDocument.stringField, "test")
+          val queryBoolTs     = matches(TestDocument.booleanField, true)
+          val queryIntTs      = matches(TestDocument.intField, 1)
           val queryWithSuffix = matches(TestDocument.stringField.raw, "test")
           val queryWithBoost  = matches(TestDocument.doubleField, 3.14).boost(10.21)
 
@@ -472,10 +472,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("matchPhrase") {
-          val query           = matchPhrase(field = "stringField", value = "this is a test")
-          val queryTs         = matchPhrase(field = TestDocument.stringField, value = "this is a test")
-          val queryWithSuffix = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
-          val queryWithBoost  = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
+          val query           = matchPhrase("stringField", "this is a test")
+          val queryTs         = matchPhrase(TestDocument.stringField, "this is a test")
+          val queryWithSuffix = matchPhrase(TestDocument.stringField.raw, "this is a test")
+          val queryWithBoost  = matchPhrase(TestDocument.stringField, "this is a test").boost(21.15)
 
           assert(query)(equalTo(MatchPhrase[Any](field = "stringField", value = "this is a test", boost = None))) &&
           assert(queryTs)(
@@ -924,8 +924,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
           },
           test("mustNot") {
-            val query          = mustNot(matches(field = "day_of_week", value = "Monday"))
-            val queryWithBoost = mustNot(matches(field = "day_of_week", value = "Monday")).boost(3.14)
+            val query = mustNot(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val queryWithBoost =
+              mustNot(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22))
+                .boost(10.21)
 
             val expected =
               """
@@ -935,7 +937,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "must_not": [
                 |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": "test field"
                 |          }
                 |        }
                 |      ]
@@ -952,11 +959,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "must_not": [
                 |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
                 |          }
                 |        }
                 |      ],
-                |      "boost": 3.14
+                |      "boost": 10.21
                 |    }
                 |  }
                 |}
@@ -966,12 +978,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
           },
           test("should") {
-            val query          = should(matches(field = "day_of_week", value = "Monday"))
-            val queryWithBoost = should(matches(field = "day_of_week", value = "Monday")).boost(3.14)
-            val queryWithMinimumShouldMatch =
-              should(matches(field = "day_of_week", value = "Monday")).minimumShouldMatch(3)
-            val queryWithAllParams =
-              should(matches(field = "day_of_week", value = "Monday")).boost(10.21).minimumShouldMatch(2)
+            val query = should(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val queryWithBoost =
+              should(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22)).boost(10.21)
+            val queryWithMinimumShouldMatch = should(
+              matches(TestDocument.stringField.keyword, "test"),
+              matches(TestDocument.intField, 22),
+              exists(TestDocument.booleanField)
+            ).minimumShouldMatch(2)
+            val queryWithAllParams = should(
+              matches(TestDocument.stringField.keyword, "test"),
+              matches(TestDocument.intField, 22),
+              exists(TestDocument.booleanField)
+            ).boost(3.14).minimumShouldMatch(2)
 
             val expected =
               """
@@ -981,7 +1000,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "should": [
                 |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": "test field"
                 |          }
                 |        }
                 |      ]
@@ -998,11 +1022,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "should": [
                 |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
                 |          }
                 |        }
                 |      ],
-                |      "boost": 3.14
+                |      "boost": 10.21
                 |    }
                 |  }
                 |}
@@ -1016,11 +1045,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "should": [
                 |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "booleanField"
                 |          }
                 |        }
                 |      ],
-                |      "minimum_should_match": 3
+                |      "minimum_should_match": 2
                 |    }
                 |  }
                 |}
@@ -1034,11 +1073,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "should": [
                 |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "booleanField"
                 |          }
                 |        }
                 |      ],
-                |      "boost": 10.21,
+                |      "boost": 3.14,
                 |      "minimum_should_match": 2
                 |    }
                 |  }
@@ -1051,65 +1100,106 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
           },
           test("filter + must + mustNot + should") {
-            val query = filter(matches(field = "customer_age", value = 23))
-              .must(matches(field = "customer_id", value = 1))
-              .mustNot(matches(field = "day_of_month", value = 17))
-              .should(matches(field = "day_of_week", value = "Monday"))
-            val queryWithBoost = filter(matches(field = "customer_age", value = 23))
-              .must(matches(field = "customer_id", value = 1))
-              .mustNot(matches(field = "day_of_month", value = 17))
-              .should(matches(field = "day_of_week", value = "Monday"))
-              .boost(1.0)
-            val queryWithMinimumShouldMatch = filter(matches(field = "customer_age", value = 23))
-              .must(matches(field = "customer_id", value = 1))
-              .mustNot(matches(field = "day_of_month", value = 17))
-              .should(
-                matches(field = "day_of_week", value = "Monday"),
-                matches(field = "day_of_week", value = "Tuesday"),
-                matches(field = "day_of_week", value = "Wednesday")
-              )
-              .minimumShouldMatch(2)
-            val queryWithAllParams = filter(matches(field = "customer_age", value = 23))
-              .must(matches(field = "customer_id", value = 1))
-              .mustNot(matches(field = "day_of_month", value = 17))
-              .should(
-                matches(field = "day_of_week", value = "Monday"),
-                matches(field = "day_of_week", value = "Tuesday"),
-                matches(field = "day_of_week", value = "Wednesday")
-              )
-              .boost(1.0)
-              .minimumShouldMatch(2)
+            val query1 =
+              filter(matchPhrase(TestDocument.stringField, "test")).must(matches(TestDocument.booleanField, true))
+            val query2 = must(terms(TestDocument.stringField, "a", "b", "c"))
+              .mustNot(matches(TestDocument.doubleField, 3.14), matches("testField", true), exists("anotherTestField"))
+            val query3 = must(terms(TestDocument.stringField, "a", "b", "c"))
+              .should(range(TestDocument.intField).gt(1).lte(100), matches(TestDocument.stringField, "test"))
+              .mustNot(matches(TestDocument.intField, 50))
+            val queryWithBoost              = query1.boost(3.14)
+            val queryWithMinimumShouldMatch = query2.minimumShouldMatch(2)
+            val queryWithAllParams          = query3.boost(3.14).minimumShouldMatch(3)
 
-            val expected =
+            val expected1 =
               """
                 |{
                 |  "query": {
                 |    "bool": {
                 |      "filter": [
                 |        {
-                |          "match": {
-                |            "customer_age": 23
+                |          "match_phrase": {
+                |            "stringField": "test"
                 |          }
                 |        }
                 |      ],
                 |      "must": [
                 |        {
                 |          "match": {
-                |            "customer_id": 1
+                |            "booleanField": true
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            val expected2 =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
                 |          }
                 |        }
                 |      ],
                 |      "must_not": [
                 |        {
                 |          "match": {
-                |            "day_of_month": 17
+                |            "doubleField": 3.14
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": true
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "anotherTestField"
+                |          }
+                |        }
+                |      ]
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            val expected3 =
+              """
+                |{
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
+                |          }
+                |        }
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "intField": 50
                 |          }
                 |        }
                 |      ],
                 |      "should": [
                 |        {
+                |          "range": {
+                |            "intField": {
+                |              "gt": 1,
+                |              "lte": 100
+                |            }
+                |          }
+                |        },
+                |        {
                 |          "match": {
-                |            "day_of_week": "Monday"
+                |            "stringField": "test"
                 |          }
                 |        }
                 |      ]
@@ -1125,33 +1215,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |    "bool": {
                 |      "filter": [
                 |        {
-                |          "match": {
-                |            "customer_age": 23
+                |          "match_phrase": {
+                |            "stringField": "test"
                 |          }
                 |        }
                 |      ],
                 |      "must": [
                 |        {
                 |          "match": {
-                |            "customer_id": 1
+                |            "booleanField": true
                 |          }
                 |        }
                 |      ],
-                |      "must_not": [
-                |        {
-                |          "match": {
-                |            "day_of_month": 17
-                |          }
-                |        }
-                |      ],
-                |      "should": [
-                |        {
-                |          "match": {
-                |            "day_of_week": "Monday"
-                |          }
-                |        }
-                |      ],
-                |      "boost": 1.0
+                |      "boost": 3.14
                 |    }
                 |  }
                 |}
@@ -1162,41 +1238,27 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |{
                 |  "query": {
                 |    "bool": {
-                |      "filter": [
-                |        {
-                |          "match": {
-                |            "customer_age": 23
-                |          }
-                |        }
-                |      ],
                 |      "must": [
                 |        {
-                |          "match": {
-                |            "customer_id": 1
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
                 |          }
                 |        }
                 |      ],
                 |      "must_not": [
                 |        {
                 |          "match": {
-                |            "day_of_month": 17
-                |          }
-                |        }
-                |      ],
-                |      "should": [
-                |        {
-                |          "match": {
-                |            "day_of_week": "Monday"
+                |            "doubleField": 3.14
                 |          }
                 |        },
                 |        {
                 |          "match": {
-                |            "day_of_week": "Tuesday"
+                |            "testField": true
                 |          }
                 |        },
                 |        {
-                |          "match": {
-                |            "day_of_week": "Wednesday"
+                |          "exists": {
+                |            "field": "anotherTestField"
                 |          }
                 |        }
                 |      ],
@@ -1211,52 +1273,45 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |{
                 |  "query": {
                 |    "bool": {
-                |      "filter": [
-                |        {
-                |          "match": {
-                |            "customer_age": 23
-                |          }
-                |        }
-                |      ],
                 |      "must": [
                 |        {
-                |          "match": {
-                |            "customer_id": 1
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
                 |          }
                 |        }
                 |      ],
                 |      "must_not": [
                 |        {
                 |          "match": {
-                |            "day_of_month": 17
+                |            "intField": 50
                 |          }
                 |        }
                 |      ],
                 |      "should": [
                 |        {
-                |          "match": {
-                |            "day_of_week": "Monday"
+                |          "range": {
+                |            "intField": {
+                |              "gt": 1,
+                |              "lte": 100
+                |            }
                 |          }
                 |        },
                 |        {
                 |          "match": {
-                |            "day_of_week": "Tuesday"
-                |          }
-                |        },
-                |        {
-                |          "match": {
-                |            "day_of_week": "Wednesday"
+                |            "stringField": "test"
                 |          }
                 |        }
                 |      ],
-                |      "boost": 1.0,
-                |      "minimum_should_match": 2
+                |      "boost": 3.14,
+                |      "minimum_should_match": 3
                 |    }
                 |  }
                 |}
                 |""".stripMargin
 
-            assert(query.toJson)(equalTo(expected.toJson)) &&
+            assert(query1.toJson)(equalTo(expected1.toJson)) &&
+            assert(query2.toJson)(equalTo(expected2.toJson)) &&
+            assert(query3.toJson)(equalTo(expected3.toJson)) &&
             assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
             assert(queryWithMinimumShouldMatch.toJson)(equalTo(expectedWithMinimumShouldMatch.toJson)) &&
             assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
@@ -1725,12 +1780,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("matchPhrase") {
-          val querySimple      = matchPhrase(field = "stringField", value = "this is a test")
-          val queryRaw         = matchPhrase(field = "stringField.raw", value = "this is a test")
-          val queryWithBoost   = matchPhrase(field = "stringField", value = "this is a test").boost(21.15)
-          val querySimpleTs    = matchPhrase(field = TestDocument.stringField, value = "this is a test")
-          val queryRawTs       = matchPhrase(field = TestDocument.stringField.raw, value = "this is a test")
-          val queryWithBoostTs = matchPhrase(field = TestDocument.stringField, value = "this is a test").boost(21.15)
+          val querySimple      = matchPhrase("stringField", "this is a test")
+          val queryRaw         = matchPhrase("stringField.raw", "this is a test")
+          val queryWithBoost   = matchPhrase("stringField", "this is a test").boost(21.15)
+          val querySimpleTs    = matchPhrase(TestDocument.stringField, "this is a test")
+          val queryRawTs       = matchPhrase(TestDocument.stringField.raw, "this is a test")
+          val queryWithBoostTs = matchPhrase(TestDocument.stringField, "this is a test").boost(21.15)
 
           val expectedSimple =
             """
