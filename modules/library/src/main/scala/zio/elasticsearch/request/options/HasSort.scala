@@ -25,9 +25,9 @@ private[elasticsearch] trait HasSort[R <: HasSort[R]] {
    * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
    *
    * @param sort
-   *   one [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
+   *   required [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
    * @param sorts
-   *   zero or more [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
+   *   rest of the [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
    * @return
    *   an instance of the [[zio.elasticsearch.ElasticRequest]] enriched with the sorting criteria.
    */

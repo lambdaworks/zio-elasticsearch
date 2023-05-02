@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.highlights.Highlights
@@ -226,7 +227,7 @@ object ElasticRequest {
     Search(
       index = index,
       query = query,
-      sortBy = Nil,
+      sortBy = Chunk.empty,
       from = None,
       highlights = None,
       routing = None,
@@ -255,7 +256,7 @@ object ElasticRequest {
       index = index,
       query = query,
       aggregation = aggregation,
-      sortBy = Nil,
+      sortBy = Chunk.empty,
       from = None,
       highlights = None,
       routing = None,
@@ -564,7 +565,7 @@ object ElasticRequest {
   private[elasticsearch] final case class Search(
     index: IndexName,
     query: ElasticQuery[_],
-    sortBy: List[Sort],
+    sortBy: Chunk[Sort],
     from: Option[Int],
     highlights: Option[Highlights],
     routing: Option[Routing],
@@ -601,7 +602,7 @@ object ElasticRequest {
       self.copy(size = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchRequest =
-      self.copy(sortBy = (sortBy :+ sort) ++ sorts.toList)
+      self.copy(sortBy = sortBy ++ (sort :: sorts.toList))
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
@@ -634,7 +635,7 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
-    sortBy: List[Sort],
+    sortBy: Chunk[Sort],
     from: Option[Int],
     highlights: Option[Highlights],
     routing: Option[Routing],
@@ -657,7 +658,7 @@ object ElasticRequest {
       self.copy(searchAfter = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchAndAggregateRequest =
-      self.copy(sortBy = (sortBy :+ sort) ++ sorts.toList)
+      self.copy(sortBy = sortBy ++ (sort :: sorts.toList))
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
