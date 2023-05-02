@@ -31,6 +31,23 @@ sealed trait ElasticAggregation { self =>
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
 
+sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
+
+private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])
+    extends MaxAggregation { self =>
+  def missing(value: Double): MaxAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def paramsToJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("max" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations
 }
@@ -40,7 +57,7 @@ private[elasticsearch] final case class Multiple(aggregations: List[SingleElasti
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
     self.copy(aggregations = self.aggregations ++ aggregations)
 
-  def paramsToJson: Json =
+  private[elasticsearch] def paramsToJson: Json =
     aggregations.map(_.paramsToJson).reduce(_ merge _)
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
@@ -75,7 +92,7 @@ private[elasticsearch] final case class Terms(
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
     self.copy(order = self.order + order ++ orders.toSet)
 
-  def paramsToJson: Json =
+  private[elasticsearch] def paramsToJson: Json =
     Obj(name -> paramsToJsonHelper)
 
   def size(value: Int): TermsAggregation =

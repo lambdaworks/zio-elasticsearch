@@ -75,6 +75,9 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       TermsAggregationResponse.decoder
                         .decodeJson(data.toString)
                         .map(field.split("#")(1) -> _)
+                    case str if str.contains("max#") =>
+                      MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+
                   }
                 )
               }

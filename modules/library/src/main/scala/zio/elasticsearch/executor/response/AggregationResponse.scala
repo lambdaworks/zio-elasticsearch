@@ -22,6 +22,12 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 sealed trait AggregationResponse
 
+private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object MaxAggregationResponse {
+  implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
+}
+
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
   docErrorCount: Int,
@@ -65,6 +71,10 @@ private[elasticsearch] object TermsAggregationBucket {
                     .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
                 )
               )
+            case str if str.contains("max#") =>
+              Some(
+                field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double])
+              )
           }
       }
     }.toMap
@@ -76,6 +86,8 @@ private[elasticsearch] object TermsAggregationBucket {
         (field: @unchecked) match {
           case str if str.contains("terms#") =>
             (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
+          case str if str.contains("max#") =>
+            (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
         }
     }
 
