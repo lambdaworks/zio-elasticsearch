@@ -33,7 +33,8 @@ sealed trait SingleElasticAggregation extends ElasticAggregation
 
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
 
-final case class Max(name: String, field: String, missing: Option[Double]) extends MaxAggregation { self =>
+private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])
+    extends MaxAggregation { self =>
   def missing(value: Double): MaxAggregation =
     self.copy(missing = Some(value))
 

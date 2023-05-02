@@ -19,7 +19,7 @@ package zio.elasticsearch.aggregation.options
 private[elasticsearch] trait HasMissing[A <: HasMissing[A]] {
 
   /**
-   * Sets the `missing` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]]. The`Missing` parameter
+   * Sets the `missing` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]]. The`missing` parameter
    * provides a value to use when a document is missing the field that the aggregation is running on.
    *
    * @param value
