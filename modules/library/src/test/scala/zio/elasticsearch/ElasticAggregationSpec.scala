@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.{maxAggregation, multipleAggregations, termsAggregation}
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
@@ -44,7 +45,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "first",
                     field = "stringField",
-                    order = Set(AggregationOrder(value = "_key", order = Desc)),
+                    order = Chunk(AggregationOrder(value = "_key", order = Desc)),
                     subAggregations = Nil,
                     size = None
                   ),
@@ -60,7 +61,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "first",
                     field = "testField",
-                    order = Set.empty,
+                    order = Chunk.empty,
                     subAggregations = List(
                       Max(
                         name = "second",
@@ -73,7 +74,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "third",
                     field = "stringField",
-                    order = Set.empty,
+                    order = Chunk.empty,
                     subAggregations = Nil,
                     size = None
                   )
@@ -97,12 +98,12 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "first",
                 field = "stringField",
-                order = Set.empty,
+                order = Chunk.empty,
                 subAggregations = List(
                   Terms(
                     name = "second",
                     field = "stringField.raw",
-                    order = Set.empty,
+                    order = Chunk.empty,
                     subAggregations = Nil,
                     size = None
                   )
@@ -117,14 +118,14 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "first",
                     field = "stringField",
-                    order = Set.empty,
+                    order = Chunk.empty,
                     subAggregations = Nil,
                     size = None
                   ),
                   Terms(
                     name = "second",
                     field = "testField",
-                    order = Set.empty,
+                    order = Chunk.empty,
                     subAggregations = List(
                       Max(
                         name = "third",
@@ -154,7 +155,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
 
           assert(aggregation)(
             equalTo(
-              Terms(name = "aggregation", field = "testField", order = Set.empty, subAggregations = Nil, size = None)
+              Terms(name = "aggregation", field = "testField", order = Chunk.empty, subAggregations = Nil, size = None)
             )
           ) &&
           assert(aggregationTs)(
@@ -162,7 +163,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField",
-                order = Set.empty,
+                order = Chunk.empty,
                 subAggregations = Nil,
                 size = None
               )
@@ -173,7 +174,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField.raw",
-                order = Set.empty,
+                order = Chunk.empty,
                 subAggregations = Nil,
                 size = None
               )
@@ -184,8 +185,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField",
-                order =
-                  Set(AggregationOrder("_key", Desc), AggregationOrder("test", Desc), AggregationOrder("_count", Asc)),
+                order = Chunk(
+                  AggregationOrder("_key", Desc),
+                  AggregationOrder("test", Desc),
+                  AggregationOrder("_count", Asc)
+                ),
                 subAggregations = Nil,
                 size = None
               )
@@ -196,7 +200,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField",
-                order = Set.empty,
+                order = Chunk.empty,
                 subAggregations = Nil,
                 size = Some(10)
               )
@@ -207,7 +211,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField.test",
-                order = Set(AggregationOrder("_count", Desc), AggregationOrder("_key", Asc)),
+                order = Chunk(AggregationOrder("_count", Desc), AggregationOrder("_key", Asc)),
                 subAggregations = Nil,
                 size = Some(5)
               )
