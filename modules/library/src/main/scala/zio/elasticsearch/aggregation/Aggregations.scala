@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.aggregation
 
+import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.options._
@@ -85,12 +86,12 @@ sealed trait TermsAggregation
 private[elasticsearch] final case class Terms(
   name: String,
   field: String,
-  order: Set[AggregationOrder],
+  order: Chunk[AggregationOrder],
   subAggregations: List[SingleElasticAggregation],
   size: Option[Int]
 ) extends TermsAggregation { self =>
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
-    self.copy(order = self.order + order ++ orders.toSet)
+    self.copy(order = self.order ++ (order :: orders.toList))
 
   private[elasticsearch] def paramsToJson: Json =
     Obj(name -> paramsToJsonHelper)

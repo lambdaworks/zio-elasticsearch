@@ -24,10 +24,12 @@ private[elasticsearch] trait HasSort[R <: HasSort[R]] {
    * Sets the sorting criteria for the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
    * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
    *
+   * @param sort
+   *   required [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
    * @param sorts
-   *   one or more [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
+   *   rest of the [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
    * @return
    *   an instance of the [[zio.elasticsearch.ElasticRequest]] enriched with the sorting criteria.
    */
-  def sort(sorts: Sort*): R
+  def sort(sort: Sort, sorts: Sort*): R
 }
