@@ -21,7 +21,7 @@ import zio.elasticsearch.executor.ElasticCredentials
 
 final case class ElasticConfig(host: String, port: Int, credentials: Option[ElasticCredentials], useSSL: Boolean) {
   private val scheme = if (useSSL) "https" else "http"
-  lazy val uri: Uri = Uri(scheme, host, port)
+  lazy val uri: Uri  = Uri(scheme, host, port)
 }
 
 object ElasticConfig {
