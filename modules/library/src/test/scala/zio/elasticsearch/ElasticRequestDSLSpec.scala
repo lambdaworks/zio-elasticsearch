@@ -130,7 +130,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         assert(jsonRequest)(equalTo(expected.toJson))
       },
       test("successfully encode search request to JSON with includes using a schema") {
-        val jsonRequest: Json = search(Index, Query).includes(TestDocument.schema) match {
+        val jsonRequest: Json = search(Index, Query).includes[TestDocument] match {
           case r: ElasticRequest.Search => r.toJson
         }
         val expected =
@@ -146,7 +146,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |      "subDocumentList.intFieldList",
             |      "dateField",
             |      "intField",
-            |      "doubleField"
+            |      "doubleField",
+            |      "booleanField"
             |    ]
             |  },
             |  "query" : {
