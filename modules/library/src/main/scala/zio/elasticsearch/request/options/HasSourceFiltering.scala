@@ -18,7 +18,7 @@ package zio.elasticsearch.request.options
 
 import zio.schema.Schema
 
-trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
+private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
   def excludes(fields: String*): R
 
   def includes(fields: String*): R
