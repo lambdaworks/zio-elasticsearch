@@ -571,10 +571,10 @@ object ElasticRequest {
     index: IndexName,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
-    excluded: Option[List[String]],
+    excluded: Option[Chunk[String]],
     from: Option[Int],
     highlights: Option[Highlights],
-    included: Option[List[String]],
+    included: Option[Chunk[String]],
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
@@ -595,7 +595,7 @@ object ElasticRequest {
       )
 
     def excludes(field: String, fields: String*): SearchRequest =
-      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
+      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
 
     def from(value: Int): SearchRequest =
       self.copy(from = Some(value))
@@ -604,10 +604,10 @@ object ElasticRequest {
       self.copy(highlights = Some(value))
 
     def includes(field: String, fields: String*): SearchRequest =
-      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
+      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
 
     def includes[A](implicit schema: Schema.Record[A]): SearchRequest = {
-      val fields = getFieldNames(schema)
+      val fields = Chunk.fromIterable(getFieldNames(schema))
       self.copy(included = included.map(_ ++ fields).orElse(Some(fields)))
     }
 
@@ -665,16 +665,16 @@ object ElasticRequest {
     query: ElasticQuery[_],
     aggregation: ElasticAggregation,
     sortBy: Chunk[Sort],
-    excluded: Option[List[String]],
+    excluded: Option[Chunk[String]],
     from: Option[Int],
     highlights: Option[Highlights],
-    included: Option[List[String]],
+    included: Option[Chunk[String]],
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
     def excludes(field: String, fields: String*): SearchAndAggregateRequest =
-      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
+      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
 
     def from(value: Int): SearchAndAggregateRequest =
       self.copy(from = Some(value))
@@ -683,10 +683,10 @@ object ElasticRequest {
       self.copy(highlights = Some(value))
 
     def includes(field: String, fields: String*): SearchAndAggregateRequest =
-      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
+      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
 
     def includes[A](implicit schema: Schema.Record[A]): SearchAndAggregateRequest = {
-      val fields = getFieldNames(schema)
+      val fields = Chunk.fromIterable(getFieldNames(schema))
       self.copy(included = included.map(_ ++ fields).orElse(Some(fields)))
     }
 
