@@ -636,13 +636,15 @@ object ElasticRequest {
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
 
       val sourceJson: Json =
-        included
-          .map(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
-          .map { included =>
-            included merge excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
-          }
-          .orElse(excluded.map(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*))))
-          .fold(Obj())(filters => Obj("_source" -> filters))
+        (included, excluded) match {
+          case (None, None) => Obj()
+          case (in, ex) =>
+            Obj("_source" -> {
+              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
+              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
+              includes merge excludes
+            })
+        }
 
       fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge searchAfterJson merge sourceJson
     }
@@ -715,13 +717,15 @@ object ElasticRequest {
         if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
 
       val sourceJson: Json =
-        included
-          .map(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
-          .map { included =>
-            included merge excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
-          }
-          .orElse(excluded.map(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*))))
-          .fold(Obj())(filters => Obj("_source" -> filters))
+        (included, excluded) match {
+          case (None, None) => Obj()
+          case (in, ex) =>
+            Obj("_source" -> {
+              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
+              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
+              includes merge excludes
+            })
+        }
 
       fromJson merge
         sizeJson merge
