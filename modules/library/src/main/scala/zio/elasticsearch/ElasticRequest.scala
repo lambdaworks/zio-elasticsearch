@@ -638,7 +638,7 @@ object ElasticRequest {
       val sourceJson: Json =
         (included, excluded) match {
           case (None, None) => Obj()
-          case (in, ex) =>
+          case (included, excluded) =>
             Obj("_source" -> {
               val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
               val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
@@ -719,7 +719,7 @@ object ElasticRequest {
       val sourceJson: Json =
         (included, excluded) match {
           case (None, None) => Obj()
-          case (in, ex) =>
+          case (included, excluded) =>
             Obj("_source" -> {
               val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
               val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
