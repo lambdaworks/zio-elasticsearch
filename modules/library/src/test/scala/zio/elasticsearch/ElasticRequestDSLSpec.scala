@@ -198,16 +198,20 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
           .highlights(highlight(TestDocument.intField))
           .sort(sortBy(TestDocument.intField).missing(First))
           .from(10)
-          .includes()
-          .excludes() match {
+          .includes("stringField")
+          .excludes("intField") match {
           case r: ElasticRequest.Search => r.toJson
         }
         val expected =
           """
             |{
             |  "_source" : {
-            |    "includes" : [],
-            |    "excludes" : []
+            |    "includes" : [
+            |      "stringField"
+            |    ],
+            |    "excludes" : [
+            |      "intField"
+            |    ]
             |  },
             |  "query" : {
             |    "range" : {
@@ -242,16 +246,20 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
           .highlights(highlight(TestDocument.intField))
           .sort(sortBy(TestDocument.intField).missing(First))
           .from(10)
-          .includes()
-          .excludes() match {
+          .includes("stringField")
+          .excludes("intField") match {
           case r: ElasticRequest.SearchAndAggregate => r.toJson
         }
         val expected =
           """
             |{
             |  "_source" : {
-            |    "includes" : [],
-            |    "excludes" : []
+            |    "includes" : [
+            |      "stringField"
+            |    ],
+            |    "excludes" : [
+            |      "intField"
+            |    ]
             |  },
             |  "query" : {
             |    "range" : {

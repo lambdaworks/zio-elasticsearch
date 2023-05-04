@@ -525,7 +525,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   query = range(TestDocument.doubleField).gte(100.0)
                   res <- Executor
-                           .execute(ElasticRequest.search(firstSearchIndex, query).includes(PartialTestDocument.schema))
+                           .execute(ElasticRequest.search(firstSearchIndex, query).includes[PartialTestDocument])
                   items <- res.items
                 } yield assert(items.map(item => Right(item.raw)))(
                   hasSameElements(

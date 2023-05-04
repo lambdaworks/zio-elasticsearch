@@ -562,11 +562,7 @@ object ElasticRequest {
       with HasSourceFiltering[SearchRequest] {
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
 
-    def excludes(fields: String*): SearchRequest
-
     def highlights(value: Highlights): SearchRequest
-
-    def includes(fields: String*): SearchRequest
 
     def searchAfter(value: Json): SearchRequest
   }
@@ -598,8 +594,8 @@ object ElasticRequest {
         size = size
       )
 
-    def excludes(fields: String*): SearchRequest =
-      self.copy(excluded = excluded.map(_ ++ fields).orElse(Some(fields.toList)))
+    def excludes(field: String, fields: String*): SearchRequest =
+      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
 
     def from(value: Int): SearchRequest =
       self.copy(from = Some(value))
@@ -607,8 +603,13 @@ object ElasticRequest {
     def highlights(value: Highlights): SearchRequest =
       self.copy(highlights = Some(value))
 
-    def includes(fields: String*): SearchRequest =
-      self.copy(included = included.map(_ ++ fields).orElse(Some(fields.toList)))
+    def includes(field: String, fields: String*): SearchRequest =
+      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
+
+    def includes[A](implicit schema: Schema.Record[A]): SearchRequest = {
+      val fields = getFieldNames(schema)
+      self.copy(included = included.map(_ ++ fields).orElse(Some(fields)))
+    }
 
     def routing(value: Routing): SearchRequest =
       self.copy(routing = Some(value))
@@ -672,8 +673,8 @@ object ElasticRequest {
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
-    def excludes(fields: String*): SearchAndAggregateRequest =
-      self.copy(excluded = excluded.map(_ ++ fields).orElse(Some(fields.toList)))
+    def excludes(field: String, fields: String*): SearchAndAggregateRequest =
+      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
 
     def from(value: Int): SearchAndAggregateRequest =
       self.copy(from = Some(value))
@@ -681,8 +682,13 @@ object ElasticRequest {
     def highlights(value: Highlights): SearchAndAggregateRequest =
       self.copy(highlights = Some(value))
 
-    def includes(fields: String*): SearchAndAggregateRequest =
-      self.copy(included = included.map(_ ++ fields).orElse(Some(fields.toList)))
+    def includes(field: String, fields: String*): SearchAndAggregateRequest =
+      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: fields.toList)))
+
+    def includes[A](implicit schema: Schema.Record[A]): SearchAndAggregateRequest = {
+      val fields = getFieldNames(schema)
+      self.copy(included = included.map(_ ++ fields).orElse(Some(fields)))
+    }
 
     def routing(value: Routing): SearchAndAggregateRequest =
       self.copy(routing = Some(value))
