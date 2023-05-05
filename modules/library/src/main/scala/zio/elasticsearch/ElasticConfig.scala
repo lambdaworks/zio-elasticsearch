@@ -20,12 +20,11 @@ import sttp.model.Uri
 import zio.elasticsearch.executor.ElasticCredentials
 
 final case class ElasticConfig(host: String, port: Int, credentials: Option[ElasticCredentials], useSSL: Boolean) {
-  private val scheme = if (useSSL) "https" else "http"
-  lazy val uri: Uri  = Uri(scheme, host, port)
+  lazy val uri: Uri = Uri(if (useSSL) "https" else "http", host, port)
 }
 
 object ElasticConfig {
   def apply(host: String, port: Int, useSSL: Boolean = false): ElasticConfig = ElasticConfig(host, port, None, useSSL)
 
-  lazy val Default: ElasticConfig = ElasticConfig("localhost", 9200, false)
+  lazy val Default: ElasticConfig = ElasticConfig(host = "localhost", port = 9200)
 }
