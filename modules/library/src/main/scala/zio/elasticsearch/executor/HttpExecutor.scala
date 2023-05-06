@@ -138,10 +138,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
     ).flatMap { response =>
       response.code match {
-        case HttpOk => ZIO.fromEither(response.body)
-          .map(body => body.replaceAll(" = ", ":").fromJson[BulkResponse])
-          .right.mapError(x => new Exception(s"Error: ${x.toString} with body='${response.body.getOrElse("")}'"))
-
+        case HttpOk => response.body match {
+          case Left(error) => ZIO.fail(new ElasticException(s"Bulk response body empty: ${error}"))
+          case Right(body) => body.replaceAll(" = ", ":").fromJson[BulkResponse] match {
+            case Left(error) => ZIO.fail(new ElasticException(s"Bulk response body invalid: ${error}"))
+            case Right(response) => ZIO.succeed(response)
+          }
+        }
         case _      => ZIO.fail(handleFailures(response))
       }
     }
