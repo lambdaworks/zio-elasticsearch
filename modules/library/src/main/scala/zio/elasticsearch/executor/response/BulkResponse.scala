@@ -16,8 +16,7 @@
 
 package zio.elasticsearch.executor.response
 
-import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
-import zio.json.jsonHint
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField, jsonHint}
 
 // Bulk response format:
 // https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docs-bulk.html
@@ -171,4 +170,3 @@ private[elasticsearch] final case class BulkResponse(
 private[elasticsearch] object BulkResponse {
   implicit val decoder: JsonDecoder[BulkResponse] = DeriveJsonDecoder.gen[BulkResponse]
 }
-

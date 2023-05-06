@@ -1436,14 +1436,18 @@ object HttpExecutorSpec extends IntegrationSpec {
                            firstDocumentId,
                            Script("ctx._source.intField = params['factor']").withParams("factor" -> 100)
                          )
-                  req7 = ElasticRequest.update[TestDocument](index, DocumentId("invalid-document-id"), document.copy(intField = 100))
+                  req7 =
+                    ElasticRequest
+                      .update[TestDocument](index, DocumentId("invalid-document-id"), document.copy(intField = 100))
                   res  <- Executor.execute(ElasticRequest.bulk(req1, req2, req3, req4, req5, req6, req7).refreshTrue)
                   doc1 <- Executor.execute(ElasticRequest.getById(index, firstDocumentId)).documentAs[TestDocument]
                   doc2 <- Executor.execute(ElasticRequest.getById(index, secondDocumentId)).documentAs[TestDocument]
                   doc3 <- Executor.execute(ElasticRequest.getById(index, thirdDocumentId)).documentAs[TestDocument]
                 } yield assert(res.items.size)(equalTo(7)) &&
-                  assert(res.items.map(_.error.isDefined))(equalTo(List(false, false, false, false, false, false, true))) &&
-                  assert(res.items(6).error.map(_. `type`))(equalTo(Some("document_missing_exception"))) &&
+                  assert(res.items.map(_.error.isDefined))(
+                    equalTo(List(false, false, false, false, false, false, true))
+                  ) &&
+                  assert(res.items(6).error.map(_.`type`))(equalTo(Some("document_missing_exception"))) &&
                   assert(doc3)(isSome(equalTo(document.copy(intField = 100)))) &&
                   assert(doc2)(isNone) && assert(doc1)(
                     isSome(equalTo(document.copy(doubleField = 3000, intField = 100)))

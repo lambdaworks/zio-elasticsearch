@@ -43,10 +43,9 @@ import zio.elasticsearch.executor.response.{
 }
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
-import zio.json._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
-import zio.json.{DeriveJsonDecoder, JsonDecoder}
+import zio.json.{DeriveJsonDecoder, JsonDecoder, _}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
 import zio.{Chunk, Task, ZIO}
@@ -138,19 +137,20 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
     ).flatMap { response =>
       response.code match {
-        case HttpOk => response.body match {
-          case Left(error) => ZIO.fail(new ElasticException(s"Bulk response body empty: ${error}"))
-          case Right(body) => body.replaceAll(" = ", ":").fromJson[BulkResponse] match {
-            case Left(error) => ZIO.fail(new ElasticException(s"Bulk response body invalid: ${error}"))
-            case Right(response) => ZIO.succeed(response)
+        case HttpOk =>
+          response.body match {
+            case Left(error) => ZIO.fail(new ElasticException(s"Bulk response body empty: ${error}"))
+            case Right(body) =>
+              body.replaceAll(" = ", ":").fromJson[BulkResponse] match {
+                case Left(error)     => ZIO.fail(new ElasticException(s"Bulk response body invalid: ${error}"))
+                case Right(response) => ZIO.succeed(response)
+              }
           }
-        }
-        case _      => ZIO.fail(handleFailures(response))
+        case _ => ZIO.fail(handleFailures(response))
       }
     }
   }
 
-          
   private def executeCount(r: Count): Task[Int] = {
     val req = baseRequest
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))

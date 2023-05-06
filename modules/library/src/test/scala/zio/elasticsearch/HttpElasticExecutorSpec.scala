@@ -20,7 +20,13 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{BulkResponse, Create, ShardsResponse, TermsAggregationBucket, TermsAggregationResponse}
+import zio.elasticsearch.executor.response.{
+  BulkResponse,
+  Create,
+  ShardsResponse,
+  TermsAggregationBucket,
+  TermsAggregationResponse
+}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.Proceed
@@ -48,24 +54,31 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(ElasticRequest.bulk(ElasticRequest.create(index, doc)).refreshTrue)
         )(
-          equalTo(BulkResponse(
-            took = 3,
-            errors = false,
-            items = List(Create(
-              index = "repositories",
-              id = "123",
-              version = Some(1),
-              result = Some("created"),
-              shards = Some(ShardsResponse(
-                total = 1,
-                successful = 1,
-                failed = 0
-              )),
-              seqNo = Some(0),
-              primaryTerm = Some(1),
-              status = Some(201),
-              error = None
-            ))))
+          equalTo(
+            BulkResponse(
+              took = 3,
+              errors = false,
+              items = List(
+                Create(
+                  index = "repositories",
+                  id = "123",
+                  version = Some(1),
+                  result = Some("created"),
+                  shards = Some(
+                    ShardsResponse(
+                      total = 1,
+                      successful = 1,
+                      failed = 0
+                    )
+                  ),
+                  seqNo = Some(0),
+                  primaryTerm = Some(1),
+                  status = Some(201),
+                  error = None
+                )
+              )
+            )
+          )
         )
       },
       test("count request") {
