@@ -33,6 +33,7 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
 import zio.elasticsearch.executor.response.{
+  BulkResponse,
   CountResponse,
   CreateResponse,
   DocumentWithHighlightsAndSort,
@@ -42,6 +43,7 @@ import zio.elasticsearch.executor.response.{
 }
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
+import zio.json._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
@@ -126,7 +128,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeBulk(r: Bulk): Task[Unit] = {
+  private def executeBulk[A](r: Bulk): Task[BulkResponse] = {
     val uri = (r.index match {
       case Some(index) => uri"${esConfig.uri}/$index/$Bulk"
       case None        => uri"${esConfig.uri}/$Bulk"
@@ -136,12 +138,16 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
     ).flatMap { response =>
       response.code match {
-        case HttpOk => ZIO.unit
+        case HttpOk => ZIO.fromEither(response.body)
+          .map(body => body.replaceAll(" = ", ":").fromJson[BulkResponse])
+          .right.mapError(x => new Exception(s"Error: ${x.toString} with body='${response.body.getOrElse("")}'"))
+
         case _      => ZIO.fail(handleFailures(response))
       }
     }
   }
 
+          
   private def executeCount(r: Count): Task[Int] = {
     val req = baseRequest
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
