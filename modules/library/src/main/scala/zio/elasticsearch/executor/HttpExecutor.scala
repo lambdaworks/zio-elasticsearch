@@ -45,7 +45,7 @@ import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcom
 import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
-import zio.json.{DeriveJsonDecoder, JsonDecoder, _}
+import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
 import zio.{Chunk, Task, ZIO}
@@ -133,24 +133,21 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case None        => uri"${esConfig.uri}/$Bulk"
     }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(
-      baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
+    sendRequestWithCustomResponse(
+      baseRequest.post(uri).contentType(ApplicationJson)
+      .body(r.body).response(asJson[BulkResponse])
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
-          response.body match {
-            case Left(error) => ZIO.fail(new ElasticException(s"Bulk response body empty: ${error}"))
-            case Right(body) =>
-              body.replaceAll(" = ", ":").fromJson[BulkResponse] match {
-                case Left(error)     => ZIO.fail(new ElasticException(s"Bulk response body invalid: ${error}"))
-                case Right(response) => ZIO.succeed(response)
-              }
-          }
-        case _ => ZIO.fail(handleFailures(response))
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(value)
+          )
+        case _ => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }
-
+ 
   private def executeCount(r: Count): Task[Int] = {
     val req = baseRequest
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
@@ -643,6 +640,6 @@ private[elasticsearch] object HttpExecutor {
       DeriveJsonDecoder.gen[PointInTimeResponse]
   }
 
-  def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) =
+  def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) = 
     new HttpExecutor(esConfig, client)
 }

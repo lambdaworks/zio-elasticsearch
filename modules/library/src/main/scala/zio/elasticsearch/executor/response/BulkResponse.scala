@@ -18,10 +18,7 @@ package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField, jsonHint}
 
-// Bulk response format:
-// https://www.elastic.co/guide/en/elasticsearch/reference/8.7/docs-bulk.html
-
-private[elasticsearch] final case class Error(
+final case class Error private[elasticsearch](
   `type`: String,
   reason: String,
   @jsonField("index_uuid")
@@ -34,7 +31,7 @@ private[elasticsearch] object Error {
   implicit val decoder: JsonDecoder[Error] = DeriveJsonDecoder.gen[Error]
 }
 
-private[elasticsearch] final case class Status(
+final case class Status private[elasticsearch](
   status: Int,
   error: Error
 )
@@ -43,7 +40,7 @@ private[elasticsearch] object Status {
   implicit val decoder: JsonDecoder[Status] = DeriveJsonDecoder.gen[Status]
 }
 
-private[elasticsearch] final case class ShardsResponse(
+final case class ShardsResponse private[elasticsearch] (
   total: Int,
   successful: Int,
   failed: Int
@@ -53,20 +50,18 @@ private[elasticsearch] object ShardsResponse {
   implicit val decoder: JsonDecoder[ShardsResponse] = DeriveJsonDecoder.gen[ShardsResponse]
 }
 
-private[elasticsearch] sealed trait Item {
+sealed trait Item {
   def index: String
   def id: String
   def version: Option[Int]
   def result: Option[String]
   def shards: Option[ShardsResponse]
-  def seqNo: Option[Int]
-  def primaryTerm: Option[Int]
   def status: Option[Int]
   def error: Option[Error]
 }
 
 @jsonHint("create")
-private[elasticsearch] final case class Create(
+final case class Create private[elasticsearch](
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -76,10 +71,6 @@ private[elasticsearch] final case class Create(
   result: Option[String],
   @jsonField("_shards")
   shards: Option[ShardsResponse],
-  @jsonField("_seq_no")
-  seqNo: Option[Int],
-  @jsonField("_primary_term")
-  primaryTerm: Option[Int],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -89,7 +80,7 @@ private[elasticsearch] object Create {
 }
 
 @jsonHint("delete")
-private[elasticsearch] final case class Delete(
+final case class Delete private[elasticsearch](
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -99,10 +90,6 @@ private[elasticsearch] final case class Delete(
   result: Option[String],
   @jsonField("_shards")
   shards: Option[ShardsResponse],
-  @jsonField("_seq_no")
-  seqNo: Option[Int],
-  @jsonField("_primary_term")
-  primaryTerm: Option[Int],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -112,7 +99,7 @@ private[elasticsearch] object Delete {
 }
 
 @jsonHint("index")
-private[elasticsearch] final case class Index(
+final case class Index private[elasticsearch](
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -122,10 +109,6 @@ private[elasticsearch] final case class Index(
   result: Option[String],
   @jsonField("_shards")
   shards: Option[ShardsResponse],
-  @jsonField("_seq_no")
-  seqNo: Option[Int],
-  @jsonField("_primary_term")
-  primaryTerm: Option[Int],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -135,7 +118,7 @@ private[elasticsearch] object Index {
 }
 
 @jsonHint("update")
-private[elasticsearch] final case class Update(
+final case class Update private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -145,10 +128,6 @@ private[elasticsearch] final case class Update(
   result: Option[String],
   @jsonField("_shards")
   shards: Option[ShardsResponse],
-  @jsonField("_seq_no")
-  seqNo: Option[Int],
-  @jsonField("_primary_term")
-  primaryTerm: Option[Int],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -161,7 +140,7 @@ private[elasticsearch] object Item {
   implicit val decoder: JsonDecoder[Item] = DeriveJsonDecoder.gen[Item]
 }
 
-private[elasticsearch] final case class BulkResponse(
+final case class BulkResponse private[elasticsearch] (
   took: Int,
   errors: Boolean,
   items: List[Item]

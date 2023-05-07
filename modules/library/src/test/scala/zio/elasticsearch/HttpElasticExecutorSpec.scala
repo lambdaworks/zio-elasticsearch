@@ -71,8 +71,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                       failed = 0
                     )
                   ),
-                  seqNo = Some(0),
-                  primaryTerm = Some(1),
                   status = Some(201),
                   error = None
                 )
