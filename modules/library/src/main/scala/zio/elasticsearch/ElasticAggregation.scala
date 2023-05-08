@@ -66,6 +66,8 @@ object ElasticAggregation {
    *   aggregation name
    * @param field
    *   the type-safe field for which max aggregation will be executed
+   * @tparam A
+   *   expected number type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
    */
