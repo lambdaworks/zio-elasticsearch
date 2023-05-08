@@ -7,10 +7,23 @@
         "sbt"
       ],
       "enabled": false
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackagePatterns": [
+        "elasticsearch"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
     }
   ],
   "rebaseWhen": "conflicted",
   "schedule": [
+    "after 6pm every workday",
     "every weekend"
   ]
 }
