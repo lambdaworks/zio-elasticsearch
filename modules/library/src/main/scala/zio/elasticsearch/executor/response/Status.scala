@@ -18,7 +18,7 @@ package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
-final case class Status private[elasticsearch](
+final case class Status private[elasticsearch] (
   status: Int,
   error: Error
 )

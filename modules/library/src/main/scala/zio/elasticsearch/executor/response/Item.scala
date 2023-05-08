@@ -29,7 +29,7 @@ sealed trait Item {
 }
 
 @jsonHint("create")
-final case class Create private[elasticsearch](
+final case class Create private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -48,7 +48,7 @@ private[elasticsearch] object Create {
 }
 
 @jsonHint("delete")
-final case class Delete private[elasticsearch](
+final case class Delete private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -67,7 +67,7 @@ private[elasticsearch] object Delete {
 }
 
 @jsonHint("index")
-final case class Index private[elasticsearch](
+final case class Index private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")

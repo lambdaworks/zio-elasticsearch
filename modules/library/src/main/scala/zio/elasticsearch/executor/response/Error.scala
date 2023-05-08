@@ -18,7 +18,7 @@ package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-final case class Error private[elasticsearch](
+final case class Error private[elasticsearch] (
   `type`: String,
   reason: String,
   @jsonField("index_uuid")

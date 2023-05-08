@@ -134,8 +134,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequestWithCustomResponse(
-      baseRequest.post(uri).contentType(ApplicationJson)
-      .body(r.body).response(asJson[BulkResponse])
+      baseRequest
+        .post(uri)
+        .contentType(ApplicationJson)
+        .body(r.body)
+        .response(asJson[BulkResponse])
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -147,7 +150,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
   }
- 
+
   private def executeCount(r: Count): Task[Int] = {
     val req = baseRequest
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
@@ -640,6 +643,6 @@ private[elasticsearch] object HttpExecutor {
       DeriveJsonDecoder.gen[PointInTimeResponse]
   }
 
-  def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) = 
+  def apply(esConfig: ElasticConfig, client: SttpBackend[Task, Any]) =
     new HttpExecutor(esConfig, client)
 }
