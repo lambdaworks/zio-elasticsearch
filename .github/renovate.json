@@ -23,7 +23,7 @@
   ],
   "rebaseWhen": "conflicted",
   "schedule": [
-    "after 6pm every workday",
+    "after 6pm every weekday",
     "every weekend"
   ]
 }
