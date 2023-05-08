@@ -66,10 +66,12 @@ object ElasticAggregation {
    *   aggregation name
    * @param field
    *   the type-safe field for which max aggregation will be executed
+   * @tparam A
+   *   expected number type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
    */
-  final def maxAggregation(name: String, field: Field[_, Any]): MaxAggregation =
+  final def maxAggregation[A: Numeric](name: String, field: Field[_, A]): MaxAggregation =
     Max(name = name, field = field.toString, missing = None)
 
   /**
