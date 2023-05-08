@@ -18,12 +18,12 @@ package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
-final case class BulkResponse private[elasticsearch] (
-  took: Int,
-  errors: Boolean,
-  items: List[Item]
+final case class ShardsResponse private[elasticsearch] (
+  total: Int,
+  successful: Int,
+  failed: Int
 )
 
-private[elasticsearch] object BulkResponse {
-  implicit val decoder: JsonDecoder[BulkResponse] = DeriveJsonDecoder.gen[BulkResponse]
+private[elasticsearch] object ShardsResponse {
+  implicit val decoder: JsonDecoder[ShardsResponse] = DeriveJsonDecoder.gen[ShardsResponse]
 }
