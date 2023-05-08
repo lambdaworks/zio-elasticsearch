@@ -127,7 +127,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeBulk[A](r: Bulk): Task[BulkResponse] = {
+  private def executeBulk(r: Bulk): Task[BulkResponse] = {
     val uri = (r.index match {
       case Some(index) => uri"${esConfig.uri}/$index/$Bulk"
       case None        => uri"${esConfig.uri}/$Bulk"

@@ -23,7 +23,7 @@ import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{
   BulkResponse,
   Create,
-  ShardsResponse,
+  Shards,
   TermsAggregationBucket,
   TermsAggregationResponse
 }
@@ -65,10 +65,11 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                   version = Some(1),
                   result = Some("created"),
                   shards = Some(
-                    ShardsResponse(
+                    Shards(
                       total = 1,
                       successful = 1,
-                      failed = 0
+                      failed = 0,
+                      skipped = 0
                     )
                   ),
                   status = Some(201),

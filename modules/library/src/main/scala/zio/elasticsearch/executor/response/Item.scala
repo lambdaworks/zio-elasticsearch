@@ -23,7 +23,7 @@ sealed trait Item {
   def id: String
   def version: Option[Int]
   def result: Option[String]
-  def shards: Option[ShardsResponse]
+  def shards: Option[Shards]
   def status: Option[Int]
   def error: Option[Error]
 }
@@ -38,7 +38,7 @@ final case class Create private[elasticsearch] (
   version: Option[Int],
   result: Option[String],
   @jsonField("_shards")
-  shards: Option[ShardsResponse],
+  shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -57,7 +57,7 @@ final case class Delete private[elasticsearch] (
   version: Option[Int],
   result: Option[String],
   @jsonField("_shards")
-  shards: Option[ShardsResponse],
+  shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -76,7 +76,7 @@ final case class Index private[elasticsearch] (
   version: Option[Int],
   result: Option[String],
   @jsonField("_shards")
-  shards: Option[ShardsResponse],
+  shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
@@ -95,7 +95,7 @@ final case class Update private[elasticsearch] (
   version: Option[Int],
   result: Option[String],
   @jsonField("_shards")
-  shards: Option[ShardsResponse],
+  shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
 ) extends Item
