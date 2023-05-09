@@ -22,7 +22,7 @@ import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{
   BulkResponse,
-  Create,
+  CreateBulkResponse,
   Shards,
   TermsAggregationBucket,
   TermsAggregationResponse
@@ -59,7 +59,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               took = 3,
               errors = false,
               items = List(
-                Create(
+                CreateBulkResponse(
                   index = "repositories",
                   id = "123",
                   version = Some(1),

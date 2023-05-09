@@ -28,8 +28,12 @@ sealed trait Item {
   def error: Option[Error]
 }
 
+private[elasticsearch] object Item {
+  implicit val decoder: JsonDecoder[Item] = DeriveJsonDecoder.gen[Item]
+}
+
 @jsonHint("create")
-final case class Create private[elasticsearch] (
+final case class CreateBulkResponse private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -43,12 +47,12 @@ final case class Create private[elasticsearch] (
   error: Option[Error]
 ) extends Item
 
-private[elasticsearch] object Create {
-  implicit val decoder: JsonDecoder[Create] = DeriveJsonDecoder.gen[Create]
+private[elasticsearch] object CreateBulkResponse {
+  implicit val decoder: JsonDecoder[CreateBulkResponse] = DeriveJsonDecoder.gen[CreateBulkResponse]
 }
 
 @jsonHint("delete")
-final case class Delete private[elasticsearch] (
+final case class DeleteBulkResponse private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -62,12 +66,12 @@ final case class Delete private[elasticsearch] (
   error: Option[Error]
 ) extends Item
 
-private[elasticsearch] object Delete {
-  implicit val decoder: JsonDecoder[Delete] = DeriveJsonDecoder.gen[Delete]
+private[elasticsearch] object DeleteBulkResponse {
+  implicit val decoder: JsonDecoder[DeleteBulkResponse] = DeriveJsonDecoder.gen[DeleteBulkResponse]
 }
 
 @jsonHint("index")
-final case class Index private[elasticsearch] (
+final case class IndexBulkResponse private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -81,12 +85,12 @@ final case class Index private[elasticsearch] (
   error: Option[Error]
 ) extends Item
 
-private[elasticsearch] object Index {
-  implicit val decoder: JsonDecoder[Index] = DeriveJsonDecoder.gen[Index]
+private[elasticsearch] object IndexBulkResponse {
+  implicit val decoder: JsonDecoder[IndexBulkResponse] = DeriveJsonDecoder.gen[IndexBulkResponse]
 }
 
 @jsonHint("update")
-final case class Update private[elasticsearch] (
+final case class UpdateBulkResponse private[elasticsearch] (
   @jsonField("_index")
   index: String,
   @jsonField("_id")
@@ -100,10 +104,6 @@ final case class Update private[elasticsearch] (
   error: Option[Error]
 ) extends Item
 
-private[elasticsearch] object Update {
-  implicit val decoder: JsonDecoder[Update] = DeriveJsonDecoder.gen[Update]
-}
-
-private[elasticsearch] object Item {
-  implicit val decoder: JsonDecoder[Item] = DeriveJsonDecoder.gen[Item]
+private[elasticsearch] object UpdateBulkResponse {
+  implicit val decoder: JsonDecoder[UpdateBulkResponse] = DeriveJsonDecoder.gen[UpdateBulkResponse]
 }
