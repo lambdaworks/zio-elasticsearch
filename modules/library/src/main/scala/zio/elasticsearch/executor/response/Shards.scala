@@ -21,7 +21,6 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder}
 private[elasticsearch] final case class Shards(
   total: Int,
   successful: Int,
-  skipped: Int = 0,
   failed: Int
 )
 

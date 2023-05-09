@@ -96,7 +96,6 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |  "_shards": {
         |    "total": 2,
         |    "successful": 2,
-        |    "skipped": 0,
         |    "failed": 0
         |  }
         |}""".stripMargin,
@@ -219,8 +218,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |  "timed_out": false,
         |  "_shards": {
         |    "total": 8,
-        |    "successful": 5,
-        |    "skipped": 3,
+        |    "successful": 8,
         |    "failed": 0
         |  },
         |  "hits": {
@@ -270,8 +268,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |  "timed_out": false,
         |  "_shards": {
         |    "total": 8,
-        |    "successful": 5,
-        |    "skipped": 3,
+        |    "successful": 8,
         |    "failed": 0
         |  },
         |  "hits": {

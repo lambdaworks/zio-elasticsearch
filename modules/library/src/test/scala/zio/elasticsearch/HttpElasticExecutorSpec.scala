@@ -64,14 +64,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                   id = "123",
                   version = Some(1),
                   result = Some("created"),
-                  shards = Some(
-                    Shards(
-                      total = 1,
-                      successful = 1,
-                      failed = 0,
-                      skipped = 0
-                    )
-                  ),
+                  shards = Some(Shards(total = 1, successful = 1, failed = 0)),
                   status = Some(201),
                   error = None
                 )
