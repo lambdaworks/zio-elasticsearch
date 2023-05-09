@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.query
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
 import zio.json.ast.Json
@@ -83,7 +84,7 @@ private[elasticsearch] final case class Bool[S](
 
   def paramsToJson(fieldPath: Option[String]): Json = {
     val boolFields =
-      List(
+      Chunk(
         if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) else None,
         if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) else None,
         if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) else None,
@@ -107,6 +108,101 @@ sealed trait ExistsQuery[S] extends ElasticQuery[S]
 private[elasticsearch] final case class Exists[S](field: String) extends ExistsQuery[S] {
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
+}
+
+sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   *
+   * `Distance` represents the radius of the circle centred on the specified location. Points which fall into this
+   * circle are considered to be matches. The distance can be specified in various units. See
+   * [[zio.elasticsearch.query.DistanceUnit]].
+   *
+   * @param value
+   *   the [[Double]] value for distance parameter
+   * @param unit
+   *   the [[zio.elasticsearch.query.DistanceUnit]] in which we want to represent the distance
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   */
+  def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S]
+
+  /**
+   * sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   *
+   * Defines how to compute the distance. Can either be [[zio.elasticsearch.query.DistanceType.Arc]] (default), or
+   * [[zio.elasticsearch.query.DistanceType.Plane]] (faster, but inaccurate on long distances and close to the poles).
+   *
+   * @param value
+   *   the [[zio.elasticsearch.query.DistanceType]] value to represent distance type
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   */
+  def distanceType(value: DistanceType): GeoDistanceQuery[S]
+
+  /**
+   * sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   *
+   * Represents the optional name field to identify the query
+   *
+   * @param value
+   *   the [[String]] value to represent the name field
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   */
+  def name(value: String): GeoDistanceQuery[S]
+
+  /**
+   * sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   *
+   * Set to [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]] to accept geo points with invalid latitude or
+   * longitude, set to [[zio.elasticsearch.query.ValidationMethod.Coerce]] to additionally try and infer correct
+   * coordinates (default is [[zio.elasticsearch.query.ValidationMethod.Strict]]).
+   *
+   * @param value
+   *   the [[zio.elasticsearch.query.ValidationMethod]] value to represent the validationMethod field
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   */
+  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S]
+}
+
+private[elasticsearch] final case class GeoDistance[S](
+  field: String,
+  point: Either[(Double, Double), String],
+  distance: Option[Distance] = None,
+  distanceType: Option[DistanceType] = None,
+  queryName: Option[String] = None,
+  validationMethod: Option[ValidationMethod] = None
+) extends GeoDistanceQuery[S] { self =>
+
+  def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S] =
+    self.copy(distance = Some(Distance(value, unit)))
+
+  def distanceType(value: DistanceType): GeoDistanceQuery[S] = self.copy(distanceType = Some(value))
+
+  private def getPointJson: (String, Json) = point match {
+    case Left((lat, lon))   => field -> Obj("lat" -> Num(lat), "lon" -> Num(lon))
+    case Right(stringValue) => field -> Str(stringValue)
+  }
+
+  def name(value: String): GeoDistanceQuery[S] = self.copy(queryName = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj(
+      "geo_distance" -> Obj(
+        Chunk(
+          Some(getPointJson),
+          distance.map(d => "distance" -> Str(d.toString)),
+          distanceType.map(dt => "distance_type" -> Str(dt.toString)),
+          queryName.map(qn => "_name" -> Str(qn)),
+          validationMethod.map(vm => "validation_method" -> Str(vm.toString))
+        ).flatten: _*
+      )
+    )
+
+  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S] = self.copy(validationMethod = Some(value))
 }
 
 sealed trait HasChildQuery[S]
@@ -163,7 +259,7 @@ private[elasticsearch] final case class HasChild[S](
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "has_child" -> Obj(
-        List(
+        Chunk(
           Some("type"  -> Str(childType)),
           Some("query" -> query.paramsToJson(None)),
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
@@ -236,7 +332,7 @@ private[elasticsearch] final case class HasParent[S](
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "has_parent" -> Obj(
-        List(
+        Chunk(
           Some("parent_type" -> Str(parentType)),
           Some("query"       -> query.paramsToJson(None)),
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
@@ -309,7 +405,7 @@ private[elasticsearch] final case class Nested[S](
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "nested" -> Obj(
-        List(
+        Chunk(
           Some("path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path))),
           Some("query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
           scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)),
