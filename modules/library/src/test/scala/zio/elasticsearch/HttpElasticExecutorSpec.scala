@@ -20,7 +20,13 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{TermsAggregationBucket, TermsAggregationResponse}
+import zio.elasticsearch.executor.response.{
+  BulkResponse,
+  Create,
+  Shards,
+  TermsAggregationBucket,
+  TermsAggregationResponse
+}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.Proceed
@@ -48,7 +54,30 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(ElasticRequest.bulk(ElasticRequest.create(index, doc)).refreshTrue)
         )(
-          isUnit
+          equalTo(
+            BulkResponse(
+              took = 3,
+              errors = false,
+              items = List(
+                Create(
+                  index = "repositories",
+                  id = "123",
+                  version = Some(1),
+                  result = Some("created"),
+                  shards = Some(
+                    Shards(
+                      total = 1,
+                      successful = 1,
+                      failed = 0,
+                      skipped = 0
+                    )
+                  ),
+                  status = Some(201),
+                  error = None
+                )
+              )
+            )
+          )
         )
       },
       test("count request") {

@@ -61,9 +61,9 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     response = Response(
       """
         |{
-        | "took" = 3,
-        | "errors" = false,
-        | "items" = [
+        | "took" : 3,
+        | "errors" : false,
+        | "items" : [
         |   {
         |     "create": {
         |       "_index": "repositories",

@@ -16,15 +16,17 @@
 
 package zio.elasticsearch.executor.response
 
-import zio.json.{DeriveJsonDecoder, JsonDecoder}
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
-private[elasticsearch] final case class Shards(
-  total: Int,
-  successful: Int,
-  skipped: Int = 0,
-  failed: Int
+final case class Error private[elasticsearch] (
+  `type`: String,
+  reason: String,
+  @jsonField("index_uuid")
+  indexUuid: String,
+  shard: String,
+  index: String
 )
 
-private[elasticsearch] object Shards {
-  implicit val decoder: JsonDecoder[Shards] = DeriveJsonDecoder.gen[Shards]
+private[elasticsearch] object Error {
+  implicit val decoder: JsonDecoder[Error] = DeriveJsonDecoder.gen[Error]
 }

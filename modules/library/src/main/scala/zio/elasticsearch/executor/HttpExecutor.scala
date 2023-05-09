@@ -33,6 +33,7 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
 import zio.elasticsearch.executor.response.{
+  BulkResponse,
   CountResponse,
   CreateResponse,
   DocumentWithHighlightsAndSort,
@@ -126,18 +127,26 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeBulk(r: Bulk): Task[Unit] = {
+  private def executeBulk(r: Bulk): Task[BulkResponse] = {
     val uri = (r.index match {
       case Some(index) => uri"${esConfig.uri}/$index/$Bulk"
       case None        => uri"${esConfig.uri}/$Bulk"
     }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(
-      baseRequest.post(uri).contentType(ApplicationJson).body(r.body)
+    sendRequestWithCustomResponse(
+      baseRequest
+        .post(uri)
+        .contentType(ApplicationJson)
+        .body(r.body)
+        .response(asJson[BulkResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk => ZIO.unit
-        case _      => ZIO.fail(handleFailures(response))
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(value)
+          )
+        case _ => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }

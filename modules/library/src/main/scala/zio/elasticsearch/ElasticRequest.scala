@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.ElasticAggregation
+import zio.elasticsearch.executor.response.BulkResponse
 import zio.elasticsearch.highlights.Highlights
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
@@ -361,7 +362,10 @@ object ElasticRequest {
   private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
       extends AggregateRequest
 
-  sealed trait BulkRequest extends ElasticRequest[Unit] with HasRefresh[BulkRequest] with HasRouting[BulkRequest]
+  sealed trait BulkRequest
+      extends ElasticRequest[BulkResponse]
+      with HasRefresh[BulkRequest]
+      with HasRouting[BulkRequest]
 
   private[elasticsearch] final case class Bulk(
     requests: List[BulkableRequest[_]],
