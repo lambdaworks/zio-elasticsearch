@@ -32,6 +32,26 @@ sealed trait ElasticAggregation { self =>
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
 
+sealed trait CardinalityAggregation
+    extends SingleElasticAggregation
+    with HasMissing[CardinalityAggregation]
+    with WithAgg
+
+private[elasticsearch] final case class Cardinality(name: String, field: String, missing: Option[Double])
+    extends CardinalityAggregation { self =>
+  def missing(value: Double): CardinalityAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def paramsToJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("cardinality" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
 
 private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])

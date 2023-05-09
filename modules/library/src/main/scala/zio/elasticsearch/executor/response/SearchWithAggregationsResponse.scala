@@ -71,13 +71,12 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
               res.fields.toList.map { case (field, data) =>
                 ZValidation.fromEither(
                   (field: @unchecked) match {
-                    case str if str.contains("terms#") =>
-                      TermsAggregationResponse.decoder
-                        .decodeJson(data.toString)
-                        .map(field.split("#")(1) -> _)
                     case str if str.contains("max#") =>
                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-
+                    case str if str.contains("cardinality#") =>
+                      CardinalityAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("terms#") =>
+                      TermsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                   }
                 )
               }

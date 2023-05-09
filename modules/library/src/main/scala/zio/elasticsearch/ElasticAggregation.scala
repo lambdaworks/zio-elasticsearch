@@ -22,6 +22,36 @@ import zio.elasticsearch.aggregation._
 object ElasticAggregation {
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified
+   * parameters. It calculates an approximate count of distinct values.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which cardinality aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] that represents cardinality aggregation
+   *   to be performed.
+   */
+  final def cardinalityAggregation(name: String, field: Field[_, Any]): CardinalityAggregation =
+    Cardinality(name = name, field = field.toString, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified parameters.
+   * It calculates an approximate count of distinct values.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which cardinality aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] that represents cardinality aggregation
+   *   to be performed.
+   */
+  final def cardinalityAggregation(name: String, field: String): CardinalityAggregation =
+    Cardinality(name = name, field = field, missing = None)
+
+  /**
    * Constructs an empty instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]].
    *
    * @return

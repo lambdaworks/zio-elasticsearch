@@ -17,13 +17,13 @@
 package zio.elasticsearch
 
 import zio.Chunk
-import zio.elasticsearch.ElasticAggregation.{maxAggregation, multipleAggregations, termsAggregation}
+import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.MaxAggregationResponse
+import zio.elasticsearch.executor.response.{CardinalityAggregationResponse, MaxAggregationResponse}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -46,6 +46,31 @@ object HttpExecutorSpec extends IntegrationSpec {
     suite("Executor")(
       suite("HTTP Executor")(
         suite("aggregation")(
+          test("aggregate using cardinality aggregation") {
+            val expectedResponse = ("aggregationInt", CardinalityAggregationResponse(2))
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 10))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 20))
+                           .refreshTrue
+                       )
+                  aggregation = cardinalityAggregation(name = "aggregationInt", field = TestDocument.intField)
+                  aggsRes <- Executor
+                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .aggregations
+                } yield assert(aggsRes.head)(equalTo(expectedResponse))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using max aggregation") {
             val expectedResponse = ("aggregationInt", MaxAggregationResponse(20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

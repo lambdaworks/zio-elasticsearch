@@ -28,6 +28,13 @@ private[elasticsearch] object MaxAggregationResponse {
   implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
 }
 
+private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
+
+private[elasticsearch] object CardinalityAggregationResponse {
+  implicit val decoder: JsonDecoder[CardinalityAggregationResponse] =
+    DeriveJsonDecoder.gen[CardinalityAggregationResponse]
+}
+
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
   docErrorCount: Int,
@@ -61,6 +68,10 @@ private[elasticsearch] object TermsAggregationBucket {
           val objFields = data.unsafeAs[Obj].fields.toMap
 
           (field: @unchecked) match {
+            case str if str.contains("cardinality#") =>
+              Some(field -> CardinalityAggregationResponse(value = objFields("value").unsafeAs[Int]))
+            case str if str.contains("max#") =>
+              Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
               Some(
                 field -> TermsAggregationResponse(
@@ -71,10 +82,6 @@ private[elasticsearch] object TermsAggregationBucket {
                     .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
                 )
               )
-            case str if str.contains("max#") =>
-              Some(
-                field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double])
-              )
           }
       }
     }.toMap
@@ -84,10 +91,12 @@ private[elasticsearch] object TermsAggregationBucket {
     val subAggs = allFields.collect {
       case (field, data) if field != "key" && field != "doc_count" =>
         (field: @unchecked) match {
-          case str if str.contains("terms#") =>
-            (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
+          case str if str.contains("cardinality#") =>
+            (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
           case str if str.contains("max#") =>
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
+          case str if str.contains("terms#") =>
+            (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
         }
     }
 
