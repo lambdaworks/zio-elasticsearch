@@ -23,7 +23,7 @@ object ElasticAggregation {
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified
-   * parameters. It calculates an approximate count of distinct values
+   * parameters. It calculates an approximate count of distinct values.
    *
    * @param name
    *   aggregation name
@@ -38,7 +38,7 @@ object ElasticAggregation {
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified parameters.
-   * It calculates an approximate count of distinct values
+   * It calculates an approximate count of distinct values.
    *
    * @param name
    *   aggregation name

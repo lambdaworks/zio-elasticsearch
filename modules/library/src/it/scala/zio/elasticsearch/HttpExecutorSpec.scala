@@ -17,12 +17,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
-import zio.elasticsearch.ElasticAggregation.{
-  cardinalityAggregation,
-  maxAggregation,
-  multipleAggregations,
-  termsAggregation
-}
+import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy

@@ -1,12 +1,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
-import zio.elasticsearch.ElasticAggregation.{
-  cardinalityAggregation,
-  maxAggregation,
-  multipleAggregations,
-  termsAggregation
-}
+import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.query.sort.SortOrder
