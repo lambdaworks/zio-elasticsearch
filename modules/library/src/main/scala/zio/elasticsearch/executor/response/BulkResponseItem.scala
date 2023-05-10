@@ -18,7 +18,7 @@ package zio.elasticsearch.executor.response
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField, jsonHint}
 
-sealed trait Item {
+sealed trait BulkResponseItem {
   def index: String
   def id: String
   def version: Option[Int]
@@ -28,8 +28,8 @@ sealed trait Item {
   def error: Option[Error]
 }
 
-private[elasticsearch] object Item {
-  implicit val decoder: JsonDecoder[Item] = DeriveJsonDecoder.gen[Item]
+private[elasticsearch] object BulkResponseItem {
+  implicit val decoder: JsonDecoder[BulkResponseItem] = DeriveJsonDecoder.gen[BulkResponseItem]
 }
 
 @jsonHint("create")
@@ -45,7 +45,7 @@ final case class CreateBulkResponse private[elasticsearch] (
   shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
-) extends Item
+) extends BulkResponseItem
 
 private[elasticsearch] object CreateBulkResponse {
   implicit val decoder: JsonDecoder[CreateBulkResponse] = DeriveJsonDecoder.gen[CreateBulkResponse]
@@ -64,7 +64,7 @@ final case class DeleteBulkResponse private[elasticsearch] (
   shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
-) extends Item
+) extends BulkResponseItem
 
 private[elasticsearch] object DeleteBulkResponse {
   implicit val decoder: JsonDecoder[DeleteBulkResponse] = DeriveJsonDecoder.gen[DeleteBulkResponse]
@@ -83,7 +83,7 @@ final case class IndexBulkResponse private[elasticsearch] (
   shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
-) extends Item
+) extends BulkResponseItem
 
 private[elasticsearch] object IndexBulkResponse {
   implicit val decoder: JsonDecoder[IndexBulkResponse] = DeriveJsonDecoder.gen[IndexBulkResponse]
@@ -102,7 +102,7 @@ final case class UpdateBulkResponse private[elasticsearch] (
   shards: Option[Shards],
   status: Option[Int],
   error: Option[Error]
-) extends Item
+) extends BulkResponseItem
 
 private[elasticsearch] object UpdateBulkResponse {
   implicit val decoder: JsonDecoder[UpdateBulkResponse] = DeriveJsonDecoder.gen[UpdateBulkResponse]
