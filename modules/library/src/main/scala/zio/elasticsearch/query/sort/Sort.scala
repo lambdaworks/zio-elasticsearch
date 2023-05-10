@@ -27,9 +27,15 @@ sealed trait Sort {
 }
 
 object Sort {
-  // todo add scaladoc
+
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort by `_count` field in the context of an aggregation.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_count`.
+   */
   def sortByCount: SortByFieldOptions = SortByFieldOptions(
-    field = "_doc",
+    field = "_count",
     format = None,
     missing = None,
     mode = None,
@@ -38,6 +44,12 @@ object Sort {
     unmappedType = None
   )
 
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort search results by the `_doc` field.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_doc`.
+   */
   def sortByDoc: SortByFieldOptions = SortByFieldOptions(
     field = "_doc",
     format = None,
@@ -48,6 +60,12 @@ object Sort {
     unmappedType = None
   )
 
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort by `_key` field in the context of an aggregation.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_key`.
+   */
   def sortByKey: SortByFieldOptions = SortByFieldOptions(
     field = "_key",
     format = None,
@@ -58,6 +76,12 @@ object Sort {
     unmappedType = None
   )
 
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort search results by the `_score` field.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_score`.
+   */
   def sortByScore: SortByFieldOptions = SortByFieldOptions(
     field = "_score",
     format = None,

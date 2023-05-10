@@ -21,10 +21,15 @@ import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticSort.sortBy
+import zio.elasticsearch.aggregation.AggregationOrder
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{CardinalityAggregationResponse, MaxAggregationResponse}
 import zio.elasticsearch.query.DistanceUnit.Kilometers
+import zio.elasticsearch.executor.response.{
+  CardinalityAggregationResponse,
+  MaxAggregationResponse,
+  TermsAggregationResponse
+}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -153,31 +158,42 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using terms aggregation with nested max aggregation") {
+          test("aggregate using terms aggregation with nested max aggregation and bucket sort aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
-                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 5))
                        )
                   _ <- Executor.execute(
                          ElasticRequest
-                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 2))
                            .refreshTrue
                        )
-                  aggregation = termsAggregation(
-                                  name = "aggregationString",
-                                  field = TestDocument.stringField.keyword
-                                )
-                                  .withSubAgg(maxAggregation(name = "aggregationInt", field = "intField"))
+                  aggregation =
+                    termsAggregation(
+                      name = "aggregationString",
+                      field = TestDocument.stringField.keyword
+                    ).orderBy(AggregationOrder("aggregationInt", Desc))
+                      .withSubAgg(maxAggregation(name = "aggregationInt", field = "intField"))
+                      .withSubAgg(
+                        bucketSortAggregation("aggregationBucket").sort(
+                          ElasticSort.sortBy("aggregationInt").order(Desc)
+                        )
+                      )
+                      .size(1)
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
                                    .aggregate(index = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
-                } yield assert(aggsRes)(isNonEmpty)
+                  _ = println(aggsRes)
+                } yield assert(aggsRes("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size)(
+                  equalTo(1)
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

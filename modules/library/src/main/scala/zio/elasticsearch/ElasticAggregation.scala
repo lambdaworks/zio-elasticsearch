@@ -117,19 +117,15 @@ object ElasticAggregation {
   final def maxAggregation(name: String, field: String): MaxAggregation =
     Max(name = name, field = field, missing = None)
 
-  // todo scaladoc for these three methods
-
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] that represents bucket sort aggregation to
+   *   be performed.
+   */
   final def bucketSortAggregation(name: String): BucketSortAggregation =
     BucketSort(name = name, sortBy = Chunk.empty, from = None, size = None)
-
-  // todo this is alternative, because there must be at least one param (sort, from or size) - bucketSortAggregation method is not safe
-  /*
-  final def bucketSortAggregationWithSort(name: String, sortBy: Sort): BucketSortAggregation =
-    BucketSort(name = name, sortBy = Chunk(sortBy), from = None, size = None)
-
-  final def bucketSortAggregationWithFrom(name: String, from: Int): BucketSortAggregation =
-    BucketSort(name = name, sortBy = Chunk.empty, from = Some(from), size = None)
-
-  final def bucketSortAggregationWithSize(name: String, size: Int): BucketSortAggregation =
-    BucketSort(name = name, sortBy = Chunk.empty, from = None, size = Some(size))*/
 }

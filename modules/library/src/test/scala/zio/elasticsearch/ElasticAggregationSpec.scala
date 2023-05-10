@@ -4,8 +4,8 @@ import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
-import zio.elasticsearch.query.sort.SortOrder
 import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
+import zio.elasticsearch.query.sort.{SortByFieldOptions, SortOrder}
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -14,6 +14,61 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticAggregation")(
       suite("constructing")(
+        test("bucket sort") {
+          val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
+          val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
+          val aggregationWithSort = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
+          val aggregationWithAllParams =
+            bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2")).from(5).size(7)
+
+          assert(aggregationWithFrom)(
+            equalTo(BucketSort(name = "aggregation", sortBy = Chunk.empty, from = Some(5), size = None))
+          ) &&
+          assert(aggregationWithSize)(
+            equalTo(BucketSort(name = "aggregation", sortBy = Chunk.empty, from = None, size = Some(5)))
+          ) &&
+          assert(aggregationWithSort)(
+            equalTo(
+              BucketSort(
+                name = "aggregation",
+                sortBy = Chunk(
+                  SortByFieldOptions(
+                    field = "aggregation2",
+                    format = None,
+                    missing = None,
+                    mode = None,
+                    numericType = None,
+                    order = None,
+                    unmappedType = None
+                  )
+                ),
+                from = None,
+                size = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              BucketSort(
+                name = "aggregation",
+                sortBy = Chunk(
+                  SortByFieldOptions(
+                    field = "aggregation2",
+                    format = None,
+                    missing = None,
+                    mode = None,
+                    numericType = None,
+                    order = None,
+                    unmappedType = None
+                  )
+                ),
+                from = Some(5),
+                size = Some(7)
+              )
+            )
+          )
+
+        },
         test("cardinality") {
           val aggregation            = cardinalityAggregation("aggregation", "testField")
           val aggregationTs          = cardinalityAggregation("aggregation", TestSubDocument.intField)
@@ -237,6 +292,76 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
+        test("bucket sort") {
+          val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
+          val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
+          val aggregationWithSort = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
+          val aggregationWithAllParams =
+            bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2")).from(5).size(7)
+
+          val expectedWithFrom =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "bucket_sort": {
+              |        "from": 5
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSize =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "bucket_sort": {
+              |        "size": 5
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSort =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "bucket_sort": {
+              |        "sort": [
+              |          "aggregation2"
+              |        ]
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation": {
+              |      "bucket_sort": {
+              |        "sort": [
+              |          "aggregation2"
+              |        ],
+              |        "from": 5,
+              |        "size": 7
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregationWithFrom.toJson)(equalTo(expectedWithFrom.toJson)) &&
+          assert(aggregationWithSize.toJson)(equalTo(expectedWithSize.toJson)) &&
+          assert(aggregationWithSort.toJson)(equalTo(expectedWithSort.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("cardinality") {
           val aggregation            = cardinalityAggregation("aggregation", "testField")
           val aggregationTs          = cardinalityAggregation("aggregation", TestDocument.intField)
