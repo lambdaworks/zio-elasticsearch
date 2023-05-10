@@ -21,7 +21,7 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder}
 final case class BulkResponse private[elasticsearch] (
   took: Int,
   errors: Boolean,
-  items: List[Item]
+  items: List[BulkResponseItem]
 )
 
 private[elasticsearch] object BulkResponse {
