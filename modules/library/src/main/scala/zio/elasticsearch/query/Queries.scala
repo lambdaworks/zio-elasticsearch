@@ -113,51 +113,46 @@ private[elasticsearch] final case class Exists[S](field: String) extends ExistsQ
 sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 
   /**
-   * Sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
-   *
-   * `Distance` represents the radius of the circle centred on the specified location. Points which fall into this
-   * circle are considered to be matches. The distance can be specified in various units. See
-   * [[zio.elasticsearch.query.DistanceUnit]].
+   * Sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. `Distance` represents the
+   * radius of the circle centred on the specified location. Points which fall into this circle are considered to be
+   * matches. The distance can be specified in various units. See [[zio.elasticsearch.query.DistanceUnit]].
    *
    * @param value
-   *   the [[Double]] value for a non-negative real number used for distance
+   *   a non-negative real number used for distance
    * @param unit
    *   the [[zio.elasticsearch.query.DistanceUnit]] in which we want to represent the distance
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distance` parameter.
    */
   def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S]
 
   /**
-   * Sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
-   *
-   * Defines how to compute the distance.
+   * Sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines how to compute the
+   * distance.
    *
    * @param value
    *   defines how to compute the distance
    *   - [[zio.elasticsearch.query.DistanceType.Arc]]: Default algorithm
    *   - [[zio.elasticsearch.query.DistanceType.Plane]]: Faster, but inaccurate on long distances and close to the poles
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distanceType` parameter.
    */
   def distanceType(value: DistanceType): GeoDistanceQuery[S]
 
   /**
-   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
-   *
-   * Represents the optional name field to identify the query
+   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Represents the optional name
+   * field to identify the query
    *
    * @param value
    *   the [[String]] value to represent the name field
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `queryName` parameter.
    */
   def name(value: String): GeoDistanceQuery[S]
 
   /**
-   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
-   *
-   * Defines handling of incorrect coordinates.
+   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines handling of
+   * incorrect coordinates.
    *
    * @param value
    *   defines how to handle invalid latitude nad longitude:
@@ -166,7 +161,8 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    *     longitude
    *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `validationMethod`
+   *   parameter.
    */
   def validationMethod(value: ValidationMethod): GeoDistanceQuery[S]
 }
@@ -174,10 +170,10 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 private[elasticsearch] final case class GeoDistance[S](
   field: String,
   point: Either[(Double, Double), String],
-  distance: Option[Distance] = None,
-  distanceType: Option[DistanceType] = None,
-  queryName: Option[String] = None,
-  validationMethod: Option[ValidationMethod] = None
+  distance: Option[Distance],
+  distanceType: Option[DistanceType],
+  queryName: Option[String],
+  validationMethod: Option[ValidationMethod]
 ) extends GeoDistanceQuery[S] { self =>
 
   def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S] =
@@ -213,10 +209,9 @@ sealed trait HasChildQuery[S]
     with HasScoreMode[HasChildQuery[S]] {
 
   /**
-   * Sets the `maxChildren` parameter for the [[HasChildQuery]].
-   *
-   * Indicates maximum number of child documents that match the query allowed for a returned parent document. If the
-   * parent document exceeds this limit, it is excluded from the search results.
+   * Sets the `maxChildren` parameter for the [[HasChildQuery]]. Indicates maximum number of child documents that match
+   * the query allowed for a returned parent document. If the parent document exceeds this limit, it is excluded from
+   * the search results.
    *
    * @param value
    *   the [[scala.Int]] value for `score` parameter
@@ -226,10 +221,9 @@ sealed trait HasChildQuery[S]
   def maxChildren(value: Int): HasChildQuery[S]
 
   /**
-   * Sets the `minChildren` parameter for the [[HasChildQuery]].
-   *
-   * Indicates minimum number of child documents that match the query required to match the query for a returned parent
-   * document. If the parent document does not meet this limit, it is excluded from the search results.
+   * Sets the `minChildren` parameter for the [[HasChildQuery]]. Indicates minimum number of child documents that match
+   * the query required to match the query for a returned parent document. If the parent document does not meet this
+   * limit, it is excluded from the search results.
    *
    * @param value
    *   the [[scala.Int]] value for `score` parameter
@@ -242,11 +236,11 @@ sealed trait HasChildQuery[S]
 private[elasticsearch] final case class HasChild[S](
   childType: String,
   query: ElasticQuery[S],
-  ignoreUnmapped: Option[Boolean] = None,
-  innerHitsField: Option[InnerHits] = None,
-  maxChildren: Option[Int] = None,
-  minChildren: Option[Int] = None,
-  scoreMode: Option[ScoreMode] = None
+  ignoreUnmapped: Option[Boolean],
+  innerHitsField: Option[InnerHits],
+  maxChildren: Option[Int],
+  minChildren: Option[Int],
+  scoreMode: Option[ScoreMode]
 ) extends HasChildQuery[S] { self =>
 
   def ignoreUnmapped(value: Boolean): HasChildQuery[S] = self.copy(ignoreUnmapped = Some(value))
@@ -281,10 +275,8 @@ sealed trait HasParentQuery[S]
     with HasInnerHits[HasParentQuery[S]] {
 
   /**
-   * Sets the `score` parameter parameter for the [[HasParentQuery]].
-   *
-   * Indicates whether the relevance score of a matching parent document is aggregated into its child documents.
-   * Defaults to false.
+   * Sets the `score` parameter parameter for the [[HasParentQuery]]. Indicates whether the relevance score of a
+   * matching parent document is aggregated into its child documents. Defaults to false.
    *
    * @param value
    *   the [[scala.Boolean]] value for `score` parameter
@@ -318,9 +310,9 @@ sealed trait HasParentQuery[S]
 private[elasticsearch] final case class HasParent[S](
   parentType: String,
   query: ElasticQuery[S],
-  ignoreUnmapped: Option[Boolean] = None,
-  innerHitsField: Option[InnerHits] = None,
-  score: Option[Boolean] = None
+  ignoreUnmapped: Option[Boolean],
+  innerHitsField: Option[InnerHits],
+  score: Option[Boolean]
 ) extends HasParentQuery[S] {
   self =>
 

@@ -388,29 +388,71 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithValidationMethod =
             geoDistance(TestDocument.stringField, 20.0, 21.1).validationMethod(IgnoreMalformed)
 
-          assert(query)(equalTo(GeoDistance[Any](field = "testField", point = Left((20.0, 21.1))))) &&
-          assert(queryString)(equalTo(GeoDistance[TestDocument](field = "stringField", point = Right("drm3btev3e86"))))
+          assert(query)(
+            equalTo(
+              GeoDistance[Any](
+                field = "testField",
+                point = Left((20.0, 21.1)),
+                distance = None,
+                distanceType = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryString)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = Right("drm3btev3e86"),
+                distance = None,
+                distanceType = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
           assert(queryWithDistance)(
             equalTo(
               GeoDistance[TestDocument](
                 field = "stringField",
                 point = Left((20.0, 21.1)),
-                distance = Some(Distance(200, Kilometers))
+                distance = Some(Distance(200, Kilometers)),
+                distanceType = None,
+                queryName = None,
+                validationMethod = None
               )
             )
           ) && assert(queryWithDistanceType)(
             equalTo(
-              GeoDistance[TestDocument](field = "stringField", point = Left((20.0, 21.1)), distanceType = Some(Plane))
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = Left((20.0, 21.1)),
+                distance = None,
+                distanceType = Some(Plane),
+                queryName = None,
+                validationMethod = None
+              )
             )
           ) && assert(queryWithName)(
             equalTo(
-              GeoDistance[TestDocument](field = "stringField", point = Left((20.0, 21.1)), queryName = Some("name"))
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = Left((20.0, 21.1)),
+                distance = None,
+                distanceType = None,
+                queryName = Some("name"),
+                validationMethod = None
+              )
             )
           ) && assert(queryWithValidationMethod)(
             equalTo(
               GeoDistance[TestDocument](
                 field = "stringField",
                 point = Left((20.0, 21.1)),
+                distance = None,
+                distanceType = None,
+                queryName = None,
                 validationMethod = Some(IgnoreMalformed)
               )
             )
@@ -431,17 +473,77 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             .minChildren(1)
 
           assert(query)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithIgnoreUnmapped)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, ignoreUnmapped = Some(true)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = Some(true),
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithInnerHits)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, innerHitsField = Some(InnerHits())))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = Some(InnerHits()),
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithMaxChildren)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, maxChildren = Some(5)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = Some(5),
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithMinChildren)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, minChildren = Some(1)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = Some(1),
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithScoreMode)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, scoreMode = Some(ScoreMode.Avg)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = Some(ScoreMode.Avg)
+              )
+            )
           ) && assert(queryWithAllParams)(
             equalTo(
               HasChild[Any](
@@ -465,18 +567,64 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithAllParams           = hasParent("parent", matchAll).ignoreUnmappedFalse.withScoreTrue
 
           assert(query)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = None))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                score = None
+              )
+            )
           ) && assert(queryWithScoreTrue)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = Some(true)))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                score = Some(true)
+              )
+            )
           ) && assert(queryWithScoreFalse)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = Some(false)))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                score = Some(false)
+              )
+            )
           ) && assert(queryWithIgnoreUnmappedTrue)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(true), score = None))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = Some(true),
+                innerHitsField = None,
+                score = None
+              )
+            )
           ) && assert(queryWithIgnoreUnmappedFalse)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = None))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = Some(false),
+                innerHitsField = None,
+                score = None
+              )
+            )
           ) && assert(queryWithAllParams)(
             equalTo(
-              HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = Some(true))
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = Some(false),
+                innerHitsField = None,
+                score = Some(true)
+              )
             )
           )
         },

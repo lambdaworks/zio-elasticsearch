@@ -114,9 +114,9 @@ object ElasticQuery {
    * @param field
    *   the type-safe field for which query is specified for
    * @param longitude
-   *   longitude of desired point
+   *   longitude of the desired point
    * @param latitude
-   *   latitude of desired point
+   *   latitude of the desired point
    * @tparam S
    *   document for which field query is executed
    * @tparam A
@@ -129,7 +129,14 @@ object ElasticQuery {
     longitude: Double,
     latitude: Double
   ): GeoDistanceQuery[S] =
-    GeoDistance(field = field.toString, point = Left((longitude, latitude)))
+    GeoDistance(
+      field = field.toString,
+      point = Left((longitude, latitude)),
+      distance = None,
+      distanceType = None,
+      queryName = None,
+      validationMethod = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
@@ -137,14 +144,21 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @param longitude
-   *   longitude of desired point
+   *   longitude of the desired point
    * @param latitude
-   *   latitude of desired point
+   *   latitude of the desired point
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
   final def geoDistance(field: String, longitude: Double, latitude: Double): GeoDistanceQuery[Any] =
-    GeoDistance(field = field, point = Left((longitude, latitude)))
+    GeoDistance(
+      field = field,
+      point = Left((longitude, latitude)),
+      distance = None,
+      distanceType = None,
+      queryName = None,
+      validationMethod = None
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
@@ -152,7 +166,8 @@ object ElasticQuery {
    * @param field
    *   the type-safe field for which query is specified for
    * @param coordinates
-   *   longitude and latitude of desired point written as string (e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
+   *   longitude and latitude the of the desired point written as string (e.g. "40,31") or geo hash (e.g.
+   *   "drm3btev3e86")
    * @tparam S
    *   document for which field query is executed
    * @tparam A
@@ -161,7 +176,14 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
   final def geoDistance[S, A: ElasticPrimitive](field: Field[S, A], coordinates: String): GeoDistanceQuery[S] =
-    GeoDistance(field = field.toString, point = Right(coordinates))
+    GeoDistance(
+      field = field.toString,
+      point = Right(coordinates),
+      distance = None,
+      distanceType = None,
+      queryName = None,
+      validationMethod = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
@@ -169,12 +191,19 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @param coordinates
-   *   longitude and latitude of desired point written as string (e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
+   *   longitude and latitude of the desired point written as string (e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
   final def geoDistance(field: String, coordinates: String): GeoDistanceQuery[Any] =
-    GeoDistance(field = field, point = Right(coordinates))
+    GeoDistance(
+      field = field,
+      point = Right(coordinates),
+      distance = None,
+      distanceType = None,
+      queryName = None,
+      validationMethod = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.HasChildQuery]] using the specified parameters.
@@ -189,7 +218,15 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the `has child query` to be performed.
    */
   final def hasChild[S: Schema](childType: String, query: ElasticQuery[S]): HasChildQuery[S] =
-    HasChild(childType = childType, query = query)
+    HasChild(
+      childType = childType,
+      query = query,
+      ignoreUnmapped = None,
+      innerHitsField = None,
+      maxChildren = None,
+      minChildren = None,
+      scoreMode = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.HasChildQuery]] using the specified parameters.
@@ -202,7 +239,15 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the `has child query` to be performed.
    */
   final def hasChild(childType: String, query: ElasticQuery[Any]): HasChildQuery[Any] =
-    HasChild(childType = childType, query = query)
+    HasChild(
+      childType = childType,
+      query = query,
+      ignoreUnmapped = None,
+      innerHitsField = None,
+      maxChildren = None,
+      minChildren = None,
+      scoreMode = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.HasParentQuery]] using the specified parameters.
@@ -217,7 +262,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.HasParentQuery]] that represents the has parent query to be performed.
    */
   final def hasParent[S: Schema](parentType: String, query: ElasticQuery[S]): HasParentQuery[S] =
-    HasParent(parentType = parentType, query = query)
+    HasParent(parentType = parentType, query = query, ignoreUnmapped = None, innerHitsField = None, score = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.HasParentQuery]] using the specified parameters.
@@ -230,7 +275,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.HasParentQuery]] that represents the has parent query to be performed.
    */
   final def hasParent(parentType: String, query: ElasticQuery[Any]): HasParentQuery[Any] =
-    HasParent[Any](parentType = parentType, query = query)
+    HasParent(parentType = parentType, query = query, ignoreUnmapped = None, innerHitsField = None, score = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchAllQuery]] used for matching all documents.

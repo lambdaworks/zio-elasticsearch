@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.query
 
-final case class Distance(distanceValue: Double, distanceUnit: DistanceUnit) {
+private[elasticsearch] final case class Distance(distanceValue: Double, distanceUnit: DistanceUnit) {
   override def toString: String = s"$distanceValue$distanceUnit"
 }
 
