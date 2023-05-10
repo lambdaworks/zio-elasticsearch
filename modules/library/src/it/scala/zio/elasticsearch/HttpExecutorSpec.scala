@@ -190,7 +190,6 @@ object HttpExecutorSpec extends IntegrationSpec {
                                    .aggregate(index = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
-                  _ = println(aggsRes)
                 } yield assert(aggsRes("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size)(
                   equalTo(1)
                 )
