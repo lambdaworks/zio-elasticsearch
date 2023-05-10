@@ -21,20 +21,20 @@ final case class Distance(distanceValue: Double, distanceUnit: DistanceUnit) {
 }
 
 sealed trait DistanceUnit {
-  def value: String
-  override def toString: String = value
+  def symbol: String
+  override def toString: String = symbol
 }
 
 object DistanceUnit {
-  case object Centimeter   extends DistanceUnit { def value: String = "cm"  }
-  case object Feet         extends DistanceUnit { def value: String = "ft"  }
-  case object Inch         extends DistanceUnit { def value: String = "in"  }
-  case object Kilometers   extends DistanceUnit { def value: String = "km"  }
-  case object Mile         extends DistanceUnit { def value: String = "mi"  }
-  case object Meter        extends DistanceUnit { def value: String = "m"   }
-  case object Milimeter    extends DistanceUnit { def value: String = "mm"  }
-  case object NauticalMile extends DistanceUnit { def value: String = "nmi" }
-  case object Yard         extends DistanceUnit { def value: String = "yd"  }
+  case object Centimeter   extends DistanceUnit { def symbol: String = "cm"  }
+  case object Feet         extends DistanceUnit { def symbol: String = "ft"  }
+  case object Inch         extends DistanceUnit { def symbol: String = "in"  }
+  case object Kilometers   extends DistanceUnit { def symbol: String = "km"  }
+  case object Mile         extends DistanceUnit { def symbol: String = "mi"  }
+  case object Meter        extends DistanceUnit { def symbol: String = "m"   }
+  case object Milimeter    extends DistanceUnit { def symbol: String = "mm"  }
+  case object NauticalMile extends DistanceUnit { def symbol: String = "nmi" }
+  case object Yard         extends DistanceUnit { def symbol: String = "yd"  }
 }
 
 sealed trait DistanceType {

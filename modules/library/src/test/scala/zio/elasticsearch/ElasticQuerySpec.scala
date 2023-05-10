@@ -374,6 +374,48 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query)(equalTo(Exists[Any](field = "testField"))) &&
           assert(queryTs)(equalTo(Exists[TestDocument](field = "intField")))
         },
+        test("geoDistance") {
+          val query =
+            geoDistance("testField", 20.0, 21.1)
+          val queryString =
+            geoDistance(TestDocument.stringField, "drm3btev3e86")
+          val queryWithDistance =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).distance(200, Kilometers)
+          val queryWithDistanceType =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).distanceType(Plane)
+          val queryWithName =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).name("name")
+          val queryWithValidationMethod =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).validationMethod(IgnoreMalformed)
+
+          assert(query)(equalTo(GeoDistance[Any](field = "testField", point = Left((20.0, 21.1))))) &&
+          assert(queryString)(equalTo(GeoDistance[TestDocument](field = "stringField", point = Right("drm3btev3e86"))))
+          assert(queryWithDistance)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = Left((20.0, 21.1)),
+                distance = Some(Distance(200, Kilometers))
+              )
+            )
+          ) && assert(queryWithDistanceType)(
+            equalTo(
+              GeoDistance[TestDocument](field = "stringField", point = Left((20.0, 21.1)), distanceType = Some(Plane))
+            )
+          ) && assert(queryWithName)(
+            equalTo(
+              GeoDistance[TestDocument](field = "stringField", point = Left((20.0, 21.1)), queryName = Some("name"))
+            )
+          ) && assert(queryWithValidationMethod)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = Left((20.0, 21.1)),
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          )
+        },
         test("hasChild") {
           val query                   = hasChild("child", matchAll)
           val queryWithIgnoreUnmapped = hasChild("child", matchAll).ignoreUnmappedTrue
@@ -833,48 +875,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 value = "test",
                 boost = Some(3.14),
                 caseInsensitive = Some(false)
-              )
-            )
-          )
-        },
-        test("geoDistance") {
-          val query =
-            geoDistance("testField", 20.0, 21.1)
-          val queryString =
-            geoDistance(TestDocument.stringField, "drm3btev3e86")
-          val queryWithDistance =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).distance(200, Kilometers)
-          val queryWithDistanceType =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).distanceType(Plane)
-          val queryWithName =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).name("name")
-          val queryWithValidationMethod =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).validationMethod(IgnoreMalformed)
-
-          assert(query)(equalTo(GeoDistance[Any](field = "testField", point = Left((20.0, 21.1))))) &&
-          assert(queryString)(equalTo(GeoDistance[TestDocument](field = "stringField", point = Right("drm3btev3e86"))))
-          assert(queryWithDistance)(
-            equalTo(
-              GeoDistance[TestDocument](
-                field = "stringField",
-                point = Left((20.0, 21.1)),
-                distance = Some(Distance(200, Kilometers))
-              )
-            )
-          ) && assert(queryWithDistanceType)(
-            equalTo(
-              GeoDistance[TestDocument](field = "stringField", point = Left((20.0, 21.1)), distanceType = Some(Plane))
-            )
-          ) && assert(queryWithName)(
-            equalTo(
-              GeoDistance[TestDocument](field = "stringField", point = Left((20.0, 21.1)), queryName = Some("name"))
-            )
-          ) && assert(queryWithValidationMethod)(
-            equalTo(
-              GeoDistance[TestDocument](
-                field = "stringField",
-                point = Left((20.0, 21.1)),
-                validationMethod = Some(IgnoreMalformed)
               )
             )
           )
@@ -1496,6 +1496,112 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryTs.toJson)(equalTo(expectedTs.toJson))
+        },
+        test("geoDistance") {
+          val query =
+            geoDistance("testField", 20.0, 21.1)
+          val queryString =
+            geoDistance(TestDocument.stringField, "drm3btev3e86")
+          val queryWithDistance =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).distance(200, Kilometers)
+          val queryWithDistanceType =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).distanceType(Plane)
+          val queryWithName =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).name("name")
+          val queryWithValidationMethod =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).validationMethod(IgnoreMalformed)
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "testField": {
+              |        "lat": 20.0,
+              |        "lon": 21.1
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithString =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "stringField": "drm3btev3e86"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithDistance =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "distance": "200.0km",
+              |      "stringField": {
+              |        "lat": 20.0,
+              |        "lon": 21.1
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithDistanceType =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "distance_type" :  "plane",
+              |      "stringField": {
+              |        "lat": 20.0,
+              |        "lon": 21.1
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithName =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "_name": "name",
+              |      "stringField": {
+              |        "lat": 20.0,
+              |        "lon": 21.1
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithValidationMethod =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "validation_method": "IGNORE_MALFORMED",
+              |      "stringField": {
+              |        "lat": 20.0,
+              |        "lon": 21.1
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryString.toJson)(equalTo(expectedWithString.toJson)) &&
+          assert(queryWithDistance.toJson)(equalTo(expectedWithDistance.toJson)) &&
+          assert(queryWithDistanceType.toJson)(equalTo(expectedWithDistanceType.toJson)) &&
+          assert(queryWithName.toJson)(equalTo(expectedWithName.toJson)) &&
+          assert(queryWithValidationMethod.toJson)(equalTo(expectedWithValidationMethod.toJson))
         },
         test("hasChild") {
           val query                   = hasChild("child", matches(TestDocument.stringField, "test"))
@@ -2369,112 +2475,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
           assert(queryWithCaseInsensitive.toJson)(equalTo(expectedWithCaseInsensitive.toJson)) &&
           assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
-        },
-        test("geoDistance") {
-          val query =
-            geoDistance("testField", 20.0, 21.1)
-          val queryString =
-            geoDistance(TestDocument.stringField, "drm3btev3e86")
-          val queryWithDistance =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).distance(200, Kilometers)
-          val queryWithDistanceType =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).distanceType(Plane)
-          val queryWithName =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).name("name")
-          val queryWithValidationMethod =
-            geoDistance(TestDocument.stringField, 20.0, 21.1).validationMethod(IgnoreMalformed)
-
-          val expected =
-            """
-              |{
-              |  "query": {
-              |    "geo_distance": {
-              |      "testField": {
-              |        "lat": 20.0,
-              |        "lon": 21.1
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithString =
-            """
-              |{
-              |  "query": {
-              |    "geo_distance": {
-              |      "stringField": "drm3btev3e86"
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithDistance =
-            """
-              |{
-              |  "query": {
-              |    "geo_distance": {
-              |      "distance": "200km",
-              |      "stringField": {
-              |        "lat": 20.0,
-              |        "lon": 21.1
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithDistanceType =
-            """
-              |{
-              |  "query": {
-              |    "geo_distance": {
-              |      "distance_type" :  "plane",
-              |      "stringField": {
-              |        "lat": 20.0,
-              |        "lon": 21.1
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithName =
-            """
-              |{
-              |  "query": {
-              |    "geo_distance": {
-              |      "_name": "name",
-              |      "stringField": {
-              |        "lat": 20.0,
-              |        "lon": 21.1
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithValidationMethod =
-            """
-              |{
-              |  "query": {
-              |    "geo_distance": {
-              |      "validation_method": "IGNORE_MALFORMED",
-              |      "stringField": {
-              |        "lat": 20.0,
-              |        "lon": 21.1
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson)(equalTo(expected.toJson))
-          assert(queryString.toJson)(equalTo(expectedWithString.toJson))
-          assert(queryWithDistance.toJson)(equalTo(expectedWithDistance.toJson))
-          assert(queryWithDistanceType.toJson)(equalTo(expectedWithDistanceType.toJson))
-          assert(queryWithName.toJson)(equalTo(expectedWithName.toJson))
-          assert(queryWithValidationMethod.toJson)(equalTo(expectedWithValidationMethod.toJson))
         }
       )
     )

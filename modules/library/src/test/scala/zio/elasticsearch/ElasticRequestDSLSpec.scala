@@ -5,7 +5,7 @@ import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.term
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.domain.TestDocument
+import zio.elasticsearch.domain.{Location, TestDocument}
 import zio.elasticsearch.query.sort.Missing.First
 import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils.RichString
@@ -147,7 +147,9 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |      "dateField",
             |      "intField",
             |      "doubleField",
-            |      "booleanField"
+            |      "booleanField",
+            |      "locationField.lat",
+            |      "locationField.lon"
             |    ]
             |  },
             |  "query" : {
@@ -332,7 +334,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             dateField = LocalDate.parse("2020-10-10"),
             intField = 1,
             doubleField = 1.0,
-            booleanField = true
+            booleanField = true,
+            locationField = Location(1.0, 1.0)
           )
         ) match { case r: Update => r.toJson }
 
@@ -351,7 +354,11 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |    "dateField": "2020-10-10",
             |    "intField": 1,
             |    "doubleField": 1.0,
-            |    "booleanField": true
+            |    "booleanField": true,
+            |    "locationField" : {
+            |      "lat" : 1.0,
+            |      "lon" : 1.0
+            |    }
             |  }
             |}
             |""".stripMargin
@@ -368,7 +375,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             dateField = LocalDate.parse("2020-10-10"),
             intField = 1,
             doubleField = 1.0,
-            booleanField = true
+            booleanField = true,
+            locationField = Location(1.0, 1.0)
           )
         ).orCreate[TestDocument](
           TestDocument(
@@ -377,7 +385,8 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             dateField = LocalDate.parse("2020-11-11"),
             intField = 2,
             doubleField = 2.0,
-            booleanField = false
+            booleanField = false,
+            locationField = Location(1.0, 1.0)
           )
         ) match { case r: Update => r.toJson }
 
@@ -390,7 +399,11 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |    "dateField": "2020-10-10",
             |    "intField": 1,
             |    "doubleField": 1.0,
-            |    "booleanField": true
+            |    "booleanField": true,
+            |    "locationField" : {
+            |      "lat" : 1.0,
+            |      "lon" : 1.0
+            |    }
             |  },
             |  "upsert": {
             |    "stringField": "stringField2",
@@ -398,7 +411,11 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
             |    "dateField": "2020-11-11",
             |    "intField": 2,
             |    "doubleField": 2.0,
-            |    "booleanField": false
+            |    "booleanField": false,
+            |    "locationField" : {
+            |      "lat" : 1.0,
+            |      "lon" : 1.0
+            |    }
             |  }
             |}
             |""".stripMargin

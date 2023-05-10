@@ -24,6 +24,7 @@ import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{CardinalityAggregationResponse, MaxAggregationResponse}
+import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -33,9 +34,9 @@ import zio.elasticsearch.script.Script
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
 import zio.stream.{Sink, ZSink}
-import zio.test._
-import zio.test.TestAspect._
 import zio.test.Assertion._
+import zio.test.TestAspect._
+import zio.test._
 
 import java.time.LocalDate
 import scala.util.Random
@@ -1577,6 +1578,44 @@ object HttpExecutorSpec extends IntegrationSpec {
               ) && assert(doc)(isSome(equalTo(newDocument.copy(intField = newDocument.intField + 1))))
             }
           }
+        ),
+        suite("geo-distance query")(
+          test("using geo-distance query") {
+            checkOnce(genTestDocument) { document =>
+              val indexDefinition =
+                """
+                  |{
+                  |  "mappings": {
+                  |      "properties": {
+                  |        "locationField": {
+                  |          "type": "geo_point"
+                  |      }
+                  |    }
+                  |  }
+                  |}
+                  |""".stripMargin
+
+              for {
+                _ <- Executor.execute(ElasticRequest.createIndex(geoDistanceIndex, indexDefinition))
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(geoDistanceIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.create[TestDocument](geoDistanceIndex, document).refreshTrue
+                     )
+                r <- Executor
+                       .execute(
+                         ElasticRequest.search(
+                           geoDistanceIndex,
+                           ElasticQuery
+                             .geoDistance("locationField", document.locationField.lat, document.locationField.lon)
+                             .distance(300, Kilometers)
+                         )
+                       )
+                       .documentAs[TestDocument]
+              } yield assert(r)(
+                equalTo(List(document))
+              )
+            }
+          } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
         )
       ) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests @@ afterAll(
         Executor.execute(ElasticRequest.deleteIndex(index)).orDie

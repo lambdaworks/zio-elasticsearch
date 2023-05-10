@@ -109,7 +109,7 @@ object ElasticQuery {
     Bool[Any](filter = queries.toList, must = Nil, mustNot = Nil, should = Nil, boost = None, minimumShouldMatch = None)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
    *   the type-safe field for which query is specified for
@@ -147,12 +147,12 @@ object ElasticQuery {
     GeoDistance(field = field, point = Left((longitude, latitude)))
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
    *   the type-safe field for which query is specified for
-   * @param longitudeAndLatitude
-   *   longitude and latitude of desired point written as string(e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
+   * @param coordinates
+   *   longitude and latitude of desired point written as string (e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
    * @tparam S
    *   document for which field query is executed
    * @tparam A
@@ -160,21 +160,21 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
-  final def geoDistance[S, A: ElasticPrimitive](field: Field[S, A], longitudeAndLatitude: String): GeoDistanceQuery[S] =
-    GeoDistance(field = field.toString, point = Right(longitudeAndLatitude))
+  final def geoDistance[S, A: ElasticPrimitive](field: Field[S, A], coordinates: String): GeoDistanceQuery[S] =
+    GeoDistance(field = field.toString, point = Right(coordinates))
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
    *   the field for which query is specified for
-   * @param longitudeAndLatitude
-   *   longitude and latitude of desired point written as string(e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
+   * @param coordinates
+   *   longitude and latitude of desired point written as string (e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
-  final def geoDistance(field: String, longitudeAndLatitude: String): GeoDistanceQuery[Any] =
-    GeoDistance(field = field, point = Right(longitudeAndLatitude))
+  final def geoDistance(field: String, coordinates: String): GeoDistanceQuery[Any] =
+    GeoDistance(field = field, point = Right(coordinates))
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.HasChildQuery]] using the specified parameters.

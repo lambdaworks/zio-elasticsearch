@@ -113,14 +113,14 @@ private[elasticsearch] final case class Exists[S](field: String) extends ExistsQ
 sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 
   /**
-   * sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   * Sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
    *
    * `Distance` represents the radius of the circle centred on the specified location. Points which fall into this
    * circle are considered to be matches. The distance can be specified in various units. See
    * [[zio.elasticsearch.query.DistanceUnit]].
    *
    * @param value
-   *   the [[Double]] value for distance parameter
+   *   the [[Double]] value for a non-negative real number used for distance
    * @param unit
    *   the [[zio.elasticsearch.query.DistanceUnit]] in which we want to represent the distance
    * @return
@@ -129,20 +129,21 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
   def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S]
 
   /**
-   * sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   * Sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
    *
-   * Defines how to compute the distance. Can either be [[zio.elasticsearch.query.DistanceType.Arc]] (default), or
-   * [[zio.elasticsearch.query.DistanceType.Plane]] (faster, but inaccurate on long distances and close to the poles).
+   * Defines how to compute the distance.
    *
    * @param value
-   *   the [[zio.elasticsearch.query.DistanceType]] value to represent distance type
+   *   defines how to compute the distance
+   *   - [[zio.elasticsearch.query.DistanceType.Arc]]: Default algorithm
+   *   - [[zio.elasticsearch.query.DistanceType.Plane]]: Faster, but inaccurate on long distances and close to the poles
    * @return
    *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
    */
   def distanceType(value: DistanceType): GeoDistanceQuery[S]
 
   /**
-   * sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
    *
    * Represents the optional name field to identify the query
    *
@@ -154,14 +155,16 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
   def name(value: String): GeoDistanceQuery[S]
 
   /**
-   * sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]
+   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]].
    *
-   * Set to [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]] to accept geo points with invalid latitude or
-   * longitude, set to [[zio.elasticsearch.query.ValidationMethod.Coerce]] to additionally try and infer correct
-   * coordinates (default is [[zio.elasticsearch.query.ValidationMethod.Strict]]).
+   * Defines handling of incorrect coordinates.
    *
    * @param value
-   *   the [[zio.elasticsearch.query.ValidationMethod]] value to represent the validationMethod field
+   *   defines how to handle invalid latitude nad longitude:
+   *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
+   *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
+   *     longitude
+   *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
    * @return
    *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] with the score value set.
    */
@@ -182,18 +185,16 @@ private[elasticsearch] final case class GeoDistance[S](
 
   def distanceType(value: DistanceType): GeoDistanceQuery[S] = self.copy(distanceType = Some(value))
 
-  private def getPointJson: (String, Json) = point match {
-    case Left((lat, lon))   => field -> Obj("lat" -> Num(lat), "lon" -> Num(lon))
-    case Right(stringValue) => field -> Str(stringValue)
-  }
-
   def name(value: String): GeoDistanceQuery[S] = self.copy(queryName = Some(value))
 
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "geo_distance" -> Obj(
         Chunk(
-          Some(getPointJson),
+          point match {
+            case Left((lat, lon))   => Some(field -> Obj("lat" -> Num(lat), "lon" -> Num(lon)))
+            case Right(stringValue) => Some(field -> Str(stringValue))
+          },
           distance.map(d => "distance" -> Str(d.toString)),
           distanceType.map(dt => "distance_type" -> Str(dt.toString)),
           queryName.map(qn => "_name" -> Str(qn)),
