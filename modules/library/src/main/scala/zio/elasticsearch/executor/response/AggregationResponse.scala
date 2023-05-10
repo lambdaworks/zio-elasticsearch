@@ -22,17 +22,17 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 sealed trait AggregationResponse
 
-private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
-
-private[elasticsearch] object MaxAggregationResponse {
-  implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
-}
-
 private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
 
 private[elasticsearch] object CardinalityAggregationResponse {
   implicit val decoder: JsonDecoder[CardinalityAggregationResponse] =
     DeriveJsonDecoder.gen[CardinalityAggregationResponse]
+}
+
+private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object MaxAggregationResponse {
+  implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
 }
 
 private[elasticsearch] final case class TermsAggregationResponse(

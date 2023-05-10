@@ -26,6 +26,49 @@ sealed trait Sort {
   def paramsToJson: Json
 }
 
+object Sort {
+  // todo add scaladoc
+  def sortByCount: SortByFieldOptions = SortByFieldOptions(
+    field = "_doc",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+
+  def sortByDoc: SortByFieldOptions = SortByFieldOptions(
+    field = "_doc",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+
+  def sortByKey: SortByFieldOptions = SortByFieldOptions(
+    field = "_key",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+
+  def sortByScore: SortByFieldOptions = SortByFieldOptions(
+    field = "_score",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+}
+
 sealed trait SortByField
     extends Sort
     with HasFormat[SortByField]

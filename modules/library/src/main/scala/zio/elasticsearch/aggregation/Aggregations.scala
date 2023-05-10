@@ -20,6 +20,7 @@ import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.options._
+import zio.elasticsearch.query.sort.Sort
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 
@@ -31,6 +32,61 @@ sealed trait ElasticAggregation { self =>
 }
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
+
+sealed trait BucketSortAggregation extends SingleElasticAggregation with HasSize[BucketSortAggregation] with WithAgg {
+
+  /**
+   * Sets the starting offset from where the [[zio.elasticsearch.aggregation.BucketSortAggregation]] return results.
+   *
+   * @param value
+   *   a non-negative number to set the `from` parameter in the [[zio.elasticsearch.aggregation.BucketSortAggregation]]
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.BucketSortAggregation]] enriched with the `from` parameter.
+   */
+  def from(value: Int): BucketSortAggregation
+
+  /**
+   * Sets the sorting criteria for the [[zio.elasticsearch.aggregation.BucketSortAggregation]].
+   * @param sort
+   *   required [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
+   * @param sorts
+   *   rest of the [[zio.elasticsearch.query.sort.Sort]] objects that define the sorting criteria
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.BucketSortAggregation]] enriched with the sorting criteria.
+   */
+  def sort(sort: Sort, sorts: Sort*): BucketSortAggregation
+}
+
+private[elasticsearch] final case class BucketSort(
+  name: String,
+  sortBy: Chunk[Sort],
+  from: Option[Int],
+  size: Option[Int]
+) extends BucketSortAggregation {
+  self =>
+  def from(value: Int): BucketSortAggregation =
+    self.copy(from = Some(value))
+
+  def size(value: Int): BucketSortAggregation =
+    self.copy(size = Some(value))
+
+  def sort(sort: Sort, sorts: Sort*): BucketSortAggregation =
+    self.copy(sortBy = sortBy ++ (sort :: sorts.toList))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def paramsToJson: Json = {
+    val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
+
+    val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
+
+    val sortJson: Json =
+      if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
+
+    Obj(name -> Obj("bucket_sort" -> (sortJson merge fromJson merge sizeJson)))
+  }
+}
 
 sealed trait CardinalityAggregation
     extends SingleElasticAggregation
@@ -88,20 +144,9 @@ private[elasticsearch] final case class Multiple(aggregations: List[SingleElasti
 sealed trait TermsAggregation
     extends SingleElasticAggregation
     with HasOrder[TermsAggregation]
+    with HasSize[TermsAggregation]
+    with WithAgg
     with WithSubAgg[TermsAggregation]
-    with WithAgg {
-
-  /**
-   * Sets the maximum number of terms to be returned by the aggregation. By default, the [[TermsAggregation]] returns
-   * the top ten terms with the most documents.
-   *
-   * @param value
-   *   a non-negative number to set the `size` parameter in the [[zio.elasticsearch.aggregation.TermsAggregation]]
-   * @return
-   *   an instance of the [[zio.elasticsearch.aggregation.TermsAggregation]] enriched with the `size` parameter.
-   */
-  def size(value: Int): TermsAggregation
-}
 
 private[elasticsearch] final case class Terms(
   name: String,
@@ -113,9 +158,6 @@ private[elasticsearch] final case class Terms(
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
     self.copy(order = self.order ++ (order :: orders.toList))
 
-  private[elasticsearch] def paramsToJson: Json =
-    Obj(name -> paramsToJsonHelper)
-
   def size(value: Int): TermsAggregation =
     self.copy(size = Some(value))
 
@@ -124,6 +166,9 @@ private[elasticsearch] final case class Terms(
 
   def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
+
+  private[elasticsearch] def paramsToJson: Json =
+    Obj(name -> paramsToJsonHelper)
 
   private def paramsToJsonHelper: Obj = {
     val orderJson: Json =
