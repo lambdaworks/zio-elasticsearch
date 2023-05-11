@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.schema.{AccessorBuilder, Schema}
 
@@ -60,12 +61,12 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
 
   override def toString: String = {
     @tailrec
-    def loop(field: Field[_, _], acc: List[String]): List[String] = field match {
+    def loop(field: Field[_, _], acc: Chunk[String]): Chunk[String] = field match {
       case Field(None, name)         => s"$name" +: acc
       case Field(Some(parent), name) => loop(parent, s".$name" +: acc)
     }
 
-    loop(self, Nil).mkString
+    loop(self, Chunk.empty).mkString
   }
 
   /**

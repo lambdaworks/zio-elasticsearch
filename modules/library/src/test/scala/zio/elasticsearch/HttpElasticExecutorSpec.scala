@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{matchAll, term}
 import zio.elasticsearch.domain.TestDocument
@@ -47,7 +48,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
             .aggregations
         )(
-          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, List(TermsAggregationBucket("name", 5, None)))))
+          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, Chunk(TermsAggregationBucket("name", 5, None)))))
         )
       },
       test("bulk request") {
@@ -58,7 +59,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             BulkResponse(
               took = 3,
               errors = false,
-              items = List(
+              items = Chunk(
                 CreateBulkResponse(
                   index = "repositories",
                   id = "123",
@@ -200,7 +201,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           .execute(ElasticRequest.search(index = index, query = matchAll, terms))
         assertZIO(req.documentAs[TestDocument])(equalTo(List(doc))) &&
         assertZIO(req.aggregations)(
-          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, List(TermsAggregationBucket("name", 5, None)))))
+          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, Chunk(TermsAggregationBucket("name", 5, None)))))
         )
       },
       test("update request with script") {

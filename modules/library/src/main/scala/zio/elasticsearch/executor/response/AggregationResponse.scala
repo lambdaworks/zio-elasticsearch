@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.executor.response
 
+import zio.Chunk
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
@@ -40,7 +41,7 @@ private[elasticsearch] final case class TermsAggregationResponse(
   docErrorCount: Int,
   @jsonField("sum_other_doc_count")
   sumOtherDocCount: Int,
-  buckets: List[TermsAggregationBucket]
+  buckets: Chunk[TermsAggregationBucket]
 ) extends AggregationResponse
 
 private[elasticsearch] object TermsAggregationResponse {
@@ -78,7 +79,7 @@ private[elasticsearch] object TermsAggregationBucket {
                   docErrorCount = objFields("doc_count_error_upper_bound").unsafeAs[Int],
                   sumOtherDocCount = objFields("sum_other_doc_count").unsafeAs[Int],
                   buckets = objFields("buckets")
-                    .unsafeAs[List[Json]]
+                    .unsafeAs[Chunk[Json]]
                     .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
                 )
               )

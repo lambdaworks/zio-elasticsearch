@@ -1525,7 +1525,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   doc3 <- Executor.execute(ElasticRequest.getById(index, thirdDocumentId)).documentAs[TestDocument]
                 } yield assert(res.items.size)(equalTo(7)) &&
                   assert(res.items.map(_.error.isDefined))(
-                    equalTo(List(false, false, false, false, false, false, true))
+                    equalTo(Chunk(false, false, false, false, false, false, true))
                   ) &&
                   assert(res.items(6).status)(equalTo(Some(404))) &&
                   assert(res.items(6).error.map(_.`type`))(equalTo(Some("document_missing_exception"))) &&

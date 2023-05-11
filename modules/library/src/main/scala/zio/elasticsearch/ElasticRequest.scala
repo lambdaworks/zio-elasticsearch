@@ -65,7 +65,7 @@ object ElasticRequest {
    *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
    */
   final def bulk(requests: BulkableRequest[_]*): BulkRequest =
-    Bulk.of(requests = requests: _*)
+    Bulk(requests = Chunk.fromIterable(requests), index = None, refresh = None, routing = None)
 
   /**
    * Constructs an instance of [[CountRequest]] for whole specified index.
@@ -368,7 +368,7 @@ object ElasticRequest {
       with HasRouting[BulkRequest]
 
   private[elasticsearch] final case class Bulk(
-    requests: List[BulkableRequest[_]],
+    requests: Chunk[BulkableRequest[_]],
     index: Option[IndexName],
     refresh: Option[Boolean],
     routing: Option[Routing]
@@ -382,36 +382,31 @@ object ElasticRequest {
     lazy val body: String = requests.flatMap { r =>
       (r: @unchecked) match {
         case Create(index, document, _, routing) =>
-          List(getActionAndMeta("create", List(("_index", Some(index)), ("routing", routing))), document.json)
+          Chunk(getActionAndMeta("create", Chunk(("_index", Some(index)), ("routing", routing))), document.json)
         case CreateWithId(index, id, document, _, routing) =>
-          List(
-            getActionAndMeta("create", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+          Chunk(
+            getActionAndMeta("create", Chunk(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
         case CreateOrUpdate(index, id, document, _, routing) =>
-          List(
-            getActionAndMeta("index", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+          Chunk(
+            getActionAndMeta("index", Chunk(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             document.json
           )
         case DeleteById(index, id, _, routing) =>
-          List(getActionAndMeta("delete", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))))
+          Chunk(getActionAndMeta("delete", Chunk(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))))
         case Update(index, id, Some(document), _, routing, None, _) =>
-          List(
-            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+          Chunk(
+            getActionAndMeta("update", Chunk(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             Obj("doc" -> document.json)
           )
         case Update(index, id, None, _, routing, Some(script), _) =>
-          List(
-            getActionAndMeta("update", List(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
+          Chunk(
+            getActionAndMeta("update", Chunk(("_index", Some(index)), ("_id", Some(id)), ("routing", routing))),
             Obj("script" -> script.toJson)
           )
       }
     }.mkString(start = "", sep = "\n", end = "\n")
-  }
-
-  object Bulk {
-    def of(requests: BulkableRequest[_]*): Bulk =
-      Bulk(requests = requests.toList, index = None, refresh = None, routing = None)
   }
 
   sealed trait CountRequest extends ElasticRequest[Int] with HasRouting[CountRequest]
@@ -625,7 +620,7 @@ object ElasticRequest {
       self.copy(size = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchRequest =
-      self.copy(sortBy = sortBy ++ (sort :: sorts.toList))
+      self.copy(sortBy = sortBy ++ (sort +: sorts))
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
@@ -637,15 +632,15 @@ object ElasticRequest {
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
       val sortJson: Json =
-        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
+        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson))) else Obj()
 
       val sourceJson: Json =
         (included, excluded) match {
           case (None, None) => Obj()
           case (included, excluded) =>
             Obj("_source" -> {
-              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
-              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
+              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson))))
+              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson))))
               includes merge excludes
             })
         }
@@ -706,7 +701,7 @@ object ElasticRequest {
       self.copy(searchAfter = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchAndAggregateRequest =
-      self.copy(sortBy = sortBy ++ (sort :: sorts.toList))
+      self.copy(sortBy = sortBy ++ (sort +: sorts))
 
     def toJson: Json = {
       val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
@@ -718,15 +713,15 @@ object ElasticRequest {
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
       val sortJson: Json =
-        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
+        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson))) else Obj()
 
       val sourceJson: Json =
         (included, excluded) match {
           case (None, None) => Obj()
           case (included, excluded) =>
             Obj("_source" -> {
-              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson): _*)))
-              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson): _*)))
+              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson))))
+              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson))))
               includes merge excludes
             })
         }
@@ -806,7 +801,7 @@ object ElasticRequest {
       query.foldLeft(Obj("script" -> script.toJson))((scriptJson, q) => scriptJson merge q.toJson)
   }
 
-  private def getActionAndMeta(requestType: String, parameters: List[(String, Any)]): String =
+  private def getActionAndMeta(requestType: String, parameters: Chunk[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) => s""""$name" : "$value"""" }
       .mkString(s"""{ "$requestType" : { """, ", ", " } }")
 }

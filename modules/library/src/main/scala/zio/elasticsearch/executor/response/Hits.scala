@@ -16,13 +16,14 @@
 
 package zio.elasticsearch.executor.response
 
+import zio.Chunk
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class Hits(
   total: Total,
   @jsonField("max_score")
   maxScore: Option[Double] = None,
-  hits: List[Hit]
+  hits: Chunk[Hit]
 )
 
 private[elasticsearch] object Hits {

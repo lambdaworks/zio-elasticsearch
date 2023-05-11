@@ -28,7 +28,7 @@ import zio.schema.codec.JsonCodec.JsonDecoder
 final case class Item(
   raw: Json,
   private val highlight: Option[Json] = None,
-  private val innerHits: Map[String, List[Json]] = Map.empty,
+  private val innerHits: Map[String, Chunk[Json]] = Map.empty,
   sort: Option[Json] = None
 ) {
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
@@ -46,14 +46,15 @@ final case class Item(
   def innerHitAs[A](name: String)(implicit schema: Schema[A]): Either[DecodingException, List[A]] =
     for {
       innerHitsJson <- innerHits.get(name).toRight(DecodingException(s"Could not find inner hits with name $name"))
-      innerHits <- Validation
-                     .validateAll(
-                       innerHitsJson.map(json =>
-                         Validation.fromEither(JsonDecoder.decode(schema, json.toString)).mapError(_.message)
-                       )
-                     )
-                     .toEitherWith(errors =>
-                       DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
-                     )
+      innerHits <-
+        Validation
+          .validateAll(
+            innerHitsJson
+              .map(json => Validation.fromEither(JsonDecoder.decode(schema, json.toString)).mapError(_.message))
+              .toList
+          )
+          .toEitherWith(errors =>
+            DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
+          )
     } yield innerHits
 }

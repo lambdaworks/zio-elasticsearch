@@ -99,15 +99,15 @@ final case class Highlights(
   def withHighlight(field: String, config: HighlightConfig): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)
 
-  private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configList: _*).merge(fieldsJson))
+  private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configChunk).merge(fieldsJson))
 
-  private lazy val configList: List[(String, Json)] = config.toList
+  private lazy val configChunk: Chunk[(String, Json)] = Chunk.fromIterable(config)
 
   private lazy val fieldsJson: Json =
     if (explicitFieldOrder) {
       Obj("fields" -> Arr(fields.reverse.map(_.toJsonObj)))
     } else {
-      Obj("fields" -> Obj(fields.reverse.map(_.toStringJsonPair): _*))
+      Obj("fields" -> Obj(fields.reverse.map(_.toStringJsonPair)))
     }
 }
 
@@ -116,7 +116,7 @@ object Highlights {
 }
 
 private[elasticsearch] final case class HighlightField(field: String, config: HighlightConfig = Map.empty) {
-  def toStringJsonPair: (String, Obj) = field -> Obj(config.toList: _*)
+  def toStringJsonPair: (String, Obj) = field -> Obj(Chunk.fromIterable(config))
 
-  def toJsonObj: Json = Obj(field -> Obj(config.toList: _*))
+  def toJsonObj: Json = Obj(toStringJsonPair)
 }
