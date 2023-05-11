@@ -60,15 +60,15 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
 final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],
   private val fullResponse: SearchWithAggregationsResponse
-) extends DocumentResult[List] {
-  def documentAs[A: Schema]: IO[DecodingException, List[A]] =
+) extends DocumentResult[Chunk] {
+  def documentAs[A: Schema]: IO[DecodingException, Chunk[A]] =
     ZIO.fromEither {
-      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs)).toList).toEitherWith { errors =>
+      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
         DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(", ")}")
       }
     }
 
-  lazy val items: UIO[List[Item]] = ZIO.succeed(hits.toList)
+  lazy val items: UIO[Chunk[Item]] = ZIO.succeed(hits)
 
   lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(fullResponse.lastSortField)
 
@@ -81,7 +81,7 @@ final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: Chunk[Item],
   private val aggs: Map[String, AggregationResponse],
   private val fullResponse: SearchWithAggregationsResponse
-) extends DocumentResult[List]
+) extends DocumentResult[Chunk]
     with AggregationsResult {
   def aggregation(name: String): Task[Option[AggregationResponse]] =
     ZIO.succeed(aggs.get(name))
@@ -89,16 +89,16 @@ final class SearchAndAggregateResult private[elasticsearch] (
   def aggregations: Task[Map[String, AggregationResponse]] =
     ZIO.succeed(aggs)
 
-  def documentAs[A: Schema]: Task[List[A]] =
+  def documentAs[A: Schema]: Task[Chunk[A]] =
     ZIO.fromEither {
-      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs)).toList).toEitherWith { errors =>
+      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
         DecodingException(
           s"Could not parse all documents successfully: ${errors.map(_.message).mkString(",")})"
         )
       }
     }
 
-  lazy val items: UIO[List[Item]] = ZIO.succeed(hits.toList)
+  lazy val items: UIO[Chunk[Item]] = ZIO.succeed(hits)
 
   lazy val lastSortValue: UIO[Option[Json]] = ZIO.succeed(fullResponse.lastSortField)
 

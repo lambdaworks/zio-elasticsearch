@@ -18,17 +18,18 @@ package zio.elasticsearch
 
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
+import zio.Chunk
 import zio.prelude.{AssertionError, Validator}
 
 object IndexNameValidator
     extends Validator[String](name => {
-      def containsAny(string: String, params: List[String]): Boolean =
+      def containsAny(string: String, params: Chunk[String]): Boolean =
         params.exists(StringUtils.contains(string, _))
 
       def isValid(name: String): Boolean =
         name.toLowerCase == name &&
           !startsWithAny(name, "+", "-", "_") &&
-          !containsAny(string = name, params = List("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+          !containsAny(string = name, params = Chunk("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
           !equalsAny(name, ".", "..") &&
           name.getBytes().length <= 255
 

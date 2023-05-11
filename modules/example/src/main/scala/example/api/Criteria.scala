@@ -16,6 +16,7 @@
 
 package example.api
 
+import zio.Chunk
 import zio.schema.{DeriveSchema, Schema}
 
 import java.time.LocalDateTime
@@ -26,7 +27,7 @@ object Criteria {
   implicit val schema: Schema[Criteria] = DeriveSchema.gen[Criteria]
 }
 
-final case class CompoundCriteria(operator: CompoundOperator, filters: List[Criteria]) extends Criteria
+final case class CompoundCriteria(operator: CompoundOperator, filters: Chunk[Criteria]) extends Criteria
 
 final case class DateCriteria(field: DateFilter, operator: FilterOperator, value: LocalDateTime) extends Criteria
 

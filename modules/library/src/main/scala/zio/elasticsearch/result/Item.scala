@@ -43,15 +43,15 @@ final case class Item(
   def highlight(field: Field[_, _]): Option[Chunk[String]] =
     highlight(field.toString)
 
-  def innerHitAs[A](name: String)(implicit schema: Schema[A]): Either[DecodingException, List[A]] =
+  def innerHitAs[A](name: String)(implicit schema: Schema[A]): Either[DecodingException, Chunk[A]] =
     for {
       innerHitsJson <- innerHits.get(name).toRight(DecodingException(s"Could not find inner hits with name $name"))
       innerHits <-
         Validation
           .validateAll(
-            innerHitsJson
-              .map(json => Validation.fromEither(JsonDecoder.decode(schema, json.toString)).mapError(_.message))
-              .toList
+            innerHitsJson.map(json =>
+              Validation.fromEither(JsonDecoder.decode(schema, json.toString)).mapError(_.message)
+            )
           )
           .toEitherWith(errors =>
             DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
