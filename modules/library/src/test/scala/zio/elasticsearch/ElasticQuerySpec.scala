@@ -1136,8 +1136,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 |      "must": [
                 |        {
                 |          "match_phrase": {
-                |            "stringField": "test",
-                |            "boost": 39.2
+                |            "stringField": "test"
                 |          }
                 |        }
                 |      ]
@@ -2080,10 +2079,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
         },
         test("matches") {
-          val query          = matches("testField", true)
-          val queryTsInt     = matches(TestDocument.intField, 39)
-          val queryTsString  = matches(TestDocument.stringField, "test")
-          val queryWithBoost = matches(TestDocument.doubleField, 39.2)
+          val query         = matches("testField", true)
+          val queryTsInt    = matches(TestDocument.intField, 39)
+          val queryTsString = matches(TestDocument.stringField, "test")
 
           val expected =
             """
@@ -2118,30 +2116,15 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedWithBoost =
-            """
-              |{
-              |  "query": {
-              |    "match": {
-              |      "doubleField": 39.2,
-              |      "boost": 3.14
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
           assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryTsInt.toJson)(equalTo(expectedTsInt.toJson)) &&
-          assert(queryTsString.toJson)(equalTo(expectedTsString.toJson)) &&
-          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson))
+          assert(queryTsString.toJson)(equalTo(expectedTsString.toJson))
         },
         test("matchPhrase") {
-          val querySimple      = matchPhrase("stringField", "this is a test")
-          val queryRaw         = matchPhrase("stringField.raw", "this is a test")
-          val queryWithBoost   = matchPhrase("stringField", "this is a test")
-          val querySimpleTs    = matchPhrase(TestDocument.stringField, "this is a test")
-          val queryRawTs       = matchPhrase(TestDocument.stringField.raw, "this is a test")
-          val queryWithBoostTs = matchPhrase(TestDocument.stringField, "this is a test")
+          val querySimple   = matchPhrase("stringField", "this is a test")
+          val queryRaw      = matchPhrase("stringField.raw", "this is a test")
+          val querySimpleTs = matchPhrase(TestDocument.stringField, "this is a test")
+          val queryRawTs    = matchPhrase(TestDocument.stringField.raw, "this is a test")
 
           val expectedSimple =
             """
@@ -2165,24 +2148,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedWithBoost =
-            """
-              |{
-              |  "query": {
-              |    "match_phrase": {
-              |      "stringField": "this is a test",
-              |      "boost": 21.15
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
           assert(querySimple.toJson)(equalTo(expectedSimple.toJson)) &&
           assert(querySimpleTs.toJson)(equalTo(expectedSimple.toJson)) &&
           assert(queryRaw.toJson)(equalTo(expectedRaw.toJson)) &&
-          assert(queryRawTs.toJson)(equalTo(expectedRaw.toJson)) &&
-          assert(queryWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
-          assert(queryWithBoostTs.toJson)(equalTo(expectedWithBoost.toJson))
+          assert(queryRawTs.toJson)(equalTo(expectedRaw.toJson))
         },
         test("nested") {
           val query                   = nested(TestDocument.subDocumentList, matchAll)
