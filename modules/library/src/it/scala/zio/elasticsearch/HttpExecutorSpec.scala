@@ -551,7 +551,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocumentUpdated)
                            .refreshTrue
                        )
-                  query = range(TestDocument.dateField).gte(LocalDate.now).format("uuuu-MM-dd")
+                  query = range(TestDocument.dateField).gte(LocalDate.now).format("uuuu-MM-dd").boost(1.0)
                   res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield assert(res)(equalTo(List(secondDocumentUpdated, thirdDocumentUpdated)))
             }

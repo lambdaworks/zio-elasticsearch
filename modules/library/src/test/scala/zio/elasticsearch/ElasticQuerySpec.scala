@@ -2034,8 +2034,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |  "query": {
               |    "range": {
               |      "intField": {
-              |      },
-              |      "boost": 3.14
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2114,9 +2114,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |    "range": {
               |      "intField": {
               |        "gt": 10,
-              |        "lte": 99
-              |      },
-              |      "boost": 3.14
+              |        "lte": 99,
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2128,9 +2128,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |  "query": {
               |    "range": {
               |      "dateField": {
-              |        "gt": "2020-01-10"
-              |      },
-              |      "format": "uuuu-MM-dd"
+              |        "gt": "2020-01-10",
+              |        "format": "uuuu-MM-dd"
+              |      }
               |    }
               |  }
               |}

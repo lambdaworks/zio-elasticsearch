@@ -410,11 +410,14 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "range" -> Obj(
-        Chunk(
-          Some(fieldPath.foldRight(field)(_ + "." + _) -> Obj(List(lower.toJson, upper.toJson).flatten: _*)),
-          boost.map("boost" -> Num(_)),
-          format.map("format" -> Str(_))
-        ).flatten: _*
+        fieldPath.foldRight(field)(_ + "." + _) -> Obj(
+          Chunk(
+            lower.toJson,
+            upper.toJson,
+            boost.map("boost" -> Num(_)),
+            format.map("format" -> Str(_))
+          ).flatten: _*
+        )
       )
     )
 }
