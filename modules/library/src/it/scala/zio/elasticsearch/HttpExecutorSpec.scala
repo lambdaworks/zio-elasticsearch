@@ -323,7 +323,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test(
-            "search using match all query with terms aggregations with nested max aggregation and bucketSelector aggregation"
+            "search using match all query with terms aggregations, nested max aggregation and nested bucketSelector aggregation"
           ) {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
