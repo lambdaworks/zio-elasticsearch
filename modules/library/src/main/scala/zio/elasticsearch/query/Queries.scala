@@ -18,6 +18,7 @@ package zio.elasticsearch.query
 
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
+import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.schema.Schema
@@ -353,7 +354,8 @@ private[elasticsearch] case object Unbounded extends LowerBound with UpperBound 
 
 sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
     extends ElasticQuery[S]
-    with HasBoost[RangeQuery[S, A, LB, UB]] {
+    with HasBoost[RangeQuery[S, A, LB, UB]]
+    with HasFormat[RangeQuery[S, A, LB, UB]] {
   def gt[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThan[B], UB]
@@ -375,10 +377,14 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   field: String,
   lower: LB,
   upper: UB,
-  boost: Option[Double]
+  boost: Option[Double],
+  format: Option[String]
 ) extends RangeQuery[S, A, LB, UB] { self =>
   def boost(value: Double): RangeQuery[S, A, LB, UB] =
     self.copy(boost = Some(value))
+
+  def format(value: String): RangeQuery[S, A, LB, UB] =
+    self.copy(format = Some(value))
 
   def gt[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: LB =:= Unbounded.type
@@ -414,7 +420,8 @@ private[elasticsearch] object Range {
       field = field,
       lower = Unbounded,
       upper = Unbounded,
-      boost = None
+      boost = None,
+      format = None
     )
 }
 

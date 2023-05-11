@@ -259,7 +259,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                   must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
                   mustNot = List(Match(field = "intField", value = 50, boost = None)),
                   should = List(
-                    Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
+                    Range(
+                      field = "intField",
+                      lower = GreaterThan(1),
+                      upper = LessThanOrEqualTo(100),
+                      boost = None,
+                      format = None
+                    ),
                     Match(field = "stringField", value = "test", boost = None)
                   ),
                   boost = None,
@@ -302,7 +308,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                   must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
                   mustNot = List(Match(field = "intField", value = 50, boost = None)),
                   should = List(
-                    Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
+                    Range(
+                      field = "intField",
+                      lower = GreaterThan(1),
+                      upper = LessThanOrEqualTo(100),
+                      boost = None,
+                      format = None
+                    ),
                     Match(field = "stringField", value = "test", boost = None)
                   ),
                   boost = Some(3.14),
@@ -595,7 +607,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "testField",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -605,7 +618,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "stringField",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -615,7 +629,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "intField",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -625,7 +640,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "stringField.test",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -635,7 +651,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = GreaterThan(3.14),
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -645,7 +662,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = Unbounded,
                 upper = LessThan(10.21),
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -655,7 +673,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "intField",
                 lower = GreaterThanOrEqualTo(10),
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -665,7 +684,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "intField",
                 lower = Unbounded,
                 upper = LessThanOrEqualTo(21),
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -675,7 +695,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = GreaterThan(3.14),
                 upper = LessThanOrEqualTo(21.0),
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -685,7 +706,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = GreaterThan(3.14),
                 upper = LessThanOrEqualTo(21),
-                boost = Some(2.8)
+                boost = Some(2.8),
+                format = None
               )
             )
           )
