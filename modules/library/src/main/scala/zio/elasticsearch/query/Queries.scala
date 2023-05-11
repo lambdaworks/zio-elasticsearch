@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.query
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
@@ -406,12 +407,16 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]] =
     self.copy(upper = LessThanOrEqualTo(value))
 
-  def paramsToJson(fieldPath: Option[String]): Json = {
-    val rangeFields = Some(
-      fieldPath.foldRight(field)(_ + "." + _) -> Obj(List(lower.toJson, upper.toJson).flatten: _*)
-    ) ++ boost.map("boost" -> Num(_))
-    Obj("range" -> Obj(rangeFields.toList: _*))
-  }
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj(
+      "range" -> Obj(
+        Chunk(
+          Some(fieldPath.foldRight(field)(_ + "." + _) -> Obj(List(lower.toJson, upper.toJson).flatten: _*)),
+          boost.map("boost" -> Num(_)),
+          format.map("format" -> Str(_))
+        ).flatten: _*
+      )
+    )
 }
 
 private[elasticsearch] object Range {

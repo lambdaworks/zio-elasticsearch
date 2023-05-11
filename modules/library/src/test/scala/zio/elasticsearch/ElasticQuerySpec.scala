@@ -25,6 +25,8 @@ import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
+import java.time.LocalDate
+
 object ElasticQuerySpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticQuery")(
@@ -600,6 +602,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryInclusiveUpperBound = range(TestDocument.intField).lte(21)
           val queryMixedBounds         = queryLowerBound.lte(21.0)
           val queryWithBoostParam      = queryMixedBounds.boost(2.8)
+          val queryWithFormatParam     = range(TestDocument.dateField).gt(LocalDate.of(2023, 5, 11)).format("uuuu-MM-dd")
 
           assert(query)(
             equalTo(
@@ -708,6 +711,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 upper = LessThanOrEqualTo(21),
                 boost = Some(2.8),
                 format = None
+              )
+            )
+          ) &&
+          assert(queryWithFormatParam)(
+            equalTo(
+              Range[TestDocument, LocalDate, GreaterThan[LocalDate], Unbounded.type](
+                field = "dateField",
+                lower = GreaterThan(LocalDate.of(2023, 5, 11)),
+                upper = Unbounded,
+                boost = None,
+                format = Some("uuuu-MM-dd")
               )
             )
           )
@@ -2000,6 +2014,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryInclusiveUpperBound  = range(TestDocument.intField).lte(45)
           val queryMixedBounds          = range(TestDocument.intField).gt(10).lte(99)
           val queryMixedBoundsWithBoost = range(TestDocument.intField).gt(10).lte(99).boost(3.14)
+          val queryWithFormat           = range(TestDocument.dateField).gt(LocalDate.of(2020, 1, 10)).format("uuuu-MM-dd")
 
           val expectedEmpty =
             """
@@ -2107,6 +2122,20 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithFormat =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "dateField": {
+              |        "gt": "2020-01-10"
+              |      },
+              |      "format": "uuuu-MM-dd"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(queryEmpty.toJson)(equalTo(expectedEmpty.toJson)) &&
           assert(queryEmptyWithBoost.toJson)(equalTo(expectedWithBoost.toJson)) &&
           assert(queryLowerBound.toJson)(equalTo(expectedLowerBound.toJson)) &&
@@ -2114,7 +2143,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryInclusiveLowerBound.toJson)(equalTo(expectedInclusiveLowerBound.toJson)) &&
           assert(queryInclusiveUpperBound.toJson)(equalTo(expectedInclusiveUpperBound.toJson)) &&
           assert(queryMixedBounds.toJson)(equalTo(expectedMixedBounds.toJson)) &&
-          assert(queryMixedBoundsWithBoost.toJson)(equalTo(expectedMixedBoundsWithBoost.toJson))
+          assert(queryMixedBoundsWithBoost.toJson)(equalTo(expectedMixedBoundsWithBoost.toJson)) &&
+          assert(queryWithFormat.toJson)(equalTo(expectedWithFormat.toJson))
         },
         test("startsWith") {
           val query                    = startsWith(TestDocument.stringField, "test")
