@@ -1602,25 +1602,26 @@ object HttpExecutorSpec extends IntegrationSpec {
                        ElasticRequest.create[TestDocument](geoDistanceIndex, document).refreshTrue
                      )
                 r1 <- Executor
-                       .execute(
-                         ElasticRequest.search(
-                           geoDistanceIndex,
-                           ElasticQuery
-                             .geoDistance("locationField", document.locationField.lat, document.locationField.lon)
-                             .distance(300, Kilometers)
-                         )
-                       )
-                       .documentAs[TestDocument]
-                r2 <- Executor
-                  .execute(
-                    ElasticRequest.search(
-                      geoDistanceIndex,
-                      ElasticQuery
-                        .geoDistance("locationField",s"${document.locationField.lat}, ${document.locationField.lon}")
-                        .distance(300, Kilometers)
+                        .execute(
+                          ElasticRequest.search(
+                            geoDistanceIndex,
+                            ElasticQuery
+                              .geoDistance("locationField", document.locationField.lat, document.locationField.lon)
+                              .distance(300, Kilometers)
+                          )
+                        )
+                        .documentAs[TestDocument]
+                r2 <-
+                  Executor
+                    .execute(
+                      ElasticRequest.search(
+                        geoDistanceIndex,
+                        ElasticQuery
+                          .geoDistance("locationField", s"${document.locationField.lat}, ${document.locationField.lon}")
+                          .distance(300, Kilometers)
+                      )
                     )
-                  )
-                  .documentAs[TestDocument]
+                    .documentAs[TestDocument]
               } yield assert(r1 ++ r2)(
                 equalTo(List(document, document))
               )

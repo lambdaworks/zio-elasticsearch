@@ -1771,7 +1771,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithDistanceType.toJson)(equalTo(expectedWithDistanceType.toJson)) &&
           assert(queryWithName.toJson)(equalTo(expectedWithName.toJson)) &&
           assert(queryWithValidationMethod.toJson)(equalTo(expectedWithValidationMethod.toJson)) &&
-            assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("hasChild") {
           val query                   = hasChild("child", matches(TestDocument.stringField, "test"))
