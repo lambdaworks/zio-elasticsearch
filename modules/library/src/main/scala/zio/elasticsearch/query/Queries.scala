@@ -85,7 +85,7 @@ private[elasticsearch] final case class Bool[S](
 
   def paramsToJson(fieldPath: Option[String]): Json = {
     val boolFields =
-      List(
+      Chunk(
         if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) else None,
         if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) else None,
         if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) else None,
@@ -111,6 +111,95 @@ private[elasticsearch] final case class Exists[S](field: String) extends ExistsQ
     Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
 }
 
+sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * Sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. `Distance` represents the
+   * radius of the circle centred on the specified location. Points which fall into this circle are considered to be
+   * matches. The distance can be specified in various units. See [[zio.elasticsearch.query.DistanceUnit]].
+   *
+   * @param value
+   *   a non-negative real number used for distance
+   * @param unit
+   *   the [[zio.elasticsearch.query.DistanceUnit]] in which we want to represent the distance
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distance` parameter.
+   */
+  def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S]
+
+  /**
+   * Sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines how to compute the
+   * distance.
+   *
+   * @param value
+   *   defines how to compute the distance
+   *   - [[zio.elasticsearch.query.DistanceType.Arc]]: Default algorithm
+   *   - [[zio.elasticsearch.query.DistanceType.Plane]]: Faster, but inaccurate on long distances and close to the poles
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distanceType` parameter.
+   */
+  def distanceType(value: DistanceType): GeoDistanceQuery[S]
+
+  /**
+   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Represents the optional name
+   * field to identify the query
+   *
+   * @param value
+   *   the [[String]] value to represent the name field
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `queryName` parameter.
+   */
+  def name(value: String): GeoDistanceQuery[S]
+
+  /**
+   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines handling of
+   * incorrect coordinates.
+   *
+   * @param value
+   *   defines how to handle invalid latitude nad longitude:
+   *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
+   *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
+   *     longitude
+   *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `validationMethod`
+   *   parameter.
+   */
+  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S]
+}
+
+private[elasticsearch] final case class GeoDistance[S](
+  field: String,
+  point: String,
+  distance: Option[Distance],
+  distanceType: Option[DistanceType],
+  queryName: Option[String],
+  validationMethod: Option[ValidationMethod]
+) extends GeoDistanceQuery[S] { self =>
+
+  def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S] =
+    self.copy(distance = Some(Distance(value, unit)))
+
+  def distanceType(value: DistanceType): GeoDistanceQuery[S] = self.copy(distanceType = Some(value))
+
+  def name(value: String): GeoDistanceQuery[S] = self.copy(queryName = Some(value))
+
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj(
+      "geo_distance" -> Obj(
+        Chunk(
+          Some(field -> Str(point)),
+          distance.map(d => "distance" -> Str(d.toString)),
+          distanceType.map(dt => "distance_type" -> Str(dt.toString)),
+          queryName.map(qn => "_name" -> Str(qn)),
+          validationMethod.map(vm => "validation_method" -> Str(vm.toString))
+        ).flatten: _*
+      )
+    )
+
+  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S] = self.copy(validationMethod = Some(value))
+}
+
 sealed trait HasChildQuery[S]
     extends ElasticQuery[S]
     with HasIgnoreUnmapped[HasChildQuery[S]]
@@ -118,10 +207,9 @@ sealed trait HasChildQuery[S]
     with HasScoreMode[HasChildQuery[S]] {
 
   /**
-   * Sets the `maxChildren` parameter for the [[HasChildQuery]].
-   *
-   * Indicates maximum number of child documents that match the query allowed for a returned parent document. If the
-   * parent document exceeds this limit, it is excluded from the search results.
+   * Sets the `maxChildren` parameter for the [[HasChildQuery]]. Indicates maximum number of child documents that match
+   * the query allowed for a returned parent document. If the parent document exceeds this limit, it is excluded from
+   * the search results.
    *
    * @param value
    *   the [[scala.Int]] value for `score` parameter
@@ -131,10 +219,9 @@ sealed trait HasChildQuery[S]
   def maxChildren(value: Int): HasChildQuery[S]
 
   /**
-   * Sets the `minChildren` parameter for the [[HasChildQuery]].
-   *
-   * Indicates minimum number of child documents that match the query required to match the query for a returned parent
-   * document. If the parent document does not meet this limit, it is excluded from the search results.
+   * Sets the `minChildren` parameter for the [[HasChildQuery]]. Indicates minimum number of child documents that match
+   * the query required to match the query for a returned parent document. If the parent document does not meet this
+   * limit, it is excluded from the search results.
    *
    * @param value
    *   the [[scala.Int]] value for `score` parameter
@@ -147,11 +234,11 @@ sealed trait HasChildQuery[S]
 private[elasticsearch] final case class HasChild[S](
   childType: String,
   query: ElasticQuery[S],
-  ignoreUnmapped: Option[Boolean] = None,
-  innerHitsField: Option[InnerHits] = None,
-  maxChildren: Option[Int] = None,
-  minChildren: Option[Int] = None,
-  scoreMode: Option[ScoreMode] = None
+  ignoreUnmapped: Option[Boolean],
+  innerHitsField: Option[InnerHits],
+  maxChildren: Option[Int],
+  minChildren: Option[Int],
+  scoreMode: Option[ScoreMode]
 ) extends HasChildQuery[S] { self =>
 
   def ignoreUnmapped(value: Boolean): HasChildQuery[S] = self.copy(ignoreUnmapped = Some(value))
@@ -165,7 +252,7 @@ private[elasticsearch] final case class HasChild[S](
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "has_child" -> Obj(
-        List(
+        Chunk(
           Some("type"  -> Str(childType)),
           Some("query" -> query.paramsToJson(None)),
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
@@ -186,10 +273,8 @@ sealed trait HasParentQuery[S]
     with HasInnerHits[HasParentQuery[S]] {
 
   /**
-   * Sets the `score` parameter parameter for the [[HasParentQuery]].
-   *
-   * Indicates whether the relevance score of a matching parent document is aggregated into its child documents.
-   * Defaults to false.
+   * Sets the `score` parameter parameter for the [[HasParentQuery]]. Indicates whether the relevance score of a
+   * matching parent document is aggregated into its child documents. Defaults to false.
    *
    * @param value
    *   the [[scala.Boolean]] value for `score` parameter
@@ -223,9 +308,9 @@ sealed trait HasParentQuery[S]
 private[elasticsearch] final case class HasParent[S](
   parentType: String,
   query: ElasticQuery[S],
-  ignoreUnmapped: Option[Boolean] = None,
-  innerHitsField: Option[InnerHits] = None,
-  score: Option[Boolean] = None
+  ignoreUnmapped: Option[Boolean],
+  innerHitsField: Option[InnerHits],
+  score: Option[Boolean]
 ) extends HasParentQuery[S] {
   self =>
 
@@ -238,7 +323,7 @@ private[elasticsearch] final case class HasParent[S](
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "has_parent" -> Obj(
-        List(
+        Chunk(
           Some("parent_type" -> Str(parentType)),
           Some("query"       -> query.paramsToJson(None)),
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
@@ -311,7 +396,7 @@ private[elasticsearch] final case class Nested[S](
   def paramsToJson(fieldPath: Option[String]): Json =
     Obj(
       "nested" -> Obj(
-        List(
+        Chunk(
           Some("path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path))),
           Some("query" -> query.paramsToJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
           scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)),

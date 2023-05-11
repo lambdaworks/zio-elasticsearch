@@ -19,6 +19,9 @@ package zio.elasticsearch
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.domain._
+import zio.elasticsearch.query.DistanceType.Plane
+import zio.elasticsearch.query.DistanceUnit.Kilometers
+import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
 import zio.prelude.Validation
@@ -385,6 +388,106 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query)(equalTo(Exists[Any](field = "testField"))) &&
           assert(queryTs)(equalTo(Exists[TestDocument](field = "intField")))
         },
+        test("geoDistance") {
+          val query =
+            geoDistance("testField", 20.0, 21.1)
+          val queryString =
+            geoDistance(TestDocument.stringField, "drm3btev3e86")
+          val queryWithDistance =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).distance(200, Kilometers)
+          val queryWithDistanceType =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).distanceType(Plane)
+          val queryWithName =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).name("name")
+          val queryWithValidationMethod =
+            geoDistance(TestDocument.stringField, 20.0, 21.1).validationMethod(IgnoreMalformed)
+          val queryWithAllParams = geoDistance(TestDocument.stringField, 20.0, 21.1)
+            .validationMethod(IgnoreMalformed)
+            .name("name")
+            .distanceType(Plane)
+            .distance(200, Kilometers)
+
+          assert(query)(
+            equalTo(
+              GeoDistance[Any](
+                field = "testField",
+                point = "20.0,21.1",
+                distance = None,
+                distanceType = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryString)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = "drm3btev3e86",
+                distance = None,
+                distanceType = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryWithDistance)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = "20.0,21.1",
+                distance = Some(Distance(200, Kilometers)),
+                distanceType = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) && assert(queryWithDistanceType)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = "20.0,21.1",
+                distance = None,
+                distanceType = Some(Plane),
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) && assert(queryWithName)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = "20.0,21.1",
+                distance = None,
+                distanceType = None,
+                queryName = Some("name"),
+                validationMethod = None
+              )
+            )
+          ) && assert(queryWithValidationMethod)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = "20.0,21.1",
+                distance = None,
+                distanceType = None,
+                queryName = None,
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          ) && assert(queryWithAllParams)(
+            equalTo(
+              GeoDistance[TestDocument](
+                field = "stringField",
+                point = "20.0,21.1",
+                distance = Some(Distance(200, Kilometers)),
+                distanceType = Some(Plane),
+                queryName = Some("name"),
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          )
+        },
         test("hasChild") {
           val query                   = hasChild("child", matchAll)
           val queryWithIgnoreUnmapped = hasChild("child", matchAll).ignoreUnmappedTrue
@@ -400,17 +503,77 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             .minChildren(1)
 
           assert(query)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithIgnoreUnmapped)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, ignoreUnmapped = Some(true)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = Some(true),
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithInnerHits)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, innerHitsField = Some(InnerHits())))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = Some(InnerHits()),
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithMaxChildren)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, maxChildren = Some(5)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = Some(5),
+                minChildren = None,
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithMinChildren)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, minChildren = Some(1)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = Some(1),
+                scoreMode = None
+              )
+            )
           ) && assert(queryWithScoreMode)(
-            equalTo(HasChild[Any](childType = "child", query = matchAll, scoreMode = Some(ScoreMode.Avg)))
+            equalTo(
+              HasChild[Any](
+                childType = "child",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                maxChildren = None,
+                minChildren = None,
+                scoreMode = Some(ScoreMode.Avg)
+              )
+            )
           ) && assert(queryWithAllParams)(
             equalTo(
               HasChild[Any](
@@ -434,18 +597,64 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithAllParams           = hasParent("parent", matchAll).ignoreUnmappedFalse.withScoreTrue
 
           assert(query)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = None))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                score = None
+              )
+            )
           ) && assert(queryWithScoreTrue)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = Some(true)))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                score = Some(true)
+              )
+            )
           ) && assert(queryWithScoreFalse)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = None, score = Some(false)))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = None,
+                innerHitsField = None,
+                score = Some(false)
+              )
+            )
           ) && assert(queryWithIgnoreUnmappedTrue)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(true), score = None))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = Some(true),
+                innerHitsField = None,
+                score = None
+              )
+            )
           ) && assert(queryWithIgnoreUnmappedFalse)(
-            equalTo(HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = None))
+            equalTo(
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = Some(false),
+                innerHitsField = None,
+                score = None
+              )
+            )
           ) && assert(queryWithAllParams)(
             equalTo(
-              HasParent[Any](parentType = "parent", query = matchAll, ignoreUnmapped = Some(false), score = Some(true))
+              HasParent[Any](
+                parentType = "parent",
+                query = matchAll,
+                ignoreUnmapped = Some(false),
+                innerHitsField = None,
+                score = Some(true)
+              )
             )
           )
         },
@@ -1487,6 +1696,118 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson)(equalTo(expected.toJson)) &&
           assert(queryTs.toJson)(equalTo(expectedTs.toJson))
+        },
+        test("geoDistance") {
+          val query =
+            geoDistance("testField", 20.0, 21.1)
+          val queryString =
+            geoDistance(TestDocument.locationField, "drm3btev3e86")
+          val queryWithDistance =
+            geoDistance(TestDocument.locationField, 20.0, 21.1).distance(200, Kilometers)
+          val queryWithDistanceType =
+            geoDistance(TestDocument.locationField, 20.0, 21.1).distanceType(Plane)
+          val queryWithName =
+            geoDistance(TestDocument.locationField, 20.0, 21.1).name("name")
+          val queryWithValidationMethod =
+            geoDistance(TestDocument.locationField, 20.0, 21.1).validationMethod(IgnoreMalformed)
+          val queryWithAllParams = geoDistance(TestDocument.locationField, 20.0, 21.1)
+            .validationMethod(IgnoreMalformed)
+            .distance(200, Kilometers)
+            .distanceType(Plane)
+            .name("name")
+
+          val expected =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "testField": "20.0,21.1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithString =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "locationField": "drm3btev3e86"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithDistance =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "distance": "200.0km",
+              |      "locationField": "20.0,21.1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithDistanceType =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "distance_type" :  "plane",
+              |      "locationField": "20.0,21.1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithName =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "_name": "name",
+              |      "locationField": "20.0,21.1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithValidationMethod =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "validation_method": "IGNORE_MALFORMED",
+              |      "locationField": "20.0,21.1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "query": {
+              |    "geo_distance": {
+              |      "validation_method": "IGNORE_MALFORMED",
+              |      "distance_type" :  "plane",
+              |      "_name": "name",
+              |      "distance": "200.0km",
+              |      "locationField": "20.0,21.1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson)(equalTo(expected.toJson)) &&
+          assert(queryString.toJson)(equalTo(expectedWithString.toJson)) &&
+          assert(queryWithDistance.toJson)(equalTo(expectedWithDistance.toJson)) &&
+          assert(queryWithDistanceType.toJson)(equalTo(expectedWithDistanceType.toJson)) &&
+          assert(queryWithName.toJson)(equalTo(expectedWithName.toJson)) &&
+          assert(queryWithValidationMethod.toJson)(equalTo(expectedWithValidationMethod.toJson)) &&
+          assert(queryWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("hasChild") {
           val query                   = hasChild("child", matches(TestDocument.stringField, "test"))

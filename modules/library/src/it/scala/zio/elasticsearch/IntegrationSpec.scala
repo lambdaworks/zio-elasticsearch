@@ -49,6 +49,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val updateByQueryIndex: IndexName = IndexName("update-by-query-index")
 
+  val geoDistanceIndex = IndexName("geo-distance-index")
+
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- Executor.execute(ElasticRequest.createIndex(index))
     _ <- Executor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
@@ -60,6 +62,12 @@ trait IntegrationSpec extends ZIOSpecDefault {
   def genDocumentId: Gen[Any, DocumentId] =
     Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
 
+  def genLocation: Gen[Any, Location] =
+    for {
+      latField <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
+      lonField <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
+    } yield Location(lat = latField, lon = lonField)
+
   def genTestDocument: Gen[Any, TestDocument] = for {
     stringField     <- Gen.stringBounded(5, 10)(Gen.alphaChar)
     dateField       <- Gen.localDate(LocalDate.parse("2010-12-02"), LocalDate.parse("2022-12-05"))
@@ -67,13 +75,15 @@ trait IntegrationSpec extends ZIOSpecDefault {
     intField        <- Gen.int(1, 2000)
     doubleField     <- Gen.double(100, 2000)
     booleanField    <- Gen.boolean
+    locationField   <- genLocation
   } yield TestDocument(
     stringField = stringField,
     dateField = dateField,
     subDocumentList = subDocumentList,
     intField = intField,
     doubleField = doubleField,
-    booleanField = booleanField
+    booleanField = booleanField,
+    locationField = locationField
   )
 
   def genTestSubDocument: Gen[Any, TestSubDocument] = for {
