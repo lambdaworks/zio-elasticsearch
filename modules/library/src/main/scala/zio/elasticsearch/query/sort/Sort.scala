@@ -26,7 +26,18 @@ sealed trait Sort {
   def paramsToJson: Json
 }
 
-object Sort {
+sealed trait SortByField
+    extends Sort
+    with HasFormat[SortByField]
+    with HasMissing[SortByField]
+    with HasMode[SortByField]
+    with HasNumericType[SortByField]
+    with HasOrder[SortByField]
+    with HasUnmappedType[SortByField] {
+  def paramsToJson: Json
+}
+
+object SortByField {
 
   /**
    * Constructs an instance of [[SortByFieldOptions]] to sort by `_count` field in the context of an aggregation.
@@ -34,7 +45,7 @@ object Sort {
    * @return
    *   an instance of [[SortByFieldOptions]] with the `field` set to `_count`.
    */
-  def sortByCount: SortByFieldOptions = SortByFieldOptions(
+  def byCount: SortByFieldOptions = SortByFieldOptions(
     field = "_count",
     format = None,
     missing = None,
@@ -50,7 +61,7 @@ object Sort {
    * @return
    *   an instance of [[SortByFieldOptions]] with the `field` set to `_doc`.
    */
-  def sortByDoc: SortByFieldOptions = SortByFieldOptions(
+  def byDoc: SortByFieldOptions = SortByFieldOptions(
     field = "_doc",
     format = None,
     missing = None,
@@ -66,7 +77,7 @@ object Sort {
    * @return
    *   an instance of [[SortByFieldOptions]] with the `field` set to `_key`.
    */
-  def sortByKey: SortByFieldOptions = SortByFieldOptions(
+  def byKey: SortByFieldOptions = SortByFieldOptions(
     field = "_key",
     format = None,
     missing = None,
@@ -82,7 +93,7 @@ object Sort {
    * @return
    *   an instance of [[SortByFieldOptions]] with the `field` set to `_score`.
    */
-  def sortByScore: SortByFieldOptions = SortByFieldOptions(
+  def byScore: SortByFieldOptions = SortByFieldOptions(
     field = "_score",
     format = None,
     missing = None,
@@ -91,17 +102,6 @@ object Sort {
     order = None,
     unmappedType = None
   )
-}
-
-sealed trait SortByField
-    extends Sort
-    with HasFormat[SortByField]
-    with HasMissing[SortByField]
-    with HasMode[SortByField]
-    with HasNumericType[SortByField]
-    with HasOrder[SortByField]
-    with HasUnmappedType[SortByField] {
-  def paramsToJson: Json
 }
 
 private[elasticsearch] final case class SortByFieldOptions(

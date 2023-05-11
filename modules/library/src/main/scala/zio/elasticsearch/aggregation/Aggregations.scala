@@ -36,7 +36,7 @@ sealed trait SingleElasticAggregation extends ElasticAggregation
 sealed trait BucketSortAggregation extends SingleElasticAggregation with HasSize[BucketSortAggregation] with WithAgg {
 
   /**
-   * Sets the starting offset from where the [[zio.elasticsearch.aggregation.BucketSortAggregation]] return results.
+   * Sets the starting offset from where the [[zio.elasticsearch.aggregation.BucketSortAggregation]] returns results.
    *
    * @param value
    *   a non-negative number to set the `from` parameter in the [[zio.elasticsearch.aggregation.BucketSortAggregation]]
@@ -62,8 +62,7 @@ private[elasticsearch] final case class BucketSort(
   sortBy: Chunk[Sort],
   from: Option[Int],
   size: Option[Int]
-) extends BucketSortAggregation {
-  self =>
+) extends BucketSortAggregation { self =>
   def from(value: Int): BucketSortAggregation =
     self.copy(from = Some(value))
 
@@ -167,10 +166,7 @@ private[elasticsearch] final case class Terms(
   def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
 
-  private[elasticsearch] def paramsToJson: Json =
-    Obj(name -> paramsToJsonHelper)
-
-  private def paramsToJsonHelper: Obj = {
+  private[elasticsearch] def paramsToJson: Json = {
     val orderJson: Json =
       order.toList match {
         case Nil =>
@@ -191,6 +187,6 @@ private[elasticsearch] final case class Terms(
       else
         Obj()
 
-    Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson
+    Obj(name -> (Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson))
   }
 }

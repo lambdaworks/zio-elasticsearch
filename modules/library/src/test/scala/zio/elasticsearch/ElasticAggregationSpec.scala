@@ -14,7 +14,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticAggregation")(
       suite("constructing")(
-        test("bucket sort") {
+        test("bucketSort") {
           val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
           val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
           val aggregationWithSort = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
@@ -292,7 +292,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
-        test("bucket sort") {
+        test("bucketSort") {
           val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
           val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
           val aggregationWithSort = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
