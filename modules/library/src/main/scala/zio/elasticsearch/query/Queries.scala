@@ -169,7 +169,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 
 private[elasticsearch] final case class GeoDistance[S](
   field: String,
-  point: Either[(Double, Double), String],
+  point: String,
   distance: Option[Distance],
   distanceType: Option[DistanceType],
   queryName: Option[String],
@@ -187,10 +187,7 @@ private[elasticsearch] final case class GeoDistance[S](
     Obj(
       "geo_distance" -> Obj(
         Chunk(
-          point match {
-            case Left((lat, lon))   => Some(field -> Obj("lat" -> Num(lat), "lon" -> Num(lon)))
-            case Right(stringValue) => Some(field -> Str(stringValue))
-          },
+          Some(field -> Str(point)),
           distance.map(d => "distance" -> Str(d.toString)),
           distanceType.map(dt => "distance_type" -> Str(dt.toString)),
           queryName.map(qn => "_name" -> Str(qn)),

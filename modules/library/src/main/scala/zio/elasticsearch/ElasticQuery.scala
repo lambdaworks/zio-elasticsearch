@@ -124,14 +124,14 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
-  final def geoDistance[S, A: ElasticPrimitive](
-    field: Field[S, A],
-    longitude: Double,
-    latitude: Double
+  final def geoDistance[S](
+    field: Field[S, _],
+    latitude: Double,
+    longitude: Double
   ): GeoDistanceQuery[S] =
     GeoDistance(
       field = field.toString,
-      point = Left((longitude, latitude)),
+      point = s"$latitude,$longitude",
       distance = None,
       distanceType = None,
       queryName = None,
@@ -150,10 +150,10 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
-  final def geoDistance(field: String, longitude: Double, latitude: Double): GeoDistanceQuery[Any] =
+  final def geoDistance(field: String, latitude: Double, longitude: Double): GeoDistanceQuery[Any] =
     GeoDistance(
       field = field,
-      point = Left((longitude, latitude)),
+      point = s"$latitude,$longitude",
       distance = None,
       distanceType = None,
       queryName = None,
@@ -175,10 +175,10 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
-  final def geoDistance[S, A: ElasticPrimitive](field: Field[S, A], coordinates: String): GeoDistanceQuery[S] =
+  final def geoDistance[S](field: Field[S, _], coordinates: String): GeoDistanceQuery[S] =
     GeoDistance(
       field = field.toString,
-      point = Right(coordinates),
+      point = coordinates,
       distance = None,
       distanceType = None,
       queryName = None,
@@ -198,7 +198,7 @@ object ElasticQuery {
   final def geoDistance(field: String, coordinates: String): GeoDistanceQuery[Any] =
     GeoDistance(
       field = field,
-      point = Right(coordinates),
+      point = coordinates,
       distance = None,
       distanceType = None,
       queryName = None,

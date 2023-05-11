@@ -1601,7 +1601,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.create[TestDocument](geoDistanceIndex, document).refreshTrue
                      )
-                r <- Executor
+                r1 <- Executor
                        .execute(
                          ElasticRequest.search(
                            geoDistanceIndex,
@@ -1611,8 +1611,18 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                        )
                        .documentAs[TestDocument]
-              } yield assert(r)(
-                equalTo(List(document))
+                r2 <- Executor
+                  .execute(
+                    ElasticRequest.search(
+                      geoDistanceIndex,
+                      ElasticQuery
+                        .geoDistance("locationField",s"${document.locationField.lat}, ${document.locationField.lon}")
+                        .distance(300, Kilometers)
+                    )
+                  )
+                  .documentAs[TestDocument]
+              } yield assert(r1 ++ r2)(
+                equalTo(List(document, document))
               )
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
