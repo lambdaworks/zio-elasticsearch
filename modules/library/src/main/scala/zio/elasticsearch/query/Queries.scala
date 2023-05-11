@@ -337,17 +337,11 @@ private[elasticsearch] final case class HasParent[S](
     self.copy(score = Some(value))
 }
 
-sealed trait MatchQuery[S] extends ElasticQuery[S] with HasBoost[MatchQuery[S]]
+sealed trait MatchQuery[S] extends ElasticQuery[S]
 
-private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A, boost: Option[Double])
-    extends MatchQuery[S] { self =>
-  def boost(value: Double): MatchQuery[S] =
-    self.copy(boost = Some(value))
-
-  def paramsToJson(fieldPath: Option[String]): Json = {
-    val matchFields = Some(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson) ++ boost.map("boost" -> Num(_))
-    Obj("match" -> Obj(matchFields.toList: _*))
-  }
+private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj("match" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
 }
 
 sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
@@ -360,18 +354,11 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
     Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
 }
 
-sealed trait MatchPhraseQuery[S] extends ElasticQuery[S] with HasBoost[MatchPhraseQuery[S]]
+sealed trait MatchPhraseQuery[S] extends ElasticQuery[S]
 
-private[elasticsearch] final case class MatchPhrase[S](field: String, value: String, boost: Option[Double])
-    extends MatchPhraseQuery[S] { self =>
-  def boost(value: Double): MatchPhraseQuery[S] =
-    self.copy(boost = Some(value))
-
-  def paramsToJson(fieldPath: Option[String]): Json = {
-    val matchPhraseFields =
-      Some(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson) ++ boost.map("boost" -> Num(_))
-    Obj("match_phrase" -> Obj(matchPhraseFields.toList: _*))
-  }
+private[elasticsearch] final case class MatchPhrase[S](field: String, value: String) extends MatchPhraseQuery[S] {
+  def paramsToJson(fieldPath: Option[String]): Json =
+    Obj("match_phrase" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
 }
 
 sealed trait NestedQuery[S]

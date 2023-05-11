@@ -12,27 +12,27 @@ object ElasticPrimitiveSpec extends ZIOSpecDefault {
     suite("ElasticPrimitive")(
       test("BigDecimal") {
         assert(matches(FieldName, BigDecimal(1)))(
-          equalTo(Match[Any, BigDecimal](FieldName, BigDecimal(1), boost = None))
+          equalTo(Match[Any, BigDecimal](FieldName, BigDecimal(1)))
         )
       },
       test("Boolean") {
-        assert(matches(FieldName, true))(equalTo(Match[Any, Boolean](FieldName, true, boost = None)))
+        assert(matches(FieldName, true))(equalTo(Match[Any, Boolean](FieldName, true)))
       },
       test("Double") {
-        assert(matches(FieldName, 1.00))(equalTo(Match[Any, Double](FieldName, 1.00, boost = None)))
+        assert(matches(FieldName, 1.00))(equalTo(Match[Any, Double](FieldName, 1.00)))
       },
       test("Int") {
-        assert(matches(FieldName, 1))(equalTo(Match[Any, Int](FieldName, 1, boost = None)))
+        assert(matches(FieldName, 1))(equalTo(Match[Any, Int](FieldName, 1)))
       },
       test("Long") {
-        assert(matches(FieldName, 1L))(equalTo(Match[Any, Long](FieldName, 1L, boost = None)))
+        assert(matches(FieldName, 1L))(equalTo(Match[Any, Long](FieldName, 1L)))
       },
       test("String") {
-        assert(matches(FieldName, "string"))(equalTo(Match[Any, String](FieldName, "string", boost = None)))
+        assert(matches(FieldName, "string"))(equalTo(Match[Any, String](FieldName, "string")))
       },
       test("UUID") {
         val uuid = UUID.randomUUID()
-        assert(matches(FieldName, uuid))(equalTo(Match[Any, UUID](FieldName, uuid, boost = None)))
+        assert(matches(FieldName, uuid))(equalTo(Match[Any, UUID](FieldName, uuid)))
       }
     )
 

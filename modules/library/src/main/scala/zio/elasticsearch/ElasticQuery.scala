@@ -302,7 +302,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
    */
   final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
-    Match(field = field.toString, value = value, boost = None)
+    Match(field = field.toString, value = value)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchQuery]] using the specified parameters.
@@ -318,7 +318,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
    */
   final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
-    Match(field = field, value = value, boost = None)
+    Match(field = field, value = value)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchPhraseQuery]] using the specified parameters.
@@ -335,7 +335,7 @@ object ElasticQuery {
    *   performed.
    */
   final def matchPhrase[S](field: Field[S, String], value: String): MatchPhraseQuery[S] =
-    MatchPhrase(field = field.toString, value = value, boost = None)
+    MatchPhrase(field = field.toString, value = value)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchPhraseQuery]] using the specified parameters.
@@ -350,7 +350,7 @@ object ElasticQuery {
    *   performed.
    */
   final def matchPhrase(field: String, value: String): MatchPhraseQuery[Any] =
-    MatchPhrase(field = field, value = value, boost = None)
+    MatchPhrase(field = field, value = value)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
