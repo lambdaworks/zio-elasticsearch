@@ -6,6 +6,7 @@ import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
 import zio.elasticsearch.query.sort.{SortByFieldOptions, SortOrder}
+import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -14,6 +15,37 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticAggregation")(
       suite("constructing")(
+        test("bucketSelector") {
+          val aggregation1 = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("params.agg1 > 10"),
+            bucketsPath = Map("agg1" -> "aggregation1")
+          )
+          val aggregation2 = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("params.agg1 + params.agg2 > 10"),
+            bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
+          )
+
+          assert(aggregation1)(
+            equalTo(
+              BucketSelector(
+                name = "aggregation",
+                script = Script("params.agg1 > 10"),
+                bucketsPath = Map("agg1" -> "aggregation1")
+              )
+            )
+          ) &&
+          assert(aggregation2)(
+            equalTo(
+              BucketSelector(
+                name = "aggregation",
+                script = Script("params.agg1 + params.agg2 > 10"),
+                bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
+              )
+            )
+          )
+        },
         test("bucketSort") {
           val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
           val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
@@ -67,7 +99,6 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               )
             )
           )
-
         },
         test("cardinality") {
           val aggregation            = cardinalityAggregation("aggregation", "testField")
@@ -292,6 +323,37 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
+        test("bucketSelector") {
+          val aggregation1 = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("params.agg1 > 10"),
+            bucketsPath = Map("agg1" -> "aggregation1")
+          )
+          val aggregation2 = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("params.agg1 + params.agg2 > 10"),
+            bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
+          )
+
+          assert(aggregation1)(
+            equalTo(
+              BucketSelector(
+                name = "aggregation",
+                script = Script("params.agg1 > 10"),
+                bucketsPath = Map("agg1" -> "aggregation1")
+              )
+            )
+          ) &&
+          assert(aggregation2)(
+            equalTo(
+              BucketSelector(
+                name = "aggregation",
+                script = Script("params.agg1 + params.agg2 > 10"),
+                bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
+              )
+            )
+          )
+        },
         test("bucketSort") {
           val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
           val aggregationWithSize = bucketSortAggregation("aggregation").size(5)

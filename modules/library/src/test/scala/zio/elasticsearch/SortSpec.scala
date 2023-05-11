@@ -177,7 +177,7 @@ object SortSpec extends ZIOSpecDefault {
         },
         test("successfully create SortByScript with given `mode`") {
           assert(
-            sortBy(Script(source = "doc['day_of_week'].value * params['factor']").withParams("factor" -> 2), NumberType)
+            sortBy(Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
               .mode(Avg)
           )(
             equalTo(
@@ -209,7 +209,7 @@ object SortSpec extends ZIOSpecDefault {
         test("successfully create SortByScript with given `mode` and `order`") {
           assert(
             sortBy(
-              Script(source = "doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless"),
+              Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
               NumberType
             )
               .mode(Avg)
@@ -414,7 +414,7 @@ object SortSpec extends ZIOSpecDefault {
         },
         test("properly encode SortByScript with given `mode`") {
           val sort = sortBy(
-            script = Script("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2),
+            script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2),
             sourceType = NumberType
           )
             .mode(Avg)
@@ -465,7 +465,7 @@ object SortSpec extends ZIOSpecDefault {
         },
         test("properly encode SortByScript with `mode` and `order`") {
           val sort = sortBy(
-            Script(source = "doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless"),
+            Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
             NumberType
           )
             .mode(Avg)

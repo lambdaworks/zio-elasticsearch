@@ -18,8 +18,30 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.aggregation._
+import zio.elasticsearch.script.Script
 
 object ElasticAggregation {
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSelectorAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param script
+   *   The script to run for this aggregation. The script can be inline, file or indexed
+   * @param bucketsPath
+   *   A map of script variables and their associated path to the buckets we wish to use for the variable
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.BucketSelectorAggregation]] that represents bucket selector
+   *   aggregation to be performed.
+   */
+  final def bucketSelectorAggregation(
+    name: String,
+    script: Script,
+    bucketsPath: Map[String, String]
+  ): BucketSelectorAggregation =
+    BucketSelector(name = name, script = script, bucketsPath = bucketsPath)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified
