@@ -43,6 +43,10 @@ object ElasticPrimitive {
     def toJson(value: Int): Json = Num(value)
   }
 
+  implicit object ElasticLocalDate extends ElasticPrimitive[LocalDate] {
+    def toJson(value: LocalDate): Json = Str(value.toString)
+  }
+
   implicit object ElasticLong extends ElasticPrimitive[Long] {
     def toJson(value: Long): Json = Num(value)
   }
@@ -53,10 +57,6 @@ object ElasticPrimitive {
 
   implicit object ElasticUUID extends ElasticPrimitive[UUID] {
     def toJson(value: UUID): Json = Str(value.toString)
-  }
-
-  implicit object ElasticLocalDate extends ElasticPrimitive[LocalDate] {
-    def toJson(value: LocalDate): Json = Str(value.toString)
   }
 
   final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {
