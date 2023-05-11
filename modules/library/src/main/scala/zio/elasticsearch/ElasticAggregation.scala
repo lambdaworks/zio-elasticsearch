@@ -116,4 +116,16 @@ object ElasticAggregation {
    */
   final def maxAggregation(name: String, field: String): MaxAggregation =
     Max(name = name, field = field, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] that represents bucket sort aggregation to
+   *   be performed.
+   */
+  final def bucketSortAggregation(name: String): BucketSortAggregation =
+    BucketSort(name = name, sortBy = Chunk.empty, from = None, size = None)
 }

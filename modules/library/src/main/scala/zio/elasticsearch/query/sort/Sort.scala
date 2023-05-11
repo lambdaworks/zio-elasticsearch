@@ -37,6 +37,73 @@ sealed trait SortByField
   def paramsToJson: Json
 }
 
+object SortByField {
+
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort by `_count` field in the context of an aggregation.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_count`.
+   */
+  def byCount: SortByFieldOptions = SortByFieldOptions(
+    field = "_count",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort search results by the `_doc` field.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_doc`.
+   */
+  def byDoc: SortByFieldOptions = SortByFieldOptions(
+    field = "_doc",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort by `_key` field in the context of an aggregation.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_key`.
+   */
+  def byKey: SortByFieldOptions = SortByFieldOptions(
+    field = "_key",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+
+  /**
+   * Constructs an instance of [[SortByFieldOptions]] to sort search results by the `_score` field.
+   *
+   * @return
+   *   an instance of [[SortByFieldOptions]] with the `field` set to `_score`.
+   */
+  def byScore: SortByFieldOptions = SortByFieldOptions(
+    field = "_score",
+    format = None,
+    missing = None,
+    mode = None,
+    numericType = None,
+    order = None,
+    unmappedType = None
+  )
+}
+
 private[elasticsearch] final case class SortByFieldOptions(
   field: String,
   format: Option[String],
