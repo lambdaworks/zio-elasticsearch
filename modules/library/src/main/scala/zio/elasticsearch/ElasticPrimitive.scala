@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Str}
 
+import java.time.LocalDate
 import java.util.UUID
 
 object ElasticPrimitive {
@@ -52,6 +53,10 @@ object ElasticPrimitive {
 
   implicit object ElasticUUID extends ElasticPrimitive[UUID] {
     def toJson(value: UUID): Json = Str(value.toString)
+  }
+
+  implicit object ElasticLocalDate extends ElasticPrimitive[LocalDate] {
+    def toJson(value: LocalDate): Json = Str(value.toString)
   }
 
   final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {

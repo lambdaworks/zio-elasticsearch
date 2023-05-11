@@ -25,6 +25,8 @@ import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
+import java.time.LocalDate
+
 object ElasticQuerySpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticQuery")(
@@ -259,7 +261,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                   must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
                   mustNot = List(Match(field = "intField", value = 50, boost = None)),
                   should = List(
-                    Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
+                    Range(
+                      field = "intField",
+                      lower = GreaterThan(1),
+                      upper = LessThanOrEqualTo(100),
+                      boost = None,
+                      format = None
+                    ),
                     Match(field = "stringField", value = "test", boost = None)
                   ),
                   boost = None,
@@ -302,7 +310,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                   must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
                   mustNot = List(Match(field = "intField", value = 50, boost = None)),
                   should = List(
-                    Range(field = "intField", lower = GreaterThan(1), upper = LessThanOrEqualTo(100), boost = None),
+                    Range(
+                      field = "intField",
+                      lower = GreaterThan(1),
+                      upper = LessThanOrEqualTo(100),
+                      boost = None,
+                      format = None
+                    ),
                     Match(field = "stringField", value = "test", boost = None)
                   ),
                   boost = Some(3.14),
@@ -588,6 +602,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryInclusiveUpperBound = range(TestDocument.intField).lte(21)
           val queryMixedBounds         = queryLowerBound.lte(21.0)
           val queryWithBoostParam      = queryMixedBounds.boost(2.8)
+          val queryWithFormatParam     = range(TestDocument.dateField).gt(LocalDate.of(2023, 5, 11)).format("uuuu-MM-dd")
 
           assert(query)(
             equalTo(
@@ -595,7 +610,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "testField",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -605,7 +621,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "stringField",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -615,7 +632,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "intField",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -625,7 +643,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "stringField.test",
                 lower = Unbounded,
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -635,7 +654,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = GreaterThan(3.14),
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -645,7 +665,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = Unbounded,
                 upper = LessThan(10.21),
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -655,7 +676,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "intField",
                 lower = GreaterThanOrEqualTo(10),
                 upper = Unbounded,
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -665,7 +687,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "intField",
                 lower = Unbounded,
                 upper = LessThanOrEqualTo(21),
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -675,7 +698,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = GreaterThan(3.14),
                 upper = LessThanOrEqualTo(21.0),
-                boost = None
+                boost = None,
+                format = None
               )
             )
           ) &&
@@ -685,7 +709,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 field = "doubleField",
                 lower = GreaterThan(3.14),
                 upper = LessThanOrEqualTo(21),
-                boost = Some(2.8)
+                boost = Some(2.8),
+                format = None
+              )
+            )
+          ) &&
+          assert(queryWithFormatParam)(
+            equalTo(
+              Range[TestDocument, LocalDate, GreaterThan[LocalDate], Unbounded.type](
+                field = "dateField",
+                lower = GreaterThan(LocalDate.of(2023, 5, 11)),
+                upper = Unbounded,
+                boost = None,
+                format = Some("uuuu-MM-dd")
               )
             )
           )
@@ -1978,6 +2014,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryInclusiveUpperBound  = range(TestDocument.intField).lte(45)
           val queryMixedBounds          = range(TestDocument.intField).gt(10).lte(99)
           val queryMixedBoundsWithBoost = range(TestDocument.intField).gt(10).lte(99).boost(3.14)
+          val queryWithFormat           = range(TestDocument.dateField).gt(LocalDate.of(2020, 1, 10)).format("uuuu-MM-dd")
 
           val expectedEmpty =
             """
@@ -1997,8 +2034,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |  "query": {
               |    "range": {
               |      "intField": {
-              |      },
-              |      "boost": 3.14
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2077,9 +2114,23 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |    "range": {
               |      "intField": {
               |        "gt": 10,
-              |        "lte": 99
-              |      },
-              |      "boost": 3.14
+              |        "lte": 99,
+              |        "boost": 3.14
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFormat =
+            """
+              |{
+              |  "query": {
+              |    "range": {
+              |      "dateField": {
+              |        "gt": "2020-01-10",
+              |        "format": "uuuu-MM-dd"
+              |      }
               |    }
               |  }
               |}
@@ -2092,7 +2143,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryInclusiveLowerBound.toJson)(equalTo(expectedInclusiveLowerBound.toJson)) &&
           assert(queryInclusiveUpperBound.toJson)(equalTo(expectedInclusiveUpperBound.toJson)) &&
           assert(queryMixedBounds.toJson)(equalTo(expectedMixedBounds.toJson)) &&
-          assert(queryMixedBoundsWithBoost.toJson)(equalTo(expectedMixedBoundsWithBoost.toJson))
+          assert(queryMixedBoundsWithBoost.toJson)(equalTo(expectedMixedBoundsWithBoost.toJson)) &&
+          assert(queryWithFormat.toJson)(equalTo(expectedWithFormat.toJson))
         },
         test("startsWith") {
           val query                    = startsWith(TestDocument.stringField, "test")
