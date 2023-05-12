@@ -114,7 +114,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(Obj("aggs" -> r.aggregation.toJson))
+        .body(r.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -156,10 +156,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(Chunk(("routing", r.routing)))))
       .contentType(ApplicationJson)
       .response(asJson[CountResponse])
+      .body()
 
-    sendRequestWithCustomResponse(
-      r.query.fold(req)(query => req.body(Obj("query" -> query.toJson(fieldPath = None))))
-    ).flatMap { response =>
+    sendRequestWithCustomResponse(r.query.fold(req)(_ => req.body(r.toJson))).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body
@@ -288,7 +287,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(Obj("query" -> r.query.toJson(fieldPath = None)))
+        .body(r.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)

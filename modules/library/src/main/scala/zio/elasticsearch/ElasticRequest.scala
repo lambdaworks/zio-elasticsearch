@@ -360,7 +360,9 @@ object ElasticRequest {
   sealed trait AggregateRequest extends ElasticRequest[AggregationResult]
 
   private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
-      extends AggregateRequest
+      extends AggregateRequest {
+    def toJson: Json = Obj("aggs" -> aggregation.toJson)
+  }
 
   sealed trait BulkRequest
       extends ElasticRequest[BulkResponse]
@@ -418,6 +420,8 @@ object ElasticRequest {
   ) extends CountRequest { self =>
     def routing(value: Routing): CountRequest =
       self.copy(routing = Some(value))
+
+    def toJson: Json = query.fold(Obj())(q => Obj("query" -> q.toJson(fieldPath = None)))
   }
 
   sealed trait CreateRequest
@@ -517,6 +521,8 @@ object ElasticRequest {
 
     def routing(value: Routing): DeleteByQueryRequest =
       self.copy(routing = Some(value))
+
+    def toJson: Json = Obj("query" -> query.toJson(fieldPath = None))
   }
 
   sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
