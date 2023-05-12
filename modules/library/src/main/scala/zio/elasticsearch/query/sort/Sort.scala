@@ -24,7 +24,7 @@ import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 
 sealed trait Sort {
-  def paramsToJson: Json
+  private[elasticsearch] def toJson: Json
 }
 
 sealed trait SortByField
@@ -35,7 +35,7 @@ sealed trait SortByField
     with HasNumericType[SortByField]
     with HasOrder[SortByField]
     with HasUnmappedType[SortByField] {
-  def paramsToJson: Json
+  def toJson: Json
 }
 
 object SortByField {
@@ -129,7 +129,7 @@ private[elasticsearch] final case class SortByFieldOptions(
   def order(value: SortOrder): SortByField =
     self.copy(order = Some(value))
 
-  def paramsToJson: Json = {
+  def toJson: Json = {
     val allParams = Chunk(
       self.order.map(order => "order" -> order.toString.toJson),
       self.format.map(format => "format" -> format.toJson),
@@ -160,7 +160,7 @@ private[elasticsearch] final case class SortByScriptOptions(
   def order(value: SortOrder): SortByScript =
     self.copy(order = Some(value))
 
-  def paramsToJson: Json =
+  def toJson: Json =
     Obj(
       "_script" -> Obj(
         Chunk(

@@ -627,12 +627,11 @@ object ElasticRequest {
 
       val sizeJson: Json = self.size.fold(Obj())(s => Obj("size" -> s.toJson))
 
-      val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Obj())
+      val highlightsJson: Json = highlights.map(h => Obj("highlight" -> h.toJson)).getOrElse(Obj())
 
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
-      val sortJson: Json =
-        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson))) else Obj()
+      val sortJson: Json = if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.toJson))) else Obj()
 
       val sourceJson: Json =
         (included, excluded) match {
@@ -645,7 +644,13 @@ object ElasticRequest {
             })
         }
 
-      fromJson merge sizeJson merge highlightsJson merge sortJson merge self.query.toJson merge searchAfterJson merge sourceJson
+      fromJson merge
+        sizeJson merge
+        highlightsJson merge
+        sortJson merge
+        Obj("query" -> self.query.toJson(fieldPath = None)) merge
+        searchAfterJson merge
+        sourceJson
     }
   }
 
@@ -708,12 +713,11 @@ object ElasticRequest {
 
       val sizeJson: Json = self.size.fold(Obj())(s => Obj("size" -> s.toJson))
 
-      val highlightsJson: Json = highlights.map(_.toJson).getOrElse(Obj())
+      val highlightsJson: Json = highlights.map(h => Obj("highlight" -> h.toJson)).getOrElse(Obj())
 
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
-      val sortJson: Json =
-        if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson))) else Obj()
+      val sortJson: Json = if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.toJson))) else Obj()
 
       val sourceJson: Json =
         (included, excluded) match {
@@ -730,8 +734,8 @@ object ElasticRequest {
         sizeJson merge
         highlightsJson merge
         sortJson merge
-        self.query.toJson merge
-        aggregation.toJson merge
+        Obj("query" -> query.toJson(fieldPath = None)) merge
+        Obj("aggs" -> aggregation.toJson) merge
         searchAfterJson merge
         sourceJson
     }
@@ -798,7 +802,9 @@ object ElasticRequest {
       self.copy(routing = Some(value))
 
     def toJson: Json =
-      query.foldLeft(Obj("script" -> script.toJson))((scriptJson, q) => scriptJson merge q.toJson)
+      query.foldLeft(Obj("script" -> script.toJson))((scriptJson, q) =>
+        scriptJson merge Obj("query" -> q.toJson(fieldPath = None))
+      )
   }
 
   private def getActionAndMeta(requestType: String, parameters: Chunk[(String, Any)]): String =

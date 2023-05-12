@@ -114,7 +114,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.aggregation.toJson)
+        .body(Obj("aggs" -> r.aggregation.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -157,7 +157,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       .contentType(ApplicationJson)
       .response(asJson[CountResponse])
 
-    sendRequestWithCustomResponse(r.query.fold(req)(query => req.body(query.toJson))).flatMap { response =>
+    sendRequestWithCustomResponse(
+      r.query.fold(req)(query => req.body(Obj("query" -> query.toJson(fieldPath = None))))
+    ).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body
@@ -286,7 +288,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.query.toJson)
+        .body(Obj("query" -> r.query.toJson(fieldPath = None)))
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)
@@ -409,19 +411,27 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           KeepAlive -> Json.Str(config.keepAlive)
         )
       )
+
     val sortsJson =
       if (r.sortBy.isEmpty) {
-        Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
+        Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
       } else {
-        Obj("sort" -> Arr(r.sortBy.map(_.paramsToJson)))
+        Obj("sort" -> Arr(r.sortBy.map(_.toJson)))
       }
-    val searchAfterJson = searchAfter.map(sa => Json.Obj("search_after" -> sa)).getOrElse(Obj())
+
+    val searchAfterJson = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
+
     sendRequestWithCustomResponse(
       baseRequest
         .get(uri"${esConfig.uri}/$Search")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJson merge sortsJson merge pointInTimeJson merge searchAfterJson)
+        .body(
+          Obj("query" -> r.query.toJson(fieldPath = None)) merge
+            sortsJson merge
+            pointInTimeJson merge
+            searchAfterJson
+        )
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -504,7 +514,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJson merge Obj("sort" -> Arr(r.sortBy.map(_.paramsToJson))))
+        .body(Obj("query" -> r.query.toJson(fieldPath = None)) merge Obj("sort" -> Arr(r.sortBy.map(_.toJson))))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
