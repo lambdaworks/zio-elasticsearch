@@ -623,15 +623,15 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ (sort +: sorts))
 
     def toJson: Json = {
-      val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
+      val fromJson: Json = from.fold(Obj())(f => Obj("from" -> f.toJson))
 
-      val sizeJson: Json = self.size.fold(Obj())(s => Obj("size" -> s.toJson))
+      val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
 
       val highlightsJson: Json = highlights.map(h => Obj("highlight" -> h.toJson)).getOrElse(Obj())
 
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
-      val sortJson: Json = if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.toJson))) else Obj()
+      val sortJson: Json = if (sortBy.nonEmpty) Obj("sort" -> Arr(sortBy.map(_.toJson))) else Obj()
 
       val sourceJson: Json =
         (included, excluded) match {
@@ -648,7 +648,7 @@ object ElasticRequest {
         sizeJson merge
         highlightsJson merge
         sortJson merge
-        Obj("query" -> self.query.toJson(fieldPath = None)) merge
+        Obj("query" -> query.toJson(fieldPath = None)) merge
         searchAfterJson merge
         sourceJson
     }
@@ -709,15 +709,15 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ (sort +: sorts))
 
     def toJson: Json = {
-      val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
+      val fromJson: Json = from.fold(Obj())(f => Obj("from" -> f.toJson))
 
-      val sizeJson: Json = self.size.fold(Obj())(s => Obj("size" -> s.toJson))
+      val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
 
       val highlightsJson: Json = highlights.map(h => Obj("highlight" -> h.toJson)).getOrElse(Obj())
 
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
-      val sortJson: Json = if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.toJson))) else Obj()
+      val sortJson: Json = if (sortBy.nonEmpty) Obj("sort" -> Arr(sortBy.map(_.toJson))) else Obj()
 
       val sourceJson: Json =
         (included, excluded) match {
