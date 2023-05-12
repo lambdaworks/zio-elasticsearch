@@ -14,7 +14,7 @@ object ScriptSpec extends ZIOSpecDefault {
           assert(Script("doc['day_of_week'].value"))(equalTo(Script("doc['day_of_week'].value", Map.empty, None)))
         },
         test("successfully create Script with source and params") {
-          assert(Script("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2))(
+          assert(Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2))(
             equalTo(Script("doc['day_of_week'].value * params['factor']", Map("factor" -> 2), None))
           )
         },
@@ -24,7 +24,7 @@ object ScriptSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create Script with source, params and lang") {
-          assert(Script("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless"))(
+          assert(Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"))(
             equalTo(Script("doc['day_of_week'].value * params['factor']", Map("factor" -> 2), Some("painless")))
           )
         }
@@ -44,7 +44,7 @@ object ScriptSpec extends ZIOSpecDefault {
       ),
       suite("encoding Script as JSON")(
         test("properly encode Script with source and params") {
-          val script = Script("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2)
+          val script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2)
           val expected =
             """
               |{
@@ -70,7 +70,7 @@ object ScriptSpec extends ZIOSpecDefault {
           assert(script.toJson)(equalTo(expected.toJson))
         },
         test("properly encode Script with source, params and lang") {
-          val script = Script("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless")
+          val script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless")
           val expected =
             """
               |{

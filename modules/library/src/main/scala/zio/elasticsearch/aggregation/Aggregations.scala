@@ -21,6 +21,7 @@ import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.options._
 import zio.elasticsearch.query.sort.Sort
+import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 
@@ -32,6 +33,23 @@ sealed trait ElasticAggregation { self =>
 }
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
+
+sealed trait BucketSelectorAggregation extends SingleElasticAggregation with WithAgg
+
+private[elasticsearch] final case class BucketSelector(name: String, script: Script, bucketsPath: Map[String, String])
+    extends BucketSelectorAggregation { self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def paramsToJson: Json = {
+    val bucketsPathJson: Json = Obj("buckets_path" -> bucketsPath.collect { case (scriptVal, path) =>
+      Obj(scriptVal -> path.toJson)
+    }.reduce(_ merge _))
+
+    Obj(name -> Obj("bucket_selector" -> (bucketsPathJson merge Obj("script" -> script.toJson))))
+  }
+}
 
 sealed trait BucketSortAggregation extends SingleElasticAggregation with HasSize[BucketSortAggregation] with WithAgg {
 
@@ -62,7 +80,8 @@ private[elasticsearch] final case class BucketSort(
   sortBy: Chunk[Sort],
   from: Option[Int],
   size: Option[Int]
-) extends BucketSortAggregation { self =>
+) extends BucketSortAggregation {
+  self =>
   def from(value: Int): BucketSortAggregation =
     self.copy(from = Some(value))
 

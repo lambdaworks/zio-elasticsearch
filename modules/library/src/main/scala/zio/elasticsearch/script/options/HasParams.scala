@@ -26,5 +26,5 @@ private[elasticsearch] trait HasParams[S <: HasParams[S]] {
    * @return
    *   an instance of the [[zio.elasticsearch.script.Script]] enriched with the `params` parameter.
    */
-  def withParams(values: (String, Any)*): S
+  def params(values: (String, Any)*): S
 }

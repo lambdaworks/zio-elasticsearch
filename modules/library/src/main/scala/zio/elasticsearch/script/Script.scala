@@ -30,10 +30,10 @@ private[elasticsearch] final case class Script(
   def lang(value: String): Script =
     self.copy(lang = Some(value))
 
-  def withParams(values: (String, Any)*): Script =
+  def params(values: (String, Any)*): Script =
     self.copy(params = params ++ values.toList)
 
-  def toJson: Json =
+  private[elasticsearch] def toJson: Json =
     Obj(
       List(
         self.lang.map(lang => "lang" -> lang.toJson),

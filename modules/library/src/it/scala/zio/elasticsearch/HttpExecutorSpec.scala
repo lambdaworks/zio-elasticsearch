@@ -322,27 +322,36 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search using match all query with terms aggregations with nested terms aggregation") {
+          test(
+            "search using match all query with terms aggregations, nested max aggregation and nested bucketSelector aggregation"
+          ) {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
-                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
-                       )
-                  _ <- Executor.execute(
                          ElasticRequest
-                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
-                           .refreshTrue
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 5))
                        )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 100))
+                        .refreshTrue
+                    )
                   query = matchAll
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
                       field = TestDocument.stringField.keyword
-                    ).withSubAgg(
-                      termsAggregation(name = "aggregationInt", field = "intField")
-                    )
+                    ).withSubAgg(maxAggregation(name = "aggregationInt", field = TestDocument.intField))
+                      .withSubAgg(
+                        bucketSelectorAggregation(
+                          name = "aggregationSelector",
+                          script = Script("params.aggregation_int > 10"),
+                          bucketsPath = Map("aggregation_int" -> "aggregationInt")
+                        )
+                      )
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
@@ -353,7 +362,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(isNonEmpty) && assert(aggs)(isNonEmpty)
+                } yield assert(docs)(isNonEmpty) && assert(
+                  aggs("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size
+                )(equalTo(1))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1502,7 +1513,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req6 = ElasticRequest.updateByScript(
                            index,
                            firstDocumentId,
-                           Script("ctx._source.intField = params['factor']").withParams("factor" -> 100)
+                           Script("ctx._source.intField = params['factor']").params("factor" -> 100)
                          )
                   req7 =
                     ElasticRequest
@@ -1536,7 +1547,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        ElasticRequest.updateByScript(
                          index,
                          documentId,
-                         Script("ctx._source.intField += params['factor']").withParams("factor" -> factor)
+                         Script("ctx._source.intField += params['factor']").params("factor" -> factor)
                        )
                      )
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
@@ -1551,7 +1562,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .updateByScript(
                            index,
                            documentId,
-                           Script("ctx._source.intField += params['factor']").withParams("factor" -> 2)
+                           Script("ctx._source.intField += params['factor']").params("factor" -> 2)
                          )
                          .orCreate(document)
                      )
@@ -1582,7 +1593,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                ElasticRequest
                                  .updateAllByQuery(
                                    updateByQueryIndex,
-                                   Script("ctx._source['stringField'] = params['str']").withParams("str" -> stringField)
+                                   Script("ctx._source['stringField'] = params['str']").params("str" -> stringField)
                                  )
                                  .refreshTrue
                              )
