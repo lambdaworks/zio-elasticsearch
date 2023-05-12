@@ -111,10 +111,8 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "fields" : {
-              |      "day_of_week" : {}
-              |    }
+              |  "fields" : {
+              |    "day_of_week" : {}
               |  }
               |}
               |""".stripMargin
@@ -126,11 +124,9 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "fields" : {
-              |      "first_name" : {},
-              |      "day_of_week" : {}
-              |    }
+              |  "fields" : {
+              |    "first_name" : {},
+              |    "day_of_week" : {}
               |  }
               |}
               |""".stripMargin
@@ -143,12 +139,10 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "type" : "plain",
-              |    "fields" : {
-              |      "first_name" : {},
-              |      "day_of_week" : {}
-              |    }
+              |  "type" : "plain",
+              |  "fields" : {
+              |    "first_name" : {},
+              |    "day_of_week" : {}
               |  }
               |}
               |""".stripMargin
@@ -162,12 +156,10 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "type" : "plain",
-              |    "fields" : {
-              |      "day_of_week" : {
-              |        "require_field_match" : false
-              |      }
+              |  "type" : "plain",
+              |  "fields" : {
+              |    "day_of_week" : {
+              |      "require_field_match" : false
               |    }
               |  }
               |}
@@ -186,16 +178,14 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "type" : "plain",
-              |    "fields" : {
-              |      "day_of_week" : {
-              |        "require_field_match" : false
-              |      },
-              |      "first_name" : {
-              |        "matched_fields": [ "comment", "comment.plain" ],
-              |        "type": "fvh"
-              |      }
+              |  "type" : "plain",
+              |  "fields" : {
+              |    "day_of_week" : {
+              |      "require_field_match" : false
+              |    },
+              |    "first_name" : {
+              |      "matched_fields": [ "comment", "comment.plain" ],
+              |      "type": "fvh"
               |    }
               |  }
               |}
@@ -217,20 +207,18 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "type" : "plain",
-              |    "fields" : [
-              |      { "day_of_week" : {
-              |          "require_field_match" : false
-              |        }
-              |      },
-              |      { "first_name" : {
-              |          "matched_fields": [ "comment", "comment.plain" ],
-              |          "type": "fvh"
-              |        }
+              |  "type" : "plain",
+              |  "fields" : [
+              |    { "day_of_week" : {
+              |        "require_field_match" : false
               |      }
-              |    ]
-              |  }
+              |    },
+              |    { "first_name" : {
+              |        "matched_fields": [ "comment", "comment.plain" ],
+              |        "type": "fvh"
+              |      }
+              |    }
+              |  ]
               |}
               |""".stripMargin
 
@@ -250,19 +238,17 @@ object HighlightsSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "highlight" : {
-              |    "type" : "fvh",
-              |    "fragment_size" : 150,
-              |    "fields" : {
-              |      "day_of_week" : {
-              |        "require_field_match" : false
-              |      },
-              |      "first_name" : {
-              |        "matched_fields": [ "comment", "comment.plain" ],
-              |        "type": "fvh"
-              |      },
-              |      "last_name" : {}
-              |    }
+              |  "type" : "fvh",
+              |  "fragment_size" : 150,
+              |  "fields" : {
+              |    "day_of_week" : {
+              |      "require_field_match" : false
+              |    },
+              |    "first_name" : {
+              |      "matched_fields": [ "comment", "comment.plain" ],
+              |      "type": "fvh"
+              |    },
+              |    "last_name" : {}
               |  }
               |}
               |""".stripMargin
