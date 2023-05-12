@@ -341,24 +341,41 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
           )
 
-          assert(aggregation1)(
-            equalTo(
-              BucketSelector(
-                name = "aggregation",
-                script = Script("params.agg1 > 10"),
-                bucketsPath = Map("agg1" -> "aggregation1")
-              )
-            )
-          ) &&
-          assert(aggregation2)(
-            equalTo(
-              BucketSelector(
-                name = "aggregation",
-                script = Script("params.agg1 + params.agg2 > 10"),
-                bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
-              )
-            )
-          )
+          val expected1 =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_selector": {
+              |      "buckets_path": {
+              |        "agg1": "aggregation1"
+              |      },
+              |      "script": {
+              |        "source": "params.agg1 > 10"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expected2 =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_selector": {
+              |      "buckets_path": {
+              |        "agg1": "aggregation1",
+              |        "agg2": "aggregation2"
+              |      },
+              |      "script": {
+              |        "source": "params.agg1 + params.agg2 > 10"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation1.toJson)(equalTo(expected1.toJson)) &&
+          assert(aggregation2.toJson)(equalTo(expected2.toJson))
         },
         test("bucketSort") {
           val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)

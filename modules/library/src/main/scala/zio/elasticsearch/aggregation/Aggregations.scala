@@ -39,7 +39,7 @@ private[elasticsearch] final case class BucketSelector(name: String, script: Scr
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
-  private[elasticsearch] def paramsToJson: Json = {
+  private[elasticsearch] def togJson: Json = {
     val bucketsPathJson: Json = Obj("buckets_path" -> bucketsPath.collect { case (scriptVal, path) =>
       Obj(scriptVal -> path.toJson)
     }.reduce(_ merge _))
