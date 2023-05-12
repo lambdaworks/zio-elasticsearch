@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import zio.Scope
 import zio.elasticsearch.ElasticSort._
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.sort.Missing._
@@ -10,18 +11,35 @@ import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.sort._
 import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
-import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj}
 import zio.test.Assertion.equalTo
 import zio.test._
-import zio.{Chunk, Scope}
 
 object SortSpec extends ZIOSpecDefault {
-  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
-    suite("Sort by")(
-      suite("creating SortByField")(
-        test("successfully create SortByField with only field given") {
-          assert(sortBy("day_of_week"))(
+  def spec: Spec[Environment with TestEnvironment with Scope, Any] = {
+    suite("ElasticSort")(
+      suite("constructing")(
+        test("sortByField") {
+          val sort                   = sortBy("day_of_week")
+          val sortTs                 = sortBy(TestDocument.intField)
+          val sortTsWithFormat       = sortBy(TestDocument.dateField).format("strict_date_optional_time_nanos")
+          val sortTsWithMissing      = sortBy(TestDocument.intField).missing(First)
+          val sortTsWithMode         = sortBy(TestSubDocument.intFieldList).mode(Avg)
+          val sortTsWithNumericType  = sortBy(TestDocument.intField).numericType(NumTypeLong)
+          val sortTsWithOrder        = sortBy(TestDocument.intField).order(Desc)
+          val sortTsWithUnmappedType = sortBy(TestDocument.intField).unmappedType("long")
+          val sortTsWithAllParams = sortBy(TestDocument.dateField)
+            .format("strict_date_optional_time_nanos")
+            .missing(First)
+            .mode(Avg)
+            .numericType(NumTypeLong)
+            .order(Desc)
+            .unmappedType("long")
+          val sortByCount = SortByField.byCount
+          val sortByDoc   = SortByField.byDoc
+          val sortByKey   = SortByField.byKey
+          val sortByScore = SortByField.byScore
+
+          assert(sort)(
             equalTo(
               SortByFieldOptions(
                 field = "day_of_week",
@@ -33,10 +51,8 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with only field given") {
-          assert(sortBy(TestDocument.intField))(
+          ) &&
+          assert(sortTs)(
             equalTo(
               SortByFieldOptions(
                 field = "intField",
@@ -48,10 +64,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given `format`") {
-          assert(sortBy(TestDocument.dateField).format("strict_date_optional_time_nanos"))(
+          ) && assert(sortTsWithFormat)(
             equalTo(
               SortByFieldOptions(
                 field = "dateField",
@@ -63,10 +76,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given `missing`") {
-          assert(sortBy(TestDocument.intField).missing(First))(
+          ) && assert(sortTsWithMissing)(
             equalTo(
               SortByFieldOptions(
                 field = "intField",
@@ -78,10 +88,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given `mode`") {
-          assert(sortBy(TestSubDocument.intFieldList).mode(Avg))(
+          ) && assert(sortTsWithMode)(
             equalTo(
               SortByFieldOptions(
                 field = "intFieldList",
@@ -93,10 +100,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given `numericType`") {
-          assert(sortBy(TestDocument.intField).numericType(NumTypeLong))(
+          ) && assert(sortTsWithNumericType)(
             equalTo(
               SortByFieldOptions(
                 field = "intField",
@@ -108,10 +112,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given `order`") {
-          assert(sortBy(TestDocument.intField).order(Desc))(
+          ) && assert(sortTsWithOrder)(
             equalTo(
               SortByFieldOptions(
                 field = "intField",
@@ -123,10 +124,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = None
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given `unmappedType`") {
-          assert(sortBy(TestDocument.intField).unmappedType("long"))(
+          ) && assert(sortTsWithUnmappedType)(
             equalTo(
               SortByFieldOptions(
                 field = "intField",
@@ -138,18 +136,7 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = Some("long")
               )
             )
-          )
-        },
-        test("successfully create type-safe SortByField with given all params") {
-          assert(
-            sortBy(TestDocument.dateField)
-              .format("strict_date_optional_time_nanos")
-              .missing(First)
-              .mode(Avg)
-              .numericType(NumTypeLong)
-              .order(Desc)
-              .unmappedType("long")
-          )(
+          ) && assert(sortTsWithAllParams)(
             equalTo(
               SortByFieldOptions(
                 field = "dateField",
@@ -161,10 +148,69 @@ object SortSpec extends ZIOSpecDefault {
                 unmappedType = Some("long")
               )
             )
+          ) && assert(sortByCount)(
+            equalTo(
+              SortByFieldOptions(
+                field = "_count",
+                format = None,
+                missing = None,
+                mode = None,
+                numericType = None,
+                order = None,
+                unmappedType = None
+              )
+            )
+          ) && assert(sortByDoc)(
+            equalTo(
+              SortByFieldOptions(
+                field = "_doc",
+                format = None,
+                missing = None,
+                mode = None,
+                numericType = None,
+                order = None,
+                unmappedType = None
+              )
+            )
+          ) && assert(sortByKey)(
+            equalTo(
+              SortByFieldOptions(
+                field = "_key",
+                format = None,
+                missing = None,
+                mode = None,
+                numericType = None,
+                order = None,
+                unmappedType = None
+              )
+            )
+          ) && assert(sortByScore)(
+            equalTo(
+              SortByFieldOptions(
+                field = "_score",
+                format = None,
+                missing = None,
+                mode = None,
+                numericType = None,
+                order = None,
+                unmappedType = None
+              )
+            )
           )
         },
-        test("successfully create SortByScript without additional fields") {
-          assert(sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType))(
+        test("sortByScript") {
+          val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
+          val sortWithMode =
+            sortBy(Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
+              .mode(Avg)
+          val sortWithOrder =
+            sortBy(Script(source = "doc['day_of_week'].value").lang("painless"), NumberType).order(Desc)
+          val sortWithModeAndOrder = sortBy(
+            Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
+            NumberType
+          ).mode(Avg).order(Asc)
+
+          assert(sort)(
             equalTo(
               SortByScriptOptions(
                 script = Script(source = "doc['day_of_week'].value", params = Map.empty, lang = None),
@@ -173,13 +219,7 @@ object SortSpec extends ZIOSpecDefault {
                 order = None
               )
             )
-          )
-        },
-        test("successfully create SortByScript with given `mode`") {
-          assert(
-            sortBy(Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
-              .mode(Avg)
-          )(
+          ) && assert(sortWithMode)(
             equalTo(
               SortByScriptOptions(
                 script = Script(
@@ -192,10 +232,7 @@ object SortSpec extends ZIOSpecDefault {
                 order = None
               )
             )
-          )
-        },
-        test("successfully create SortByScript with given `order`") {
-          assert(sortBy(Script(source = "doc['day_of_week'].value").lang("painless"), NumberType).order(Desc))(
+          ) && assert(sortWithOrder)(
             equalTo(
               SortByScriptOptions(
                 script = Script(source = "doc['day_of_week'].value", params = Map.empty, lang = Some("painless")),
@@ -204,17 +241,7 @@ object SortSpec extends ZIOSpecDefault {
                 order = Some(Desc)
               )
             )
-          )
-        },
-        test("successfully create SortByScript with given `mode` and `order`") {
-          assert(
-            sortBy(
-              Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
-              NumberType
-            )
-              .mode(Avg)
-              .order(Asc)
-          )(
+          ) && assert(sortWithModeAndOrder)(
             equalTo(
               SortByScriptOptions(
                 script = Script(
@@ -230,300 +257,179 @@ object SortSpec extends ZIOSpecDefault {
           )
         }
       ),
-      suite("encoding SortBy as JSON")(
-        test("properly encode SortByField with only field") {
-          val sort = sortBy(TestDocument.intField)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    "intField"
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with `format` given") {
-          val sort = sortBy(TestDocument.dateField).format("strict_date_optional_time_nanos")
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "dateField": {
-              |        "format": "strict_date_optional_time_nanos"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with `missing` given") {
-          val sort = sortBy(TestDocument.intField).missing(First)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "intField": {
-              |        "missing": "_first"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with `mode` given") {
-          val sort = sortBy(TestSubDocument.intFieldList).mode(Avg)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "intFieldList": {
-              |        "mode": "avg"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with `numericType` given") {
-          val sort = sortBy(TestDocument.intField).numericType(NumTypeLong)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "intField": {
-              |        "numeric_type": "long"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with `order` given") {
-          val sort = sortBy(TestDocument.intField).order(Desc)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "intField": {
-              |        "order": "desc"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with `unmappedType` given") {
-          val sort = sortBy(TestDocument.intField).unmappedType("long")
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "intField": {
-              |        "unmapped_type": "long"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField with all params given") {
-          val sort = sortBy(TestDocument.dateField)
+      suite("encoding as JSON")(
+        test("sortByField") {
+          val sort                 = sortBy(TestDocument.intField)
+          val sortWithFormat       = sortBy(TestDocument.dateField).format("strict_date_optional_time_nanos")
+          val sortWithMissing      = sortBy(TestDocument.intField).missing(First)
+          val sortWithMode         = sortBy(TestSubDocument.intFieldList).mode(Avg)
+          val sortWithNumericType  = sortBy(TestDocument.intField).numericType(NumTypeLong)
+          val sortWithOrder        = sortBy(TestDocument.intField).order(Desc)
+          val sortWithUnmappedType = sortBy(TestDocument.intField).unmappedType("long")
+          val sortWithAllParams = sortBy(TestDocument.dateField)
             .format("strict_date_optional_time_nanos")
             .missing(First)
             .mode(Avg)
             .numericType(NumTypeLong)
             .order(Desc)
             .unmappedType("long")
+
           val expected =
             """
+              |"intField"
+              |""".stripMargin
+
+          val expectedWithFormat =
+            """
               |{
-              |  "sort": [
-              |    {
-              |      "dateField": {
-              |        "format": "strict_date_optional_time_nanos", "missing": "_first", "mode": "avg", "numeric_type": "long", "order": "desc", "unmapped_type": "long"
-              |      }
-              |    }
-              |  ]
+              |  "dateField": {
+              |    "format": "strict_date_optional_time_nanos"
+              |  }
               |}
               |""".stripMargin
 
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode multiple SortByField") {
-          val sort1 = sortBy(TestDocument.intField).order(Desc)
-          val sort2 = sortBy("day_of_month").missing(First)
-          val expected =
+          val expectedWithMissing =
             """
               |{
-              |  "sort": [
-              |    {
-              |      "intField": {
-              |        "order": "desc"
-              |      }
-              |    },
-              |    {
-              |      "day_of_month": {
-              |        "missing": "_first"
-              |      }
-              |    }
-              |  ]
+              |  "intField": {
+              |    "missing": "_first"
+              |  }
               |}
               |""".stripMargin
 
-          assert(sortsToJson(sort1, sort2))(equalTo(expected.toJson))
+          val expectedWithMode =
+            """
+              |{
+              |  "intFieldList": {
+              |    "mode": "avg"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithNumericType =
+            """
+              |{
+              |  "intField": {
+              |    "numeric_type": "long"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithOrder =
+            """
+              |{
+              |  "intField": {
+              |    "order": "desc"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithUnmappedType =
+            """
+              |{
+              |  "intField": {
+              |    "unmapped_type": "long"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "dateField": {
+              |    "format": "strict_date_optional_time_nanos", "missing": "_first", "mode": "avg", "numeric_type": "long", "order": "desc", "unmapped_type": "long"
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(sort.paramsToJson)(equalTo(expected.toJson)) &&
+          assert(sortWithFormat.paramsToJson)(equalTo(expectedWithFormat.toJson)) &&
+          assert(sortWithMissing.paramsToJson)(equalTo(expectedWithMissing.toJson)) &&
+          assert(sortWithMode.paramsToJson)(equalTo(expectedWithMode.toJson)) &&
+          assert(sortWithNumericType.paramsToJson)(equalTo(expectedWithNumericType.toJson)) &&
+          assert(sortWithOrder.paramsToJson)(equalTo(expectedWithOrder.toJson)) &&
+          assert(sortWithUnmappedType.paramsToJson)(equalTo(expectedWithUnmappedType.toJson)) &&
+          assert(sortWithAllParams.paramsToJson)(equalTo(expectedWithAllParams.toJson))
         },
-        test("properly encode SortByScript without additional params") {
+        test("sortByScript") {
           val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "_script": {
-              |        "type": "number",
-              |        "script": {
-              |          "source": "doc['day_of_week'].value"
-              |        }
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByScript with given `mode`") {
-          val sort = sortBy(
+          val sortWithMode = sortBy(
             script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2),
             sourceType = NumberType
-          )
-            .mode(Avg)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "_script": {
-              |        "type": "number",
-              |        "script": {
-              |          "source": "doc['day_of_week'].value * params['factor']",
-              |          "params": {
-              |            "factor": 2
-              |          }
-              |        },
-              |        "mode": "avg"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByScript with given `order`") {
-          val sort =
+          ).mode(Avg)
+          val sortWithOrder =
             sortBy(script = Script("doc['day_of_week'].value").lang("painless"), sourceType = NumberType).order(Desc)
-          val expected =
-            """
-              |{
-              |  "sort": [
-              |    {
-              |      "_script": {
-              |        "type": "number",
-              |        "script": {
-              |          "lang": "painless",
-              |          "source": "doc['day_of_week'].value"
-              |        },
-              |        "order": "desc"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByScript with `mode` and `order`") {
-          val sort = sortBy(
+          val sortWithModeAndOrder = sortBy(
             Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
             NumberType
-          )
-            .mode(Avg)
-            .order(Asc)
+          ).mode(Avg).order(Asc)
+
           val expected =
             """
               |{
-              |  "sort": [
-              |    {
-              |      "_script": {
-              |        "type": "number",
-              |        "script": {
-              |          "lang": "painless",
-              |          "source": "doc['day_of_week'].value * params['factor']",
-              |          "params": {
-              |            "factor": 2
-              |          }
-              |        },
-              |        "mode": "avg",
-              |        "order": "asc"
-              |      }
+              |  "_script": {
+              |    "type": "number",
+              |    "script": {
+              |      "source": "doc['day_of_week'].value"
               |    }
-              |  ]
+              |  }
               |}
               |""".stripMargin
 
-          assert(sortsToJson(sort))(equalTo(expected.toJson))
-        },
-        test("properly encode SortByField and SortByScript") {
-          val sort1 = sortBy("day_of_month").order(Desc)
-          val sort2 = sortBy(Script(source = "doc['day_of_week'].value").lang("painless"), NumberType).order(Asc)
-          val expected =
+          val expectedWithMode =
             """
               |{
-              |  "sort": [
-              |    {
-              |      "day_of_month": {
-              |        "order": "desc"
+              |  "_script": {
+              |    "type": "number",
+              |    "script": {
+              |      "source": "doc['day_of_week'].value * params['factor']",
+              |      "params": {
+              |        "factor": 2
               |      }
               |    },
-              |    {
-              |      "_script": {
-              |        "type": "number",
-              |        "script": {
-              |          "lang": "painless",
-              |          "source": "doc['day_of_week'].value"
-              |        },
-              |        "order": "asc"
-              |      }
-              |    }
-              |  ]
+              |    "mode": "avg"
+              |  }
               |}
               |""".stripMargin
 
-          assert(sortsToJson(sort1, sort2))(equalTo(expected.toJson))
+          val expectedWithOrder =
+            """
+              |{
+              |  "_script": {
+              |    "type": "number",
+              |    "script": {
+              |      "lang": "painless",
+              |      "source": "doc['day_of_week'].value"
+              |    },
+              |    "order": "desc"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithModeAndOrder =
+            """
+              |{
+              |  "_script": {
+              |    "type": "number",
+              |    "script": {
+              |      "lang": "painless",
+              |      "source": "doc['day_of_week'].value * params['factor']",
+              |      "params": {
+              |        "factor": 2
+              |      }
+              |    },
+              |    "mode": "avg",
+              |    "order": "asc"
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(sort.paramsToJson)(equalTo(expected.toJson)) &&
+          assert(sortWithMode.paramsToJson)(equalTo(expectedWithMode.toJson)) &&
+          assert(sortWithOrder.paramsToJson)(equalTo(expectedWithOrder.toJson)) &&
+          assert(sortWithModeAndOrder.paramsToJson)(equalTo(expectedWithModeAndOrder.toJson))
         }
       )
     )
-
-  private def sortsToJson(sorts: Sort*): Json = Obj("sort" -> Arr(Chunk.fromIterable(sorts).map(_.paramsToJson)))
+  }
 }
