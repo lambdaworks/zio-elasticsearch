@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.query.sort
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.query.sort.options._
 import zio.elasticsearch.script.Script
@@ -129,7 +130,7 @@ private[elasticsearch] final case class SortByFieldOptions(
     self.copy(order = Some(value))
 
   def paramsToJson: Json = {
-    val allParams = List(
+    val allParams = Chunk(
       self.order.map(order => "order" -> order.toString.toJson),
       self.format.map(format => "format" -> format.toJson),
       self.numericType.map(numericType => "numeric_type" -> numericType.toString.toJson),
@@ -138,7 +139,7 @@ private[elasticsearch] final case class SortByFieldOptions(
       self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
     ).flatten
 
-    if (allParams.isEmpty) self.field.toJson else Obj(self.field -> Obj(allParams: _*))
+    if (allParams.isEmpty) self.field.toJson else Obj(self.field -> Obj(allParams))
   }
 
   def unmappedType(value: String): SortByField =
@@ -162,12 +163,12 @@ private[elasticsearch] final case class SortByScriptOptions(
   def paramsToJson: Json =
     Obj(
       "_script" -> Obj(
-        List(
+        Chunk(
           Some("type"   -> self.sourceType.toString.toJson),
           Some("script" -> script.toJson),
           self.order.map(order => "order" -> order.toString.toJson),
           self.mode.map(mode => "mode" -> mode.toString.toJson)
-        ).flatten: _*
+        ).flatten
       )
     )
 }

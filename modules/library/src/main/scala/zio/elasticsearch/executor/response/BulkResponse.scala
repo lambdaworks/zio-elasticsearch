@@ -16,12 +16,13 @@
 
 package zio.elasticsearch.executor.response
 
+import zio.Chunk
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
 final case class BulkResponse private[elasticsearch] (
   took: Int,
   errors: Boolean,
-  items: List[BulkResponseItem]
+  items: Chunk[BulkResponseItem]
 )
 
 private[elasticsearch] object BulkResponse {

@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.executor.response
 
+import zio.Chunk
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
@@ -34,11 +35,11 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
   hits: Hits,
   aggregations: Option[Json]
 ) {
-  lazy val innerHitsResults: Either[String, List[Map[String, List[Json]]]] =
+  lazy val innerHitsResults: Either[String, Chunk[Map[String, Chunk[Json]]]] =
     Validation
       .validateAll(
         hits.hits
-          .map(_.innerHits.fold[Validation[String, Map[String, List[Json]]]](Validation.succeed(Map.empty)) {
+          .map(_.innerHits.fold[Validation[String, Map[String, Chunk[Json]]]](Validation.succeed(Map.empty)) {
             innerHits =>
               Validation
                 .validateAll(
@@ -55,7 +56,7 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
       )
       .toEitherWith(_.mkString(", "))
 
-  lazy val resultsWithHighlightsAndSort: List[DocumentWithHighlightsAndSort] =
+  lazy val resultsWithHighlightsAndSort: Chunk[DocumentWithHighlightsAndSort] =
     hits.hits.map(h => DocumentWithHighlightsAndSort(h.source, h.highlight, h.sort))
 
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
@@ -68,7 +69,7 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
         case Right(res) =>
           (Validation
             .validateAll(
-              res.fields.toList.map { case (field, data) =>
+              res.fields.map { case (field, data) =>
                 ZValidation.fromEither(
                   (field: @unchecked) match {
                     case str if str.contains("max#") =>

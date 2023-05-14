@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.domain._
@@ -44,13 +45,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query)(
               equalTo(
                 Bool[TestDocument](
-                  filter = List(
+                  filter = Chunk(
                     Match(field = "stringField", value = "test"),
                     Match(field = "testField", value = "test field")
                   ),
-                  must = Nil,
-                  mustNot = Nil,
-                  should = Nil,
+                  must = Chunk.empty,
+                  mustNot = Chunk.empty,
+                  should = Chunk.empty,
                   boost = None,
                   minimumShouldMatch = None
                 )
@@ -58,13 +59,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             ) && assert(queryWithBoost)(
               equalTo(
                 Bool[TestDocument](
-                  filter = List(
+                  filter = Chunk(
                     Match(field = "stringField", value = "test"),
                     Match(field = "intField", value = 22)
                   ),
-                  must = Nil,
-                  mustNot = Nil,
-                  should = Nil,
+                  must = Chunk.empty,
+                  mustNot = Chunk.empty,
+                  should = Chunk.empty,
                   boost = Some(10.21),
                   minimumShouldMatch = None
                 )
@@ -79,13 +80,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = List(
+                  filter = Chunk.empty,
+                  must = Chunk(
                     Match(field = "stringField", value = "test"),
                     Match(field = "testField", value = "test field")
                   ),
-                  mustNot = Nil,
-                  should = Nil,
+                  mustNot = Chunk.empty,
+                  should = Chunk.empty,
                   boost = None,
                   minimumShouldMatch = None
                 )
@@ -93,13 +94,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             ) && assert(queryWithBoost)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = List(
+                  filter = Chunk.empty,
+                  must = Chunk(
                     Match(field = "stringField.keyword", value = "test"),
                     Match(field = "intField", value = 22)
                   ),
-                  mustNot = Nil,
-                  should = Nil,
+                  mustNot = Chunk.empty,
+                  should = Chunk.empty,
                   boost = Some(10.21),
                   minimumShouldMatch = None
                 )
@@ -115,13 +116,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = Nil,
-                  mustNot = List(
+                  filter = Chunk.empty,
+                  must = Chunk.empty,
+                  mustNot = Chunk(
                     Match(field = "stringField", value = "test"),
                     Match(field = "testField", value = "test field")
                   ),
-                  should = Nil,
+                  should = Chunk.empty,
                   boost = None,
                   minimumShouldMatch = None
                 )
@@ -129,13 +130,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             ) && assert(queryWithBoost)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = Nil,
-                  mustNot = List(
+                  filter = Chunk.empty,
+                  must = Chunk.empty,
+                  mustNot = Chunk(
                     Match(field = "stringField.keyword", value = "test"),
                     Match(field = "intField", value = 22)
                   ),
-                  should = Nil,
+                  should = Chunk.empty,
                   boost = Some(10.21),
                   minimumShouldMatch = None
                 )
@@ -160,10 +161,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = Nil,
-                  mustNot = Nil,
-                  should = List(
+                  filter = Chunk.empty,
+                  must = Chunk.empty,
+                  mustNot = Chunk.empty,
+                  should = Chunk(
                     Match(field = "stringField", value = "test"),
                     Match(field = "testField", value = "test field")
                   ),
@@ -174,10 +175,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             ) && assert(queryWithBoost)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = Nil,
-                  mustNot = Nil,
-                  should = List(
+                  filter = Chunk.empty,
+                  must = Chunk.empty,
+                  mustNot = Chunk.empty,
+                  should = Chunk(
                     Match(field = "stringField.keyword", value = "test"),
                     Match(field = "intField", value = 22)
                   ),
@@ -188,10 +189,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             ) && assert(queryWithMinimumShouldMatch)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = Nil,
-                  mustNot = Nil,
-                  should = List(
+                  filter = Chunk.empty,
+                  must = Chunk.empty,
+                  mustNot = Chunk.empty,
+                  should = Chunk(
                     Match(field = "stringField.keyword", value = "test"),
                     Match(field = "intField", value = 22),
                     Exists(field = "booleanField")
@@ -203,10 +204,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             ) && assert(queryWithAllParams)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = Nil,
-                  mustNot = Nil,
-                  should = List(
+                  filter = Chunk.empty,
+                  must = Chunk.empty,
+                  mustNot = Chunk.empty,
+                  should = Chunk(
                     Match(field = "stringField.keyword", value = "test"),
                     Match(field = "intField", value = 22),
                     Exists(field = "booleanField")
@@ -232,10 +233,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query1)(
               equalTo(
                 Bool[TestDocument](
-                  filter = List(MatchPhrase(field = "stringField", value = "test")),
-                  must = List(Match(field = "booleanField", value = true)),
-                  mustNot = Nil,
-                  should = Nil,
+                  filter = Chunk(MatchPhrase(field = "stringField", value = "test")),
+                  must = Chunk(Match(field = "booleanField", value = true)),
+                  mustNot = Chunk.empty,
+                  should = Chunk.empty,
                   boost = None,
                   minimumShouldMatch = None
                 )
@@ -244,14 +245,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query2)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
-                  mustNot = List(
+                  filter = Chunk.empty,
+                  must = Chunk(Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None)),
+                  mustNot = Chunk(
                     Match(field = "doubleField", value = 3.14),
                     Match(field = "testField", value = true),
                     Exists("anotherTestField")
                   ),
-                  should = Nil,
+                  should = Chunk.empty,
                   boost = None,
                   minimumShouldMatch = None
                 )
@@ -260,10 +261,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query3)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
-                  mustNot = List(Match(field = "intField", value = 50)),
-                  should = List(
+                  filter = Chunk.empty,
+                  must = Chunk(Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None)),
+                  mustNot = Chunk(Match(field = "intField", value = 50)),
+                  should = Chunk(
                     Range(
                       field = "intField",
                       lower = GreaterThan(1),
@@ -281,10 +282,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithBoost)(
               equalTo(
                 Bool[TestDocument](
-                  filter = List(MatchPhrase(field = "stringField", value = "test")),
-                  must = List(Match(field = "booleanField", value = true)),
-                  mustNot = Nil,
-                  should = Nil,
+                  filter = Chunk(MatchPhrase(field = "stringField", value = "test")),
+                  must = Chunk(Match(field = "booleanField", value = true)),
+                  mustNot = Chunk.empty,
+                  should = Chunk.empty,
                   boost = Some(3.14),
                   minimumShouldMatch = None
                 )
@@ -293,14 +294,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithMinimumShouldMatch)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
-                  mustNot = List(
+                  filter = Chunk.empty,
+                  must = Chunk(Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None)),
+                  mustNot = Chunk(
                     Match(field = "doubleField", value = 3.14),
                     Match(field = "testField", value = true),
                     Exists("anotherTestField")
                   ),
-                  should = Nil,
+                  should = Chunk.empty,
                   boost = None,
                   minimumShouldMatch = Some(2)
                 )
@@ -309,10 +310,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithAllParams)(
               equalTo(
                 Bool[TestDocument](
-                  filter = Nil,
-                  must = List(Terms(field = "stringField", values = List("a", "b", "c"), boost = None)),
-                  mustNot = List(Match(field = "intField", value = 50)),
-                  should = List(
+                  filter = Chunk.empty,
+                  must = Chunk(Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None)),
+                  mustNot = Chunk(Match(field = "intField", value = 50)),
+                  should = Chunk(
                     Range(
                       field = "intField",
                       lower = GreaterThan(1),
@@ -1028,15 +1029,15 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
           val queryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
-          assert(query)(equalTo(Terms[Any](field = "stringField", values = List("a", "b", "c"), boost = None))) &&
+          assert(query)(equalTo(Terms[Any](field = "stringField", values = Chunk("a", "b", "c"), boost = None))) &&
           assert(queryTs)(
-            equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = None))
+            equalTo(Terms[TestDocument](field = "stringField", values = Chunk("a", "b", "c"), boost = None))
           ) &&
           assert(queryWithSuffix)(
-            equalTo(Terms[TestDocument](field = "stringField.keyword", values = List("a", "b", "c"), boost = None))
+            equalTo(Terms[TestDocument](field = "stringField.keyword", values = Chunk("a", "b", "c"), boost = None))
           ) &&
           assert(queryWithBoost)(
-            equalTo(Terms[TestDocument](field = "stringField", values = List("a", "b", "c"), boost = Some(10.21)))
+            equalTo(Terms[TestDocument](field = "stringField", values = Chunk("a", "b", "c"), boost = Some(10.21)))
           )
         },
         test("wildcard") {

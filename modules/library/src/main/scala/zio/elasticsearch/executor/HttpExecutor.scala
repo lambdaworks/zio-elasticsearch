@@ -131,7 +131,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = (r.index match {
       case Some(index) => uri"${esConfig.uri}/$index/$Bulk"
       case None        => uri"${esConfig.uri}/$Bulk"
-    }).withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
+    }).withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequestWithCustomResponse(
       baseRequest
@@ -153,7 +153,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeCount(r: Count): Task[Int] = {
     val req = baseRequest
-      .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(List(("routing", r.routing)))))
+      .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(Chunk(("routing", r.routing)))))
       .contentType(ApplicationJson)
       .response(asJson[CountResponse])
 
@@ -174,7 +174,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeCreate(r: Create): Task[DocumentId] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc"
-      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
+      .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequestWithCustomResponse[CreateResponse](
       baseRequest
@@ -200,7 +200,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeCreateWithId(r: CreateWithId): Task[CreationOutcome] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Create/${r.id}"
-      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
+      .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(
       baseRequest
@@ -232,7 +232,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
+      .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
       response.code match {
@@ -265,7 +265,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeDeleteById(r: DeleteById): Task[DeletionOutcome] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
-      .withParams(getQueryParams(List(("refresh", r.refresh), ("routing", r.routing))))
+      .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
     sendRequest(baseRequest.delete(uri)).flatMap { response =>
       response.code match {
@@ -279,7 +279,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeDeleteByQuery(r: DeleteByQuery): Task[DeletionOutcome] = {
     val uri =
       uri"${esConfig.uri}/${r.index}/$DeleteByQuery".withParams(
-        getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
+        getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing)))
       )
 
     sendRequest(
@@ -306,7 +306,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
 
   private def executeExists(r: Exists): Task[Boolean] = {
-    val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(List(("routing", r.routing))))
+    val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}".withParams(getQueryParams(Chunk(("routing", r.routing))))
 
     sendRequest(baseRequest.head(uri)).flatMap { response =>
       response.code match {
@@ -319,7 +319,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def executeGetById(r: GetById): Task[GetResult] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}".withParams(
-      getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
+      getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing)))
     )
 
     sendRequestWithCustomResponse[GetResponse](
@@ -348,7 +348,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              value.resultsWithHighlightsAndSort match {
+              value.resultsWithHighlightsAndSort.toList match {
                 case Nil =>
                   ZIO.succeed((Chunk.empty, None))
                 case _ =>
@@ -368,7 +368,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       baseRequest
-        .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(List(("routing", r.routing)))))
+        .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(Chunk(("routing", r.routing)))))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.toJson)
@@ -385,7 +385,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                     itemsFromDocumentsWithHighlightsSortAndInnerHits(
                       value.resultsWithHighlightsAndSort,
                       innerHitsResults
-                    ).toList,
+                    ),
                     value
                   )
                 }
@@ -413,7 +413,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       if (r.sortBy.isEmpty) {
         Json.Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
       } else {
-        Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*))
+        Obj("sort" -> Arr(r.sortBy.map(_.paramsToJson)))
       }
     val searchAfterJson = searchAfter.map(sa => Json.Obj("search_after" -> sa)).getOrElse(Obj())
     sendRequestWithCustomResponse(
@@ -428,7 +428,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             body => {
-              body.resultsWithHighlightsAndSort match {
+              body.resultsWithHighlightsAndSort.toList match {
                 case Nil => ZIO.succeed((Chunk.empty, None))
                 case _ =>
                   body.pitId match {
@@ -469,7 +469,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(
           uri"${esConfig.uri}/${r.index}/$Search?typed_keys"
-            .withParams(getQueryParams(List(("routing", r.routing))))
+            .withParams(getQueryParams(Chunk(("routing", r.routing))))
             .addQuerySegment(QuerySegment.Value("typed_keys"))
         )
         .response(asJson[SearchWithAggregationsResponse])
@@ -483,7 +483,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             value =>
               ZIO.succeed(
                 new SearchAndAggregateResult(
-                  itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort).toList,
+                  itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
                   value.aggs,
                   value
                 )
@@ -499,12 +499,12 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(
           uri"${esConfig.uri}/${r.index}/$Search".withParams(
-            getQueryParams(List((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
+            getQueryParams(Chunk((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
           )
         )
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.query.toJson merge Obj("sort" -> Arr(r.sortBy.toList.map(_.paramsToJson): _*)))
+        .body(r.query.toJson merge Obj("sort" -> Arr(r.sortBy.map(_.paramsToJson))))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -525,7 +525,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(
           uri"${esConfig.uri}/${r.index}/$Update/${r.id}".withParams(
-            getQueryParams(List(("refresh", r.refresh), ("routing", r.routing)))
+            getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing)))
           )
         )
         .contentType(ApplicationJson)
@@ -543,7 +543,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(
           uri"${esConfig.uri}/${r.index}/$UpdateByQuery".withParams(
-            getQueryParams(List(("conflicts", r.conflicts), ("refresh", r.refresh), ("routing", r.routing)))
+            getQueryParams(Chunk(("conflicts", r.conflicts), ("refresh", r.refresh), ("routing", r.routing)))
           )
         )
         .response(asJson[UpdateByQueryResponse])
@@ -566,7 +566,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def getQueryParams(parameters: List[(String, Any)]): ScalaMap[String, String] =
+  private def getQueryParams(parameters: Chunk[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
   private def handleFailures(response: Response[Either[String, String]]): ElasticException =
@@ -591,14 +591,14 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
     }
 
-  private def itemsFromDocumentsWithHighlights(results: List[DocumentWithHighlightsAndSort]): Chunk[Item] =
-    Chunk.fromIterable(results).map(r => Item(raw = r.source, highlight = r.highlight, sort = r.sort))
+  private def itemsFromDocumentsWithHighlights(results: Chunk[DocumentWithHighlightsAndSort]): Chunk[Item] =
+    results.map(r => Item(raw = r.source, highlight = r.highlight, sort = r.sort))
 
   private def itemsFromDocumentsWithHighlightsSortAndInnerHits(
-    results: List[DocumentWithHighlightsAndSort],
-    innerHits: List[Map[String, List[Json]]]
+    results: Chunk[DocumentWithHighlightsAndSort],
+    innerHits: Chunk[Map[String, Chunk[Json]]]
   ): Chunk[Item] =
-    Chunk.fromIterable(results).zip(innerHits).map { case (r, innerHits) =>
+    results.zip(innerHits).map { case (r, innerHits) =>
       Item(raw = r.source, highlight = r.highlight, innerHits = innerHits, sort = r.sort)
     }
 

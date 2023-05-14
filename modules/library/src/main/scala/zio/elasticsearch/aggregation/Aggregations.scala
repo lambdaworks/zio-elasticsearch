@@ -147,7 +147,7 @@ sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations
 }
 
-private[elasticsearch] final case class Multiple(aggregations: List[SingleElasticAggregation])
+private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElasticAggregation])
     extends MultipleAggregations { self =>
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
     self.copy(aggregations = self.aggregations ++ aggregations)
@@ -170,11 +170,11 @@ private[elasticsearch] final case class Terms(
   name: String,
   field: String,
   order: Chunk[AggregationOrder],
-  subAggregations: List[SingleElasticAggregation],
+  subAggregations: Chunk[SingleElasticAggregation],
   size: Option[Int]
 ) extends TermsAggregation { self =>
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
-    self.copy(order = self.order ++ (order :: orders.toList))
+    self.copy(order = self.order ++ (order +: orders))
 
   def size(value: Int): TermsAggregation =
     self.copy(size = Some(value))
@@ -193,9 +193,9 @@ private[elasticsearch] final case class Terms(
         case o :: Nil =>
           Obj("order" -> Obj(o.value -> o.order.toString.toJson))
         case orders =>
-          Obj("order" -> Arr(orders.collect { case AggregationOrder(value, order) =>
+          Obj("order" -> Arr(Chunk.fromIterable(orders).collect { case AggregationOrder(value, order) =>
             Obj(value -> order.toString.toJson)
-          }: _*))
+          }))
       }
 
     val sizeJson = size.fold(Obj())(s => Obj("size" -> s.toJson))

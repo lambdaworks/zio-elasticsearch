@@ -315,7 +315,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          )
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
-                } yield assert(docs)(equalTo(List(secondDocumentWithFixedIntField, firstDocumentWithFixedIntField))) &&
+                } yield assert(docs)(equalTo(Chunk(secondDocumentWithFixedIntField, firstDocumentWithFixedIntField))) &&
                   assert(aggs)(isNonEmpty)
             }
           } @@ around(
@@ -580,7 +580,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   query = range(TestDocument.dateField).gte(LocalDate.now).format("uuuu-MM-dd").boost(1.0)
                   res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(equalTo(List(secondDocumentUpdated, thirdDocumentUpdated)))
+                } yield assert(res)(equalTo(Chunk(secondDocumentUpdated, thirdDocumentUpdated)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1122,7 +1122,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .documentAs[TestDocument]
                 } yield assert(res)(
-                  equalTo(List(secondDocumentWithFixedIntField, firstDocumentWithFixedIntField))
+                  equalTo(Chunk(secondDocumentWithFixedIntField, firstDocumentWithFixedIntField))
                 )
             }
           } @@ around(
@@ -1160,7 +1160,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .documentAs[TestDocument]
                 } yield assert(res)(
-                  equalTo(List(firstDocumentWithFixedIntField, secondDocumentWithFixedIntField))
+                  equalTo(Chunk(firstDocumentWithFixedIntField, secondDocumentWithFixedIntField))
                 )
             }
           } @@ around(
@@ -1196,7 +1196,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .documentAs[TestSubDocument]
                 } yield assert(res)(
-                  equalTo(List(firstSubDocumentWithFixedIntList, secondSubDocumentWithFixedIntList))
+                  equalTo(Chunk(firstSubDocumentWithFixedIntList, secondSubDocumentWithFixedIntList))
                 )
             }
           } @@ around(
@@ -1432,7 +1432,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                           )
                           .documentAs[TestDocument]
               } yield assert(res2.map(_.intField))(
-                equalTo((20 to 29).toList)
+                equalTo(Chunk.fromIterable(20 to 29))
               )
             }
           } @@ around(
@@ -1525,7 +1525,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   doc3 <- Executor.execute(ElasticRequest.getById(index, thirdDocumentId)).documentAs[TestDocument]
                 } yield assert(res.items.size)(equalTo(7)) &&
                   assert(res.items.map(_.error.isDefined))(
-                    equalTo(List(false, false, false, false, false, false, true))
+                    equalTo(Chunk(false, false, false, false, false, false, true))
                   ) &&
                   assert(res.items(6).status)(equalTo(Some(404))) &&
                   assert(res.items(6).error.map(_.`type`))(equalTo(Some("document_missing_exception"))) &&
@@ -1676,7 +1676,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     )
                     .documentAs[TestDocument]
               } yield assert(r1 ++ r2)(
-                equalTo(List(document, document))
+                equalTo(Chunk(document, document))
               )
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)

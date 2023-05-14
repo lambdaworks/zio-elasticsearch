@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.request.options
 
+import zio.Chunk
 import zio.schema.Schema
 
 private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
@@ -62,15 +63,15 @@ private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
    */
   def includes[A](implicit schema: Schema.Record[A]): R
 
-  protected final def getFieldNames(schema: Schema.Record[_]): List[String] = {
+  protected final def getFieldNames(schema: Schema.Record[_]): Chunk[String] = {
     def extractInnerSchema(schema: Schema[_]): Schema[_] =
       Schema.force(schema) match {
         case schema: Schema.Sequence[_, _, _] => Schema.force(schema.elementSchema)
         case schema                           => schema
       }
 
-    def loop(schema: Schema.Record[_], prefix: Option[String]): List[String] =
-      schema.fields.toList.flatMap { field =>
+    def loop(schema: Schema.Record[_], prefix: Option[String]): Chunk[String] =
+      schema.fields.flatMap { field =>
         extractInnerSchema(field.schema) match {
           case schema: Schema.Record[_] => loop(schema, prefix.map(_ + "." + field.name).orElse(Some(field.name)))
           case _                        => List(prefix.fold[String](field.name)(_ + "." + field.name))

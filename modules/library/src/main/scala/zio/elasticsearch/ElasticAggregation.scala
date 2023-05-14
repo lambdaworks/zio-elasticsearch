@@ -80,7 +80,7 @@ object ElasticAggregation {
    *   an instance of empty [[zio.elasticsearch.aggregation.MultipleAggregations]].
    */
   final def multipleAggregations: MultipleAggregations =
-    Multiple(aggregations = Nil)
+    Multiple(aggregations = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified
@@ -95,7 +95,7 @@ object ElasticAggregation {
    *   performed.
    */
   final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
-    Terms(name = name, field = field.toString, order = Chunk.empty, subAggregations = Nil, size = None)
+    Terms(name = name, field = field.toString, order = Chunk.empty, subAggregations = Chunk.empty, size = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified parameters.
@@ -109,7 +109,7 @@ object ElasticAggregation {
    *   performed.
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
-    Terms(name = name, field = field, order = Chunk.empty, subAggregations = Nil, size = None)
+    Terms(name = name, field = field, order = Chunk.empty, subAggregations = Chunk.empty, size = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.

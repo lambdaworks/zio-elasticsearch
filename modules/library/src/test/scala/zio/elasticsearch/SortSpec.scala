@@ -1,6 +1,5 @@
 package zio.elasticsearch
 
-import zio.Scope
 import zio.elasticsearch.ElasticSort._
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.sort.Missing._
@@ -15,6 +14,7 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.test.Assertion.equalTo
 import zio.test._
+import zio.{Chunk, Scope}
 
 object SortSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
@@ -525,5 +525,5 @@ object SortSpec extends ZIOSpecDefault {
       )
     )
 
-  private def sortsToJson(sorts: Sort*): Json = Obj("sort" -> Arr(sorts.map(_.paramsToJson): _*))
+  private def sortsToJson(sorts: Sort*): Json = Obj("sort" -> Arr(Chunk.fromIterable(sorts).map(_.paramsToJson)))
 }

@@ -52,10 +52,10 @@ sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] wi
 }
 
 private[elasticsearch] final case class Bool[S](
-  filter: List[ElasticQuery[S]],
-  must: List[ElasticQuery[S]],
-  mustNot: List[ElasticQuery[S]],
-  should: List[ElasticQuery[S]],
+  filter: Chunk[ElasticQuery[S]],
+  must: Chunk[ElasticQuery[S]],
+  mustNot: Chunk[ElasticQuery[S]],
+  should: Chunk[ElasticQuery[S]],
   boost: Option[Double],
   minimumShouldMatch: Option[Int]
 ) extends BoolQuery[S] { self =>
@@ -86,15 +86,15 @@ private[elasticsearch] final case class Bool[S](
   def paramsToJson(fieldPath: Option[String]): Json = {
     val boolFields =
       Chunk(
-        if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)): _*)) else None,
-        if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)): _*)) else None,
-        if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)): _*)) else None,
-        if (should.nonEmpty) Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)): _*)) else None,
+        if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.paramsToJson(fieldPath)))) else None,
+        if (must.nonEmpty) Some("must" -> Arr(must.map(_.paramsToJson(fieldPath)))) else None,
+        if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.paramsToJson(fieldPath)))) else None,
+        if (should.nonEmpty) Some("should" -> Arr(should.map(_.paramsToJson(fieldPath)))) else None,
         boost.map("boost" -> Num(_)),
         minimumShouldMatch.map("minimum_should_match" -> Num(_))
       ).collect { case Some(obj) => obj }
 
-    Obj("bool" -> Obj(boolFields: _*))
+    Obj("bool" -> Obj(boolFields))
   }
 
   def should[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
@@ -260,7 +260,7 @@ private[elasticsearch] final case class HasChild[S](
           maxChildren.map("max_children" -> Json.Num(_)),
           minChildren.map("min_children" -> Json.Num(_)),
           scoreMode.map(sm => "score_mode" -> Json.Str(sm.toString.toLowerCase))
-        ).flatten: _*
+        ).flatten
       )
     )
 
@@ -329,7 +329,7 @@ private[elasticsearch] final case class HasParent[S](
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
           score.map("score" -> Json.Bool(_)),
           innerHitsField.map(_.toStringJsonPair)
-        ).flatten: _*
+        ).flatten
       )
     )
 
@@ -351,7 +351,7 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
     self.copy(boost = Some(value))
 
   def paramsToJson(fieldPath: Option[String]): Json =
-    Obj("match_all" -> Obj(boost.map("boost" -> Num(_)).toList: _*))
+    Obj("match_all" -> Obj(Chunk.fromIterable(boost.map("boost" -> Num(_)))))
 }
 
 sealed trait MatchPhraseQuery[S] extends ElasticQuery[S]
@@ -389,7 +389,7 @@ private[elasticsearch] final case class Nested[S](
           scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)),
           ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
           innerHitsField.map(_.toStringJsonPair)
-        ).flatten: _*
+        ).flatten
       )
     )
 
@@ -488,7 +488,7 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
             upper.toJson,
             boost.map("boost" -> Num(_)),
             format.map("format" -> Str(_))
-          ).flatten: _*
+          ).flatten
         )
       )
     )
@@ -523,7 +523,7 @@ private[elasticsearch] final case class Term[S](
     val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
     )
-    Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(termFields.toList: _*)))
+    Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termFields))))
   }
 }
 
@@ -531,7 +531,7 @@ sealed trait TermsQuery[S] extends ElasticQuery[S] with HasBoost[TermsQuery[S]]
 
 private[elasticsearch] final case class Terms[S](
   field: String,
-  values: List[String],
+  values: Chunk[String],
   boost: Option[Double]
 ) extends TermsQuery[S] { self =>
   def boost(value: Double): TermsQuery[S] =
@@ -539,8 +539,8 @@ private[elasticsearch] final case class Terms[S](
 
   def paramsToJson(fieldPath: Option[String]): Json = {
     val termsFields =
-      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)): _*)) ++ boost.map("boost" -> Num(_))
-    Obj("terms" -> Obj(termsFields.toList: _*))
+      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)))) ++ boost.map("boost" -> Num(_))
+    Obj("terms" -> Obj(Chunk.fromIterable(termsFields)))
   }
 }
 
@@ -565,6 +565,6 @@ private[elasticsearch] final case class Wildcard[S](
     val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
     )
-    Obj("wildcard" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(wildcardFields.toList: _*)))
+    Obj("wildcard" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(wildcardFields))))
   }
 }

@@ -16,6 +16,7 @@
 
 package zio.elasticsearch.script
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.script.options._
 import zio.json.ast.Json
@@ -31,15 +32,15 @@ private[elasticsearch] final case class Script(
     self.copy(lang = Some(value))
 
   def params(values: (String, Any)*): Script =
-    self.copy(params = params ++ values.toList)
+    self.copy(params = params ++ values.toMap)
 
   private[elasticsearch] def toJson: Json =
     Obj(
-      List(
+      Chunk(
         self.lang.map(lang => "lang" -> lang.toJson),
         Some("source" -> source.toJson),
         if (params.nonEmpty) {
-          Some("params" -> Obj(params.map { case (key, value) =>
+          Some("params" -> Obj(Chunk.fromIterable(params).map { case (key, value) =>
             value match {
               case value: BigDecimal => key -> value.toJson
               case value: Double     => key -> value.toJson
@@ -47,11 +48,11 @@ private[elasticsearch] final case class Script(
               case value: Long       => key -> value.toJson
               case _                 => key -> value.toString.toJson
             }
-          }.toList: _*))
+          }))
         } else {
           None
         }
-      ).flatten: _*
+      ).flatten
     )
 }
 
