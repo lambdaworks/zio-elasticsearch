@@ -649,12 +649,11 @@ object ElasticRequest {
               includes merge excludes
             })
         }
-
-      fromJson merge
+      Obj("query" -> query.toJson(fieldPath = None)) merge
+        fromJson merge
         sizeJson merge
         highlightsJson merge
         sortJson merge
-        Obj("query" -> query.toJson(fieldPath = None)) merge
         searchAfterJson merge
         sourceJson
     }
@@ -735,13 +734,12 @@ object ElasticRequest {
               includes merge excludes
             })
         }
-
-      fromJson merge
+      Obj("query" -> query.toJson(fieldPath = None)) merge
+        Obj("aggs" -> aggregation.toJson) merge
+        fromJson merge
         sizeJson merge
         highlightsJson merge
         sortJson merge
-        Obj("query" -> query.toJson(fieldPath = None)) merge
-        Obj("aggs" -> aggregation.toJson) merge
         searchAfterJson merge
         sourceJson
     }
