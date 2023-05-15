@@ -14,7 +14,7 @@ import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
 
-object SortSpec extends ZIOSpecDefault {
+object ElasticSortSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] = {
     suite("ElasticSort")(
       suite("constructing")(
