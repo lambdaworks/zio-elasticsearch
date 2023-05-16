@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.query
 
-import zio.Chunk
+import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
@@ -193,6 +193,63 @@ private[elasticsearch] final case class Exists[S](field: String, boost: Option[D
       "exists" -> (Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson) merge boost.fold(Obj())(b =>
         Obj("boost" -> b.toJson)
       ))
+    )
+}
+
+sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[FunctionScoreQuery[S]] {
+
+  def boostMode(value: FunctionScoreBoostMode): FunctionScoreQuery[S]
+
+  def maxBoost(value: Double): FunctionScoreQuery[S]
+
+  def minScore(value: Double): FunctionScoreQuery[S]
+
+  def query(value: ElasticQuery[S]): FunctionScoreQuery[S]
+
+  def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S]
+
+  def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S]
+}
+
+private[elasticsearch] final case class FunctionScore[S](
+                                                          functions: NonEmptyChunk[FunctionScoreFunction],
+                                                          boost: Option[Double],
+                                                          boostMode: Option[FunctionScoreBoostMode],
+                                                          maxBoost: Option[Double],
+                                                          minScore: Option[Double],
+                                                          query: Option[ElasticQuery[S]],
+                                                          scoreMode: Option[FunctionScoreScoreMode]
+) extends FunctionScoreQuery[S] { self =>
+
+  def boost(value: Double): FunctionScoreQuery[S] = self.copy(boost = Some(value))
+
+  def boostMode(value: FunctionScoreBoostMode): FunctionScoreQuery[S] = self.copy(boostMode = Some(value))
+
+  def maxBoost(value: Double): FunctionScoreQuery[S] = self.copy(maxBoost = Some(value))
+
+  def minScore(value: Double): FunctionScoreQuery[S] = self.copy(minScore = Some(value))
+
+  def query(value: ElasticQuery[S]): FunctionScoreQuery[S] = self.copy(query = Some(value))
+
+  def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S] = self.copy(scoreMode = Some(value))
+
+  def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S] = self.copy(functions = functions.prepended(value))
+
+  private[elasticsearch] def paramsToJson(fieldPath: Option[String]): Json = self.toJson
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "function_score" -> Obj(
+        Chunk(
+          Some("functions" -> Arr(functions.map(_.toJson))),
+          boost.map("boost" -> Num(_)),
+          boostMode.map(bm => "boost_mode" -> Str(s"${bm.toString.toLowerCase}")),
+          maxBoost.map("max_boost" -> Num(_)),
+          minScore.map("min_score" -> Num(_)),
+          query.map(q => "query" -> q.toJson),
+          scoreMode.map(sm => "score_mode" -> Str(s"${sm.toString.toLowerCase}"))
+        ).flatten
+      )
     )
 }
 

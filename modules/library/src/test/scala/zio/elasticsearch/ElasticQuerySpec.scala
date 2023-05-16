@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.domain._
@@ -391,6 +391,24 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTs)(equalTo(Exists[TestDocument](field = "intField", boost = None))) &&
           assert(queryWithBoost)(equalTo(Exists[TestDocument](field = "intField", boost = Some(3))))
 
+        },
+        test("functionScore") {
+          val fs    = ScriptScoreFunction(Script("params.agg1 + params.agg2 > 10"), None, None)
+          val query = functionScore(fs)
+
+          assert(query)(
+            equalTo(
+              FunctionScore[Any](
+                functions = NonEmptyChunk(fs),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          )
         },
         test("geoDistance") {
           val query =

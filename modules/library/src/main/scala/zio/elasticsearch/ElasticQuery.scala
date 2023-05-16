@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
@@ -122,6 +122,17 @@ object ElasticQuery {
       should = Chunk.empty,
       boost = None,
       minimumShouldMatch = None
+    )
+
+  final def functionScore(function: FunctionScoreFunction): FunctionScore[Any] =
+    FunctionScore[Any](
+      functions = NonEmptyChunk(function),
+      boost = None,
+      boostMode = None,
+      maxBoost = None,
+      minScore = None,
+      query = None,
+      scoreMode = None
     )
 
   /**
