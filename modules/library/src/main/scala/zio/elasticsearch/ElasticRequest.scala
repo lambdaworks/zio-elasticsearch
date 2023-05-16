@@ -649,6 +649,7 @@ object ElasticRequest {
               includes merge excludes
             })
         }
+
       Obj("query" -> query.toJson(fieldPath = None)) merge
         fromJson merge
         sizeJson merge
@@ -734,6 +735,7 @@ object ElasticRequest {
               includes merge excludes
             })
         }
+
       Obj("query" -> query.toJson(fieldPath = None)) merge
         Obj("aggs" -> aggregation.toJson) merge
         fromJson merge

@@ -3,7 +3,6 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticHighlight.highlight
-import zio.elasticsearch.ElasticQuery.term
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.domain.{Location, TestDocument}
@@ -26,9 +25,9 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
     suite("ElasticRequest")(
       suite("constructing")(
         test("aggregate") {
-          val aggregateRequest = aggregate(index = Index, aggregation = Aggregation)
+          val aggregateRequest = aggregate(index = Index, aggregation = MaxAggregation)
 
-          assert(aggregateRequest)(equalTo(Aggregate(index = Index, aggregation = Aggregation)))
+          assert(aggregateRequest)(equalTo(Aggregate(index = Index, aggregation = MaxAggregation)))
         },
         test("bulk") {
           val bulkRequest = bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2))
@@ -445,22 +444,24 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
           )
         },
         test("search and aggregate") {
-          val searchAndAggRequest = search(index = Index, query = Query, aggregation = Aggregation)
+          val searchAndAggRequest = search(index = Index, query = Query, aggregation = MaxAggregation)
           val searchAndAggRequestWithSort =
-            search(index = Index, query = Query, aggregation = Aggregation).sort(sortBy(TestDocument.intField))
+            search(index = Index, query = Query, aggregation = MaxAggregation).sort(sortBy(TestDocument.intField))
           val searchAndAggRequestWithSourceFiltering =
-            search(index = Index, query = Query, aggregation = Aggregation)
+            search(index = Index, query = Query, aggregation = MaxAggregation)
               .includes("stringField", "doubleField")
               .excludes("booleanField")
-          val searchAndAggRequestWithFrom = search(index = Index, query = Query, aggregation = Aggregation).from(5)
+          val searchAndAggRequestWithFrom = search(index = Index, query = Query, aggregation = MaxAggregation).from(5)
           val searchAndAggRequestWithHighlights =
-            search(index = Index, query = Query, aggregation = Aggregation).highlights(highlight(TestDocument.intField))
+            search(index = Index, query = Query, aggregation = MaxAggregation).highlights(
+              highlight(TestDocument.intField)
+            )
           val searchAndAggRequestWithRouting =
-            search(index = Index, query = Query, aggregation = Aggregation).routing(RoutingValue)
+            search(index = Index, query = Query, aggregation = MaxAggregation).routing(RoutingValue)
           val searchAndAggRequestWithSearchAfter =
-            search(index = Index, query = Query, aggregation = Aggregation).searchAfter(Arr(Str("12345")))
-          val searchAndAggRequestWithSize = search(index = Index, query = Query, aggregation = Aggregation).size(5)
-          val searchAndAggRequestWithAllParams = search(index = Index, query = Query, aggregation = Aggregation)
+            search(index = Index, query = Query, aggregation = MaxAggregation).searchAfter(Arr(Str("12345")))
+          val searchAndAggRequestWithSize = search(index = Index, query = Query, aggregation = MaxAggregation).size(5)
+          val searchAndAggRequestWithAllParams = search(index = Index, query = Query, aggregation = MaxAggregation)
             .sort(sortBy("intField"))
             .includes("stringField", "doubleField")
             .excludes("booleanField")
@@ -475,7 +476,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = None,
                 from = None,
@@ -491,7 +492,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk(
                   SortByFieldOptions(
                     field = "intField",
@@ -517,7 +518,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = Some(Chunk("booleanField")),
                 from = None,
@@ -533,7 +534,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = None,
                 from = Some(5),
@@ -549,7 +550,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = None,
                 from = None,
@@ -567,7 +568,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = None,
                 from = None,
@@ -583,7 +584,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = None,
                 from = None,
@@ -599,7 +600,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
                 excluded = None,
                 from = None,
@@ -615,7 +616,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               SearchAndAggregate(
                 index = Index,
                 query = Query,
-                aggregation = Aggregation,
+                aggregation = MaxAggregation,
                 sortBy = Chunk(
                   SortByFieldOptions(
                     field = "intField",
@@ -960,11 +961,88 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
-        test("successfully encode search request to JSON with search after parameter") {
-          val jsonRequest: Json = search(Index, Query).searchAfter(Arr(Str("12345"))) match {
+        test("aggregate") {
+          val jsonRequest: Json = aggregate(Index, MaxAggregation) match {
+            case r: ElasticRequest.Aggregate => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "aggs": {
+              |    "aggregation" : {
+              |      "max" : {
+              |        "field" : "intField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
+        },
+        test("bulk") {
+          val requestBody = bulk(
+            create(index = Index, doc = Doc1).routing(RoutingValue),
+            upsert(index = Index, id = DocId, doc = Doc2)
+          ) match {
+            case r: Bulk => r.body
+          }
+
+          val expected =
+            """|{ "create" : { "_index" : "index", "routing" : "routing" } }
+               |{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"locationField":{"lat":20.0,"lon":21.0}}
+               |{ "index" : { "_index" : "index", "_id" : "documentid" } }
+               |{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"locationField":{"lat":10.0,"lon":11.0}}
+               |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
+        test("search") {
+          val jsonRequest: Json = search(Index, Query) match {
             case r: ElasticRequest.Search => r.toJson
           }
+          val jsonRequestWithSearchAfter: Json = search(Index, Query).searchAfter(Arr(Str("12345"))) match {
+            case r: ElasticRequest.Search => r.toJson
+          }
+          val jsonRequestWithSize: Json = search(Index, Query).size(20) match {
+            case r: ElasticRequest.Search => r.toJson
+          }
+          val jsonRequestWithExcludes: Json = search(Index, Query).excludes("subDocumentList") match {
+            case r: ElasticRequest.Search => r.toJson
+          }
+          val jsonRequestWithIncludes: Json = search(Index, Query).includes("stringField", "doubleField") match {
+            case r: ElasticRequest.Search => r.toJson
+          }
+          val jsonRequestWithInclSchema: Json = search(Index, Query).includes[TestDocument] match {
+            case r: ElasticRequest.Search => r.toJson
+          }
+          val jsonRequestWithAllParams: Json = search(Index, Query)
+            .size(20)
+            .sort(sortBy(TestDocument.intField).missing(First))
+            .excludes("intField")
+            .from(10)
+            .highlights(highlight(TestDocument.intField))
+            .includes("stringField")
+            .searchAfter(Arr(Str("12345")))
+            .size(20) match {
+            case r: ElasticRequest.Search => r.toJson
+          }
+
           val expected =
+            """
+              |{
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSearchAfter =
             """
               |{
               |  "query" : {
@@ -975,45 +1053,15 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |    }
               |  },
               |  "search_after" : [
-              |   "12345"
+              |     "12345"
               |   ]
               |}
               |""".stripMargin
 
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode search request to JSON with size parameter") {
-          val jsonRequest: Json = search(Index, Query).size(20) match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
+          val expectedWithSize =
             """
               |{
-              |  "query" : {
-              |    "range" : {
-              |      "intField" : {
-              |       "gte" : 10
-              |      }
-              |    }
-              |  },
-              |  "size" : 20
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode search request to JSON with excludes") {
-          val jsonRequest: Json = search(Index, Query).excludes("subDocumentList") match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
-            """
-              |{
-              |  "_source" : {
-              |    "excludes" : [
-              |      "subDocumentList"
-              |    ]
-              |  },
+              |  "size" : 20,
               |  "query" : {
               |    "range" : {
               |      "intField" : {
@@ -1024,40 +1072,53 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode search request to JSON with includes") {
-          val jsonRequest: Json = search(Index, Query).includes("stringField", "doubleField") match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
+          val expectedWithExcludes =
             """
               |{
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
+              |    }
+              |  },
+              |  "_source" : {
+              |    "excludes" : [
+              |      "subDocumentList"
+              |    ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithIncludes =
+            """
+              |{
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
+              |    }
+              |  },
               |  "_source" : {
               |    "includes" : [
               |      "stringField",
               |      "doubleField"
               |    ]
-              |  },
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithInclSchema =
+            """
+              |{
               |  "query" : {
               |    "range" : {
               |      "intField" : {
               |       "gte" : 10
               |      }
               |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode search request to JSON with includes using a schema") {
-          val jsonRequest: Json = search(Index, Query).includes[TestDocument] match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
-            """
-              |{
+              |  },
               |  "_source" : {
               |    "includes" : [
               |      "stringField",
@@ -1073,80 +1134,20 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |      "locationField.lat",
               |      "locationField.lon"
               |    ]
-              |  },
-              |  "query" : {
-              |    "range" : {
-              |      "intField" : {
-              |       "gte" : 10
-              |      }
-              |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode search request to JSON with multiple parameters") {
-          val jsonRequest = search(Index, Query)
-            .size(20)
-            .sort(sortBy(TestDocument.intField).missing(First))
-            .from(10) match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
+          val expectedWithAllParams =
             """
               |{
-              |  "query" : {
-              |    "range" : {
-              |      "intField" : {
-              |       "gte" : 10
-              |      }
-              |    }
-              |  },
-              |  "size" : 20,
               |  "from" : 10,
-              |  "sort": [
-              |    {
-              |      "intField": {
-              |        "missing": "_first"
-              |      }
-              |    }
-              |  ]
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode search request to JSON with all parameters") {
-          val jsonRequest = search(Index, Query)
-            .size(20)
-            .highlights(highlight(TestDocument.intField))
-            .sort(sortBy(TestDocument.intField).missing(First))
-            .from(10)
-            .includes("stringField")
-            .excludes("intField") match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
-            """
-              |{
-              |  "_source" : {
-              |    "includes" : [
-              |      "stringField"
-              |    ],
-              |    "excludes" : [
-              |      "intField"
-              |    ]
-              |  },
-              |  "query" : {
-              |    "range" : {
-              |      "intField" : {
-              |       "gte" : 10
-              |      }
-              |    }
-              |  },
               |  "size" : 20,
-              |  "from" : 10,
+              |  "highlight" : {
+              |    "fields" : {
+              |      "intField" : {}
+              |    }
+              |  },
               |  "sort": [
               |    {
               |      "intField": {
@@ -1154,47 +1155,109 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |      }
               |    }
               |  ],
-              |  "highlight" : {
-              |    "fields" : {
-              |      "intField" : {}
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
               |    }
+              |  },
+              |  "search_after" : [
+              |     "12345"
+              |  ],
+              |  "_source" : {
+              |    "includes" : [
+              |      "stringField"
+              |    ],
+              |    "excludes" : [
+              |      "intField"
+              |    ]
               |  }
               |}
               |""".stripMargin
 
-          assert(jsonRequest)(equalTo(expected.toJson))
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithSearchAfter)(equalTo(expectedWithSearchAfter.toJson)) &&
+          assert(jsonRequestWithSize)(equalTo(expectedWithSize.toJson)) &&
+          assert(jsonRequestWithExcludes)(equalTo(expectedWithExcludes.toJson)) &&
+          assert(jsonRequestWithIncludes)(equalTo(expectedWithIncludes.toJson)) &&
+          assert(jsonRequestWithInclSchema)(equalTo(expectedWithInclSchema.toJson)) &&
+          assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
         },
-        test("successfully encode search and aggregate request to JSON with all parameters") {
-          val jsonRequest = search(Index, Query)
-            .aggregate(termsAggregation(name = "aggregation", field = "day_of_week"))
+        test("search and aggregate") {
+          val jsonRequest = search(index = Index, query = Query, aggregation = TermsAggregation) match {
+            case r: SearchAndAggregate => r.toJson
+          }
+          val jsonRequestWithFrom =
+            search(index = Index, query = Query, aggregation = TermsAggregation).from(10) match {
+              case r: SearchAndAggregate => r.toJson
+            }
+          val jsonRequestWithSortAndHighlights = search(index = Index, query = Query, aggregation = TermsAggregation)
+            .sort(sortBy(TestDocument.intField).missing(First))
+            .highlights(highlight(TestDocument.intField)) match {
+            case r: SearchAndAggregate => r.toJson
+          }
+          val jsonRequestWithAllParams = search(index = Index, query = Query)
+            .aggregate(TermsAggregation)
+            .from(10)
             .size(20)
             .highlights(highlight(TestDocument.intField))
             .sort(sortBy(TestDocument.intField).missing(First))
-            .from(10)
             .includes("stringField")
-            .excludes("intField") match {
+            .excludes("intField")
+            .searchAfter(Arr(Str("12345"))) match {
             case r: ElasticRequest.SearchAndAggregate => r.toJson
           }
+
           val expected =
             """
               |{
-              |  "_source" : {
-              |    "includes" : [
-              |      "stringField"
-              |    ],
-              |    "excludes" : [
-              |      "intField"
-              |    ]
-              |  },
               |  "query" : {
               |    "range" : {
               |      "intField" : {
-              |       "gte" : 10
+              |        "gte" : 10
               |      }
               |    }
               |  },
-              |  "size" : 20,
-              |  "from" : 10,
+              |  "aggs": {
+              |    "aggregation" : {
+              |      "terms" : {
+              |        "field" : "day_of_week"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFrom =
+            """
+              {
+              |  "from": 10,
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |        "gte" : 10
+              |      }
+              |    }
+              |  },
+              |  "aggs": {
+              |    "aggregation" : {
+              |      "terms" : {
+              |        "field" : "day_of_week"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSortAndHighlights =
+            """
+              |{
+              |  "highlight" : {
+              |    "fields" : {
+              |      "intField" : {}
+              |    }
+              |  },
               |  "sort": [
               |    {
               |      "intField": {
@@ -1202,9 +1265,45 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |      }
               |    }
               |  ],
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |        "gte" : 10
+              |      }
+              |    }
+              |  },
+              |  "aggs": {
+              |     "aggregation" : {
+              |       "terms" : {
+              |         "field" : "day_of_week"
+              |       }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "from" : 10,
+              |  "size" : 20,
               |  "highlight" : {
               |    "fields" : {
               |      "intField" : {}
+              |    }
+              |  },
+              |  "sort": [
+              |    {
+              |      "intField": {
+              |        "missing": "_first"
+              |      }
+              |    }
+              |  ],
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |        "gte" : 10
+              |      }
               |    }
               |  },
               |  "aggs": {
@@ -1213,104 +1312,33 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |       "field" : "day_of_week"
               |     }
               |   }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode update by query request to JSON") {
-          val jsonRequest = updateByQuery(
-            index = Index,
-            query = term(TestDocument.stringField.keyword, "StringField"),
-            script = Script("ctx._source['intField']++")
-          ) match { case r: UpdateByQuery => r.toJson }
-
-          val expected =
-            """
-              |{
-              |  "script": {
-              |    "source": "ctx._source['intField']++"
               |  },
-              |  "query": {
-              |    "term": {
-              |      "stringField.keyword": {
-              |        "value": "StringField"
-              |      }
-              |    }
+              |  "search_after" : [
+              |    "12345"
+              |  ],
+              |  "_source" : {
+              |    "includes" : [
+              |      "stringField"
+              |    ],
+              |    "excludes" : [
+              |      "intField"
+              |    ]
               |  }
               |}
               |""".stripMargin
 
-          assert(jsonRequest)(equalTo(expected.toJson))
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithFrom)(equalTo(expectedWithFrom.toJson)) &&
+          assert(jsonRequestWithSortAndHighlights)(equalTo(expectedWithSortAndHighlights.toJson)) &&
+          assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
         },
-        test("successfully encode update request to JSON with all parameters - script") {
-          val jsonRequest = updateByScript(
-            index = Index,
-            id = DocId,
-            script = Script("ctx._source.intField += params['factor']").params("factor" -> 2)
-          ).orCreate[TestDocument](
-            TestDocument(
-              stringField = "stringField",
-              subDocumentList = Nil,
-              dateField = LocalDate.parse("2020-10-10"),
-              intField = 1,
-              doubleField = 1.0,
-              booleanField = true,
-              locationField = Location(1.0, 1.0)
-            )
-          ) match { case r: Update => r.toJson }
-
-          val expected =
-            """
-              |{
-              |  "script": {
-              |    "source": "ctx._source.intField += params['factor']",
-              |    "params": {
-              |      "factor": 2
-              |    }
-              |  },
-              |  "upsert": {
-              |    "stringField": "stringField",
-              |    "subDocumentList": [],
-              |    "dateField": "2020-10-10",
-              |    "intField": 1,
-              |    "doubleField": 1.0,
-              |    "booleanField": true,
-              |    "locationField" : {
-              |      "lat" : 1.0,
-              |      "lon" : 1.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
-        test("successfully encode update request to JSON with all parameters - doc") {
-          val jsonRequest = update[TestDocument](
-            index = Index,
-            id = DocId,
-            doc = TestDocument(
-              stringField = "stringField1",
-              subDocumentList = Nil,
-              dateField = LocalDate.parse("2020-10-10"),
-              intField = 1,
-              doubleField = 1.0,
-              booleanField = true,
-              locationField = Location(1.0, 1.0)
-            )
-          ).orCreate[TestDocument](
-            TestDocument(
-              stringField = "stringField2",
-              subDocumentList = Nil,
-              dateField = LocalDate.parse("2020-11-11"),
-              intField = 2,
-              doubleField = 2.0,
-              booleanField = false,
-              locationField = Location(1.0, 1.0)
-            )
-          ) match { case r: Update => r.toJson }
+        test("update - doc") {
+          val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
+            case r: Update => r.toJson
+          }
+          val jsonRequestWithUpsert = update(index = Index, id = DocId, doc = Doc1).orCreate(Doc2) match {
+            case r: Update => r.toJson
+          }
 
           val expected =
             """
@@ -1319,39 +1347,141 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |    "stringField": "stringField1",
               |    "subDocumentList": [],
               |    "dateField": "2020-10-10",
-              |    "intField": 1,
-              |    "doubleField": 1.0,
+              |    "intField": 5,
+              |    "doubleField": 7.0,
               |    "booleanField": true,
-              |    "locationField" : {
-              |      "lat" : 1.0,
-              |      "lon" : 1.0
-              |    }
-              |  },
-              |  "upsert": {
-              |    "stringField": "stringField2",
-              |    "subDocumentList": [],
-              |    "dateField": "2020-11-11",
-              |    "intField": 2,
-              |    "doubleField": 2.0,
-              |    "booleanField": false,
-              |    "locationField" : {
-              |      "lat" : 1.0,
-              |      "lon" : 1.0
+              |    "locationField": {
+              |      "lat": 20.0,
+              |      "lon": 21.0
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(jsonRequest)(equalTo(expected.toJson))
+          val expectedWithUpsert =
+            """
+              |{
+              |  "doc": {
+              |    "stringField": "stringField1",
+              |    "subDocumentList": [],
+              |    "dateField": "2020-10-10",
+              |    "intField": 5,
+              |    "doubleField": 7.0,
+              |    "booleanField": true,
+              |    "locationField": {
+              |      "lat": 20.0,
+              |      "lon": 21.0
+              |    }
+              |  },
+              |  "upsert": {
+              |    "stringField": "stringField2",
+              |    "subDocumentList": [],
+              |    "dateField": "2022-10-10",
+              |    "intField": 10,
+              |    "doubleField": 17.0,
+              |    "booleanField": false,
+              |    "locationField": {
+              |      "lat": 10.0,
+              |      "lon": 11.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithUpsert)(equalTo(expectedWithUpsert.toJson))
+        },
+        test("update - script") {
+          val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
+            case r: Update => r.toJson
+          }
+          val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
+            case r: Update => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "script": {
+              |    "source": "doc['intField'].value * params['factor']",
+              |    "params": {
+              |      "factor": 2
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithUpsert =
+            """
+              |{
+              |  "script": {
+              |    "source": "doc['intField'].value * params['factor']",
+              |    "params": {
+              |      "factor": 2
+              |    }
+              |  },
+              |  "upsert": {
+              |    "stringField": "stringField2",
+              |    "subDocumentList": [],
+              |    "dateField": "2022-10-10",
+              |    "intField": 10,
+              |    "doubleField": 17.0,
+              |    "booleanField": false,
+              |    "locationField": {
+              |      "lat": 10.0,
+              |      "lon": 11.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithUpsert)(equalTo(expectedWithUpsert.toJson))
+        },
+        test("update by query") {
+          val jsonRequest = updateAllByQuery(index = Index, script = Script1) match {
+            case r: UpdateByQuery => r.toJson
+          }
+          val jsonRequestWithQuery = updateByQuery(index = Index, query = Query, script = Script1) match {
+            case r: UpdateByQuery => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "script": {
+              |    "source": "doc['intField'].value * params['factor']",
+              |    "params": {
+              |      "factor": 2
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithQuery =
+            """
+              |{
+              |  "script": {
+              |    "source": "doc['intField'].value * params['factor']",
+              |    "params": {
+              |      "factor": 2
+              |    }
+              |  },
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithQuery)(equalTo(expectedWithQuery.toJson))
         }
       )
     )
-
-  private val Aggregation  = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)
-  private val Query        = ElasticQuery.range(TestDocument.intField).gte(10)
-  private val Index        = IndexName("index")
-  private val DocId        = DocumentId("documentid")
-  private val RoutingValue = Routing("routing")
 
   private val Doc1 = TestDocument(
     stringField = "stringField1",
@@ -1371,6 +1501,11 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
     booleanField = false,
     locationField = Location(10.0, 11.0)
   )
-  private val Script1 = Script("doc['intField'].value * params['factor']").params("factor" -> 2)
-
+  private val DocId            = DocumentId("documentid")
+  private val Index            = IndexName("index")
+  private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)
+  private val Query            = ElasticQuery.range(TestDocument.intField).gte(10)
+  private val RoutingValue     = Routing("routing")
+  private val Script1          = Script("doc['intField'].value * params['factor']").params("factor" -> 2)
+  private val TermsAggregation = termsAggregation(name = "aggregation", field = "day_of_week")
 }
