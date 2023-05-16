@@ -16,11 +16,11 @@
 
 package zio.elasticsearch
 
-import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
 import zio.schema.Schema
+import zio.{Chunk, NonEmptyChunk}
 
 object ElasticQuery {
 

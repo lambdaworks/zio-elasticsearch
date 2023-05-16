@@ -16,13 +16,13 @@
 
 package zio.elasticsearch.query
 
-import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
+import zio.{Chunk, NonEmptyChunk}
 
 import scala.annotation.unused
 
@@ -212,13 +212,13 @@ sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[Functio
 }
 
 private[elasticsearch] final case class FunctionScore[S](
-                                                          functions: NonEmptyChunk[FunctionScoreFunction],
-                                                          boost: Option[Double],
-                                                          boostMode: Option[FunctionScoreBoostMode],
-                                                          maxBoost: Option[Double],
-                                                          minScore: Option[Double],
-                                                          query: Option[ElasticQuery[S]],
-                                                          scoreMode: Option[FunctionScoreScoreMode]
+  functions: NonEmptyChunk[FunctionScoreFunction],
+  boost: Option[Double],
+  boostMode: Option[FunctionScoreBoostMode],
+  maxBoost: Option[Double],
+  minScore: Option[Double],
+  query: Option[ElasticQuery[S]],
+  scoreMode: Option[FunctionScoreScoreMode]
 ) extends FunctionScoreQuery[S] { self =>
 
   def boost(value: Double): FunctionScoreQuery[S] = self.copy(boost = Some(value))
@@ -233,7 +233,8 @@ private[elasticsearch] final case class FunctionScore[S](
 
   def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S] = self.copy(scoreMode = Some(value))
 
-  def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S] = self.copy(functions = functions.prepended(value))
+  def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S] =
+    self.copy(functions = functions.prepended(value))
 
   private[elasticsearch] def paramsToJson(fieldPath: Option[String]): Json = self.toJson
 
