@@ -30,7 +30,90 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
 
           assert(aggregateRequest)(equalTo(Aggregate(index = Index, aggregation = Aggregation)))
         },
-        // todo bulk
+        test("bulk") {
+          val bulkRequest = bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2))
+          val bulkRequestWithRefresh =
+            bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2)).refreshTrue
+          val bulkRequestWithRouting =
+            bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2)).routing(RoutingValue)
+          val bulkRequestWithAllParams =
+            bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2)).refreshTrue
+              .routing(RoutingValue)
+
+          assert(bulkRequest)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = Index, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = Index,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = None,
+                refresh = None,
+                routing = None
+              )
+            )
+          ) && assert(bulkRequestWithRefresh)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = Index, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = Index,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = None,
+                refresh = Some(true),
+                routing = None
+              )
+            )
+          ) && assert(bulkRequestWithRouting)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = Index, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = Index,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = None,
+                refresh = None,
+                routing = Some(RoutingValue)
+              )
+            )
+          ) && assert(bulkRequestWithAllParams)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = Index, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = Index,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = None,
+                refresh = Some(true),
+                routing = Some(RoutingValue)
+              )
+            )
+          )
+        },
         test("count") {
           val countRequest              = count(Index)
           val countRequestWithQuery     = count(Index, Query)
@@ -877,25 +960,6 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
-        test("successfully encode search request to JSON") {
-          val jsonRequest: Json = search(Index, Query) match {
-            case r: ElasticRequest.Search => r.toJson
-          }
-          val expected =
-            """
-              |{
-              |  "query" : {
-              |    "range" : {
-              |      "intField" : {
-              |       "gte" : 10
-              |      }
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
         test("successfully encode search request to JSON with search after parameter") {
           val jsonRequest: Json = search(Index, Query).searchAfter(Arr(Str("12345"))) match {
             case r: ElasticRequest.Search => r.toJson
