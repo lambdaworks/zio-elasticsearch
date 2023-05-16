@@ -99,7 +99,7 @@ final case class Highlights(
   def withHighlight(field: String, config: HighlightConfig): Highlights =
     self.copy(fields = HighlightField(field, config) +: self.fields)
 
-  private[elasticsearch] def toJson: Json = Obj("highlight" -> Obj(configChunk).merge(fieldsJson))
+  private[elasticsearch] def toJson: Json = Obj(configChunk) merge fieldsJson
 
   private lazy val configChunk: Chunk[(String, Json)] = Chunk.fromIterable(config)
 

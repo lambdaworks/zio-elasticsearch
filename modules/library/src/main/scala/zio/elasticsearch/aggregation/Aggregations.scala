@@ -26,10 +26,7 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 
 sealed trait ElasticAggregation { self =>
-  private[elasticsearch] def paramsToJson: Json
-
-  private[elasticsearch] final def toJson: Json =
-    Obj("aggs" -> paramsToJson)
+  private[elasticsearch] def toJson: Json
 }
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
@@ -42,7 +39,7 @@ private[elasticsearch] final case class BucketSelector(name: String, script: Scr
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
-  private[elasticsearch] def paramsToJson: Json = {
+  private[elasticsearch] def toJson: Json = {
     val bucketsPathJson: Json = Obj("buckets_path" -> bucketsPath.collect { case (scriptVal, path) =>
       Obj(scriptVal -> path.toJson)
     }.reduce(_ merge _))
@@ -94,13 +91,13 @@ private[elasticsearch] final case class BucketSort(
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
-  private[elasticsearch] def paramsToJson: Json = {
+  private[elasticsearch] def toJson: Json = {
     val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
 
     val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
 
     val sortJson: Json =
-      if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.paramsToJson): _*)) else Obj()
+      if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.toJson): _*)) else Obj()
 
     Obj(name -> Obj("bucket_sort" -> (sortJson merge fromJson merge sizeJson)))
   }
@@ -119,7 +116,7 @@ private[elasticsearch] final case class Cardinality(name: String, field: String,
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
-  private[elasticsearch] def paramsToJson: Json = {
+  private[elasticsearch] def toJson: Json = {
     val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
 
     Obj(name -> Obj("cardinality" -> (Obj("field" -> field.toJson) merge missingJson)))
@@ -136,7 +133,7 @@ private[elasticsearch] final case class Max(name: String, field: String, missing
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
-  private[elasticsearch] def paramsToJson: Json = {
+  private[elasticsearch] def toJson: Json = {
     val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
 
     Obj(name -> Obj("max" -> (Obj("field" -> field.toJson) merge missingJson)))
@@ -152,8 +149,8 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
     self.copy(aggregations = self.aggregations ++ aggregations)
 
-  private[elasticsearch] def paramsToJson: Json =
-    aggregations.map(_.paramsToJson).reduce(_ merge _)
+  private[elasticsearch] def toJson: Json =
+    aggregations.map(_.toJson).reduce(_ merge _)
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     self.copy(aggregations = agg +: aggregations)
@@ -185,7 +182,7 @@ private[elasticsearch] final case class Terms(
   def withSubAgg(aggregation: SingleElasticAggregation): TermsAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
 
-  private[elasticsearch] def paramsToJson: Json = {
+  private[elasticsearch] def toJson: Json = {
     val orderJson: Json =
       order.toList match {
         case Nil =>
@@ -202,7 +199,7 @@ private[elasticsearch] final case class Terms(
 
     val subAggsJson =
       if (self.subAggregations.nonEmpty)
-        Obj("aggs" -> self.subAggregations.map(_.paramsToJson).reduce(_ merge _))
+        Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
       else
         Obj()
 

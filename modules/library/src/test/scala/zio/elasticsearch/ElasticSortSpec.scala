@@ -342,14 +342,14 @@ object ElasticSortSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(sort.paramsToJson)(equalTo(expected.toJson)) &&
-          assert(sortWithFormat.paramsToJson)(equalTo(expectedWithFormat.toJson)) &&
-          assert(sortWithMissing.paramsToJson)(equalTo(expectedWithMissing.toJson)) &&
-          assert(sortWithMode.paramsToJson)(equalTo(expectedWithMode.toJson)) &&
-          assert(sortWithNumericType.paramsToJson)(equalTo(expectedWithNumericType.toJson)) &&
-          assert(sortWithOrder.paramsToJson)(equalTo(expectedWithOrder.toJson)) &&
-          assert(sortWithUnmappedType.paramsToJson)(equalTo(expectedWithUnmappedType.toJson)) &&
-          assert(sortWithAllParams.paramsToJson)(equalTo(expectedWithAllParams.toJson))
+          assert(sort.toJson)(equalTo(expected.toJson)) &&
+          assert(sortWithFormat.toJson)(equalTo(expectedWithFormat.toJson)) &&
+          assert(sortWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
+          assert(sortWithMode.toJson)(equalTo(expectedWithMode.toJson)) &&
+          assert(sortWithNumericType.toJson)(equalTo(expectedWithNumericType.toJson)) &&
+          assert(sortWithOrder.toJson)(equalTo(expectedWithOrder.toJson)) &&
+          assert(sortWithUnmappedType.toJson)(equalTo(expectedWithUnmappedType.toJson)) &&
+          assert(sortWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("sortByScript") {
           val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
@@ -424,10 +424,10 @@ object ElasticSortSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(sort.paramsToJson)(equalTo(expected.toJson)) &&
-          assert(sortWithMode.paramsToJson)(equalTo(expectedWithMode.toJson)) &&
-          assert(sortWithOrder.paramsToJson)(equalTo(expectedWithOrder.toJson)) &&
-          assert(sortWithModeAndOrder.paramsToJson)(equalTo(expectedWithModeAndOrder.toJson))
+          assert(sort.toJson)(equalTo(expected.toJson)) &&
+          assert(sortWithMode.toJson)(equalTo(expectedWithMode.toJson)) &&
+          assert(sortWithOrder.toJson)(equalTo(expectedWithOrder.toJson)) &&
+          assert(sortWithModeAndOrder.toJson)(equalTo(expectedWithModeAndOrder.toJson))
         }
       )
     )

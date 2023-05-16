@@ -341,24 +341,41 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
           )
 
-          assert(aggregation1)(
-            equalTo(
-              BucketSelector(
-                name = "aggregation",
-                script = Script("params.agg1 > 10"),
-                bucketsPath = Map("agg1" -> "aggregation1")
-              )
-            )
-          ) &&
-          assert(aggregation2)(
-            equalTo(
-              BucketSelector(
-                name = "aggregation",
-                script = Script("params.agg1 + params.agg2 > 10"),
-                bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
-              )
-            )
-          )
+          val expected1 =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_selector": {
+              |      "buckets_path": {
+              |        "agg1": "aggregation1"
+              |      },
+              |      "script": {
+              |        "source": "params.agg1 > 10"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expected2 =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_selector": {
+              |      "buckets_path": {
+              |        "agg1": "aggregation1",
+              |        "agg2": "aggregation2"
+              |      },
+              |      "script": {
+              |        "source": "params.agg1 + params.agg2 > 10"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation1.toJson)(equalTo(expected1.toJson)) &&
+          assert(aggregation2.toJson)(equalTo(expected2.toJson))
         },
         test("bucketSort") {
           val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
@@ -370,11 +387,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithFrom =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "bucket_sort": {
-              |        "from": 5
-              |      }
+              |  "aggregation": {
+              |    "bucket_sort": {
+              |      "from": 5
               |    }
               |  }
               |}
@@ -383,11 +398,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithSize =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "bucket_sort": {
-              |        "size": 5
-              |      }
+              |  "aggregation": {
+              |    "bucket_sort": {
+              |      "size": 5
               |    }
               |  }
               |}
@@ -396,13 +409,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithSort =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "bucket_sort": {
-              |        "sort": [
-              |          "aggregation2"
-              |        ]
-              |      }
+              |  "aggregation": {
+              |    "bucket_sort": {
+              |      "sort": [
+              |        "aggregation2"
+              |      ]
               |    }
               |  }
               |}
@@ -411,15 +422,13 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "bucket_sort": {
-              |        "sort": [
-              |          "aggregation2"
-              |        ],
-              |        "from": 5,
-              |        "size": 7
-              |      }
+              |  "aggregation": {
+              |    "bucket_sort": {
+              |      "sort": [
+              |        "aggregation2"
+              |      ],
+              |      "from": 5,
+              |      "size": 7
               |    }
               |  }
               |}
@@ -438,11 +447,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "cardinality": {
-              |        "field": "testField"
-              |      }
+              |  "aggregation": {
+              |    "cardinality": {
+              |      "field": "testField"
               |    }
               |  }
               |}
@@ -451,11 +458,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedTs =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "cardinality": {
-              |        "field": "intField"
-              |      }
+              |  "aggregation": {
+              |    "cardinality": {
+              |      "field": "intField"
               |    }
               |  }
               |}
@@ -464,12 +469,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithMissing =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "cardinality": {
-              |        "field": "intField",
-              |        "missing": 20.0
-              |      }
+              |  "aggregation": {
+              |    "cardinality": {
+              |      "field": "intField",
+              |      "missing": 20.0
               |    }
               |  }
               |}
@@ -487,11 +490,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "max": {
-              |        "field": "testField"
-              |      }
+              |  "aggregation": {
+              |    "max": {
+              |      "field": "testField"
               |    }
               |  }
               |}
@@ -500,11 +501,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedTs =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "max": {
-              |        "field": "intField"
-              |      }
+              |  "aggregation": {
+              |    "max": {
+              |      "field": "intField"
               |    }
               |  }
               |}
@@ -513,12 +512,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithMissing =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "max": {
-              |        "field": "intField",
-              |        "missing": 20.0
-              |      }
+              |  "aggregation": {
+              |    "max": {
+              |      "field": "intField",
+              |      "missing": 20.0
               |    }
               |  }
               |}
@@ -543,25 +540,23 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "aggs": {
-              |    "first": {
-              |      "terms": {
-              |        "field": "stringField",
-              |        "order": {
-              |          "_key": "desc"
-              |        }
+              |  "first": {
+              |    "terms": {
+              |      "field": "stringField",
+              |      "order": {
+              |        "_key": "desc"
               |      }
-              |    },
-              |    "second": {
-              |      "max": {
-              |        "field": "testField",
-              |        "missing": 20.0
-              |      }
-              |    },
-              |    "third": {
-              |      "cardinality": {
-              |        "field": "intField"
-              |      }
+              |    }
+              |  },
+              |  "second": {
+              |    "max": {
+              |      "field": "testField",
+              |      "missing": 20.0
+              |    }
+              |  },
+              |  "third": {
+              |    "cardinality": {
+              |      "field": "intField"
               |    }
               |  }
               |}
@@ -570,23 +565,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithSubAggregation =
             """
               |{
-              |  "aggs": {
-              |    "first": {
-              |      "terms": {
-              |        "field": "testField"
-              |      },
-              |      "aggs": {
-              |        "second": {
-              |          "max": {
-              |            "field": "intField.raw"
-              |          }
+              |  "first": {
+              |    "terms": {
+              |      "field": "testField"
+              |    },
+              |    "aggs": {
+              |      "second": {
+              |        "max": {
+              |          "field": "intField.raw"
               |        }
               |      }
-              |    },
-              |    "third": {
-              |      "terms": {
-              |        "field": "stringField"
-              |      }
+              |    }
+              |  },
+              |  "third": {
+              |    "terms": {
+              |      "field": "stringField"
               |    }
               |  }
               |}
@@ -603,16 +596,14 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "aggs": {
-              |    "first": {
-              |      "terms": {
-              |        "field": "stringField"
-              |      },
-              |      "aggs": {
-              |        "second": {
-              |          "max": {
-              |            "field": "intField"
-              |          }
+              |  "first": {
+              |    "terms": {
+              |      "field": "stringField"
+              |    },
+              |    "aggs": {
+              |      "second": {
+              |        "max": {
+              |          "field": "intField"
               |        }
               |      }
               |    }
@@ -634,11 +625,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "terms": {
-              |        "field": "testField"
-              |      }
+              |  "aggregation": {
+              |    "terms": {
+              |      "field": "testField"
               |    }
               |  }
               |}
@@ -647,11 +636,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedTs =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "terms": {
-              |        "field": "stringField"
-              |      }
+              |  "aggregation": {
+              |    "terms": {
+              |      "field": "stringField"
               |    }
               |  }
               |}
@@ -660,13 +647,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithOrder =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "terms": {
-              |        "field": "stringField",
-              |        "order": {
-              |          "_key": "desc"
-              |        }
+              |  "aggregation": {
+              |    "terms": {
+              |      "field": "stringField",
+              |      "order": {
+              |        "_key": "desc"
               |      }
               |    }
               |  }
@@ -676,12 +661,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithSize =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "terms": {
-              |        "field": "stringField",
-              |        "size": 10
-              |      }
+              |  "aggregation": {
+              |    "terms": {
+              |      "field": "stringField",
+              |      "size": 10
               |    }
               |  }
               |}
@@ -690,15 +673,13 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "aggs": {
-              |    "aggregation": {
-              |      "terms": {
-              |        "field": "stringField",
-              |        "order": {
-              |          "test": "asc"
-              |        },
-              |        "size": 20
-              |      }
+              |  "aggregation": {
+              |    "terms": {
+              |      "field": "stringField",
+              |      "order": {
+              |        "test": "asc"
+              |      },
+              |      "size": 20
               |    }
               |  }
               |}
