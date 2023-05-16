@@ -1533,46 +1533,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
           }
         ),
-        test("bulk") {
-          val query = IndexName.make("users").map { index =>
-            val nestedField = TestNestedField("NestedField", 1)
-            val subDoc = TestSubDocument(
-              stringField = "StringField",
-              nestedField = nestedField,
-              intField = 100,
-              intFieldList = Nil
-            )
-            val req1 =
-              ElasticRequest
-                .create[TestSubDocument](index, DocumentId("ETux1srpww2ObCx"), subDoc.copy(intField = 65))
-                .routing(unsafeWrap(subDoc.stringField)(Routing))
-            val req2 =
-              ElasticRequest.create[TestSubDocument](index, subDoc).routing(unsafeWrap(subDoc.stringField)(Routing))
-            val req3 = ElasticRequest
-              .upsert[TestSubDocument](index, DocumentId("yMyEG8iFL5qx"), subDoc.copy(stringField = "StringField2"))
-              .routing(unsafeWrap(subDoc.stringField)(Routing))
-            val req4 =
-              ElasticRequest
-                .deleteById(index, DocumentId("1VNzFt2XUFZfXZheDc"))
-                .routing(unsafeWrap(subDoc.stringField)(Routing))
-            ElasticRequest.bulk(req1, req2, req3, req4) match {
-              case r: Bulk => Some(r.body)
-              case _       => None
-            }
-          }
-
-          val expected =
-            """|{ "create" : { "_index" : "users", "_id" : "ETux1srpww2ObCx", "routing" : "StringField" } }
-               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":65,"intFieldList":[]}
-               |{ "create" : { "_index" : "users", "routing" : "StringField" } }
-               |{"stringField":"StringField","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
-               |{ "index" : { "_index" : "users", "_id" : "yMyEG8iFL5qx", "routing" : "StringField" } }
-               |{"stringField":"StringField2","nestedField":{"stringField":"NestedField","longField":1},"intField":100,"intFieldList":[]}
-               |{ "delete" : { "_index" : "users", "_id" : "1VNzFt2XUFZfXZheDc", "routing" : "StringField" } }
-               |""".stripMargin
-
-          assert(query)(equalTo(Validation.succeed(Some(expected))))
-        },
         test("contains") {
           val query                    = contains(TestDocument.stringField, "test")
           val queryWithBoost           = contains(TestDocument.stringField, "test").boost(3.14)
