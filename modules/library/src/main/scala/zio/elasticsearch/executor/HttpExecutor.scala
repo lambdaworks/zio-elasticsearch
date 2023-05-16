@@ -156,7 +156,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(Chunk(("routing", r.routing)))))
       .contentType(ApplicationJson)
       .response(asJson[CountResponse])
-      .body()
 
     sendRequestWithCustomResponse(r.query.fold(req)(_ => req.body(r.toJson))).flatMap { response =>
       response.code match {
