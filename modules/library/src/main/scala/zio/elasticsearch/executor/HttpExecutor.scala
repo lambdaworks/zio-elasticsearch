@@ -180,7 +180,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.document.json)
+        .body(r.toJson)
         .response(asJson[CreateResponse])
     ).flatMap { response =>
       response.code match {
@@ -206,7 +206,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.document.json)
+        .body(r.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpCreated  => ZIO.succeed(CreationOutcome.Created)
@@ -216,12 +216,12 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
   }
 
-  private def executeCreateIndex(createIndex: CreateIndex): Task[CreationOutcome] =
+  private def executeCreateIndex(r: CreateIndex): Task[CreationOutcome] =
     sendRequest(
       baseRequest
-        .put(uri"${esConfig.uri}/${createIndex.name}")
+        .put(uri"${esConfig.uri}/${r.name}")
         .contentType(ApplicationJson)
-        .body(createIndex.definition.getOrElse(""))
+        .body(r.toJson)
     ).flatMap { response =>
       response.code match {
         case HttpOk         => ZIO.succeed(CreationOutcome.Created)
@@ -234,7 +234,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.document.json)).flatMap { response =>
+    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.toJson)).flatMap { response =>
       response.code match {
         case HttpOk | HttpCreated => ZIO.unit
         case _                    => ZIO.fail(handleFailures(response))

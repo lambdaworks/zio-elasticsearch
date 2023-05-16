@@ -13,14 +13,13 @@ import zio.elasticsearch.request.Document
 import zio.elasticsearch.request.UpdateConflicts.Abort
 import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils.RichString
-import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Str}
 import zio.test.Assertion.equalTo
 import zio.test._
 
 import java.time.LocalDate
 
-object ElasticRequestDSLSpec extends ZIOSpecDefault {
+object ElasticRequestSpec extends ZIOSpecDefault {
   override def spec: Spec[TestEnvironment, Any] =
     suite("ElasticRequest")(
       suite("constructing")(
@@ -962,7 +961,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
       ),
       suite("encoding as JSON")(
         test("aggregate") {
-          val jsonRequest: Json = aggregate(Index, MaxAggregation) match {
+          val jsonRequest = aggregate(Index, MaxAggregation) match {
             case r: ElasticRequest.Aggregate => r.toJson
           }
 
@@ -998,26 +997,160 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
 
           assert(requestBody)(equalTo(expected))
         },
+        test("count") {
+          val jsonRequest = count(Index) match {
+            case r: Count => r.toJson
+          }
+          val jsonRequestWithQuery = count(Index, Query) match {
+            case r: Count => r.toJson
+          }
+
+          val expected =
+            "{}"
+          val expectedWithQuery =
+            """
+              |{
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithQuery)(equalTo(expectedWithQuery.toJson))
+        },
+        test("create") {
+          val jsonRequest = create(Index, Doc1) match {
+            case r: Create => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "stringField": "stringField1",
+              |  "subDocumentList": [],
+              |  "dateField": "2020-10-10",
+              |  "intField": 5,
+              |  "doubleField": 7.0,
+              |  "booleanField": true,
+              |  "locationField": {
+              |    "lat": 20.0,
+              |    "lon": 21.0
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
+        },
+        test("create with id") {
+          val jsonRequest = create(index = Index, id = DocId, doc = Doc1) match {
+            case r: CreateWithId => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "stringField": "stringField1",
+              |  "subDocumentList": [],
+              |  "dateField": "2020-10-10",
+              |  "intField": 5,
+              |  "doubleField": 7.0,
+              |  "booleanField": true,
+              |  "locationField": {
+              |    "lat": 20.0,
+              |    "lon": 21.0
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
+        },
+        test("create index") {
+          val definition =
+            """
+              |{
+              |  "settings": {
+              |    "number_of_shards": 3
+              |  }
+              |}
+              |""".stripMargin
+          val jsonRequest = createIndex(Index) match {
+            case r: CreateIndex => r.toJson
+          }
+          val jsonRequestWithDefinition = createIndex(name = Index, definition = definition) match {
+            case r: CreateIndex => r.toJson
+          }
+
+          assert(jsonRequest)(equalTo("")) &&
+          assert(jsonRequestWithDefinition)(equalTo(definition))
+        },
+        test("create or update") {
+          val jsonRequest = upsert(index = Index, id = DocId, doc = Doc1) match {
+            case r: CreateOrUpdate => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "stringField": "stringField1",
+              |  "subDocumentList": [],
+              |  "dateField": "2020-10-10",
+              |  "intField": 5,
+              |  "doubleField": 7.0,
+              |  "booleanField": true,
+              |  "locationField": {
+              |    "lat": 20.0,
+              |    "lon": 21.0
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
+        },
+        test("delete by query") {
+          val jsonRequest = deleteByQuery(index = Index, query = Query) match {
+            case r: DeleteByQuery => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |       "gte" : 10
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
+        },
         test("search") {
-          val jsonRequest: Json = search(Index, Query) match {
+          val jsonRequest = search(Index, Query) match {
             case r: ElasticRequest.Search => r.toJson
           }
-          val jsonRequestWithSearchAfter: Json = search(Index, Query).searchAfter(Arr(Str("12345"))) match {
+          val jsonRequestWithSearchAfter = search(Index, Query).searchAfter(Arr(Str("12345"))) match {
             case r: ElasticRequest.Search => r.toJson
           }
-          val jsonRequestWithSize: Json = search(Index, Query).size(20) match {
+          val jsonRequestWithSize = search(Index, Query).size(20) match {
             case r: ElasticRequest.Search => r.toJson
           }
-          val jsonRequestWithExcludes: Json = search(Index, Query).excludes("subDocumentList") match {
+          val jsonRequestWithExcludes = search(Index, Query).excludes("subDocumentList") match {
             case r: ElasticRequest.Search => r.toJson
           }
-          val jsonRequestWithIncludes: Json = search(Index, Query).includes("stringField", "doubleField") match {
+          val jsonRequestWithIncludes = search(Index, Query).includes("stringField", "doubleField") match {
             case r: ElasticRequest.Search => r.toJson
           }
-          val jsonRequestWithInclSchema: Json = search(Index, Query).includes[TestDocument] match {
+          val jsonRequestWithInclSchema = search(Index, Query).includes[TestDocument] match {
             case r: ElasticRequest.Search => r.toJson
           }
-          val jsonRequestWithAllParams: Json = search(Index, Query)
+          val jsonRequestWithAllParams = search(Index, Query)
             .size(20)
             .sort(sortBy(TestDocument.intField).missing(First))
             .excludes("intField")
@@ -1222,7 +1355,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |  "aggs": {
               |    "aggregation" : {
               |      "terms" : {
-              |        "field" : "day_of_week"
+              |        "field" : "intField"
               |      }
               |    }
               |  }
@@ -1243,7 +1376,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |  "aggs": {
               |    "aggregation" : {
               |      "terms" : {
-              |        "field" : "day_of_week"
+              |        "field" : "intField"
               |      }
               |    }
               |  }
@@ -1275,7 +1408,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |  "aggs": {
               |     "aggregation" : {
               |       "terms" : {
-              |         "field" : "day_of_week"
+              |         "field" : "intField"
               |       }
               |    }
               |  }
@@ -1309,7 +1442,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
               |  "aggs": {
               |   "aggregation" : {
               |     "terms" : {
-              |       "field" : "day_of_week"
+              |       "field" : "intField"
               |     }
               |   }
               |  },
@@ -1507,5 +1640,5 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
   private val Query            = ElasticQuery.range(TestDocument.intField).gte(10)
   private val RoutingValue     = Routing("routing")
   private val Script1          = Script("doc['intField'].value * params['factor']").params("factor" -> 2)
-  private val TermsAggregation = termsAggregation(name = "aggregation", field = "day_of_week")
+  private val TermsAggregation = termsAggregation(name = "aggregation", field = "intField")
 }

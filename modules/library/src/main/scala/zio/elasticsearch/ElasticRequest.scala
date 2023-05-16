@@ -440,6 +440,9 @@ object ElasticRequest {
 
     def routing(value: Routing): CreateRequest =
       self.copy(routing = Some(value))
+
+    def toJson: Json =
+      document.json
   }
 
   sealed trait CreateWithIdRequest
@@ -459,6 +462,9 @@ object ElasticRequest {
 
     def routing(value: Routing): CreateWithIdRequest =
       self.copy(routing = Some(value))
+
+    def toJson: Json =
+      document.json
   }
 
   sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome]
@@ -466,7 +472,9 @@ object ElasticRequest {
   private[elasticsearch] final case class CreateIndex(
     name: IndexName,
     definition: Option[String]
-  ) extends CreateIndexRequest
+  ) extends CreateIndexRequest {
+    def toJson: String = definition.getOrElse("")
+  }
 
   sealed trait CreateOrUpdateRequest
       extends BulkableRequest[Unit]
@@ -485,6 +493,9 @@ object ElasticRequest {
 
     def routing(value: Routing): CreateOrUpdateRequest =
       self.copy(routing = Some(value))
+
+    def toJson: Json =
+      document.json
   }
 
   sealed trait DeleteByIdRequest
