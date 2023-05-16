@@ -18,14 +18,12 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticQuery._
-import zio.elasticsearch.ElasticRequest.Bulk
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
-import zio.prelude.Validation
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 
