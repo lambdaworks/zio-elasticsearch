@@ -134,8 +134,6 @@ object ElasticQuery {
    *   latitude of the desired point
    * @tparam S
    *   document for which field query is executed
-   * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
@@ -185,8 +183,6 @@ object ElasticQuery {
    *   "drm3btev3e86")
    * @tparam S
    *   document for which field query is executed
-   * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
    */
@@ -226,7 +222,8 @@ object ElasticQuery {
    * @param childType
    *   a name of the child relationship mapped for the join field
    * @param query
-   *   the [[ElasticQuery]] object representing query you wish to run on child documents of the child `type` field
+   *   the type-safe [[ElasticQuery]] object representing query you wish to run on child documents of the child `type`
+   *   field
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -270,7 +267,8 @@ object ElasticQuery {
    * @param parentType
    *   a name of the parent relationship mapped for the join field
    * @param query
-   *   the [[ElasticQuery]] object representing query you wish to run on parent documents of the `parent_type` field
+   *   the type-safe [[ElasticQuery]] object representing query you wish to run on parent documents of the `parent_type`
+   *   field
    * @tparam S
    *   document for which field query is executed
    * @return
