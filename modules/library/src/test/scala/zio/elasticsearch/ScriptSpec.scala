@@ -14,8 +14,8 @@ object ScriptSpec extends ZIOSpecDefault {
           assert(Script.from("doc['day_of_week'].value"))(equalTo(Script("doc['day_of_week'].value", Map.empty, None)))
         },
         test("successfully create Script with source and params") {
-          assert(Script.from("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2))(
-            equalTo(Script.from("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2))
+          assert(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2))(
+            equalTo(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2))
           )
         },
         test("successfully create Script with source and lang") {
@@ -24,11 +24,10 @@ object ScriptSpec extends ZIOSpecDefault {
           )
         },
         test("successfully create Script with source, params and lang") {
-          assert(Script.from("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless"))(
+          assert(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"))(
             equalTo(
-              Script.from("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless")
+              Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless")
             )
-              HttpExecutorSpec.scala
           )
         }
       ),
@@ -47,7 +46,7 @@ object ScriptSpec extends ZIOSpecDefault {
       ),
       suite("encoding Script as JSON")(
         test("properly encode Script with source and params") {
-          val script = Script.from("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2)
+          val script = Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2)
           val expected =
             """
               |{
@@ -74,7 +73,7 @@ object ScriptSpec extends ZIOSpecDefault {
         },
         test("properly encode Script with source, params and lang") {
           val script =
-            Script.from("doc['day_of_week'].value * params['factor']").withParams("factor" -> 2).lang("painless")
+            Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless")
           val expected =
             """
               |{

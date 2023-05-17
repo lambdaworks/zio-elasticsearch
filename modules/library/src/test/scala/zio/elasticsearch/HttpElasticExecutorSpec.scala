@@ -211,7 +211,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .updateByScript(
                 index = index,
                 id = DocumentId("V4x8q4UB3agN0z75fv5r"),
-                script = Script.from("ctx._source.intField += params['factor']").withParams("factor" -> 2)
+                script = Script.from("ctx._source.intField += params['factor']").params("factor" -> 2)
               )
               .orCreate(doc = secondDoc)
               .routing(Routing("routing"))

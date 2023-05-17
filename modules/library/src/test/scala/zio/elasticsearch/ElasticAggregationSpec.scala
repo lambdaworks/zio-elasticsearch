@@ -18,12 +18,12 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
             name = "aggregation",
-            script = Script("params.agg1 > 10"),
+            script = Script.from("params.agg1 > 10"),
             bucketsPath = Map("agg1" -> "aggregation1")
           )
           val aggregation2 = bucketSelectorAggregation(
             name = "aggregation",
-            script = Script("params.agg1 + params.agg2 > 10"),
+            script = Script.from("params.agg1 + params.agg2 > 10"),
             bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
           )
 
@@ -31,7 +31,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               BucketSelector(
                 name = "aggregation",
-                script = Script("params.agg1 > 10"),
+                script = Script.from("params.agg1 > 10"),
                 bucketsPath = Map("agg1" -> "aggregation1")
               )
             )
@@ -40,7 +40,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               BucketSelector(
                 name = "aggregation",
-                script = Script("params.agg1 + params.agg2 > 10"),
+                script = Script.from("params.agg1 + params.agg2 > 10"),
                 bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
               )
             )
@@ -332,12 +332,12 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
             name = "aggregation",
-            script = Script("params.agg1 > 10"),
+            script = Script.from("params.agg1 > 10"),
             bucketsPath = Map("agg1" -> "aggregation1")
           )
           val aggregation2 = bucketSelectorAggregation(
             name = "aggregation",
-            script = Script("params.agg1 + params.agg2 > 10"),
+            script = Script.from("params.agg1 + params.agg2 > 10"),
             bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
           )
 

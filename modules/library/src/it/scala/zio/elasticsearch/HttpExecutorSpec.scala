@@ -348,7 +348,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .withSubAgg(
                         bucketSelectorAggregation(
                           name = "aggregationSelector",
-                          script = Script("params.aggregation_int > 10"),
+                          script = Script.from("params.aggregation_int > 10"),
                           bucketsPath = Map("aggregation_int" -> "aggregationInt")
                         )
                       )
@@ -1514,7 +1514,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req6 = ElasticRequest.updateByScript(
                            index,
                            firstDocumentId,
-                           Script.from("ctx._source.intField = params['factor']").withParams("factor" -> 100)
+                           Script.from("ctx._source.intField = params['factor']").params("factor" -> 100)
                          )
                   req7 =
                     ElasticRequest
@@ -1548,7 +1548,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        ElasticRequest.updateByScript(
                          index,
                          documentId,
-                         Script.from("ctx._source.intField += params['factor']").withParams("factor" -> factor)
+                         Script.from("ctx._source.intField += params['factor']").params("factor" -> factor)
                        )
                      )
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
@@ -1563,7 +1563,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .updateByScript(
                            index,
                            documentId,
-                           Script.from("ctx._source.intField += params['factor']").withParams("factor" -> 2)
+                           Script.from("ctx._source.intField += params['factor']").params("factor" -> 2)
                          )
                          .orCreate(document)
                      )
@@ -1595,7 +1595,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     ElasticRequest
                       .updateAllByQuery(
                         updateByQueryIndex,
-                        Script.from("ctx._source['stringField'] = params['str']").withParams("str" -> stringField)
+                        Script.from("ctx._source['stringField'] = params['str']").params("str" -> stringField)
                       )
                       .refreshTrue
                   )

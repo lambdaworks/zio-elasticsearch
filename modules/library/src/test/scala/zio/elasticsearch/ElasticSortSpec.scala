@@ -199,14 +199,14 @@ object ElasticSortSpec extends ZIOSpecDefault {
           )
         },
         test("sortByScript") {
-          val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
+          val sort = sortBy(script = Script.from("doc['day_of_week'].value"), sourceType = NumberType)
           val sortWithMode =
-            sortBy(Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
+            sortBy(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
               .mode(Avg)
           val sortWithOrder =
-            sortBy(Script(source = "doc['day_of_week'].value").lang("painless"), NumberType).order(Desc)
+            sortBy(Script.from("doc['day_of_week'].value").lang("painless"), NumberType).order(Desc)
           val sortWithModeAndOrder = sortBy(
-            Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
+            Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
             NumberType
           ).mode(Avg).order(Asc)
 
@@ -352,15 +352,16 @@ object ElasticSortSpec extends ZIOSpecDefault {
           assert(sortWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("sortByScript") {
-          val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
+          val sort = sortBy(script = Script.from("doc['day_of_week'].value"), sourceType = NumberType)
           val sortWithMode = sortBy(
-            script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2),
+            script = Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2),
             sourceType = NumberType
           ).mode(Avg)
           val sortWithOrder =
-            sortBy(script = Script("doc['day_of_week'].value").lang("painless"), sourceType = NumberType).order(Desc)
+            sortBy(script = Script.from("doc['day_of_week'].value").lang("painless"), sourceType = NumberType)
+              .order(Desc)
           val sortWithModeAndOrder = sortBy(
-            Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
+            Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
             NumberType
           ).mode(Avg).order(Asc)
 

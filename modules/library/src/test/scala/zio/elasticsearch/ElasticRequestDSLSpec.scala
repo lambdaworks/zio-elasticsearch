@@ -326,7 +326,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         val jsonRequest = updateByScript(
           index = Index,
           id = DocId,
-          script = Script.from("ctx._source.intField += params['factor']").withParams("factor" -> 2)
+          script = Script.from("ctx._source.intField += params['factor']").params("factor" -> 2)
         ).orCreate[TestDocument](
           TestDocument(
             stringField = "stringField",
