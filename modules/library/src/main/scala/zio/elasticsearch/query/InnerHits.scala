@@ -20,7 +20,7 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Obj, Str}
 
-final case class InnerHits private (
+final case class InnerHits private[elasticsearch] (
   private val from: Option[Int],
   private val name: Option[String],
   private val size: Option[Int]

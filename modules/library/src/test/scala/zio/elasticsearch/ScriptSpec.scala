@@ -15,7 +15,9 @@ object ScriptSpec extends ZIOSpecDefault {
         },
         test("successfully create Script with source and params") {
           assert(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2))(
-            equalTo(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2))
+            equalTo(
+              Script(source = "doc['day_of_week'].value * params['factor']", params = Map("factor" -> 2), lang = None)
+            )
           )
         },
         test("successfully create Script with source and lang") {
@@ -26,7 +28,11 @@ object ScriptSpec extends ZIOSpecDefault {
         test("successfully create Script with source, params and lang") {
           assert(Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"))(
             equalTo(
-              Script.from("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless")
+              Script(
+                source = "doc['day_of_week'].value * params['factor']",
+                params = Map("factor" -> 2),
+                lang = Some("painless")
+              )
             )
           )
         }

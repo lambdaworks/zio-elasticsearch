@@ -22,7 +22,7 @@ import zio.elasticsearch.script.options._
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 
-final case class Script private (
+final case class Script private[elasticsearch] (
   private val source: String,
   private val params: Map[String, Any],
   private val lang: Option[String]

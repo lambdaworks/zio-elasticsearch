@@ -796,7 +796,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Max),
                 ignoreUnmapped = Some(false),
-                innerHitsField = Some(InnerHits.withName("innerHitName"))
+                innerHitsField = Some(InnerHits(None, Some("innerHitName"), None))
               )
             )
           )
