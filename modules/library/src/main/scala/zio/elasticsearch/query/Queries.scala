@@ -242,7 +242,7 @@ private[elasticsearch] final case class FunctionScore[S](
     Obj(
       "function_score" -> Obj(
         Chunk(
-          Some("functions" -> Arr(functions.map(_.toJson))),
+          Some("functions" -> Arr(functions.reverse.map(_.toJson))),
           boost.map("boost" -> Num(_)),
           boostMode.map(bm => "boost_mode" -> Str(s"${bm.toString.toLowerCase}")),
           maxBoost.map("max_boost" -> Num(_)),

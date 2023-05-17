@@ -27,7 +27,12 @@ sealed trait FunctionScoreFunction {
   private[elasticsearch] def toJson: Json
 }
 
-final case class ScriptScoreFunction(script: Script, weight: Option[Double], filter: Option[ElasticQuery[_]])
+object FunctionScoreFunction {
+  def scriptScoreFunction(script: Script): ScriptScoreFunction = ScriptScoreFunction(script = script, weight = None, filter = None)
+
+}
+
+private[elasticsearch] final case class ScriptScoreFunction(script: Script, weight: Option[Double], filter: Option[ElasticQuery[_]])
     extends FunctionScoreFunction { self =>
   def weight(value: Double): ScriptScoreFunction = self.copy(weight = Some(value))
 
@@ -122,6 +127,7 @@ object FieldValueFactorFunctionModifier {
   case object SQRT       extends FieldValueFactorFunctionModifier
   case object RECIPROCAL extends FieldValueFactorFunctionModifier
 }
+
 final case class DecayFunction(
   field: String,
   decayFunctionType: DecayFunctionType,

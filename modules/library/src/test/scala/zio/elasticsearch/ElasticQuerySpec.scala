@@ -22,6 +22,7 @@ import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
+import zio.elasticsearch.query.FunctionScoreFunction.scriptScoreFunction
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.{Painless, Script}
@@ -393,19 +394,50 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
         },
         test("functionScore") {
-          val fs    = ScriptScoreFunction(Script("params.agg1 + params.agg2 > 10"), None, None)
-          val query = functionScore(fs)
+          val scriptScoreFunction = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
+          val weightFunction      = WeightFunction(10.0, None)
+          val randomScoreFunction = RandomScoreFunction(None, None, None)
+          val fieldValueFactor    = FieldValueFactor("fieldName", None, None, None, None)
+          val decayFunction = DecayFunction(
+            "field",
+            DecayFunctionType.Exp,
+            origin = "11, 12",
+            scale = "2km",
+            offset = None,
+            decay = None,
+            weight = None,
+            multiValueMode = None,
+            filter = None
+          )
+
+          val query = functionScore(scriptScoreFunction)
+            .withFunction(weightFunction)
+            .withFunction(randomScoreFunction)
+            .withFunction(fieldValueFactor)
+            .withFunction(decayFunction)
+            .boost(2.0)
+            .boostMode(FunctionScoreBoostMode.Avg)
+            .maxBoost(42)
+            .minScore(32)
+            .query(matches("stringField", "string"))
+            .scoreMode(FunctionScoreScoreMode.Min)
 
           assert(query)(
             equalTo(
               FunctionScore[Any](
-                functions = NonEmptyChunk(fs),
-                boost = None,
-                boostMode = None,
-                maxBoost = None,
-                minScore = None,
-                query = None,
-                scoreMode = None
+                functions = NonEmptyChunk(
+                  decayFunction,
+                  fieldValueFactor,
+                  randomScoreFunction,
+                  weightFunction,
+                  scriptScoreFunction
+                ),
+                boost = Some(2.0),
+                boostMode = Some(FunctionScoreBoostMode.Avg),
+                maxBoost = Some(42.0),
+                minScore = Some(32.0),
+                query = Some(Match("stringField", "string")),
+                scoreMode = Some(FunctionScoreScoreMode.Min)
               )
             )
           )
