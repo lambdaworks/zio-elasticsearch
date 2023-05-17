@@ -1152,13 +1152,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = range(TestDocument.intField).gte(20)
-                  res <- Executor
-                           .execute(
-                             ElasticRequest
-                               .search(firstSearchIndex, query)
-                               .sort(sortBy(Script("doc['intField'].value").lang("painless"), NumberType).order(Asc))
-                           )
-                           .documentAs[TestDocument]
+                  res <-
+                    Executor
+                      .execute(
+                        ElasticRequest
+                          .search(firstSearchIndex, query)
+                          .sort(sortBy(Script.from("doc['intField'].value").lang("painless"), NumberType).order(Asc))
+                      )
+                      .documentAs[TestDocument]
                 } yield assert(res)(
                   equalTo(Chunk(firstDocumentWithFixedIntField, secondDocumentWithFixedIntField))
                 )
@@ -1513,7 +1514,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req6 = ElasticRequest.updateByScript(
                            index,
                            firstDocumentId,
-                           Script("ctx._source.intField = params['factor']").params("factor" -> 100)
+                           Script.from("ctx._source.intField = params['factor']").withParams("factor" -> 100)
                          )
                   req7 =
                     ElasticRequest
@@ -1547,7 +1548,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        ElasticRequest.updateByScript(
                          index,
                          documentId,
-                         Script("ctx._source.intField += params['factor']").params("factor" -> factor)
+                         Script.from("ctx._source.intField += params['factor']").withParams("factor" -> factor)
                        )
                      )
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
@@ -1562,7 +1563,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .updateByScript(
                            index,
                            documentId,
-                           Script("ctx._source.intField += params['factor']").params("factor" -> 2)
+                           Script.from("ctx._source.intField += params['factor']").withParams("factor" -> 2)
                          )
                          .orCreate(document)
                      )
@@ -1589,14 +1590,15 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.upsert[TestDocument](updateByQueryIndex, documentId, document).refreshTrue
                      )
-                updateRes <- Executor.execute(
-                               ElasticRequest
-                                 .updateAllByQuery(
-                                   updateByQueryIndex,
-                                   Script("ctx._source['stringField'] = params['str']").params("str" -> stringField)
-                                 )
-                                 .refreshTrue
-                             )
+                updateRes <-
+                  Executor.execute(
+                    ElasticRequest
+                      .updateAllByQuery(
+                        updateByQueryIndex,
+                        Script.from("ctx._source['stringField'] = params['str']").withParams("str" -> stringField)
+                      )
+                      .refreshTrue
+                  )
                 doc <- Executor.execute(ElasticRequest.getById(updateByQueryIndex, documentId)).documentAs[TestDocument]
               } yield assert(updateRes)(
                 equalTo(
@@ -1619,7 +1621,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .updateByQuery(
                         index = updateByQueryIndex,
                         query = term(field = TestDocument.stringField.keyword, value = "StringField"),
-                        script = Script("ctx._source['intField']++")
+                        script = Script.from("ctx._source['intField']++")
                       )
                       .refreshTrue
                   )

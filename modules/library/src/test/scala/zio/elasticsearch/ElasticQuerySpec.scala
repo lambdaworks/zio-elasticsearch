@@ -533,7 +533,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 childType = "child",
                 query = matchAll,
                 ignoreUnmapped = None,
-                innerHitsField = Some(InnerHits()),
+                innerHitsField = Some(InnerHits.empty),
                 maxChildren = None,
                 minChildren = None,
                 scoreMode = None
@@ -581,7 +581,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 childType = "child",
                 query = matchAll,
                 ignoreUnmapped = Some(true),
-                innerHitsField = Some(InnerHits()),
+                innerHitsField = Some(InnerHits.empty),
                 maxChildren = Some(5),
                 minChildren = Some(1),
                 scoreMode = Some(ScoreMode.Avg)
@@ -720,7 +720,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
           val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
           val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
-            .innerHits(InnerHits.name("innerHitName"))
+            .innerHits(InnerHits.withName("innerHitName"))
             .scoreMode(ScoreMode.Max)
 
           assert(query)(
@@ -796,7 +796,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Max),
                 ignoreUnmapped = Some(false),
-                innerHitsField = Some(InnerHits(name = Some("innerHitName")))
+                innerHitsField = Some(InnerHits.withName("innerHitName"))
               )
             )
           )

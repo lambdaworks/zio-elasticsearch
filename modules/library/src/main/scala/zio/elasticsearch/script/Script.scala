@@ -22,10 +22,10 @@ import zio.elasticsearch.script.options._
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 
-private[elasticsearch] final case class Script(
-  source: String,
-  params: Map[String, Any],
-  lang: Option[String]
+final case class Script private (
+  private val source: String,
+  private val params: Map[String, Any],
+  private val lang: Option[String]
 ) extends HasLang[Script]
     with HasParams[Script] { self =>
   def lang(value: String): Script =
@@ -57,6 +57,6 @@ private[elasticsearch] final case class Script(
 }
 
 object Script {
-  def apply(source: String): Script =
+  def from(source: String): Script =
     Script(source = source, params = Map.empty, lang = None)
 }
