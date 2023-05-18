@@ -22,7 +22,8 @@ import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
-import zio.elasticsearch.query.FunctionScoreFunction.scriptScoreFunction
+import zio.elasticsearch.query.FunctionScoreFunction._
+import zio.elasticsearch.query.MultiValueMode.Max
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.{Painless, Script}
@@ -394,27 +395,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
         },
         test("functionScore") {
-          val scriptScoreFunction = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
-          val weightFunction      = WeightFunction(10.0, None)
-          val randomScoreFunction = RandomScoreFunction(None, None, None)
-          val fieldValueFactor    = FieldValueFactor("fieldName", None, None, None, None)
-          val decayFunction = DecayFunction(
-            "field",
-            DecayFunctionType.Exp,
-            origin = "11, 12",
-            scale = "2km",
-            offset = None,
-            decay = None,
-            weight = None,
-            multiValueMode = None,
-            filter = None
-          )
+          val scriptScore = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
+          val weight      = weightFunction(10.0)
+          val randomScore = randomScoreFunction()
+          val fieldValue  = fieldValueFactor("fieldName")
+          val decay       = expDecayFunction("field", origin = "11, 12", scale = "2km")
 
-          val query = functionScore(scriptScoreFunction)
-            .withFunction(weightFunction)
-            .withFunction(randomScoreFunction)
-            .withFunction(fieldValueFactor)
-            .withFunction(decayFunction)
+          val query = functionScore(scriptScore)
+            .withFunction(weight)
+            .withFunction(randomScore)
+            .withFunction(fieldValue)
+            .withFunction(decay)
             .boost(2.0)
             .boostMode(FunctionScoreBoostMode.Avg)
             .maxBoost(42)
@@ -426,11 +417,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(
               FunctionScore[Any](
                 functions = NonEmptyChunk(
-                  decayFunction,
-                  fieldValueFactor,
-                  randomScoreFunction,
-                  weightFunction,
-                  scriptScoreFunction
+                  decay,
+                  fieldValue,
+                  randomScore,
+                  weight,
+                  scriptScore
                 ),
                 boost = Some(2.0),
                 boostMode = Some(FunctionScoreBoostMode.Avg),
@@ -1218,14 +1209,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected =
               """
                 |{
-                |  "bool": {
-                |    "filter": [
-                |      {
-                |        "match": {
-                |          "doubleField": 39.2
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match": {
+                |            "doubleField": 39.2
+                |          }
                 |        }
-                |      }
-                |    ]
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1233,15 +1226,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithBoost =
               """
                 |{
-                |  "bool": {
-                |    "filter": [
-                |      {
-                |        "match": {
-                |          "booleanField": true
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match": {
+                |            "booleanField": true
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "boost": 3.14
+                |      ],
+                |      "boost": 3.14
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1256,14 +1251,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected =
               """
                 |{
-                |  "bool": {
-                |    "must": [
-                |      {
-                |        "match_phrase": {
-                |          "stringField": "test"
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "match_phrase": {
+                |            "stringField": "test"
+                |          }
                 |        }
-                |      }
-                |    ]
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1271,15 +1268,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithBoost =
               """
                 |{
-                |  "bool": {
-                |    "must": [
-                |      {
-                |        "terms": {
-                |          "stringField": ["a", "b", "c"]
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "boost": 3.14
+                |      ],
+                |      "boost": 3.14
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1296,19 +1295,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected =
               """
                 |{
-                |  "bool": {
-                |    "must_not": [
-                |      {
-                |        "match": {
-                |          "stringField": "test"
+                |  "query": {
+                |    "bool": {
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "stringField": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": "test field"
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "testField": "test field"
-                |        }
-                |      }
-                |    ]
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1316,20 +1317,22 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithBoost =
               """
                 |{
-                |  "bool": {
-                |    "must_not": [
-                |      {
-                |        "match": {
-                |          "stringField.keyword": "test"
+                |  "query": {
+                |    "bool": {
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "intField": 22
-                |        }
-                |      }
-                |    ],
-                |    "boost": 10.21
+                |      ],
+                |      "boost": 10.21
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1355,19 +1358,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected =
               """
                 |{
-                |  "bool": {
-                |    "should": [
-                |      {
-                |        "match": {
-                |          "stringField": "test"
+                |  "query": {
+                |    "bool": {
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "stringField": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": "test field"
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "testField": "test field"
-                |        }
-                |      }
-                |    ]
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1375,20 +1380,22 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithBoost =
               """
                 |{
-                |  "bool": {
-                |    "should": [
-                |      {
-                |        "match": {
-                |          "stringField.keyword": "test"
+                |  "query": {
+                |    "bool": {
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "intField": 22
-                |        }
-                |      }
-                |    ],
-                |    "boost": 10.21
+                |      ],
+                |      "boost": 10.21
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1396,25 +1403,27 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithMinimumShouldMatch =
               """
                 |{
-                |  "bool": {
-                |    "should": [
-                |      {
-                |        "match": {
-                |          "stringField.keyword": "test"
+                |  "query": {
+                |    "bool": {
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "booleanField"
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "intField": 22
-                |        }
-                |      },
-                |      {
-                |        "exists": {
-                |          "field": "booleanField"
-                |        }
-                |      }
-                |    ],
-                |    "minimum_should_match": 2
+                |      ],
+                |      "minimum_should_match": 2
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1422,35 +1431,35 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithAllParams =
               """
                 |{
-                |  "bool": {
-                |    "should": [
-                |      {
-                |        "match": {
-                |          "stringField.keyword": "test"
+                |  "query": {
+                |    "bool": {
+                |      "should": [
+                |        {
+                |          "match": {
+                |            "stringField.keyword": "test"
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "intField": 22
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "booleanField"
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "intField": 22
-                |        }
-                |      },
-                |      {
-                |        "exists": {
-                |          "field": "booleanField"
-                |        }
-                |      }
-                |    ],
-                |    "boost": 3.14,
-                |    "minimum_should_match": 2
+                |      ],
+                |      "boost": 3.14,
+                |      "minimum_should_match": 2
+                |    }
                 |  }
                 |}
                 |""".stripMargin
 
             assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
             assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
-            assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(
-              equalTo(expectedWithMinimumShouldMatch.toJson)
-            ) &&
+            assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(equalTo(expectedWithMinimumShouldMatch.toJson)) &&
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
           },
           test("filter + must + mustNot + should") {
@@ -1468,21 +1477,23 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected1 =
               """
                 |{
-                |  "bool": {
-                |    "filter": [
-                |      {
-                |        "match_phrase": {
-                |          "stringField": "test"
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match_phrase": {
+                |            "stringField": "test"
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "must": [
-                |      {
-                |        "match": {
-                |          "booleanField": true
+                |      ],
+                |      "must": [
+                |        {
+                |          "match": {
+                |            "booleanField": true
+                |          }
                 |        }
-                |      }
-                |    ]
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1490,31 +1501,33 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected2 =
               """
                 |{
-                |  "bool": {
-                |    "must": [
-                |      {
-                |        "terms": {
-                |          "stringField": ["a", "b", "c"]
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "must_not": [
-                |      {
-                |        "match": {
-                |          "doubleField": 3.14
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "doubleField": 3.14
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": true
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "anotherTestField"
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "testField": true
-                |        }
-                |      },
-                |      {
-                |        "exists": {
-                |          "field": "anotherTestField"
-                |        }
-                |      }
-                |    ]
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1522,36 +1535,38 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expected3 =
               """
                 |{
-                |  "bool": {
-                |    "must": [
-                |      {
-                |        "terms": {
-                |          "stringField": ["a", "b", "c"]
-                |        }
-                |      }
-                |    ],
-                |    "must_not": [
-                |      {
-                |        "match": {
-                |          "intField": 50
-                |        }
-                |      }
-                |    ],
-                |    "should": [
-                |      {
-                |        "range": {
-                |          "intField": {
-                |            "gt": 1,
-                |            "lte": 100
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
                 |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "stringField": "test"
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "intField": 50
+                |          }
                 |        }
-                |      }
-                |    ]
+                |      ],
+                |      "should": [
+                |        {
+                |          "range": {
+                |            "intField": {
+                |              "gt": 1,
+                |              "lte": 100
+                |            }
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "stringField": "test"
+                |          }
+                |        }
+                |      ]
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1559,22 +1574,24 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithBoost =
               """
                 |{
-                |  "bool": {
-                |    "filter": [
-                |      {
-                |        "match_phrase": {
-                |          "stringField": "test"
+                |  "query": {
+                |    "bool": {
+                |      "filter": [
+                |        {
+                |          "match_phrase": {
+                |            "stringField": "test"
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "must": [
-                |      {
-                |        "match": {
-                |          "booleanField": true
+                |      ],
+                |      "must": [
+                |        {
+                |          "match": {
+                |            "booleanField": true
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "boost": 3.14
+                |      ],
+                |      "boost": 3.14
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1582,32 +1599,34 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithMinimumShouldMatch =
               """
                 |{
-                |  "bool": {
-                |    "must": [
-                |      {
-                |        "terms": {
-                |          "stringField": ["a", "b", "c"]
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "must_not": [
-                |      {
-                |        "match": {
-                |          "doubleField": 3.14
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "doubleField": 3.14
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "testField": true
+                |          }
+                |        },
+                |        {
+                |          "exists": {
+                |            "field": "anotherTestField"
+                |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "testField": true
-                |        }
-                |      },
-                |      {
-                |        "exists": {
-                |          "field": "anotherTestField"
-                |        }
-                |      }
-                |    ],
-                |    "minimum_should_match": 2
+                |      ],
+                |      "minimum_should_match": 2
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1615,38 +1634,40 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             val expectedWithAllParams =
               """
                 |{
-                |  "bool": {
-                |    "must": [
-                |      {
-                |        "terms": {
-                |          "stringField": ["a", "b", "c"]
-                |        }
-                |      }
-                |    ],
-                |    "must_not": [
-                |      {
-                |        "match": {
-                |          "intField": 50
-                |        }
-                |      }
-                |    ],
-                |    "should": [
-                |      {
-                |        "range": {
-                |          "intField": {
-                |            "gt": 1,
-                |            "lte": 100
+                |  "query": {
+                |    "bool": {
+                |      "must": [
+                |        {
+                |          "terms": {
+                |            "stringField": ["a", "b", "c"]
                 |          }
                 |        }
-                |      },
-                |      {
-                |        "match": {
-                |          "stringField": "test"
+                |      ],
+                |      "must_not": [
+                |        {
+                |          "match": {
+                |            "intField": 50
+                |          }
                 |        }
-                |      }
-                |    ],
-                |    "boost": 3.14,
-                |    "minimum_should_match": 3
+                |      ],
+                |      "should": [
+                |        {
+                |          "range": {
+                |            "intField": {
+                |              "gt": 1,
+                |              "lte": 100
+                |            }
+                |          }
+                |        },
+                |        {
+                |          "match": {
+                |            "stringField": "test"
+                |          }
+                |        }
+                |      ],
+                |      "boost": 3.14,
+                |      "minimum_should_match": 3
+                |    }
                 |  }
                 |}
                 |""".stripMargin
@@ -1655,9 +1676,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(query2.toJson(fieldPath = None))(equalTo(expected2.toJson)) &&
             assert(query3.toJson(fieldPath = None))(equalTo(expected3.toJson)) &&
             assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
-            assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(
-              equalTo(expectedWithMinimumShouldMatch.toJson)
-            ) &&
+            assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(equalTo(expectedWithMinimumShouldMatch.toJson)) &&
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
           }
         ),
@@ -1670,9 +1689,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "*test*"
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*"
+              |      }
               |    }
               |  }
               |}
@@ -1681,10 +1702,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithBoost =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "*test*",
-              |      "boost": 3.14
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*",
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -1693,10 +1716,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithCaseInsensitive =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "*test*",
-              |      "case_insensitive": true
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*",
+              |        "case_insensitive": true
+              |      }
               |    }
               |  }
               |}
@@ -1705,11 +1730,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "*test*",
-              |      "boost": 39.2,
-              |      "case_insensitive": false
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "*test*",
+              |        "boost": 39.2,
+              |        "case_insensitive": false
+              |      }
               |    }
               |  }
               |}
@@ -1728,8 +1755,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "exists": {
-              |    "field": "testField"
+              |  "query": {
+              |    "exists": {
+              |      "field": "testField"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1737,8 +1766,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedTs =
             """
               |{
-              |  "exists": {
-              |    "field": "dateField"
+              |  "query": {
+              |    "exists": {
+              |      "field": "dateField"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1756,6 +1787,59 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryTsWithBoost.toJson(fieldPath = None))(equalTo(expectedTsWithBoost.toJson))
+        },
+        test("functionScore") {
+          val query = functionScore(scriptScoreFunction(Script("params.agg1 + params.agg2 > 10")))
+            .withFunction(randomScoreFunction().weight(2.0))
+            .withFunction(expDecayFunction("field", origin = "11, 12", scale = "2km").multiValueMode(Max))
+            .boost(2.0)
+            .boostMode(FunctionScoreBoostMode.Avg)
+            .maxBoost(42)
+            .minScore(32)
+            .query(matches("stringField", "string"))
+            .scoreMode(FunctionScoreScoreMode.Min)
+
+          val expected =
+            """
+              |{
+              |  "function_score": {
+              |    "query" : { "match": { "stringField" : "string" } },
+              |    "score_mode": "min",
+              |    "boost": 2.0,
+              |    "boost_mode": "multiply",
+              |    "max_boost": 42,
+              |    "min_score": 32,
+              |    "functions": [
+              |      {
+              |        "script_score": {
+              |          "script": {
+              |            "source": "params.agg1 + params.agg2 > 10"
+              |          }
+              |        }
+              |      },
+              |      {
+              |        "random_score": {},
+              |        "weight": 2.0
+              |      },
+              |      {
+              |        "exp": {
+              |          "field": {
+              |            "origin": "2013-09-17",
+              |            "scale": "10d",
+              |            "offset": "5d",
+              |            "decay": 0.5
+              |          },
+              |          "multi_value_mode": "max"
+              |        },
+              |        "weight": 10.0,
+              |        "filter": { "match": { "field": "value" } }
+              |      }
+              |    ]
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("geoDistance") {
           val query =
@@ -1779,8 +1863,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "geo_distance": {
-              |    "testField": "20.0,21.1"
+              |  "query": {
+              |    "geo_distance": {
+              |      "testField": "20.0,21.1"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1788,8 +1874,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithString =
             """
               |{
-              |  "geo_distance": {
-              |    "locationField": "drm3btev3e86"
+              |  "query": {
+              |    "geo_distance": {
+              |      "locationField": "drm3btev3e86"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1797,9 +1885,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithDistance =
             """
               |{
-              |  "geo_distance": {
-              |    "distance": "200.0km",
-              |    "locationField": "20.0,21.1"
+              |  "query": {
+              |    "geo_distance": {
+              |      "distance": "200.0km",
+              |      "locationField": "20.0,21.1"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1807,9 +1897,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithDistanceType =
             """
               |{
-              |  "geo_distance": {
-              |    "distance_type" :  "plane",
-              |    "locationField": "20.0,21.1"
+              |  "query": {
+              |    "geo_distance": {
+              |      "distance_type" :  "plane",
+              |      "locationField": "20.0,21.1"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1817,9 +1909,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithName =
             """
               |{
-              |  "geo_distance": {
-              |    "_name": "name",
-              |    "locationField": "20.0,21.1"
+              |  "query": {
+              |    "geo_distance": {
+              |      "_name": "name",
+              |      "locationField": "20.0,21.1"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1827,9 +1921,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithValidationMethod =
             """
               |{
-              |  "geo_distance": {
-              |    "validation_method": "IGNORE_MALFORMED",
-              |    "locationField": "20.0,21.1"
+              |  "query": {
+              |    "geo_distance": {
+              |      "validation_method": "IGNORE_MALFORMED",
+              |      "locationField": "20.0,21.1"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1837,12 +1933,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "geo_distance": {
-              |    "validation_method": "IGNORE_MALFORMED",
-              |    "distance_type" :  "plane",
-              |    "_name": "name",
-              |    "distance": "200.0km",
-              |    "locationField": "20.0,21.1"
+              |  "query": {
+              |    "geo_distance": {
+              |      "validation_method": "IGNORE_MALFORMED",
+              |      "distance_type" :  "plane",
+              |      "_name": "name",
+              |      "distance": "200.0km",
+              |      "locationField": "20.0,21.1"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -1872,11 +1970,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "query": {
-              |      "match": {
-              |        "stringField" : "test"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "query": {
+              |        "match": {
+              |          "stringField" : "test"
+              |        }
               |      }
               |    }
               |  }
@@ -1886,12 +1986,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithIgnoreUnmapped =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "ignore_unmapped": true,
-              |    "query": {
-              |      "match": {
-              |        "field" : "value"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "ignore_unmapped": true,
+              |      "query": {
+              |        "match": {
+              |          "field" : "value"
+              |        }
               |      }
               |    }
               |  }
@@ -1901,12 +2003,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithInnerHits =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "inner_hits": {},
-              |    "query": {
-              |      "match": {
-              |        "field" : "value"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "inner_hits": {},
+              |      "query": {
+              |        "match": {
+              |          "field" : "value"
+              |        }
               |      }
               |    }
               |  }
@@ -1916,12 +2020,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithMaxChildren =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "max_children": 5,
-              |    "query": {
-              |      "match": {
-              |        "field" : "value"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "max_children": 5,
+              |      "query": {
+              |        "match": {
+              |          "field" : "value"
+              |        }
               |      }
               |    }
               |  }
@@ -1931,12 +2037,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithMinChildren =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "min_children": 1,
-              |    "query": {
-              |      "match": {
-              |        "field" : "value"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "min_children": 1,
+              |      "query": {
+              |        "match": {
+              |          "field" : "value"
+              |        }
               |      }
               |    }
               |  }
@@ -1946,12 +2054,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithScoreMode =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "score_mode": "avg",
-              |    "query": {
-              |      "match": {
-              |        "field" : "value"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "score_mode": "avg",
+              |      "query": {
+              |        "match": {
+              |          "field" : "value"
+              |        }
               |      }
               |    }
               |  }
@@ -1961,16 +2071,18 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "has_child": {
-              |    "type": "child",
-              |    "score_mode": "avg",
-              |    "ignore_unmapped": true,
-              |    "inner_hits": {},
-              |    "max_children": 5,
-              |    "min_children": 1,
-              |    "query": {
-              |      "match": {
-              |        "field" : "value"
+              |  "query": {
+              |    "has_child": {
+              |      "type": "child",
+              |      "score_mode": "avg",
+              |      "ignore_unmapped": true,
+              |      "inner_hits": {},
+              |      "max_children": 5,
+              |      "min_children": 1,
+              |      "query": {
+              |        "match": {
+              |          "field" : "value"
+              |        }
               |      }
               |    }
               |  }
@@ -2001,11 +2113,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "has_parent": {
-              |    "parent_type": "parent",
-              |    "query": {
-              |      "match": {
-              |        "stringField" : "test"
+              |  "query": {
+              |    "has_parent": {
+              |      "parent_type": "parent",
+              |      "query": {
+              |        "match": {
+              |          "stringField" : "test"
+              |        }
               |      }
               |    }
               |  }
@@ -2123,15 +2237,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "match_all": {}
+              |  "query": {
+              |    "match_all": {}
+              |  }
               |}
               |""".stripMargin
 
           val expectedWithBoost =
             """
               |{
-              |  "match_all": {
-              |    "boost": 3.14
+              |  "query": {
+              |    "match_all": {
+              |      "boost": 3.14
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2147,8 +2265,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "match": {
-              |    "testField": true
+              |  "query": {
+              |    "match": {
+              |      "testField": true
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2156,8 +2276,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedTsInt =
             """
               |{
-              |  "match": {
-              |    "intField": 39
+              |  "query": {
+              |    "match": {
+              |      "intField": 39
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2165,8 +2287,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedTsString =
             """
               |{
-              |  "match": {
-              |    "stringField": "test"
+              |  "query": {
+              |    "match": {
+              |      "stringField": "test"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2185,8 +2309,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedSimple =
             """
               |{
-              |  "match_phrase": {
-              |    "stringField": "this is a test"
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField": "this is a test"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2194,8 +2320,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedRaw =
             """
               |{
-              |  "match_phrase": {
-              |    "stringField.raw": "this is a test"
+              |  "query": {
+              |    "match_phrase": {
+              |      "stringField.raw": "this is a test"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2241,10 +2369,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "nested": {
-              |    "path": "subDocumentList",
-              |    "query": {
-              |      "match_all": {}
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "match_all": {}
+              |      }
               |    }
               |  }
               |}
@@ -2253,15 +2383,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithNested =
             """
               |{
-              |  "nested": {
-              |    "path": "subDocumentList",
-              |    "query": {
-              |      "nested": {
-              |        "path": "subDocumentList.items",
-              |        "query": {
-              |          "term": {
-              |            "subDocumentList.items.testField": {
-              |              "value": "test"
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "nested": {
+              |          "path": "subDocumentList.items",
+              |          "query": {
+              |            "term": {
+              |              "subDocumentList.items.testField": {
+              |                "value": "test"
+              |              }
               |            }
               |          }
               |        }
@@ -2274,12 +2406,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithIgnoreUnmapped =
             """
               |{
-              |  "nested": {
-              |    "path": "subDocumentList",
-              |    "query": {
-              |      "match_all": {}
-              |    },
-              |    "ignore_unmapped": true
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "ignore_unmapped": true 
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2317,12 +2451,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithInnerHitsEmpty =
             """
               |{
-              |  "nested": {
-              |    "path": "subDocumentList",
-              |    "query": {
-              |      "match_all": {}
-              |    },
-              |    "inner_hits": {}
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "inner_hits": {}
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2330,12 +2466,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithScoreMode =
             """
               |{
-              |  "nested": {
-              |    "path": "subDocumentList",
-              |    "query": {
-              |      "match_all": {}
-              |    },
-              |    "score_mode": "avg"
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "score_mode": "avg"
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2343,17 +2481,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "nested": {
-              |    "path": "subDocumentList",
-              |    "query": {
-              |      "match_all": {}
-              |    },
-              |    "ignore_unmapped": false,
-              |    "score_mode": "min",
-              |    "inner_hits": {
-              |      "from": 10,
-              |      "size": 20,
-              |      "name": "innerHitName"
+              |  "query": {
+              |    "nested": {
+              |      "path": "subDocumentList",
+              |      "query": {
+              |        "match_all": {}
+              |      },
+              |      "ignore_unmapped": false,
+              |      "score_mode": "min",
+              |      "inner_hits": {
+              |        "from": 10,
+              |        "size": 20,
+              |        "name": "innerHitName"
+              |      }
               |    }
               |  }
               |}
@@ -2381,8 +2521,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedEmpty =
             """
               |{
-              |  "range": {
-              |    "intField": {
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |      }
               |    }
               |  }
               |}
@@ -2391,9 +2533,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithBoost =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "boost": 3.14
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2402,9 +2546,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedLowerBound =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "gt": 23
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "gt": 23
+              |      }
               |    }
               |  }
               |}
@@ -2413,9 +2559,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedUpperBound =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "lt": 45
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "lt": 45
+              |      }
               |    }
               |  }
               |}
@@ -2424,9 +2572,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedInclusiveLowerBound =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "gte": 23
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "gte": 23
+              |      }
               |    }
               |  }
               |}
@@ -2435,9 +2585,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedInclusiveUpperBound =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "lte": 45
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "lte": 45
+              |      }
               |    }
               |  }
               |}
@@ -2446,10 +2598,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedMixedBounds =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "gt": 10,
-              |      "lte": 99
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "gt": 10,
+              |        "lte": 99
+              |      }
               |    }
               |  }
               |}
@@ -2458,11 +2612,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedMixedBoundsWithBoost =
             """
               |{
-              |  "range": {
-              |    "intField": {
-              |      "gt": 10,
-              |      "lte": 99,
-              |      "boost": 3.14
+              |  "query": {
+              |    "range": {
+              |      "intField": {
+              |        "gt": 10,
+              |        "lte": 99,
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2534,9 +2690,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "test*"
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*"
+              |      }
               |    }
               |  }
               |}
@@ -2545,10 +2703,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithBoost =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "test*",
-              |      "boost": 3.14
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*",
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2557,10 +2717,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithCaseInsensitive =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "test*",
-              |      "case_insensitive": true
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*",
+              |        "case_insensitive": true
+              |      }
               |    }
               |  }
               |}
@@ -2569,11 +2731,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "test*",
-              |      "boost": 39.2,
-              |      "case_insensitive": false
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "test*",
+              |        "boost": 39.2,
+              |        "case_insensitive": false
+              |      }
               |    }
               |  }
               |}
@@ -2593,9 +2757,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "term": {
-              |    "stringField": {
-              |      "value": "test"
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test"
+              |      }
               |    }
               |  }
               |}
@@ -2604,10 +2770,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithBoost =
             """
               |{
-              |  "term": {
-              |    "stringField": {
-              |      "value": "test",
-              |      "boost": 10.21
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test",
+              |        "boost": 10.21
+              |      }
               |    }
               |  }
               |}
@@ -2616,10 +2784,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithCaseInsensitive =
             """
               |{
-              |  "term": {
-              |    "stringField": {
-              |      "value": "test",
-              |      "case_insensitive": true
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test",
+              |        "case_insensitive": true
+              |      }
               |    }
               |  }
               |}
@@ -2628,11 +2798,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "term": {
-              |    "stringField": {
-              |      "value": "test",
-              |      "boost": 3.14,
-              |      "case_insensitive": false
+              |  "query": {
+              |    "term": {
+              |      "stringField": {
+              |        "value": "test",
+              |        "boost": 3.14,
+              |        "case_insensitive": false
+              |      }
               |    }
               |  }
               |}
@@ -2650,8 +2822,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "terms": {
-              |    "stringField": [ "a", "b", "c" ]
+              |  "query": {
+              |    "terms": {
+              |      "stringField": [ "a", "b", "c" ]
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2659,9 +2833,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithBoost =
             """
               |{
-              |  "terms": {
-              |    "stringField": [ "a", "b", "c" ],
-              |    "boost": 10.21
+              |  "query": {
+              |    "terms": {
+              |      "stringField": [ "a", "b", "c" ],
+              |      "boost": 10.21
+              |    }
               |  }
               |}
               |""".stripMargin
@@ -2678,9 +2854,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expected =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "[a-zA-Z]+"
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+"
+              |      }
               |    }
               |  }
               |}
@@ -2689,10 +2867,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithBoost =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "[a-zA-Z]+",
-              |      "boost": 3.14
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+",
+              |        "boost": 3.14
+              |      }
               |    }
               |  }
               |}
@@ -2701,10 +2881,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithCaseInsensitive =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "[a-zA-Z]+",
-              |      "case_insensitive": true
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+",
+              |        "case_insensitive": true
+              |      }
               |    }
               |  }
               |}
@@ -2713,11 +2895,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedWithAllParams =
             """
               |{
-              |  "wildcard": {
-              |    "stringField": {
-              |      "value": "[a-zA-Z]+",
-              |      "boost": 39.2,
-              |      "case_insensitive": false
+              |  "query": {
+              |    "wildcard": {
+              |      "stringField": {
+              |        "value": "[a-zA-Z]+",
+              |        "boost": 39.2,
+              |        "case_insensitive": false
+              |      }
               |    }
               |  }
               |}

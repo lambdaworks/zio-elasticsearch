@@ -17,6 +17,7 @@
 package zio.elasticsearch.query
 
 import zio.Chunk
+import zio.elasticsearch.query.DecayFunctionType._
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Obj, Str}
@@ -28,12 +29,76 @@ sealed trait FunctionScoreFunction {
 }
 
 object FunctionScoreFunction {
-  def scriptScoreFunction(script: Script): ScriptScoreFunction = ScriptScoreFunction(script = script, weight = None, filter = None)
+  def expDecayFunction(field: String, origin: String, scale: String): DecayFunction =
+    DecayFunction(
+      field = field,
+      decayFunctionType = Exp,
+      origin = origin,
+      scale = scale,
+      decay = None,
+      filter = None,
+      multiValueMode = None,
+      offset = None,
+      weight = None
+    )
 
+  def fieldValueFactor(fieldName: String): FieldValueFactor =
+    FieldValueFactor(
+      fieldName = fieldName,
+      factor = None,
+      filter = None,
+      modifier = None,
+      missing = None,
+      weight = None
+    )
+
+  def gaussDecayFunction(field: String, origin: String, scale: String): DecayFunction =
+    DecayFunction(
+      field = field,
+      decayFunctionType = Gauss,
+      origin = origin,
+      scale = scale,
+      decay = None,
+      filter = None,
+      multiValueMode = None,
+      offset = None,
+      weight = None
+    )
+
+  def linearDecayFunction(field: String, origin: String, scale: String): DecayFunction =
+    DecayFunction(
+      field = field,
+      decayFunctionType = Linear,
+      origin = origin,
+      scale = scale,
+      decay = None,
+      filter = None,
+      multiValueMode = None,
+      offset = None,
+      weight = None
+    )
+
+  def randomScoreFunction(): RandomScoreFunction =
+    RandomScoreFunction(None, None, None)
+
+  def randomScoreFunction(seed: Long): RandomScoreFunction =
+    RandomScoreFunction(filter = None, seedAndField = Some(SeedAndField(seed = seed)), weight = None)
+
+  def randomScoreFunction(seed: Long, field: String): RandomScoreFunction =
+    RandomScoreFunction(filter = None, seedAndField = Some(SeedAndField(seed = seed, fieldName = field)), weight = None)
+
+  def scriptScoreFunction(script: Script): ScriptScoreFunction =
+    ScriptScoreFunction(script = script, weight = None, filter = None)
+
+  def weightFunction(weight: Double): WeightFunction =
+    WeightFunction(weight = weight, filter = None)
 }
 
-private[elasticsearch] final case class ScriptScoreFunction(script: Script, weight: Option[Double], filter: Option[ElasticQuery[_]])
-    extends FunctionScoreFunction { self =>
+private[elasticsearch] final case class ScriptScoreFunction(
+  script: Script,
+  weight: Option[Double],
+  filter: Option[ElasticQuery[_]]
+) extends FunctionScoreFunction { self =>
   def weight(value: Double): ScriptScoreFunction = self.copy(weight = Some(value))
 
   def withFilter(value: ElasticQuery[_]): ScriptScoreFunction = self.copy(filter = Some(value))
@@ -49,7 +114,8 @@ private[elasticsearch] final case class ScriptScoreFunction(script: Script, weig
 
 }
 
-final case class WeightFunction(weight: Double, filter: Option[ElasticQuery[_]]) extends FunctionScoreFunction { self =>
+private[elasticsearch] final case class WeightFunction(weight: Double, filter: Option[ElasticQuery[_]])
+    extends FunctionScoreFunction { self =>
   def withFilter(value: ElasticQuery[_]): WeightFunction = self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
@@ -61,10 +127,10 @@ final case class WeightFunction(weight: Double, filter: Option[ElasticQuery[_]])
     )
 }
 
-final case class RandomScoreFunction(
+private[elasticsearch] final case class RandomScoreFunction(
+  filter: Option[ElasticQuery[_]],
   seedAndField: Option[SeedAndField],
-  weight: Option[Double],
-  filter: Option[ElasticQuery[_]]
+  weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
   def weight(value: Double): RandomScoreFunction = self.copy(weight = Some(value))
@@ -88,7 +154,8 @@ final case class FieldValueFactor(
   factor: Option[Double],
   filter: Option[ElasticQuery[_]],
   modifier: Option[FieldValueFactorFunctionModifier],
-  missing: Option[Double]
+  missing: Option[Double],
+  weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
   def factor(value: Double): FieldValueFactor = self.copy(factor = Some(value))
@@ -97,19 +164,26 @@ final case class FieldValueFactor(
 
   def missing(value: Double): FieldValueFactor = self.copy(missing = Some(value))
 
+  def weight(value: Double): FieldValueFactor = self.copy(weight = Some(value))
+
   def withFilter(value: ElasticQuery[_]): FieldValueFactor = self.copy(filter = Some(value))
 
-  override def toJson: Json =
+  def toJson: Json =
     Obj(
-      "field_value_factor" -> Obj(
-        Chunk(
-          Some("field" -> Str(fieldName)),
-          factor.map("factor" -> Num(_)),
-          filter.map(f => "filter" -> f.toJson),
-          modifier.map(m => "modifier" -> Str(m.toString.toLowerCase)),
-          missing.map("missing" -> Num(_))
-        ).flatten
-      )
+      Chunk(
+        Some(
+          "field_value_factor" -> Obj(
+            Chunk(
+              Some("field" -> Str(fieldName)),
+              factor.map("factor" -> Num(_)),
+              modifier.map(m => "modifier" -> Str(m.toString.toLowerCase)),
+              missing.map("missing" -> Num(_))
+            ).flatten
+          )
+        ),
+        filter.map(f => "filter" -> f.paramsToJson(None)),
+        weight.map("weight" -> Num(_))
+      ).flatten
     )
 }
 
@@ -133,11 +207,11 @@ final case class DecayFunction(
   decayFunctionType: DecayFunctionType,
   origin: String,
   scale: String,
-  offset: Option[String],
   decay: Option[Double],
-  weight: Option[Double],
+  filter: Option[ElasticQuery[_]],
   multiValueMode: Option[MultiValueMode],
-  override val filter: Option[ElasticQuery[_]]
+  offset: Option[String],
+  weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
   def offset(value: String): DecayFunction = self.copy(offset = Some(value))
@@ -148,9 +222,9 @@ final case class DecayFunction(
 
   def multiValueMode(value: MultiValueMode): DecayFunction = self.copy(multiValueMode = Some(value))
 
-  override def withFilter(filter: ElasticQuery[_]): FunctionScoreFunction = self.copy(filter = Some(filter))
+  def withFilter(filter: ElasticQuery[_]): FunctionScoreFunction = self.copy(filter = Some(filter))
 
-  override def toJson: Json =
+  def toJson: Json =
     Obj(
       Chunk(
         Some(
@@ -170,7 +244,8 @@ final case class DecayFunction(
             ).flatten
           )
         ),
-        weight.map("weight" -> Num(_))
+        weight.map("weight" -> Num(_)),
+        filter.map(f => "filter" -> f.paramsToJson(None))
       ).flatten
     )
 }
@@ -218,5 +293,5 @@ object FunctionScoreBoostMode {
 
 final case class SeedAndField(seed: Long, fieldName: String = SeedAndField.DefaultFieldName)
 object SeedAndField {
-  final val DefaultFieldName = "_seq_no"
+  private final val DefaultFieldName = "_seq_no"
 }
