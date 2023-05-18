@@ -125,7 +125,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(Count(index = Index, query = Some(Query), routing = Some(RoutingValue)))
           )
         },
-        test("create without id") {
+        test("create") {
           val createRequest              = create(index = Index, doc = Doc1)
           val createRequestWithRefresh   = create(index = Index, doc = Doc1).refreshTrue
           val createRequestWithRouting   = create(index = Index, doc = Doc1).routing(RoutingValue)
@@ -143,7 +143,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("create with id") {
+        test("create with ID") {
           val createRequest            = create(index = Index, id = DocId, doc = Doc1)
           val createRequestWithRefresh = create(index = Index, id = DocId, doc = Doc1).refreshTrue
           val createRequestWithRouting = create(index = Index, id = DocId, doc = Doc1).routing(RoutingValue)
@@ -192,14 +192,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("create index") {
+        test("createIndex") {
           val createIndexRequest               = createIndex(Index)
           val createIndexRequestWithDefinition = createIndex(name = Index, definition = "definition")
 
           assert(createIndexRequest)(equalTo(CreateIndex(name = Index, definition = None))) &&
           assert(createIndexRequestWithDefinition)(equalTo(CreateIndex(name = Index, definition = Some("definition"))))
         },
-        test("delete by id") {
+        test("deleteById") {
           val deleteByIdRequest              = deleteById(index = Index, id = DocId)
           val deleteByIdRequestWithRefresh   = deleteById(index = Index, id = DocId).refreshTrue
           val deleteByIdRequestWithRouting   = deleteById(index = Index, id = DocId).routing(RoutingValue)
@@ -215,7 +215,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(DeleteById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
           )
         },
-        test("delete by query") {
+        test("deleteByQuery") {
           val deleteByQueryRequest            = deleteByQuery(index = Index, query = Query)
           val deleteByQueryRequestWithRefresh = deleteByQuery(index = Index, query = Query).refreshTrue
           val deleteByQueryRequestWithRouting = deleteByQuery(index = Index, query = Query).routing(RoutingValue)
@@ -232,7 +232,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(DeleteByQuery(index = Index, query = Query, refresh = Some(true), routing = Some(RoutingValue)))
           )
         },
-        test("delete index") {
+        test("deleteIndex") {
           val deleteIndexRequest = deleteIndex(Index)
 
           assert(deleteIndexRequest)(equalTo(DeleteIndex(Index)))
@@ -244,7 +244,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(existsRequest)(equalTo(Exists(index = Index, id = DocId, routing = None))) &&
           assert(existsRequestWithRouting)(equalTo(Exists(index = Index, id = DocId, routing = Some(RoutingValue))))
         },
-        test("get by id") {
+        test("getById") {
           val getByIdRequest              = getById(index = Index, id = DocId)
           val getByIdRequestWithRefresh   = getById(index = Index, id = DocId).refreshTrue
           val getByIdRequestWithRouting   = getById(index = Index, id = DocId).routing(RoutingValue)
@@ -709,7 +709,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("update all by query") {
+        test("updateAllByQuery") {
           val updateByQueryRequest              = updateAllByQuery(index = Index, script = Script1)
           val updateByQueryRequestWithConflicts = updateAllByQuery(index = Index, script = Script1).conflicts(Abort)
           val updateByQueryRequestWithRefresh   = updateAllByQuery(index = Index, script = Script1).refreshTrue
@@ -774,7 +774,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("update by query") {
+        test("updateByQuery") {
           val updateByQueryRequest = updateByQuery(index = Index, query = Query, script = Script1)
           val updateByQueryRequestWithConflicts =
             updateByQuery(index = Index, query = Query, script = Script1).conflicts(Abort)
@@ -845,7 +845,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("update by script") {
+        test("updateByScript") {
           val updateRequest            = updateByScript(Index, DocId, Script1)
           val updateRequestWithRefresh = updateByScript(Index, DocId, Script1).refreshTrue
           val updateRequestWithRouting = updateByScript(Index, DocId, Script1).routing(RoutingValue)
@@ -1046,7 +1046,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(jsonRequest)(equalTo(expected.toJson))
         },
-        test("create with id") {
+        test("create with ID") {
           val jsonRequest = create(index = Index, id = DocId, doc = Doc1) match {
             case r: CreateWithId => r.toJson
           }
@@ -1069,7 +1069,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(jsonRequest)(equalTo(expected.toJson))
         },
-        test("create index") {
+        test("createIndex") {
           val definition =
             """
               |{
@@ -1088,7 +1088,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequest)(equalTo("")) &&
           assert(jsonRequestWithDefinition)(equalTo(definition))
         },
-        test("create or update") {
+        test("upsert") {
           val jsonRequest = upsert(index = Index, id = DocId, doc = Doc1) match {
             case r: CreateOrUpdate => r.toJson
           }
@@ -1111,7 +1111,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(jsonRequest)(equalTo(expected.toJson))
         },
-        test("delete by query") {
+        test("deleteByQuery") {
           val jsonRequest = deleteByQuery(index = Index, query = Query) match {
             case r: DeleteByQuery => r.toJson
           }
@@ -1571,7 +1571,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequest)(equalTo(expected.toJson)) &&
           assert(jsonRequestWithUpsert)(equalTo(expectedWithUpsert.toJson))
         },
-        test("update by query") {
+        test("updateByQuery") {
           val jsonRequest = updateAllByQuery(index = Index, script = Script1) match {
             case r: UpdateByQuery => r.toJson
           }
