@@ -19,26 +19,26 @@ To create a `Wildcard` query use one of the following methods:
 ```scala
 val query: WildcardQuery = contains(field = "name", value = "a")
 val query: WildcardQuery = startsWith(field = "name", value = "a")
-val query: WildcardQuery = wildcard(field = "name", value = "test")
+val query: WildcardQuery = wildcard(field = "name", value = "a*a*")
 ```
 
 To create a type-safe `Wildcard` query use one of the following methods:
 ```scala
 val query: WildcardQuery = contains(field = Document.name, value = "a")
 val query: WildcardQuery = startsWith(field = Document.name, value = "a")
-val query: WildcardQuery = wildcard(field = Document.name, value = "test")
+val query: WildcardQuery = wildcard(field = Document.name, value = "a*a*")
 ```
 
 If you want to change the `boost`, you can use `boost` method:
 ```scala
-val queryWithBoost: WildcardQuery = wildcard(field = Document.name, value = "test").boost(2.0)
+val queryWithBoost: WildcardQuery = contains(field = Document.name, value = "test").boost(2.0)
 ```
 
 If you want to change the `case_insensitive`, you can use `caseInsensitive`, `caseInsensitiveFalse` or `caseInsensitiveTrue`  method:
 ```scala
-val queryWithCaseInsensitive: WildcardQuery = wildcard(field = Document.name, value = "test").caseInsensitive(true)
-val queryWithCaseInsensitiveFalse: WildcardQuery = wildcard(field = Document.name, value = "test").caseInsensitiveFalse
-val queryWithCaseInsensitiveTrue: WildcardQuery = wildcard(field = Document.name, value = "test").caseInsensitiveTrue
+val queryWithCaseInsensitive: WildcardQuery = contains(field = Document.name, value = "a").caseInsensitive(true)
+val queryWithCaseInsensitiveFalse: WildcardQuery = contains(field = Document.name, value = "a").caseInsensitiveFalse
+val queryWithCaseInsensitiveTrue: WildcardQuery = contains(field = Document.name, value = "a").caseInsensitiveTrue
 ```
 
 You can find more information about Wildcard Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-wildcard-query.html#query-dsl-wildcard-query).
