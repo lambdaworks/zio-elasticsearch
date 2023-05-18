@@ -41,14 +41,5 @@ final case class InnerHits private[elasticsearch] (
 }
 
 object InnerHits {
-  def empty: InnerHits = InnerHits(from = None, name = None, size = None)
-
-  def from(value: Int): InnerHits =
-    InnerHits(from = Some(value), name = None, size = None)
-
-  def withName(value: String): InnerHits =
-    InnerHits(from = None, name = Some(value), size = None)
-
-  def size(value: Int): InnerHits =
-    InnerHits(from = None, name = None, size = Some(value))
+  def apply(): InnerHits = InnerHits(from = None, name = None, size = None)
 }

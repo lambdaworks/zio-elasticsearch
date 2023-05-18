@@ -26,7 +26,7 @@ private[elasticsearch] trait HasInnerHits[Q <: HasInnerHits[Q]] {
    * @return
    *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the default inner hits.
    */
-  final def innerHits: Q = innerHits(InnerHits.empty)
+  final def innerHits: Q = innerHits(InnerHits())
 
   /**
    * Sets the inner hits configuration for the [[zio.elasticsearch.query.NestedQuery]].

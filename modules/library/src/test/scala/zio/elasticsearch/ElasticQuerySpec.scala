@@ -533,7 +533,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 childType = "child",
                 query = matchAll,
                 ignoreUnmapped = None,
-                innerHitsField = Some(InnerHits.empty),
+                innerHitsField = Some(InnerHits()),
                 maxChildren = None,
                 minChildren = None,
                 scoreMode = None
@@ -581,7 +581,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 childType = "child",
                 query = matchAll,
                 ignoreUnmapped = Some(true),
-                innerHitsField = Some(InnerHits.empty),
+                innerHitsField = Some(InnerHits()),
                 maxChildren = Some(5),
                 minChildren = Some(1),
                 scoreMode = Some(ScoreMode.Avg)
@@ -716,11 +716,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryTs                 = nested(TestDocument.subDocumentList, matchAll)
           val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
           val queryWithInnerHits =
-            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits.from(0).name("innerHitName").size(3))
+            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits().from(0).name("innerHitName").size(3))
           val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
           val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
           val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
-            .innerHits(InnerHits.withName("innerHitName"))
+            .innerHits(InnerHits().name("innerHitName"))
             .scoreMode(ScoreMode.Max)
 
           assert(query)(
@@ -2069,11 +2069,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithNested         = nested(TestDocument.subDocumentList, nested("items", term("testField", "test")))
           val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
           val queryWithInnerHits =
-            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits.from(0).size(3).name("innerHitName"))
+            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits().from(0).size(3).name("innerHitName"))
           val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
           val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
           val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
-            .innerHits(InnerHits.from(10).size(20).name("innerHitName"))
+            .innerHits(InnerHits().from(10).size(20).name("innerHitName"))
             .scoreMode(ScoreMode.Min)
 
           val expected =
