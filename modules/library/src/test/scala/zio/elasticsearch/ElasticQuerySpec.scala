@@ -2412,7 +2412,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |      "query": {
               |        "match_all": {}
               |      },
-              |      "ignore_unmapped": true 
+              |      "ignore_unmapped": true
               |    }
               |  }
               |}
