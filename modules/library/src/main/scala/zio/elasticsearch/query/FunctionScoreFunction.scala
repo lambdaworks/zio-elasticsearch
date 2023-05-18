@@ -108,7 +108,7 @@ private[elasticsearch] final case class ScriptScoreFunction(
       Chunk(
         Some("script_score" -> Obj("script" -> script.toJson)),
         weight.map("weight" -> Num(_)),
-        filter.map(f => "filter" -> f.paramsToJson(None))
+        filter.map(f => "filter" -> f.toJson(None))
       ).flatten
     )
 
@@ -122,7 +122,7 @@ private[elasticsearch] final case class WeightFunction(weight: Double, filter: O
     Obj(
       Chunk(
         Some("weight" -> Num(weight)),
-        filter.map(f => "filter" -> f.paramsToJson(None))
+        filter.map(f => "filter" -> f.toJson(None))
       ).flatten
     )
 }
@@ -144,7 +144,7 @@ private[elasticsearch] final case class RandomScoreFunction(
           "random_score" -> seedAndField.fold(Obj())(sf => Obj("seed" -> Num(sf.seed), "field" -> Str(sf.fieldName)))
         ),
         weight.map("weight" -> Num(_)),
-        filter.map(f => "filter" -> f.paramsToJson(None))
+        filter.map(f => "filter" -> f.toJson(None))
       ).flatten
     )
 }
@@ -181,7 +181,7 @@ final case class FieldValueFactor(
             ).flatten
           )
         ),
-        filter.map(f => "filter" -> f.paramsToJson(None)),
+        filter.map(f => "filter" -> f.toJson(None)),
         weight.map("weight" -> Num(_))
       ).flatten
     )
@@ -245,7 +245,7 @@ final case class DecayFunction(
           )
         ),
         weight.map("weight" -> Num(_)),
-        filter.map(f => "filter" -> f.paramsToJson(None))
+        filter.map(f => "filter" -> f.toJson(None))
       ).flatten
     )
 }

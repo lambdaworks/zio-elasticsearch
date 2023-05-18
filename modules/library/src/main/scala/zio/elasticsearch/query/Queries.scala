@@ -236,8 +236,6 @@ private[elasticsearch] final case class FunctionScore[S](
   def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S] =
     self.copy(functions = functions.prepended(value))
 
-  private[elasticsearch] def paramsToJson(fieldPath: Option[String]): Json = self.toJson
-
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "function_score" -> Obj(
@@ -247,7 +245,7 @@ private[elasticsearch] final case class FunctionScore[S](
           boostMode.map(bm => "boost_mode" -> Str(s"${bm.toString.toLowerCase}")),
           maxBoost.map("max_boost" -> Num(_)),
           minScore.map("min_score" -> Num(_)),
-          query.map(q => "query" -> q.toJson),
+          query.map(q => "query" -> q.toJson(None)),
           scoreMode.map(sm => "score_mode" -> Str(s"${sm.toString.toLowerCase}"))
         ).flatten
       )
