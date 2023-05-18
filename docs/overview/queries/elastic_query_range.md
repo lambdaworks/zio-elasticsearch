@@ -11,14 +11,14 @@ import zio.elasticsearch.query.RangeQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-To create a type-safe instance of `RangeQuery`:
-```scala
-val query: RangeQuery = range(field = Document.intField)
-```
-
-To create an instance of `RangeQuery`:
+You can create a `Range` query using the `range` method this way:
 ```scala
 val query: RangeQuery = range(field = "intField")
+```
+
+You can create a type-safe `Range` query using the `range` method this way:
+```scala
+val query: RangeQuery = range(field = Document.intField)
 ```
 
 If you want to change `boost`, you can use the `boost` method:

@@ -5,21 +5,20 @@ title: "Exists Query"
 
 The Exists query is used for returning documents that contain an indexed value for a field.
 
-To create a `Exists` query do the following:
-
+In order to use the `Exists` query import following:
 ```scala
 import zio.elasticsearch.query.ExistsQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-type-safe:
-```scala
-val query: ExistsQuery = exists(field = Document.name)
-```
-
-raw:
+You can create an `Exists` query using the `exists` method this way:
 ```scala
 val query: ExistsQuery = exists(field = "name")
 ```
 
-You can find more information about Match query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html#query-dsl-exists-query).
+Also, you can create a type-safe `Exists` query using the `exists` method this way:
+```scala
+val query: ExistsQuery = exists(field = Document.name)
+```
+
+You can find more information about Exists query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html#query-dsl-exists-query).

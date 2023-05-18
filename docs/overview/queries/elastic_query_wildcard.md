@@ -15,18 +15,18 @@ The `Wildcard` query can be created with `contains`, `startsWith` or `wildcard` 
 The `contains` method is adjusted `wildcard` method, that returns documents that contain terms containing provided text.
 The `startsWith` method is adjusted `wildcard` method that returns documents that contain terms starting with provided text.
 
-To create a type-safe instance of `WildcardQuery` use one of following:
-```scala
-val query: WildcardQuery = contains(field = Document.name, value = "a")
-val query: WildcardQuery = startsWith(field = Document.name, value = "a")
-val query: WildcardQuery = wildcard(field = Document.name, value = "test")
-```
-
-To create an instance of `WildcardQuery` use one of following:
+To create a `Wildcard` query use one of the following methods:
 ```scala
 val query: WildcardQuery = contains(field = "name", value = "a")
 val query: WildcardQuery = startsWith(field = "name", value = "a")
 val query: WildcardQuery = wildcard(field = "name", value = "test")
+```
+
+To create a type-safe `Wildcard` query use one of the following methods:
+```scala
+val query: WildcardQuery = contains(field = Document.name, value = "a")
+val query: WildcardQuery = startsWith(field = Document.name, value = "a")
+val query: WildcardQuery = wildcard(field = Document.name, value = "test")
 ```
 
 If you want to change the `boost`, you can use `boost` method:

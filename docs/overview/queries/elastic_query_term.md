@@ -11,12 +11,12 @@ import zio.elasticsearch.query.TermQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-To create a type-safe instance of `TermQuery`:
+You can create a `Term` query using the `term` method this way:
 ```scala
 val query: TermQuery = term(field = Document.name, value = "test")
 ```
 
-To create an instance of `TermQuery`:
+You can create a type-safe `Term` query using the `term` method this way:
 ```scala
 val query: TermQuery = term(field = Document.name, value = "test")
 ```
