@@ -35,7 +35,7 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{Item, UpdateByQueryResult}
-import zio.elasticsearch.script.Script
+import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
 import zio.stream.{Sink, ZSink}
@@ -348,7 +348,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .withSubAgg(
                         bucketSelectorAggregation(
                           name = "aggregationSelector",
-                          script = Script.from("params.aggregation_int > 10"),
+                          script = Script("params.aggregation_int > 10"),
                           bucketsPath = Map("aggregation_int" -> "aggregationInt")
                         )
                       )
@@ -1157,7 +1157,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .execute(
                         ElasticRequest
                           .search(firstSearchIndex, query)
-                          .sort(sortBy(Script.from("doc['intField'].value").lang("painless"), NumberType).order(Asc))
+                          .sort(sortBy(Script("doc['intField'].value").lang(Painless), NumberType).order(Asc))
                       )
                       .documentAs[TestDocument]
                 } yield assert(res)(
@@ -1514,7 +1514,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   req6 = ElasticRequest.updateByScript(
                            index,
                            firstDocumentId,
-                           Script.from("ctx._source.intField = params['factor']").params("factor" -> 100)
+                           Script("ctx._source.intField = params['factor']").params("factor" -> 100)
                          )
                   req7 =
                     ElasticRequest
@@ -1548,7 +1548,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        ElasticRequest.updateByScript(
                          index,
                          documentId,
-                         Script.from("ctx._source.intField += params['factor']").params("factor" -> factor)
+                         Script("ctx._source.intField += params['factor']").params("factor" -> factor)
                        )
                      )
                 doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
@@ -1563,7 +1563,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .updateByScript(
                            index,
                            documentId,
-                           Script.from("ctx._source.intField += params['factor']").params("factor" -> 2)
+                           Script("ctx._source.intField += params['factor']").params("factor" -> 2)
                          )
                          .orCreate(document)
                      )
@@ -1595,7 +1595,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     ElasticRequest
                       .updateAllByQuery(
                         updateByQueryIndex,
-                        Script.from("ctx._source['stringField'] = params['str']").params("str" -> stringField)
+                        Script("ctx._source['stringField'] = params['str']").params("str" -> stringField)
                       )
                       .refreshTrue
                   )
@@ -1621,7 +1621,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .updateByQuery(
                         index = updateByQueryIndex,
                         query = term(field = TestDocument.stringField.keyword, value = "StringField"),
-                        script = Script.from("ctx._source['intField']++")
+                        script = Script("ctx._source['intField']++")
                       )
                       .refreshTrue
                   )

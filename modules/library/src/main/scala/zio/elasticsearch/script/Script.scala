@@ -20,15 +20,15 @@ import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.script.options._
 import zio.json.ast.Json
-import zio.json.ast.Json.Obj
+import zio.json.ast.Json.{Obj, Str}
 
 final case class Script private[elasticsearch] (
   private val source: String,
   private val params: Map[String, Any],
-  private val lang: Option[String]
+  private val lang: Option[ScriptLang]
 ) extends HasLang[Script]
     with HasParams[Script] { self =>
-  def lang(value: String): Script =
+  def lang(value: ScriptLang): Script =
     self.copy(lang = Some(value))
 
   def params(values: (String, Any)*): Script =
@@ -37,7 +37,7 @@ final case class Script private[elasticsearch] (
   private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
-        self.lang.map(lang => "lang" -> lang.toJson),
+        self.lang.map(lang => "lang" -> Str(lang.toString.toLowerCase)),
         Some("source" -> source.toJson),
         if (params.nonEmpty) {
           Some("params" -> Obj(Chunk.fromIterable(params).map { case (key, value) =>
@@ -57,6 +57,13 @@ final case class Script private[elasticsearch] (
 }
 
 object Script {
-  def from(source: String): Script =
+  def apply(source: String): Script =
     Script(source = source, params = Map.empty, lang = None)
 }
+
+sealed trait ScriptLang
+
+case object Painless   extends ScriptLang
+case object Expression extends ScriptLang
+case object Mustache   extends ScriptLang
+case object Java       extends ScriptLang

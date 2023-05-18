@@ -211,7 +211,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .updateByScript(
                 index = index,
                 id = DocumentId("V4x8q4UB3agN0z75fv5r"),
-                script = Script.from("ctx._source.intField += params['factor']").params("factor" -> 2)
+                script = Script("ctx._source.intField += params['factor']").params("factor" -> 2)
               )
               .orCreate(doc = secondDoc)
               .routing(Routing("routing"))
@@ -234,7 +234,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(
           Executor.execute(
             ElasticRequest
-              .updateAllByQuery(index = index, script = Script.from("ctx._source['intField']++"))
+              .updateAllByQuery(index = index, script = Script("ctx._source['intField']++"))
               .conflicts(Proceed)
               .routing(Routing("routing"))
               .refreshTrue
@@ -248,7 +248,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .updateByQuery(
                 index = index,
                 query = term(field = TestDocument.stringField.keyword, value = "StringField"),
-                script = Script.from("ctx._source['intField']++")
+                script = Script("ctx._source['intField']++")
               )
               .conflicts(Proceed)
               .routing(Routing("routing"))

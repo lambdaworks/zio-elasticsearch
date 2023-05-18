@@ -301,7 +301,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         val jsonRequest = updateByQuery(
           index = Index,
           query = term(TestDocument.stringField.keyword, "StringField"),
-          script = Script.from("ctx._source['intField']++")
+          script = Script("ctx._source['intField']++")
         ) match { case r: UpdateByQuery => r.toJson }
 
         val expected =
@@ -326,7 +326,7 @@ object ElasticRequestDSLSpec extends ZIOSpecDefault {
         val jsonRequest = updateByScript(
           index = Index,
           id = DocId,
-          script = Script.from("ctx._source.intField += params['factor']").params("factor" -> 2)
+          script = Script("ctx._source.intField += params['factor']").params("factor" -> 2)
         ).orCreate[TestDocument](
           TestDocument(
             stringField = "stringField",
