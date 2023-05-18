@@ -35,7 +35,7 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{Item, UpdateByQueryResult}
-import zio.elasticsearch.script.Script
+import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
 import zio.stream.{Sink, ZSink}
@@ -1152,13 +1152,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = range(TestDocument.intField).gte(20)
-                  res <- Executor
-                           .execute(
-                             ElasticRequest
-                               .search(firstSearchIndex, query)
-                               .sort(sortBy(Script("doc['intField'].value").lang("painless"), NumberType).order(Asc))
-                           )
-                           .documentAs[TestDocument]
+                  res <-
+                    Executor
+                      .execute(
+                        ElasticRequest
+                          .search(firstSearchIndex, query)
+                          .sort(sortBy(Script("doc['intField'].value").lang(Painless), NumberType).order(Asc))
+                      )
+                      .documentAs[TestDocument]
                 } yield assert(res)(
                   equalTo(Chunk(firstDocumentWithFixedIntField, secondDocumentWithFixedIntField))
                 )
@@ -1589,14 +1590,15 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.upsert[TestDocument](updateByQueryIndex, documentId, document).refreshTrue
                      )
-                updateRes <- Executor.execute(
-                               ElasticRequest
-                                 .updateAllByQuery(
-                                   updateByQueryIndex,
-                                   Script("ctx._source['stringField'] = params['str']").params("str" -> stringField)
-                                 )
-                                 .refreshTrue
-                             )
+                updateRes <-
+                  Executor.execute(
+                    ElasticRequest
+                      .updateAllByQuery(
+                        updateByQueryIndex,
+                        Script("ctx._source['stringField'] = params['str']").params("str" -> stringField)
+                      )
+                      .refreshTrue
+                  )
                 doc <- Executor.execute(ElasticRequest.getById(updateByQueryIndex, documentId)).documentAs[TestDocument]
               } yield assert(updateRes)(
                 equalTo(

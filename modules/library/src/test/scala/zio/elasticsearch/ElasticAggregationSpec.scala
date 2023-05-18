@@ -31,7 +31,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               BucketSelector(
                 name = "aggregation",
-                script = Script("params.agg1 > 10"),
+                script = Script(source = "params.agg1 > 10", params = Map.empty, lang = None),
                 bucketsPath = Map("agg1" -> "aggregation1")
               )
             )
@@ -40,7 +40,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               BucketSelector(
                 name = "aggregation",
-                script = Script("params.agg1 + params.agg2 > 10"),
+                script = Script(source = "params.agg1 + params.agg2 > 10", params = Map.empty, lang = None),
                 bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
               )
             )

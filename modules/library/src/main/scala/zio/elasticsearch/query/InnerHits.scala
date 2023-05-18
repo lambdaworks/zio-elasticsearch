@@ -20,10 +20,10 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Obj, Str}
 
-private[elasticsearch] final case class InnerHits(
-  from: Option[Int] = None,
-  name: Option[String] = None,
-  size: Option[Int] = None
+final case class InnerHits private[elasticsearch] (
+  private val from: Option[Int],
+  private val name: Option[String],
+  private val size: Option[Int]
 ) { self =>
   def from(value: Int): InnerHits =
     self.copy(from = Some(value))
@@ -41,12 +41,5 @@ private[elasticsearch] final case class InnerHits(
 }
 
 object InnerHits {
-  def from(value: Int): InnerHits =
-    InnerHits(from = Some(value))
-
-  def name(value: String): InnerHits =
-    InnerHits(name = Some(value))
-
-  def size(value: Int): InnerHits =
-    InnerHits(size = Some(value))
+  def apply(): InnerHits = InnerHits(from = None, name = None, size = None)
 }

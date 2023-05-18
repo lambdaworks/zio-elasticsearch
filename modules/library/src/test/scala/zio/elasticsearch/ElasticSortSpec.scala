@@ -9,7 +9,7 @@ import zio.elasticsearch.query.sort.SortMode._
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.sort._
-import zio.elasticsearch.script.Script
+import zio.elasticsearch.script.{Painless, Script}
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -201,12 +201,12 @@ object ElasticSortSpec extends ZIOSpecDefault {
         test("sortByScript") {
           val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
           val sortWithMode =
-            sortBy(Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
+            sortBy(Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
               .mode(Avg)
           val sortWithOrder =
-            sortBy(Script(source = "doc['day_of_week'].value").lang("painless"), NumberType).order(Desc)
+            sortBy(Script("doc['day_of_week'].value").lang(Painless), NumberType).order(Desc)
           val sortWithModeAndOrder = sortBy(
-            Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
+            Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang(Painless),
             NumberType
           ).mode(Avg).order(Asc)
 
@@ -235,7 +235,7 @@ object ElasticSortSpec extends ZIOSpecDefault {
           ) && assert(sortWithOrder)(
             equalTo(
               SortByScriptOptions(
-                script = Script(source = "doc['day_of_week'].value", params = Map.empty, lang = Some("painless")),
+                script = Script(source = "doc['day_of_week'].value", params = Map.empty, lang = Some(Painless)),
                 sourceType = NumberType,
                 mode = None,
                 order = Some(Desc)
@@ -247,7 +247,7 @@ object ElasticSortSpec extends ZIOSpecDefault {
                 script = Script(
                   source = "doc['day_of_week'].value * params['factor']",
                   params = Map("factor" -> 2),
-                  lang = Some("painless")
+                  lang = Some(Painless)
                 ),
                 sourceType = NumberType,
                 mode = Some(Avg),
@@ -358,9 +358,10 @@ object ElasticSortSpec extends ZIOSpecDefault {
             sourceType = NumberType
           ).mode(Avg)
           val sortWithOrder =
-            sortBy(script = Script("doc['day_of_week'].value").lang("painless"), sourceType = NumberType).order(Desc)
+            sortBy(script = Script("doc['day_of_week'].value").lang(Painless), sourceType = NumberType)
+              .order(Desc)
           val sortWithModeAndOrder = sortBy(
-            Script(source = "doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang("painless"),
+            Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang(Painless),
             NumberType
           ).mode(Avg).order(Asc)
 

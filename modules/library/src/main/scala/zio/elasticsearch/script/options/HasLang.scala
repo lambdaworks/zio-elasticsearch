@@ -16,6 +16,8 @@
 
 package zio.elasticsearch.script.options
 
+import zio.elasticsearch.script.ScriptLang
+
 private[elasticsearch] trait HasLang[S <: HasLang[S]] {
 
   /**
@@ -26,5 +28,5 @@ private[elasticsearch] trait HasLang[S <: HasLang[S]] {
    * @return
    *   an instance of the [[zio.elasticsearch.script.Script]] enriched with the `lang` parameter.
    */
-  def lang(value: String): S
+  def lang(value: ScriptLang): S
 }
