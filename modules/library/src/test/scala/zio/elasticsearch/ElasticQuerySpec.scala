@@ -17,6 +17,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
+import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery._
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
@@ -761,7 +762,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHitsField = Some(InnerHits(from = Some(0), name = Some("innerHitName"), size = Some(3)))
+                innerHitsField = Some(
+                  InnerHits(
+                    excluded = None,
+                    from = Some(0),
+                    highlights = None,
+                    included = None,
+                    name = Some("innerHitName"),
+                    size = Some(3)
+                  )
+                )
               )
             )
           ) &&
@@ -772,7 +782,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = None,
                 ignoreUnmapped = None,
-                innerHitsField = Some(InnerHits(None, None, None))
+                innerHitsField = Some(
+                  InnerHits(excluded = None, from = None, highlights = None, included = None, name = None, size = None)
+                )
               )
             )
           ) &&
@@ -794,7 +806,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 query = MatchAll(boost = None),
                 scoreMode = Some(ScoreMode.Max),
                 ignoreUnmapped = Some(false),
-                innerHitsField = Some(InnerHits(None, Some("innerHitName"), None))
+                innerHitsField = Some(
+                  InnerHits(
+                    excluded = None,
+                    from = None,
+                    highlights = None,
+                    included = None,
+                    name = Some("innerHitName"),
+                    size = None
+                  )
+                )
               )
             )
           )
@@ -2027,7 +2048,15 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithNested         = nested(TestDocument.subDocumentList, nested("items", term("testField", "test")))
           val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
           val queryWithInnerHits =
-            nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits().from(0).size(3).name("innerHitName"))
+            nested(TestDocument.subDocumentList, matchAll).innerHits(
+              InnerHits()
+                .from(0)
+                .size(3)
+                .name("innerHitName")
+                .highlights(highlight("stringField"))
+                .excludes("longField")
+                .includes("intField")
+            )
           val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
           val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
           val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
@@ -2091,7 +2120,20 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |    "inner_hits": {
               |      "from": 0,
               |      "size": 3,
-              |      "name": "innerHitName"
+              |      "name": "innerHitName",
+              |      "highlight" : {
+              |        "fields" : {
+              |          "stringField" : {}
+              |        }
+              |      },
+              |      "_source" : {
+              |        "includes" : [
+              |          "intField"
+              |        ],
+              |        "excludes" : [
+              |          "longField"
+              |        ]
+              |      }
               |    }
               |  }
               |}
