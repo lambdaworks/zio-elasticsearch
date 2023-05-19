@@ -3,7 +3,7 @@ id: elastic_query_wildcard
 title: "Wildcard Query"
 ---
 
-The Wildcard query returns documents that contain terms matching a wildcard pattern. You can combine wildcard operators with other characters to create a wildcard pattern.
+The `Wildcard` query returns documents that contain terms matching a wildcard pattern. You can combine wildcard operators with other characters to create a wildcard pattern.
 
 In order to use the `Wildcard` query import the following:
 ```scala
@@ -41,4 +41,4 @@ val queryWithCaseInsensitiveFalse: WildcardQuery = contains(field = Document.nam
 val queryWithCaseInsensitiveTrue: WildcardQuery = contains(field = Document.name, value = "a").caseInsensitiveTrue
 ```
 
-You can find more information about Wildcard Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-wildcard-query.html#query-dsl-wildcard-query).
+You can find more information about `Wildcard` Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-wildcard-query.html#query-dsl-wildcard-query).

@@ -3,7 +3,7 @@ id: elastic_query_nested
 title: "Nested Query"
 ---
 
-The Nested query searches nested field objects as if they were indexed as separate documents. If an object matches the search, the Nested query returns the root parent document.
+The `Nested` query searches nested field objects as if they were indexed as separate documents. If an object matches the search, the Nested query returns the root parent document.
 
 In order to use the `Nested` query import the following:
 ```scala
@@ -40,4 +40,4 @@ import zio.elasticsearch.query.ScoreMode
 val queryWithScoreMode: NestedQuery = nested(path = Document.subDocumentList, query = matchAll).scoreMode(ScoreMode.Avg)
 ```
 
-You can find more information about Nested query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-nested-query.html).
+You can find more information about `Nested` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-nested-query.html).

@@ -28,7 +28,7 @@ val queryWithBoost: RangeQuery = range(field = Document.intField).boost(2.0)
 
 If you want to change `format`, you can use the `format` method:
 ```scala
-val queryWithFormat: RangeQuery = range(field = Document.dateField).format("uuuu-MM-dd")
+val queryWithFormat: RangeQuery = range(field = Document.dateField).format("yyyy-MM-dd")
 ```
 
 If you want to change `gt` (greater than), you can use the `gt` method:

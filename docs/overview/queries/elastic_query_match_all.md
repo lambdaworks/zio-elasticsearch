@@ -18,4 +18,4 @@ If you want to change the `boost`, you can use the `boost` method:
 val queryWithBoost: MatchAllQuery = matchAll.boost(1.2)
 ```
 
-You can find more information about Match all query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-match-all-query.html).
+You can find more information about `MatchAll` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-match-all-query.html).

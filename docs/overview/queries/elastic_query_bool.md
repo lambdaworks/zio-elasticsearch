@@ -9,13 +9,13 @@ The query that matches documents matching boolean combinations of other queries.
 - `must not`: the clause (query) must not appear in the matching documents.
 - `should`: the clause (query) should appear in the matching document.
 
-In order to use the `Boolean` query import the following:
+In order to use the `Bool` query import the following:
 ```scala
 import zio.elasticsearch.query.BoolQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-The `Boolean` query can be created with `filter`, `must`, `mustNot` or `should` method:
+The `Bool` query can be created with `filter`, `must`, `mustNot` or `should` method:
 ```scala
 val filterQuery: BoolQuery = filter(contains(field = Document.name, value = "a"), startsWith(field = Document.id, value = "b"))
 val mustQuery: BoolQuery = must(contains(field = Document.name, value = "a"), startsWith(field = Document.id, value = "b"))
@@ -23,9 +23,9 @@ val mustNotQuery: BoolQuery = mustNot(contains(field = Document.name, value = "a
 val shouldQuery: BoolQuery = should(startsWith(field = Document.name, value = "a"))
 ```
 
-Once the `Boolean` query is created, you can call `filter`, `must`, `mustNot`, `should`, `boost` and `minimumShouldMatch` methods on it.
+Once the `Bool` query is created, you can call `filter`, `must`, `mustNot`, `should`, `boost` and `minimumShouldMatch` methods on it.
 
-If you want to add `Filter` query to `Bool` query, you can use `filter` method (you can also call `filter` method on `Boolean` query that is created with `filter` method):
+If you want to add `Filter` query to `Bool` query, you can use `filter` method (you can also call `filter` method on `Bool` query that is created with `filter` method):
 ```scala
 val filterQuery: BoolQuery = filter(contains(field = Document.name, value = "a")).filter(contains(field = Document.name, value = "c"))
 ```

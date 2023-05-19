@@ -3,7 +3,7 @@ id: elastic_query_geo_distance
 title: "Geo-distance Query"
 ---
 
-The Geo-distance query matches [geo_point](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/geo-point.html) and [geo_shape](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/geo-shape.html) values within a given distance of a geopoint.
+The `GeoDistance` query matches [geo_point](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/geo-point.html) and [geo_shape](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/geo-shape.html) values within a given distance of a geopoint.
 
 In order to use the `GeoDistance` query import the following:
 ```scala
@@ -57,4 +57,4 @@ import zio.elasticsearch.query.ValidationMethod
 val queryWithValidationMethod: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31").validationMethod(value = ValidationMethod.IgnoreMalformed)
 ```
 
-You can find more information about Geo-distance query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-geo-distance-query.html#query-dsl-geo-distance-query).
+You can find more information about `GeoDistance` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-geo-distance-query.html#query-dsl-geo-distance-query).

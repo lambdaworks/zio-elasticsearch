@@ -3,7 +3,7 @@ id: elastic_query_term
 title: "Term Query"
 ---
 
-The Term query returns documents that contain an exact term in a provided field.
+The `Term` query returns documents that contain an exact term in a provided field.
 
 In order to use the `TermQuery` query import the following:
 ```scala
@@ -33,4 +33,4 @@ val queryWithCaseInsensitiveFalse: TermQuery = term(field = Document.name, value
 val queryWithCaseInsensitiveTrue: TermQuery = term(field = Document.name, value = "test").caseInsensitiveTrue
 ```
 
-You can find more information about Term Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-term-query.html).
+You can find more information about `Term` Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-term-query.html).

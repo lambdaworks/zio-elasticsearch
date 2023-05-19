@@ -3,7 +3,7 @@ id: elastic_query_has_parent
 title: "Has Parent Query"
 ---
 
-The Has parent query returns child documents whose parent document matches a provided query.
+The `HasParent` query returns child documents whose parent document matches a provided query.
 
 To create a `HasParent` query do the following:
 ```scala
@@ -32,4 +32,4 @@ val queryWithScoreFalse: HasParentQuery = hasParent(parentType = "parent", query
 val queryWithScoreTrue: HasParentQuery = hasParent(parentType = "parent", query = matches(Document.intField, "test")).withScoreTrue
 ```
 
-You can find more information about Has parent query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-has-parent-query.html).
+You can find more information about `HasParent` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-has-parent-query.html).
