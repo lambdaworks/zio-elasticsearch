@@ -5,18 +5,18 @@ title: "Nested Query"
 
 The Nested query searches nested field objects as if they were indexed as separate documents. If an object matches the search, the Nested query returns the root parent document.
 
-In order to use the `Nested` query import following:
+In order to use the `Nested` query import the following:
 ```scala
 import zio.elasticsearch.query.NestedQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-You can create a `Nested` query using the `nested` method this way:
+You can create a `Nested` query using the `nested` method in the following manner:
 ```scala
 val query: NestedQuery = nested(path = "testField", query = matchAll)
 ```
 
-You can create a type-safe `Nested` query using the `nested` method this way:
+You can create a type-safe `Nested` query using the `nested` method in the following manner:
 ```scala
 val query: NestedQuery = nested(path = Document.subDocumentList, query = matchAll)
 ```

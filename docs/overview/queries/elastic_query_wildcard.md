@@ -5,7 +5,7 @@ title: "Wildcard Query"
 
 The Wildcard query returns documents that contain terms matching a wildcard pattern. You can combine wildcard operators with other characters to create a wildcard pattern.
 
-In order to use the `Wildcard` query import following:
+In order to use the `Wildcard` query import the following:
 ```scala
 import zio.elasticsearch.query.WildcardQuery
 import zio.elasticsearch.ElasticQuery._

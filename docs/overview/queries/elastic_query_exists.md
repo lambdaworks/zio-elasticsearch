@@ -3,9 +3,9 @@ id: elastic_query_exists
 title: "Exists Query"
 ---
 
-The Exists query is used for returning documents that contain an indexed value for a field.
+The `Exists` query is used for returning documents that contain an indexed value for a field.
 
-In order to use the `Exists` query import following:
+In order to use the `Exists` query import the following:
 ```scala
 import zio.elasticsearch.query.ExistsQuery
 import zio.elasticsearch.ElasticQuery._

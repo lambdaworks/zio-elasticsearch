@@ -5,28 +5,28 @@ title: "Geo-distance Query"
 
 The Geo-distance query matches [geo_point](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/geo-point.html) and [geo_shape](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/geo-shape.html) values within a given distance of a geopoint.
 
-In order to use the `GeoDistance` query import following:
+In order to use the `GeoDistance` query import the following:
 ```scala
 import zio.elasticsearch.query.GeoDistanceQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-You can create a `GeoDistance` query using the `geoDistance` method with latitude and longitude this way:
+You can create a `GeoDistance` query using the `geoDistance` method with latitude and longitude in the following manner:
 ```scala
 val query: GeoDistanceQuery = geoDistance(field = "location", latitude = 20.0, longitude = 20.0)
 ```
 
-You can create a type-safe `GeoDistance` query using the `geoDistance` method with latitude and longitude this way:
+You can create a type-safe `GeoDistance` query using the `geoDistance` method with latitude and longitude in the following manner:
 ```scala
 val query: GeoDistanceQuery = geoDistance(field = Document.location, latitude = 20.0, longitude = 20.0)
 ```
 
-You can create a `GeoDistance` query using the `geoDistance` method with coordinates this way:
+You can create a `GeoDistance` query using the `geoDistance` method with coordinates in the following manner:
 ```scala
 val query: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31")
 ```
 
-You can create a type-safe `GeoDistance` query using the `geoDistance` method with coordinates this way:
+You can create a type-safe `GeoDistance` query using the `geoDistance` method with coordinates in the following manner:
 ```scala
 val query: GeoDistanceQuery = geoDistance(field = Document.location, coordinates = "40,31")
 ```

@@ -5,7 +5,7 @@ title: "Match Phrase Query"
 
 The Match phrase query analyzes the text and creates a `phrase` query out of the analyzed text.
 
-In order to use the `MatchPhrase` query import following:
+In order to use the `MatchPhrase` query import the following:
 ```scala
 import zio.elasticsearch.query.MatchPhraseQuery
 import zio.elasticsearch.ElasticQuery._

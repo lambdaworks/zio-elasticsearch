@@ -5,18 +5,18 @@ title: "Range Query"
 
 A query that matches documents that contain terms within a provided range.
 
-In order to use the `Range` query import following:
+In order to use the `Range` query import the following:
 ```scala
 import zio.elasticsearch.query.RangeQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-You can create a `Range` query using the `range` method this way:
+You can create a `Range` query using the `range` method in the following manner:
 ```scala
 val query: RangeQuery = range(field = "intField")
 ```
 
-You can create a type-safe `Range` query using the `range` method this way:
+You can create a type-safe `Range` query using the `range` method in the following manner:
 ```scala
 val query: RangeQuery = range(field = Document.intField)
 ```

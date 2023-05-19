@@ -6,10 +6,10 @@ title: "Boolean Query"
 The query that matches documents matching boolean combinations of other queries. It is built using one or more boolean clauses (queries):
 - `filter`: The clause (query) must appear in matching documents. However, unlike `must` the score of the query will be ignored.
 - `must`: the clause (query) must appear in matching documents and will contribute to the score.
-- `must not`: the clause (query) must not appear in the matching documents
+- `must not`: the clause (query) must not appear in the matching documents.
 - `should`: the clause (query) should appear in the matching document.
 
-In order to use the `Boolean` query import following:
+In order to use the `Boolean` query import the following:
 ```scala
 import zio.elasticsearch.query.BoolQuery
 import zio.elasticsearch.ElasticQuery._

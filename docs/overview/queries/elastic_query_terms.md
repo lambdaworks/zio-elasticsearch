@@ -6,7 +6,7 @@ title: "Terms Query"
 The Terms query returns documents that contain one or more exact terms in a provided field.
 This query is the same as the Term query, except you can search for multiple values.
 
-In order to use the `TermsQuery` query import following:
+In order to use the `TermsQuery` query import the following:
 ```scala
 import zio.elasticsearch.query.TermsQuery
 import zio.elasticsearch.ElasticQuery._
