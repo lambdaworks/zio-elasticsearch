@@ -52,7 +52,7 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
           assert(function)(
             equalTo(
               FieldValueFactor(
-                fieldName = "fieldName",
+                field = "fieldName",
                 factor = Some(10.0),
                 filter = Some(Match("field", "value")),
                 modifier = Some(LOG),

@@ -47,7 +47,7 @@ object FunctionScoreFunction {
 
   def fieldValueFactor(field: String): FieldValueFactor =
     FieldValueFactor(
-      fieldName = field,
+      field = field,
       factor = None,
       filter = None,
       modifier = None,
@@ -158,7 +158,7 @@ private[elasticsearch] final case class RandomScoreFunction(
 }
 
 final case class FieldValueFactor(
-  fieldName: String,
+  field: String,
   factor: Option[Double],
   filter: Option[ElasticQuery[_]],
   modifier: Option[FieldValueFactorFunctionModifier],
@@ -187,7 +187,7 @@ final case class FieldValueFactor(
         Some(
           "field_value_factor" -> Obj(
             Chunk(
-              Some("field" -> Str(fieldName)),
+              Some("field" -> Str(field)),
               factor.map("factor" -> Num(_)),
               modifier.map(m => "modifier" -> Str(m.toString.toLowerCase)),
               missing.map("missing" -> Num(_))
