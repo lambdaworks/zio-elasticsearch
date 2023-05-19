@@ -221,17 +221,23 @@ private[elasticsearch] final case class FunctionScore[S](
   scoreMode: Option[FunctionScoreScoreMode]
 ) extends FunctionScoreQuery[S] { self =>
 
-  def boost(value: Double): FunctionScoreQuery[S] = self.copy(boost = Some(value))
+  def boost(value: Double): FunctionScoreQuery[S] =
+    self.copy(boost = Some(value))
 
-  def boostMode(value: FunctionScoreBoostMode): FunctionScoreQuery[S] = self.copy(boostMode = Some(value))
+  def boostMode(value: FunctionScoreBoostMode): FunctionScoreQuery[S] =
+    self.copy(boostMode = Some(value))
 
-  def maxBoost(value: Double): FunctionScoreQuery[S] = self.copy(maxBoost = Some(value))
+  def maxBoost(value: Double): FunctionScoreQuery[S] =
+    self.copy(maxBoost = Some(value))
 
-  def minScore(value: Double): FunctionScoreQuery[S] = self.copy(minScore = Some(value))
+  def minScore(value: Double): FunctionScoreQuery[S] =
+    self.copy(minScore = Some(value))
 
-  def query(value: ElasticQuery[S]): FunctionScoreQuery[S] = self.copy(query = Some(value))
+  def query(value: ElasticQuery[S]): FunctionScoreQuery[S] =
+    self.copy(query = Some(value))
 
-  def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S] = self.copy(scoreMode = Some(value))
+  def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S] =
+    self.copy(scoreMode = Some(value))
 
   def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S] =
     self.copy(functions = functions.prepended(value))

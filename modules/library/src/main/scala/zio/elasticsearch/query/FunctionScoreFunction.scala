@@ -23,8 +23,11 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Obj, Str}
 
 sealed trait FunctionScoreFunction {
+
   val filter: Option[ElasticQuery[_]]
+
   def filter(filter: ElasticQuery[_]): FunctionScoreFunction
+
   private[elasticsearch] def toJson: Json
 }
 
@@ -79,7 +82,7 @@ object FunctionScoreFunction {
     )
 
   def randomScoreFunction(): RandomScoreFunction =
-    RandomScoreFunction(None, None, None)
+    RandomScoreFunction(filter = None, seedAndField = None, weight = None)
 
   def randomScoreFunction(seed: Long): RandomScoreFunction =
     RandomScoreFunction(filter = None, seedAndField = Some(SeedAndField(seed = seed)), weight = None)
@@ -96,12 +99,14 @@ object FunctionScoreFunction {
 
 private[elasticsearch] final case class ScriptScoreFunction(
   script: Script,
-  weight: Option[Double],
-  filter: Option[ElasticQuery[_]]
+  filter: Option[ElasticQuery[_]],
+  weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
-  def weight(value: Double): ScriptScoreFunction = self.copy(weight = Some(value))
+  def weight(value: Double): ScriptScoreFunction =
+    self.copy(weight = Some(value))
 
-  def filter(value: ElasticQuery[_]): ScriptScoreFunction = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): ScriptScoreFunction =
+    self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -116,7 +121,8 @@ private[elasticsearch] final case class ScriptScoreFunction(
 
 private[elasticsearch] final case class WeightFunction(weight: Double, filter: Option[ElasticQuery[_]])
     extends FunctionScoreFunction { self =>
-  def filter(value: ElasticQuery[_]): WeightFunction = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): WeightFunction =
+    self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -133,9 +139,11 @@ private[elasticsearch] final case class RandomScoreFunction(
   weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
-  def weight(value: Double): RandomScoreFunction = self.copy(weight = Some(value))
+  def weight(value: Double): RandomScoreFunction =
+    self.copy(weight = Some(value))
 
-  def filter(value: ElasticQuery[_]): RandomScoreFunction = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): RandomScoreFunction =
+    self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -158,17 +166,22 @@ final case class FieldValueFactor(
   weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
-  def factor(value: Double): FieldValueFactor = self.copy(factor = Some(value))
+  def factor(value: Double): FieldValueFactor =
+    self.copy(factor = Some(value))
 
-  def modifier(value: FieldValueFactorFunctionModifier): FieldValueFactor = self.copy(modifier = Some(value))
+  def modifier(value: FieldValueFactorFunctionModifier): FieldValueFactor =
+    self.copy(modifier = Some(value))
 
-  def missing(value: Double): FieldValueFactor = self.copy(missing = Some(value))
+  def missing(value: Double): FieldValueFactor =
+    self.copy(missing = Some(value))
 
-  def weight(value: Double): FieldValueFactor = self.copy(weight = Some(value))
+  def weight(value: Double): FieldValueFactor =
+    self.copy(weight = Some(value))
 
-  def filter(value: ElasticQuery[_]): FieldValueFactor = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): FieldValueFactor =
+    self.copy(filter = Some(value))
 
- private[elasticsearch] def toJson: Json =
+  private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
         Some(
@@ -187,21 +200,6 @@ final case class FieldValueFactor(
     )
 }
 
-sealed trait FieldValueFactorFunctionModifier
-
-object FieldValueFactorFunctionModifier {
-  case object LN         extends FieldValueFactorFunctionModifier
-  case object LN1P       extends FieldValueFactorFunctionModifier
-  case object LN2P       extends FieldValueFactorFunctionModifier
-  case object LOG        extends FieldValueFactorFunctionModifier
-  case object LOG1P      extends FieldValueFactorFunctionModifier
-  case object LOG2P      extends FieldValueFactorFunctionModifier
-  case object NONE       extends FieldValueFactorFunctionModifier
-  case object RECIPROCAL extends FieldValueFactorFunctionModifier
-  case object SQRT       extends FieldValueFactorFunctionModifier
-  case object SQUARE     extends FieldValueFactorFunctionModifier
-}
-
 final case class DecayFunction(
   field: String,
   decayFunctionType: DecayFunctionType,
@@ -214,15 +212,20 @@ final case class DecayFunction(
   weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
-  def decay(value: Double): DecayFunction = self.copy(decay = Some(value))
+  def decay(value: Double): DecayFunction =
+    self.copy(decay = Some(value))
 
-  def filter(filter: ElasticQuery[_]): FunctionScoreFunction = self.copy(filter = Some(filter))
+  def filter(filter: ElasticQuery[_]): FunctionScoreFunction =
+    self.copy(filter = Some(filter))
 
-  def multiValueMode(value: MultiValueMode): DecayFunction = self.copy(multiValueMode = Some(value))
+  def multiValueMode(value: MultiValueMode): DecayFunction =
+    self.copy(multiValueMode = Some(value))
 
-  def offset(value: String): DecayFunction = self.copy(offset = Some(value))
+  def offset(value: String): DecayFunction =
+    self.copy(offset = Some(value))
 
-  def weight(value: Double): DecayFunction = self.copy(weight = Some(value))
+  def weight(value: Double): DecayFunction =
+    self.copy(weight = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -250,22 +253,23 @@ final case class DecayFunction(
     )
 }
 
-sealed trait MultiValueMode
-
-object MultiValueMode {
-  case object Avg    extends MultiValueMode
-  case object Max    extends MultiValueMode
-  case object Median extends MultiValueMode
-  case object Min    extends MultiValueMode
-  case object Sum    extends MultiValueMode
-}
-
 sealed trait DecayFunctionType
 
 object DecayFunctionType {
   case object Exp    extends DecayFunctionType
   case object Gauss  extends DecayFunctionType
   case object Linear extends DecayFunctionType
+}
+
+sealed trait FunctionScoreBoostMode
+
+object FunctionScoreBoostMode {
+  case object Avg      extends FunctionScoreBoostMode
+  case object Max      extends FunctionScoreBoostMode
+  case object Min      extends FunctionScoreBoostMode
+  case object Multiply extends FunctionScoreBoostMode
+  case object Replace  extends FunctionScoreBoostMode
+  case object Sum      extends FunctionScoreScoreMode
 }
 
 sealed trait FunctionScoreScoreMode
@@ -280,18 +284,32 @@ object FunctionScoreScoreMode {
   case object Sum      extends FunctionScoreScoreMode
 }
 
-sealed trait FunctionScoreBoostMode
+sealed trait FieldValueFactorFunctionModifier
 
-object FunctionScoreBoostMode {
-  case object Avg      extends FunctionScoreBoostMode
-  case object Max      extends FunctionScoreBoostMode
-  case object Min      extends FunctionScoreBoostMode
-  case object Multiply extends FunctionScoreBoostMode
-  case object Replace  extends FunctionScoreBoostMode
-  case object Sum      extends FunctionScoreScoreMode
+object FieldValueFactorFunctionModifier {
+  case object LN         extends FieldValueFactorFunctionModifier
+  case object LN1P       extends FieldValueFactorFunctionModifier
+  case object LN2P       extends FieldValueFactorFunctionModifier
+  case object LOG        extends FieldValueFactorFunctionModifier
+  case object LOG1P      extends FieldValueFactorFunctionModifier
+  case object LOG2P      extends FieldValueFactorFunctionModifier
+  case object NONE       extends FieldValueFactorFunctionModifier
+  case object RECIPROCAL extends FieldValueFactorFunctionModifier
+  case object SQRT       extends FieldValueFactorFunctionModifier
+  case object SQUARE     extends FieldValueFactorFunctionModifier
 }
 
-final case class SeedAndField(seed: Long, fieldName: String = SeedAndField.DefaultFieldName)
+sealed trait MultiValueMode
+
+object MultiValueMode {
+  case object Avg    extends MultiValueMode
+  case object Max    extends MultiValueMode
+  case object Median extends MultiValueMode
+  case object Min    extends MultiValueMode
+  case object Sum    extends MultiValueMode
+}
+
+private[elasticsearch] final case class SeedAndField(seed: Long, fieldName: String = SeedAndField.DefaultFieldName)
 object SeedAndField {
   private final val DefaultFieldName = "_seq_no"
 }

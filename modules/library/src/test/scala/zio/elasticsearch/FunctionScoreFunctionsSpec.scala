@@ -1,6 +1,5 @@
 package zio.elasticsearch
 
-import zio.Scope
 import zio.elasticsearch.ElasticQuery.matches
 import zio.elasticsearch.query.DecayFunctionType._
 import zio.elasticsearch.query.FieldValueFactorFunctionModifier.LOG
