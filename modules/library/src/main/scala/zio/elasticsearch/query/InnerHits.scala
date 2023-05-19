@@ -44,9 +44,25 @@ final case class InnerHits private[elasticsearch] (
   def excludes(field: String, fields: String*): InnerHits =
     self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
 
+  /**
+   * Specifies the starting offset of the [[zio.elasticsearch.query.InnerHits]] to be returned.
+   *
+   * @param value
+   *   the starting offset value
+   * @return
+   *   an instance of a [[zio.elasticsearch.query.InnerHits]] with the specified starting offset.
+   */
   def from(value: Int): InnerHits =
     self.copy(from = Some(value))
 
+  /**
+   * Specifies the highlighting configuration for the [[zio.elasticsearch.query.InnerHits]].
+   *
+   * @param value
+   *   the [[zio.elasticsearch.highlights.Highlights]] configuration
+   * @return
+   *   an instance of a [[zio.elasticsearch.query.InnerHits]] with the specified highlighting configuration.
+   */
   def highlights(value: Highlights): InnerHits =
     self.copy(highlights = Some(value))
 
@@ -63,9 +79,25 @@ final case class InnerHits private[elasticsearch] (
   def includes(field: String, fields: String*): InnerHits =
     self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
 
+  /**
+   * Specifies the name of the [[zio.elasticsearch.query.InnerHits]].
+   *
+   * @param value
+   *   the name of the [[zio.elasticsearch.query.InnerHits]]
+   * @return
+   *   an instance of a [[zio.elasticsearch.query.InnerHits]] with the specified name.
+   */
   def name(value: String): InnerHits =
     self.copy(name = Some(value))
 
+  /**
+   * Specifies the maximum number of [[zio.elasticsearch.query.InnerHits]] to be returned.
+   *
+   * @param value
+   *   the maximum number of [[zio.elasticsearch.query.InnerHits]]
+   * @return
+   *   an instance of a [[zio.elasticsearch.query.InnerHits]] with the specified size.
+   */
   def size(value: Int): InnerHits =
     self.copy(size = Some(value))
 
