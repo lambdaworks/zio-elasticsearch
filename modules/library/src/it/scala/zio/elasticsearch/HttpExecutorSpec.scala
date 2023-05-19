@@ -920,7 +920,33 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
-          )
+          ),
+          test("search for documents using FunctionScore Query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                    )
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                      .refreshTrue
+                  )
+                  query = should(
+                    matches(TestDocument.stringField, firstDocument.stringField),
+                    matches(TestDocument.intField, firstDocument.intField + 1),
+                    matches(TestDocument.doubleField, firstDocument.doubleField + 1)
+                  ).minimumShouldMatch(2)
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(isEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
         ) @@ shrinks(0),
         suite("searching for documents with inner hits")(
           test("search for a document using nested query with inner hits") {

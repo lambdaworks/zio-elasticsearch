@@ -24,7 +24,7 @@ import zio.json.ast.Json.{Num, Obj, Str}
 
 sealed trait FunctionScoreFunction {
   val filter: Option[ElasticQuery[_]]
-  def withFilter(filter: ElasticQuery[_]): FunctionScoreFunction
+  def filter(filter: ElasticQuery[_]): FunctionScoreFunction
   private[elasticsearch] def toJson: Json
 }
 
@@ -42,9 +42,9 @@ object FunctionScoreFunction {
       weight = None
     )
 
-  def fieldValueFactor(fieldName: String): FieldValueFactor =
+  def fieldValueFactor(field: String): FieldValueFactor =
     FieldValueFactor(
-      fieldName = fieldName,
+      fieldName = field,
       factor = None,
       filter = None,
       modifier = None,
@@ -101,7 +101,7 @@ private[elasticsearch] final case class ScriptScoreFunction(
 ) extends FunctionScoreFunction { self =>
   def weight(value: Double): ScriptScoreFunction = self.copy(weight = Some(value))
 
-  def withFilter(value: ElasticQuery[_]): ScriptScoreFunction = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): ScriptScoreFunction = self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -116,7 +116,7 @@ private[elasticsearch] final case class ScriptScoreFunction(
 
 private[elasticsearch] final case class WeightFunction(weight: Double, filter: Option[ElasticQuery[_]])
     extends FunctionScoreFunction { self =>
-  def withFilter(value: ElasticQuery[_]): WeightFunction = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): WeightFunction = self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -135,7 +135,7 @@ private[elasticsearch] final case class RandomScoreFunction(
 
   def weight(value: Double): RandomScoreFunction = self.copy(weight = Some(value))
 
-  def withFilter(value: ElasticQuery[_]): RandomScoreFunction = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): RandomScoreFunction = self.copy(filter = Some(value))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -166,9 +166,9 @@ final case class FieldValueFactor(
 
   def weight(value: Double): FieldValueFactor = self.copy(weight = Some(value))
 
-  def withFilter(value: ElasticQuery[_]): FieldValueFactor = self.copy(filter = Some(value))
+  def filter(value: ElasticQuery[_]): FieldValueFactor = self.copy(filter = Some(value))
 
-  def toJson: Json =
+ private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
         Some(
@@ -190,16 +190,16 @@ final case class FieldValueFactor(
 sealed trait FieldValueFactorFunctionModifier
 
 object FieldValueFactorFunctionModifier {
-  case object NONE       extends FieldValueFactorFunctionModifier
-  case object LOG        extends FieldValueFactorFunctionModifier
-  case object LOG1P      extends FieldValueFactorFunctionModifier
-  case object LOG2P      extends FieldValueFactorFunctionModifier
   case object LN         extends FieldValueFactorFunctionModifier
   case object LN1P       extends FieldValueFactorFunctionModifier
   case object LN2P       extends FieldValueFactorFunctionModifier
-  case object SQUARE     extends FieldValueFactorFunctionModifier
-  case object SQRT       extends FieldValueFactorFunctionModifier
+  case object LOG        extends FieldValueFactorFunctionModifier
+  case object LOG1P      extends FieldValueFactorFunctionModifier
+  case object LOG2P      extends FieldValueFactorFunctionModifier
+  case object NONE       extends FieldValueFactorFunctionModifier
   case object RECIPROCAL extends FieldValueFactorFunctionModifier
+  case object SQRT       extends FieldValueFactorFunctionModifier
+  case object SQUARE     extends FieldValueFactorFunctionModifier
 }
 
 final case class DecayFunction(
@@ -214,17 +214,17 @@ final case class DecayFunction(
   weight: Option[Double]
 ) extends FunctionScoreFunction { self =>
 
-  def offset(value: String): DecayFunction = self.copy(offset = Some(value))
-
   def decay(value: Double): DecayFunction = self.copy(decay = Some(value))
 
-  def weight(value: Double): DecayFunction = self.copy(weight = Some(value))
+  def filter(filter: ElasticQuery[_]): FunctionScoreFunction = self.copy(filter = Some(filter))
 
   def multiValueMode(value: MultiValueMode): DecayFunction = self.copy(multiValueMode = Some(value))
 
-  def withFilter(filter: ElasticQuery[_]): FunctionScoreFunction = self.copy(filter = Some(filter))
+  def offset(value: String): DecayFunction = self.copy(offset = Some(value))
 
-  def toJson: Json =
+  def weight(value: Double): DecayFunction = self.copy(weight = Some(value))
+
+  private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
         Some(
@@ -254,18 +254,18 @@ sealed trait MultiValueMode
 
 object MultiValueMode {
   case object Avg    extends MultiValueMode
-  case object Min    extends MultiValueMode
   case object Max    extends MultiValueMode
-  case object Sum    extends MultiValueMode
   case object Median extends MultiValueMode
+  case object Min    extends MultiValueMode
+  case object Sum    extends MultiValueMode
 }
 
 sealed trait DecayFunctionType
 
 object DecayFunctionType {
+  case object Exp    extends DecayFunctionType
   case object Gauss  extends DecayFunctionType
   case object Linear extends DecayFunctionType
-  case object Exp    extends DecayFunctionType
 }
 
 sealed trait FunctionScoreScoreMode

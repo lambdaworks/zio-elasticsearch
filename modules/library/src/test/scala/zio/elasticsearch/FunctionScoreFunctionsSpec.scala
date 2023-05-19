@@ -14,17 +14,17 @@ import zio.test._
 
 object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
 
-  override def spec: Spec[TestEnvironment with Scope, Any] =
-    suite("FunctionScoreFunctions")(
+  def spec: Spec[TestEnvironment, Any] =
+    suite("functionScore")(
       suite("constructing")(
-        test("ExpDecayFunction") {
+        test("expDecayFunction") {
           val function =
             expDecayFunction("field", origin = "11, 12", scale = "2km")
               .weight(10.0)
               .decay(11.0)
               .multiValueMode(MultiValueMode.Max)
               .offset("1d")
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
 
           assert(function)(
             equalTo(
@@ -42,11 +42,11 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("FieldValueFactor") {
+        test("fieldValueFactor") {
           val function =
             fieldValueFactor("fieldName")
               .factor(10.0)
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
               .modifier(LOG)
               .missing(13)
 
@@ -63,13 +63,13 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("GaussDecayFunction") {
+        test("gaussDecayFunction") {
           val function = gaussDecayFunction("field", origin = "11, 12", scale = "2km")
             .weight(10.0)
             .decay(11.0)
             .multiValueMode(Max)
             .offset("1d")
-            .withFilter(matches("field", "value"))
+            .filter(matches("field", "value"))
 
           assert(function)(
             equalTo(
@@ -87,14 +87,14 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("LinearDecayFunction") {
+        test("linearDecayFunction") {
           val function =
             linearDecayFunction("field", origin = "11, 12", scale = "2km")
               .weight(10.0)
               .decay(11.0)
               .multiValueMode(Max)
               .offset("1d")
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
 
           assert(function)(
             equalTo(
@@ -112,13 +112,13 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("RandomScoreFunction") {
+        test("randomScoreFunction") {
           val function =
-            randomScoreFunction().weight(12.0).withFilter(matches("field", "value"))
+            randomScoreFunction().weight(12.0).filter(matches("field", "value"))
           val functionWithSeed =
-            randomScoreFunction(123456).weight(13.0).withFilter(matches("field", "value"))
+            randomScoreFunction(123456).weight(13.0).filter(matches("field", "value"))
           val functionWithSeedAndField =
-            randomScoreFunction(12345, "field").weight(14.0).withFilter(matches("field", "value"))
+            randomScoreFunction(12345, "field").weight(14.0).filter(matches("field", "value"))
 
           assert(function)(
             equalTo(
@@ -148,10 +148,10 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("ScriptScoreFunction") {
+        test("scriptScoreFunction") {
           val function = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
             .weight(2.0)
-            .withFilter(matches("field", "value"))
+            .filter(matches("field", "value"))
 
           assert(function)(
             equalTo(
@@ -164,21 +164,21 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
           )
 
         },
-        test("WeightFunction") {
-          val function = weightFunction(10.0).withFilter(matches("field", "value"))
+        test("weightFunction") {
+          val function = weightFunction(10.0).filter(matches("field", "value"))
 
           assert(function)(equalTo(WeightFunction(weight = 10.0, filter = Some(Match("field", "value")))))
         }
       ),
       suite("encoding as Json")(
-        test("ExpDecayFunction") {
+        test("expDecayFunction") {
           val function =
             expDecayFunction("field", origin = "2013-09-17", scale = "10d")
               .weight(10.0)
               .decay(0.5)
               .multiValueMode(Max)
               .offset("5d")
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
 
           val expected =
             """
@@ -199,11 +199,11 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
 
           assert(function.toJson)(equalTo(expected.toJson))
         },
-        test("FieldValueFactor") {
+        test("fieldValueFactor") {
           val function =
             fieldValueFactor("fieldName")
               .factor(1.2)
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
               .modifier(LOG)
               .missing(13)
               .weight(10.0)
@@ -224,14 +224,14 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
 
           assert(function.toJson)(equalTo(expected.toJson))
         },
-        test("GaussDecayFunction") {
+        test("gaussDecayFunction") {
           val function =
             gaussDecayFunction("field", origin = "2013-09-17", scale = "10d")
               .weight(10.0)
               .decay(0.5)
               .multiValueMode(Max)
               .offset("5d")
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
 
           val expected =
             """
@@ -252,14 +252,14 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
 
           assert(function.toJson)(equalTo(expected.toJson))
         },
-        test("LinearDecayFunction") {
+        test("linearDecayFunction") {
           val function =
             linearDecayFunction("field", origin = "2013-09-17", scale = "10d")
               .weight(10.0)
               .decay(0.5)
               .multiValueMode(Max)
               .offset("5d")
-              .withFilter(matches("field", "value"))
+              .filter(matches("field", "value"))
 
           val expected =
             """
@@ -280,13 +280,13 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
 
           assert(function.toJson)(equalTo(expected.toJson))
         },
-        test("RandomScoreFunction") {
+        test("randomScoreFunction") {
           val function =
             randomScoreFunction()
           val functionWithSeed =
-            randomScoreFunction(123456).weight(13.0).withFilter(matches("field", "value"))
+            randomScoreFunction(123456).weight(13.0).filter(matches("field", "value"))
           val functionWithSeedAndField =
-            randomScoreFunction(12345, "field").weight(14.0).withFilter(matches("field", "value"))
+            randomScoreFunction(12345, "field").weight(14.0).filter(matches("field", "value"))
 
           val expected =
             """
@@ -323,10 +323,10 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
           assert(functionWithSeed.toJson)(equalTo(expectedWithSeed.toJson)) &&
           assert(functionWithSeedAndField.toJson)(equalTo(expectedWithSeedAndField.toJson))
         },
-        test("ScriptScoreFunction") {
+        test("scriptScoreFunction") {
           val function = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
             .weight(2.0)
-            .withFilter(matches("field", "value"))
+            .filter(matches("field", "value"))
 
           val expected =
             """
@@ -344,8 +344,8 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
           assert(function.toJson)(equalTo(expected.toJson))
 
         },
-        test("WeightFunction") {
-          val function = weightFunction(10.0).withFilter(matches("field", "value"))
+        test("weightFunction") {
+          val function = weightFunction(10.0).filter(matches("field", "value"))
 
           val expected =
             """
