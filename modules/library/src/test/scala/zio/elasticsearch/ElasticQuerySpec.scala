@@ -810,7 +810,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryInclusiveUpperBound = range(TestDocument.intField).lte(21)
           val queryMixedBounds         = queryLowerBound.lte(21.0)
           val queryWithBoostParam      = queryMixedBounds.boost(2.8)
-          val queryWithFormatParam     = range(TestDocument.dateField).gt(LocalDate.of(2023, 5, 11)).format("uuuu-MM-dd")
+          val queryWithFormatParam     = range(TestDocument.dateField).gt(LocalDate.of(2023, 5, 11)).format("yyyy-MM-dd")
 
           assert(query)(
             equalTo(
@@ -929,7 +929,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 lower = GreaterThan(LocalDate.of(2023, 5, 11)),
                 upper = Unbounded,
                 boost = None,
-                format = Some("uuuu-MM-dd")
+                format = Some("yyyy-MM-dd")
               )
             )
           )
@@ -2159,7 +2159,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryInclusiveUpperBound  = range(TestDocument.intField).lte(45)
           val queryMixedBounds          = range(TestDocument.intField).gt(10).lte(99)
           val queryMixedBoundsWithBoost = range(TestDocument.intField).gt(10).lte(99).boost(3.14)
-          val queryWithFormat           = range(TestDocument.dateField).gt(LocalDate.of(2020, 1, 10)).format("uuuu-MM-dd")
+          val queryWithFormat           = range(TestDocument.dateField).gt(LocalDate.of(2020, 1, 10)).format("yyyy-MM-dd")
 
           val expectedEmpty =
             """
@@ -2257,7 +2257,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |  "range": {
               |    "dateField": {
               |      "gt": "2020-01-10",
-              |      "format": "uuuu-MM-dd"
+              |      "format": "yyyy-MM-dd"
               |    }
               |  }
               |}

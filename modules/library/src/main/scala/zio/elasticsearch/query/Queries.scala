@@ -238,13 +238,17 @@ private[elasticsearch] final case class HasChild[S](
   scoreMode: Option[ScoreMode]
 ) extends HasChildQuery[S] { self =>
 
-  def ignoreUnmapped(value: Boolean): HasChildQuery[S] = self.copy(ignoreUnmapped = Some(value))
+  def ignoreUnmapped(value: Boolean): HasChildQuery[S] =
+    self.copy(ignoreUnmapped = Some(value))
 
-  def innerHits(innerHits: InnerHits): HasChildQuery[S] = self.copy(innerHitsField = Some(innerHits))
+  def innerHits(innerHits: InnerHits): HasChildQuery[S] =
+    self.copy(innerHitsField = Some(innerHits))
 
-  def maxChildren(value: Int): HasChildQuery[S] = self.copy(maxChildren = Some(value))
+  def maxChildren(value: Int): HasChildQuery[S] =
+    self.copy(maxChildren = Some(value))
 
-  def minChildren(value: Int): HasChildQuery[S] = self.copy(minChildren = Some(value))
+  def minChildren(value: Int): HasChildQuery[S] =
+    self.copy(minChildren = Some(value))
 
   def toJson(fieldPath: Option[String]): Json =
     Obj(
@@ -261,7 +265,8 @@ private[elasticsearch] final case class HasChild[S](
       )
     )
 
-  def scoreMode(value: ScoreMode): HasChildQuery[S] = self.copy(scoreMode = Some(value))
+  def scoreMode(value: ScoreMode): HasChildQuery[S] =
+    self.copy(scoreMode = Some(value))
 }
 
 sealed trait HasParentQuery[S]
