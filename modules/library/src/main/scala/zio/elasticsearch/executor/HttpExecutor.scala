@@ -375,8 +375,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
-          println(r.toJson)
-          println(response.body)
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
