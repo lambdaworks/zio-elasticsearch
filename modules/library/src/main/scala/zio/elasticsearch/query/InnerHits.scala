@@ -23,10 +23,10 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
 final case class InnerHits private[elasticsearch] (
-  private val excluded: Option[Chunk[String]],
+  private val excluded: Chunk[String],
+  private val included: Chunk[String],
   private val from: Option[Int],
   private val highlights: Option[Highlights],
-  private val included: Option[Chunk[String]],
   private val name: Option[String],
   private val size: Option[Int]
 ) { self =>
@@ -42,7 +42,7 @@ final case class InnerHits private[elasticsearch] (
    *   an instance of a [[zio.elasticsearch.query.InnerHits]] with specified fields to be excluded.
    */
   def excludes(field: String, fields: String*): InnerHits =
-    self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
+    self.copy(excluded = excluded ++ (field +: fields))
 
   /**
    * Specifies the starting offset of the [[zio.elasticsearch.query.InnerHits]] to be returned.
@@ -77,7 +77,7 @@ final case class InnerHits private[elasticsearch] (
    *   an instance of a [[zio.elasticsearch.query.InnerHits]] with specified fields to be included.
    */
   def includes(field: String, fields: String*): InnerHits =
-    self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
+    self.copy(included = included ++ (field +: fields))
 
   /**
    * Specifies the name of the [[zio.elasticsearch.query.InnerHits]].
@@ -104,10 +104,11 @@ final case class InnerHits private[elasticsearch] (
   private[elasticsearch] def toStringJsonPair: (String, Json) = {
     val sourceJson: Option[Json] =
       (included, excluded) match {
-        case (None, None) => None
+        case (included, excluded) if included.isEmpty && excluded.isEmpty =>
+          None
         case (included, excluded) =>
-          val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson))))
-          val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson))))
+          val includes = if (included.isEmpty) Obj() else Obj("includes" -> Arr(included.map(_.toJson)))
+          val excludes = if (excluded.isEmpty) Obj() else Obj("excludes" -> Arr(excluded.map(_.toJson)))
           Some(includes merge excludes)
       }
 
@@ -125,5 +126,5 @@ final case class InnerHits private[elasticsearch] (
 
 object InnerHits {
   def apply(): InnerHits =
-    InnerHits(excluded = None, from = None, highlights = None, included = None, name = None, size = None)
+    InnerHits(excluded = Chunk(), included = Chunk(), from = None, highlights = None, name = None, size = None)
 }

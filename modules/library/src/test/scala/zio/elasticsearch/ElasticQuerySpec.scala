@@ -764,10 +764,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 ignoreUnmapped = None,
                 innerHitsField = Some(
                   InnerHits(
-                    excluded = None,
+                    excluded = Chunk(),
+                    included = Chunk(),
                     from = Some(0),
                     highlights = None,
-                    included = None,
                     name = Some("innerHitName"),
                     size = Some(3)
                   )
@@ -783,7 +783,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 scoreMode = None,
                 ignoreUnmapped = None,
                 innerHitsField = Some(
-                  InnerHits(excluded = None, from = None, highlights = None, included = None, name = None, size = None)
+                  InnerHits(
+                    excluded = Chunk(),
+                    included = Chunk(),
+                    from = None,
+                    highlights = None,
+                    name = None,
+                    size = None
+                  )
                 )
               )
             )
@@ -808,10 +815,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 ignoreUnmapped = Some(false),
                 innerHitsField = Some(
                   InnerHits(
-                    excluded = None,
+                    excluded = Chunk(),
+                    included = Chunk(),
                     from = None,
                     highlights = None,
-                    included = None,
                     name = Some("innerHitName"),
                     size = None
                   )

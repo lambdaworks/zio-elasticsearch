@@ -14,34 +14,33 @@ object InnerHitsSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("InnerHits")(
       test("constructing") {
-        val innerHits               = InnerHits.apply()
-        val innerHitsWithExcluded   = InnerHits.apply().excludes("longField")
-        val innerHitsWithFrom       = InnerHits.apply().from(2)
-        val innerHitsWithHighlights = InnerHits.apply().highlights(highlight("stringField"))
-        val innerHitsWithIncluded   = InnerHits.apply().includes("intField")
-        val innerHitsWithName       = InnerHits.apply().name("innerHitName")
-        val innerHitsWithSize       = InnerHits.apply().size(5)
+        val innerHits               = InnerHits()
+        val innerHitsWithExcluded   = InnerHits().excludes("longField")
+        val innerHitsWithFrom       = InnerHits().from(2)
+        val innerHitsWithHighlights = InnerHits().highlights(highlight("stringField"))
+        val innerHitsWithIncluded   = InnerHits().includes("intField")
+        val innerHitsWithName       = InnerHits().name("innerHitName")
+        val innerHitsWithSize       = InnerHits().size(5)
         val innerHitsWithAllParams =
-          InnerHits
-            .apply()
+          InnerHits()
             .excludes("longField")
+            .includes("intField")
             .from(2)
             .highlights(highlight("stringField"))
-            .includes("intField")
             .name("innerHitName")
             .size(5)
 
         assert(innerHits)(
           equalTo(
-            InnerHits(excluded = None, from = None, highlights = None, included = None, name = None, size = None)
+            InnerHits(excluded = Chunk(), from = None, highlights = None, included = Chunk(), name = None, size = None)
           )
         ) && assert(innerHitsWithExcluded)(
           equalTo(
             InnerHits(
-              excluded = Some(Chunk("longField")),
+              excluded = Chunk("longField"),
+              included = Chunk(),
               from = None,
               highlights = None,
-              included = None,
               name = None,
               size = None
             )
@@ -49,10 +48,10 @@ object InnerHitsSpec extends ZIOSpecDefault {
         ) && assert(innerHitsWithFrom)(
           equalTo(
             InnerHits(
-              excluded = None,
+              excluded = Chunk(),
+              included = Chunk(),
               from = Some(2),
               highlights = None,
-              included = None,
               name = None,
               size = None
             )
@@ -60,10 +59,10 @@ object InnerHitsSpec extends ZIOSpecDefault {
         ) && assert(innerHitsWithHighlights)(
           equalTo(
             InnerHits(
-              excluded = None,
+              excluded = Chunk(),
+              included = Chunk(),
               from = None,
               highlights = Some(Highlights(fields = Chunk(HighlightField("stringField")), config = Map.empty)),
-              included = None,
               name = None,
               size = None
             )
@@ -71,10 +70,10 @@ object InnerHitsSpec extends ZIOSpecDefault {
         ) && assert(innerHitsWithIncluded)(
           equalTo(
             InnerHits(
-              excluded = None,
+              excluded = Chunk(),
+              included = Chunk("intField"),
               from = None,
               highlights = None,
-              included = Some(Chunk("intField")),
               name = None,
               size = None
             )
@@ -82,25 +81,32 @@ object InnerHitsSpec extends ZIOSpecDefault {
         ) && assert(innerHitsWithName)(
           equalTo(
             InnerHits(
-              excluded = None,
+              excluded = Chunk(),
+              included = Chunk(),
               from = None,
               highlights = None,
-              included = None,
               name = Some("innerHitName"),
               size = None
             )
           )
         ) && assert(innerHitsWithSize)(
           equalTo(
-            InnerHits(excluded = None, from = None, highlights = None, included = None, name = None, size = Some(5))
+            InnerHits(
+              excluded = Chunk(),
+              included = Chunk(),
+              from = None,
+              highlights = None,
+              name = None,
+              size = Some(5)
+            )
           )
         ) && assert(innerHitsWithAllParams)(
           equalTo(
             InnerHits(
-              excluded = Some(Chunk("longField")),
+              excluded = Chunk("longField"),
+              included = Chunk("intField"),
               from = Some(2),
               highlights = Some(Highlights(fields = Chunk(HighlightField("stringField")), config = Map.empty)),
-              included = Some(Chunk("intField")),
               name = Some("innerHitName"),
               size = Some(5)
             )
@@ -108,20 +114,19 @@ object InnerHitsSpec extends ZIOSpecDefault {
         )
       },
       test("encoding as JSON") {
-        val innerHits               = InnerHits.apply()
-        val innerHitsWithExcluded   = InnerHits.apply().excludes("longField")
-        val innerHitsWithFrom       = InnerHits.apply().from(2)
-        val innerHitsWithHighlights = InnerHits.apply().highlights(highlight("stringField"))
-        val innerHitsWithIncluded   = InnerHits.apply().includes("intField")
-        val innerHitsWithName       = InnerHits.apply().name("innerHitName")
-        val innerHitsWithSize       = InnerHits.apply().size(5)
+        val innerHits               = InnerHits()
+        val innerHitsWithExcluded   = InnerHits().excludes("longField")
+        val innerHitsWithFrom       = InnerHits().from(2)
+        val innerHitsWithHighlights = InnerHits().highlights(highlight("stringField"))
+        val innerHitsWithIncluded   = InnerHits().includes("intField")
+        val innerHitsWithName       = InnerHits().name("innerHitName")
+        val innerHitsWithSize       = InnerHits().size(5)
         val innerHitsWithAllParams =
-          InnerHits
-            .apply()
+          InnerHits()
             .excludes("longField")
+            .includes("intField")
             .from(2)
             .highlights(highlight("stringField"))
-            .includes("intField")
             .name("innerHitName")
             .size(5)
 
