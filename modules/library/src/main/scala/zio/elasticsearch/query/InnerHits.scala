@@ -18,6 +18,7 @@ package zio.elasticsearch.query
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.Field
 import zio.elasticsearch.highlights.Highlights
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
@@ -30,6 +31,21 @@ final case class InnerHits private[elasticsearch] (
   private val name: Option[String],
   private val size: Option[Int]
 ) { self =>
+
+  /**
+   * Specifies one or more type-safe fields to be excluded in the response of a [[zio.elasticsearch.query.InnerHits]].
+   *
+   * @param field
+   *   a type-safe field to be excluded
+   * @param fields
+   *   type-safe fields to be excluded
+   * @tparam S
+   *   document which fields are excluded
+   * @return
+   *   an instance of a [[zio.elasticsearch.query.InnerHits]] with specified fields to be excluded.
+   */
+  def excludes[S](field: Field[S, _], fields: Field[S, _]*): InnerHits =
+    self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
 
   /**
    * Specifies one or more fields to be excluded in the response of a [[zio.elasticsearch.query.InnerHits]].
@@ -65,6 +81,21 @@ final case class InnerHits private[elasticsearch] (
    */
   def highlights(value: Highlights): InnerHits =
     self.copy(highlights = Some(value))
+
+  /**
+   * Specifies one or more type-safe fields to be included in the response of a [[zio.elasticsearch.query.InnerHits]].
+   *
+   * @param field
+   *   a type-safe field to be included
+   * @param fields
+   *   type-safe fields to be included
+   * @tparam S
+   *   document which fields are included
+   * @return
+   *   an instance of a [[zio.elasticsearch.query.InnerHits]] with specified fields to be included.
+   */
+  def includes[S](field: Field[S, _], fields: Field[S, _]*): InnerHits =
+    self.copy(included = included ++ (field.toString +: fields.map(_.toString)))
 
   /**
    * Specifies one or more fields to be included in the response of a [[zio.elasticsearch.query.InnerHits]].

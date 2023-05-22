@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticHighlight.highlight
+import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.elasticsearch.query.InnerHits
 import zio.elasticsearch.utils.RichString
@@ -15,10 +16,10 @@ object InnerHitsSpec extends ZIOSpecDefault {
     suite("InnerHits")(
       test("constructing") {
         val innerHits               = InnerHits()
-        val innerHitsWithExcluded   = InnerHits().excludes("longField")
+        val innerHitsWithExcluded   = InnerHits().excludes(TestDocument.doubleField, TestDocument.dateField)
         val innerHitsWithFrom       = InnerHits().from(2)
         val innerHitsWithHighlights = InnerHits().highlights(highlight("stringField"))
-        val innerHitsWithIncluded   = InnerHits().includes("intField")
+        val innerHitsWithIncluded   = InnerHits().includes(TestDocument.intField)
         val innerHitsWithName       = InnerHits().name("innerHitName")
         val innerHitsWithSize       = InnerHits().size(5)
         val innerHitsWithAllParams =
@@ -37,7 +38,7 @@ object InnerHitsSpec extends ZIOSpecDefault {
         ) && assert(innerHitsWithExcluded)(
           equalTo(
             InnerHits(
-              excluded = Chunk("longField"),
+              excluded = Chunk("doubleField", "dateField"),
               included = Chunk(),
               from = None,
               highlights = None,
@@ -115,10 +116,10 @@ object InnerHitsSpec extends ZIOSpecDefault {
       },
       test("encoding as JSON") {
         val innerHits               = InnerHits()
-        val innerHitsWithExcluded   = InnerHits().excludes("longField")
+        val innerHitsWithExcluded   = InnerHits().excludes(TestDocument.doubleField, TestDocument.dateField)
         val innerHitsWithFrom       = InnerHits().from(2)
         val innerHitsWithHighlights = InnerHits().highlights(highlight("stringField"))
-        val innerHitsWithIncluded   = InnerHits().includes("intField")
+        val innerHitsWithIncluded   = InnerHits().includes(TestDocument.intField)
         val innerHitsWithName       = InnerHits().name("innerHitName")
         val innerHitsWithSize       = InnerHits().size(5)
         val innerHitsWithAllParams =
@@ -145,7 +146,8 @@ object InnerHitsSpec extends ZIOSpecDefault {
             |  "inner_hits": {
             |    "_source" : {
             |      "excludes" : [
-            |        "longField"
+            |        "doubleField",
+            |        "dateField"
             |      ]
             |    }
             |  }
