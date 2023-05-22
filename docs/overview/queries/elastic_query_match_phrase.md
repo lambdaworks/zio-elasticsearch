@@ -16,7 +16,7 @@ You can create a `MatchPhrase` query using the `matchPhrase` method this way:
 val query: MatchPhraseQuery = matchPhrase(field = "stringField", value = "test")
 ```
 
-You can create a type-safe `MatchPhrase` query using the `matchPhrase` method this way:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `MatchPhrase` query using the `matchPhrase` method this way:
 ```scala
 val query: MatchPhraseQuery = matchPhrase(field = Document.stringField, value = "test")
 ```

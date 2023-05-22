@@ -16,7 +16,7 @@ You can create a `GeoDistance` query using the `geoDistance` method with latitud
 val query: GeoDistanceQuery = geoDistance(field = "location", latitude = 20.0, longitude = 20.0)
 ```
 
-You can create a type-safe `GeoDistance` query using the `geoDistance` method with latitude and longitude in the following manner:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `GeoDistance` query using the `geoDistance` method with latitude and longitude in the following manner:
 ```scala
 val query: GeoDistanceQuery = geoDistance(field = Document.location, latitude = 20.0, longitude = 20.0)
 ```
@@ -26,7 +26,7 @@ You can create a `GeoDistance` query using the `geoDistance` method with coordin
 val query: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31")
 ```
 
-You can create a type-safe `GeoDistance` query using the `geoDistance` method with coordinates in the following manner:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `GeoDistance` query using the `geoDistance` method with coordinates in the following manner:
 ```scala
 val query: GeoDistanceQuery = geoDistance(field = Document.location, coordinates = "40,31")
 ```

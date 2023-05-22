@@ -16,7 +16,7 @@ You can create an `Exists` query using the `exists` method this way:
 val query: ExistsQuery = exists(field = "name")
 ```
 
-Also, you can create a type-safe `Exists` query using the `exists` method this way:
+Also, you can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Exists` query using the `exists` method this way:
 ```scala
 val query: ExistsQuery = exists(field = Document.name)
 ```

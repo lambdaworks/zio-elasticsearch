@@ -71,7 +71,6 @@ val result: RIO[Elasticsearch, SearchResult] = Elasticsearch.execute(request)
 ```
 
 Accessors also have a `suffix` method, in case you want to use one in queries:
-
 ```scala
 ElasticQuery.term("email.keyword", "jane.doe@lambdaworks.io")
 
@@ -79,4 +78,8 @@ ElasticQuery.term("email.keyword", "jane.doe@lambdaworks.io")
 ElasticQuery.term(User.email.suffix("keyword"), "jane.doe@lambdaworks.io")
 ```
 
-In case the suffix is `"keyword"` or `"raw"` you can use `keyword` and `raw` methods respectively.
+In case the suffix is `"keyword"` or `"raw"` you can use `keyword` and `raw` methods respectively:
+```scala
+ElasticQuery.term(User.email.keyword, "jane.doe@lambdaworks.io")
+ElasticQuery.term(User.email.raw, "jane.doe@lambdaworks.io")
+```

@@ -16,7 +16,7 @@ You can create a `Term` query using the `term` method this way:
 val query: TermQuery = term(field = Document.name, value = "test")
 ```
 
-You can create a type-safe `Term` query using the `term` method this way:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Term` query using the `term` method this way:
 ```scala
 val query: TermQuery = term(field = Document.name, value = "test")
 ```

@@ -18,7 +18,7 @@ You can create a `Match` query using the `matches` method in the following manne
 val query: MatchQuery = matches(field = "message", value = "this is a test")
 ```
 
-You can create a type-safe `Match` query using the `matches` method in the following manner:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Match` query using the `matches` method in the following manner:
 ```scala
 val query: MatchQuery = matches(field = Document.message, value = "this is a test")
 ```

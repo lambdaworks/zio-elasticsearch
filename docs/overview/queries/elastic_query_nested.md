@@ -16,7 +16,7 @@ You can create a `Nested` query using the `nested` method in the following manne
 val query: NestedQuery = nested(path = "testField", query = matchAll)
 ```
 
-You can create a type-safe `Nested` query using the `nested` method in the following manner:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Nested` query using the `nested` method in the following manner:
 ```scala
 val query: NestedQuery = nested(path = Document.subDocumentList, query = matchAll)
 ```

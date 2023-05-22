@@ -22,7 +22,7 @@ val query: WildcardQuery = startsWith(field = "name", value = "a")
 val query: WildcardQuery = wildcard(field = "name", value = "a*a*")
 ```
 
-To create a type-safe `Wildcard` query use one of the following methods:
+To create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Wildcard` query use one of the following methods:
 ```scala
 val query: WildcardQuery = contains(field = Document.name, value = "a")
 val query: WildcardQuery = startsWith(field = Document.name, value = "a")

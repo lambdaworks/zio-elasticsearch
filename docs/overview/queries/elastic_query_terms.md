@@ -17,7 +17,7 @@ You can create a `Terms` query using the `terms` method this way:
 val query: TermsQuery = terms(field = "name", "a", "b", "c")
 ```
 
-You can create a type-safe `Terms` query using the `terms` method this way:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Terms` query using the `terms` method this way:
 ```scala
 val query: TermQuery = terms(field = Document.name, "a", "b", "c")
 ```

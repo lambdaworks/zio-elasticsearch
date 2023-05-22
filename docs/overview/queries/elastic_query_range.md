@@ -16,7 +16,7 @@ You can create a `Range` query using the `range` method in the following manner:
 val query: RangeQuery = range(field = "intField")
 ```
 
-You can create a type-safe `Range` query using the `range` method in the following manner:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Range` query using the `range` method in the following manner:
 ```scala
 val query: RangeQuery = range(field = Document.intField)
 ```
