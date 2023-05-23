@@ -17,9 +17,27 @@
 package zio.elasticsearch.request.options
 
 import zio.Chunk
+import zio.elasticsearch.Field
 import zio.schema.Schema
 
 private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
+
+  /**
+   * Specifies one or more type-safe fields to be excluded in the response of a
+   * [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
+   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   *
+   * @param field
+   *   a type-safe field to be excluded
+   * @param fields
+   *   type-safe fields to be excluded
+   * @tparam S
+   *   document which fields are excluded
+   * @return
+   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
+   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be excluded.
+   */
+  def excludes[S](field: Field[S, _], fields: Field[S, _]*): R
 
   /**
    * Specifies one or more fields to be excluded in the response of a [[zio.elasticsearch.ElasticRequest.SearchRequest]]
@@ -34,6 +52,21 @@ private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
    *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be excluded.
    */
   def excludes(field: String, fields: String*): R
+
+  /**
+   * Specifies one or more type-safe fields to be included in the response of a
+   * [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
+   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   *
+   * @param field
+   *   a type-safe field to be included
+   * @param fields
+   *   type-safe fields to be included
+   * @return
+   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
+   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be included.
+   */
+  def includes[S](field: Field[S, _], fields: Field[S, _]*): R
 
   /**
    * Specifies one or more fields to be included in the response of a [[zio.elasticsearch.ElasticRequest.SearchRequest]]

@@ -77,8 +77,7 @@ private[elasticsearch] final case class BucketSort(
   sortBy: Chunk[Sort],
   from: Option[Int],
   size: Option[Int]
-) extends BucketSortAggregation {
-  self =>
+) extends BucketSortAggregation { self =>
   def from(value: Int): BucketSortAggregation =
     self.copy(from = Some(value))
 
@@ -141,6 +140,15 @@ private[elasticsearch] final case class Max(name: String, field: String, missing
 }
 
 sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
+
+  /**
+   * Sets the aggregations for the [[zio.elasticsearch.aggregation.MultipleAggregations]].
+   *
+   * @param aggregations
+   *   the aggregations to be set
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]] with the specified aggregations.
+   */
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations
 }
 
@@ -149,11 +157,11 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
     self.copy(aggregations = self.aggregations ++ aggregations)
 
-  private[elasticsearch] def toJson: Json =
-    aggregations.map(_.toJson).reduce(_ merge _)
-
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     self.copy(aggregations = agg +: aggregations)
+
+  private[elasticsearch] def toJson: Json =
+    aggregations.map(_.toJson).reduce(_ merge _)
 }
 
 sealed trait TermsAggregation

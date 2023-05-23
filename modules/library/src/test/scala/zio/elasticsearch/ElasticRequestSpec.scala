@@ -284,13 +284,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(searchRequest)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -299,6 +299,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithSort)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk(
@@ -312,10 +314,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                     unmappedType = None
                   )
                 ),
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -324,13 +324,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithSourceFiltering)(
             equalTo(
               Search(
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "doubleField"),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = Some(Chunk("booleanField")),
                 from = None,
                 highlights = None,
-                included = Some(Chunk("stringField", "doubleField")),
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -339,13 +339,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithFrom)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = Some(5),
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -354,15 +354,15 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithHighlights)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = Some(
                   Highlights(fields = Chunk(HighlightField(field = "intField", config = Map.empty)), config = Map.empty)
                 ),
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -371,13 +371,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithRouting)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = Some(RoutingValue),
                 searchAfter = None,
                 size = None
@@ -386,13 +386,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithSearchAfter)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = Some(Arr(Str("12345"))),
                 size = None
@@ -401,13 +401,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithSize)(
             equalTo(
               Search(
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = Some(5)
@@ -416,6 +416,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchRequestWithAllParams)(
             equalTo(
               Search(
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "doubleField"),
                 index = Index,
                 query = Query,
                 sortBy = Chunk(
@@ -429,12 +431,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                     unmappedType = None
                   )
                 ),
-                excluded = Some(Chunk("booleanField")),
                 from = Some(5),
                 highlights = Some(
                   Highlights(fields = Chunk(HighlightField(field = "intField", config = Map.empty)), config = Map.empty)
                 ),
-                included = Some(Chunk("stringField", "doubleField")),
                 routing = Some(RoutingValue),
                 searchAfter = Some(Arr(Str("12345"))),
                 size = Some(5)
@@ -473,14 +473,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(searchAndAggRequest)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -489,9 +489,11 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithSort)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk(
                   SortByFieldOptions(
                     field = "intField",
@@ -503,10 +505,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                     unmappedType = None
                   )
                 ),
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -515,14 +515,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithSourceFiltering)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "doubleField"),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = Some(Chunk("booleanField")),
                 from = None,
                 highlights = None,
-                included = Some(Chunk("stringField", "doubleField")),
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -531,14 +531,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithFrom)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = Some(5),
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -547,16 +547,16 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithHighlights)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = Some(
                   Highlights(fields = Chunk(HighlightField(field = "intField", config = Map.empty)), config = Map.empty)
                 ),
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = None
@@ -565,14 +565,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithRouting)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = Some(RoutingValue),
                 searchAfter = None,
                 size = None
@@ -581,14 +581,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithSearchAfter)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = Some(Arr(Str("12345"))),
                 size = None
@@ -597,14 +597,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithSize)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk(),
+                included = Chunk(),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk.empty,
-                excluded = None,
                 from = None,
                 highlights = None,
-                included = None,
                 routing = None,
                 searchAfter = None,
                 size = Some(5)
@@ -613,9 +613,11 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(searchAndAggRequestWithAllParams)(
             equalTo(
               SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "doubleField"),
                 index = Index,
                 query = Query,
-                aggregation = MaxAggregation,
                 sortBy = Chunk(
                   SortByFieldOptions(
                     field = "intField",
@@ -627,12 +629,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                     unmappedType = None
                   )
                 ),
-                excluded = Some(Chunk("booleanField")),
                 from = Some(5),
                 highlights = Some(
                   Highlights(fields = Chunk(HighlightField(field = "intField", config = Map.empty)), config = Map.empty)
                 ),
-                included = Some(Chunk("stringField", "doubleField")),
                 routing = Some(RoutingValue),
                 searchAfter = Some(Arr(Str("12345"))),
                 size = Some(5)
