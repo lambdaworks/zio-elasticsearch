@@ -16,11 +16,11 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
 import zio.schema.Schema
-import zio.{Chunk, NonEmptyChunk}
 
 object ElasticQuery {
 
@@ -83,8 +83,8 @@ object ElasticQuery {
     Exists(field = field, boost = None)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
-   * the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the
+   * criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `filter` inside of the `Bool` query
@@ -124,9 +124,26 @@ object ElasticQuery {
       minimumShouldMatch = None
     )
 
-  final def functionScore(function: FunctionScoreFunction): FunctionScore[Any] =
-    FunctionScore[Any](
-      functions = NonEmptyChunk(function),
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.FunctionScore]] with one or multiple function score
+   * functions.
+   *
+   * @param function
+   *   the [[zio.elasticsearch.query.FunctionScoreFunction]] to instantiate [[zio.elasticsearch.query.FunctionScore]]
+   *   with
+   * @param functions
+   *   multiple [[zio.elasticsearch.query.FunctionScoreFunction]] functions that will be part of
+   *   [[zio.elasticsearch.query.FunctionScore]] query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the function score query with functions
+   *   that are used to calculate score for result
+   */
+  final def functionScore[S](
+    function: FunctionScoreFunction[S],
+    functions: FunctionScoreFunction[S]*
+  ): FunctionScore[S] =
+    FunctionScore[S](
+      functions = Chunk.fromIterable(function +: functions),
       boost = None,
       boostMode = None,
       maxBoost = None,

@@ -1767,8 +1767,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                           ElasticRequest.search(
                             firstSearchIndex,
                             ElasticQuery
-                              .functionScore(FunctionScoreFunction.randomScoreFunction())
-                              .withFunction(FunctionScoreFunction.weightFunction(2))
+                              .functionScore(
+                                FunctionScoreFunction.randomScoreFunction(),
+                                FunctionScoreFunction.weightFunction(2)
+                              )
                               .query(matches("stringField", firstDocument.stringField))
                               .boost(2.0)
                               .boostMode(FunctionScoreBoostMode.Max)

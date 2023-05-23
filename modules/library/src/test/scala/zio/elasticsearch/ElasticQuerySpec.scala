@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.domain._
@@ -401,11 +400,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val fieldValue  = fieldValueFactor("fieldName")
           val decay       = expDecayFunction("field", origin = "11, 12", scale = "2km")
 
-          val query = functionScore(scriptScore)
-            .withFunction(weight)
-            .withFunction(randomScore)
-            .withFunction(fieldValue)
-            .withFunction(decay)
+          val query = functionScore(scriptScore, weight, randomScore, fieldValue, decay)
             .boost(2.0)
             .boostMode(FunctionScoreBoostMode.Avg)
             .maxBoost(42)
@@ -416,12 +411,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               FunctionScore[Any](
-                functions = NonEmptyChunk(
-                  decay,
-                  fieldValue,
-                  randomScore,
+                functions = Chunk(
+                  scriptScore,
                   weight,
-                  scriptScore
+                  randomScore,
+                  fieldValue,
+                  decay
                 ),
                 boost = Some(2.0),
                 boostMode = Some(FunctionScoreBoostMode.Avg),
@@ -1749,14 +1744,14 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTsWithBoost.toJson(fieldPath = None))(equalTo(expectedTsWithBoost.toJson))
         },
         test("functionScore") {
-          val query = functionScore(scriptScoreFunction(Script("params.agg1 + params.agg2 > 10")))
-            .withFunction(randomScoreFunction().weight(2.0))
-            .withFunction(
-              expDecayFunction("field", origin = "2013-09-17", scale = "10d")
-                .offset("5d")
-                .multiValueMode(Max)
-                .weight(10.0)
-            )
+          val query = functionScore(
+            scriptScoreFunction(Script("params.agg1 + params.agg2 > 10")),
+            randomScoreFunction().weight(2.0),
+            expDecayFunction("field", origin = "2013-09-17", scale = "10d")
+              .offset("5d")
+              .multiValueMode(Max)
+              .weight(10.0)
+          )
             .boost(2.0)
             .boostMode(FunctionScoreBoostMode.Avg)
             .maxBoost(42)

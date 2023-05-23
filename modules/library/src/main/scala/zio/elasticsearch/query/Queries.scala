@@ -16,13 +16,13 @@
 
 package zio.elasticsearch.query
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
-import zio.{Chunk, NonEmptyChunk}
 
 import scala.annotation.unused
 
@@ -198,21 +198,79 @@ private[elasticsearch] final case class Exists[S](field: String, boost: Option[D
 
 sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[FunctionScoreQuery[S]] {
 
+  /**
+   * Sets the `boostMode` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. It defines how computed
+   * score is combined with score of the query.
+   *
+   * @param value
+   *   Computed score and score of the query can be combined in following ways:
+   *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Avg]]
+   *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Max]]
+   *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Min]]
+   *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Multiply]]
+   *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Replace]]
+   *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Sum]]
+   *
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `boostMode` parameter.
+   */
   def boostMode(value: FunctionScoreBoostMode): FunctionScoreQuery[S]
 
+  /**
+   * Sets the `maxBoost` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. It restricts the new score
+   * not to exceed a certain limit by setting this parameter.
+   *
+   * @param value
+   *   a non-negative real number used for maxBoost
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `maxBoost` parameter.
+   */
   def maxBoost(value: Double): FunctionScoreQuery[S]
 
+  /**
+   * Sets the `minScore` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. To exclude documents that do
+   * not meet a certain score threshold the min_score parameter can be set to the desired score threshold.
+   *
+   * @param value
+   *   a non-negative real number used for minScore
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `minScore` parameter.
+   */
   def minScore(value: Double): FunctionScoreQuery[S]
 
+  /**
+   * Sets the `query` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. Represents a query to be
+   * executed in elastic search and modified by function score.
+   *
+   * @param value
+   *   a [[zio.elasticsearch.query.ElasticQuery]] to be executed
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `query` parameter.
+   */
   def query(value: ElasticQuery[S]): FunctionScoreQuery[S]
 
+  /**
+   * Sets the `scoreMode` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. The `scoreMode` parameter
+   * specifies how the computed scores are combined
+   *
+   * @param value
+   *   a value that we want to set `scoreMode` to, possible values are:
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.Avg]]
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.First]]
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.Max]]
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.Min]]
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.Multiply]]
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.None]]
+   *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.Sum]]
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `scoreMode` parameter.
+   */
   def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S]
 
-  def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S]
 }
 
 private[elasticsearch] final case class FunctionScore[S](
-  functions: NonEmptyChunk[FunctionScoreFunction],
+  functions: Chunk[FunctionScoreFunction[S]],
   boost: Option[Double],
   boostMode: Option[FunctionScoreBoostMode],
   maxBoost: Option[Double],
@@ -239,14 +297,11 @@ private[elasticsearch] final case class FunctionScore[S](
   def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S] =
     self.copy(scoreMode = Some(value))
 
-  def withFunction(value: FunctionScoreFunction): FunctionScoreQuery[S] =
-    self.copy(functions = functions.prepended(value))
-
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "function_score" -> Obj(
         Chunk(
-          Some("functions" -> Arr(functions.reverse.map(_.toJson))),
+          Some("functions" -> Arr(functions.map(_.toJson))),
           boost.map("boost" -> Num(_)),
           boostMode.map(bm => "boost_mode" -> Str(s"${bm.toString.toLowerCase}")),
           maxBoost.map("max_boost" -> Num(_)),
