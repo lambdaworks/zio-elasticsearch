@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
+import zio.Chunk
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
