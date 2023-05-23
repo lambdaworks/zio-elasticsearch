@@ -31,20 +31,101 @@ sealed trait ElasticQuery[-S] { self =>
 }
 
 sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] with HasMinimumShouldMatch[BoolQuery[S]] {
+
+  /**
+   * Adds specified `filter` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries must appear in matching
+   * documents. Unlike `must` the score of the query will be ignored.
+   *
+   * @param queries
+   *   the `filter` queries to be added
+   * @tparam S1
+   *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `filter` queries added.
+   */
   def filter[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
+  /**
+   * Adds specified `filter` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries must appear in matching
+   * documents. Unlike `must` the score of the query will be ignored.
+   *
+   * @param queries
+   *   the `filter` queries to be added
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `filter` queries added.
+   */
   def filter(queries: ElasticQuery[Any]*): BoolQuery[S]
 
+  /**
+   * Adds specified `must` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries must appear in matching
+   * documents and will contribute to the score.
+   *
+   * @param queries
+   *   the `must` queries to be added
+   * @tparam S1
+   *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `must` queries added.
+   */
   def must[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
+  /**
+   * Adds specified `must` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries must appear in matching
+   * documents and will contribute to the score.
+   *
+   * @param queries
+   *   the `must` queries to be added
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `must` queries added.
+   */
   def must(queries: ElasticQuery[Any]*): BoolQuery[S]
 
+  /**
+   * Adds specified `must not` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries must not appear in
+   * matching documents.
+   *
+   * @param queries
+   *   the `must not` queries to be added
+   * @tparam S1
+   *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `must not` queries added.
+   */
   def mustNot[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
+  /**
+   * Adds specified `must not` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries must not appear in
+   * matching documents.
+   *
+   * @param queries
+   *   the `must not` queries to be added
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `must not` queries added.
+   */
   def mustNot(queries: ElasticQuery[Any]*): BoolQuery[S]
 
+  /**
+   * Adds specified `should` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries should appear in
+   * matching documents.
+   *
+   * @param queries
+   *   the `should` queries to be added
+   * @tparam S1
+   *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `should` queries added.
+   */
   def should[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1]
 
+  /**
+   * Adds specified `should` queries to the [[zio.elasticsearch.query.BoolQuery]]. These queries should appear in
+   * matching documents.
+   *
+   * @param queries
+   *   the `should` queries to be added
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.BoolQuery]] with `should` queries added.
+   */
   def should(queries: ElasticQuery[Any]*): BoolQuery[S]
 }
 
@@ -80,7 +161,13 @@ private[elasticsearch] final case class Bool[S](
   def mustNot(queries: ElasticQuery[Any]*): BoolQuery[S] =
     self.copy(mustNot = mustNot ++ queries)
 
-  def toJson(fieldPath: Option[String]): Json = {
+  def should[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
+    self.copy(should = should ++ queries)
+
+  def should(queries: ElasticQuery[Any]*): BoolQuery[S] =
+    self.copy(should = should ++ queries)
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val boolFields =
       Chunk(
         if (filter.nonEmpty) Some("filter" -> Arr(filter.map(_.toJson(fieldPath)))) else None,
@@ -93,18 +180,12 @@ private[elasticsearch] final case class Bool[S](
 
     Obj("bool" -> Obj(boolFields))
   }
-
-  def should[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
-    self.copy(should = should ++ queries)
-
-  def should(queries: ElasticQuery[Any]*): BoolQuery[S] =
-    self.copy(should = should ++ queries)
 }
 
 sealed trait ExistsQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Exists[S](field: String) extends ExistsQuery[S] {
-  def toJson(fieldPath: Option[String]): Json =
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
 }
 
@@ -181,7 +262,9 @@ private[elasticsearch] final case class GeoDistance[S](
 
   def name(value: String): GeoDistanceQuery[S] = self.copy(queryName = Some(value))
 
-  def toJson(fieldPath: Option[String]): Json =
+  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S] = self.copy(validationMethod = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "geo_distance" -> Obj(
         Chunk(
@@ -194,7 +277,6 @@ private[elasticsearch] final case class GeoDistance[S](
       )
     )
 
-  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S] = self.copy(validationMethod = Some(value))
 }
 
 sealed trait HasChildQuery[S]
@@ -250,7 +332,10 @@ private[elasticsearch] final case class HasChild[S](
   def minChildren(value: Int): HasChildQuery[S] =
     self.copy(minChildren = Some(value))
 
-  def toJson(fieldPath: Option[String]): Json =
+  def scoreMode(value: ScoreMode): HasChildQuery[S] =
+    self.copy(scoreMode = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "has_child" -> Obj(
         Chunk(
@@ -264,9 +349,6 @@ private[elasticsearch] final case class HasChild[S](
         ).flatten
       )
     )
-
-  def scoreMode(value: ScoreMode): HasChildQuery[S] =
-    self.copy(scoreMode = Some(value))
 }
 
 sealed trait HasParentQuery[S]
@@ -322,7 +404,10 @@ private[elasticsearch] final case class HasParent[S](
   def innerHits(innerHits: InnerHits): HasParentQuery[S] =
     self.copy(innerHitsField = Some(innerHits))
 
-  def toJson(fieldPath: Option[String]): Json =
+  def withScore(value: Boolean): HasParent[S] =
+    self.copy(score = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "has_parent" -> Obj(
         Chunk(
@@ -334,15 +419,12 @@ private[elasticsearch] final case class HasParent[S](
         ).flatten
       )
     )
-
-  def withScore(value: Boolean): HasParent[S] =
-    self.copy(score = Some(value))
 }
 
 sealed trait MatchQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
-  def toJson(fieldPath: Option[String]): Json =
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("match" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
 }
 
@@ -352,14 +434,14 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
   def boost(value: Double): MatchAllQuery =
     self.copy(boost = Some(value))
 
-  def toJson(fieldPath: Option[String]): Json =
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("match_all" -> Obj(Chunk.fromIterable(boost.map("boost" -> Num(_)))))
 }
 
 sealed trait MatchPhraseQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class MatchPhrase[S](field: String, value: String) extends MatchPhraseQuery[S] {
-  def toJson(fieldPath: Option[String]): Json =
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("match_phrase" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
 }
 
@@ -382,7 +464,10 @@ private[elasticsearch] final case class Nested[S](
   def innerHits(innerHits: InnerHits): NestedQuery[S] =
     self.copy(innerHitsField = Some(innerHits))
 
-  def toJson(fieldPath: Option[String]): Json =
+  def scoreMode(scoreMode: ScoreMode): NestedQuery[S] =
+    self.copy(scoreMode = Some(scoreMode))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "nested" -> Obj(
         Chunk(
@@ -394,55 +479,94 @@ private[elasticsearch] final case class Nested[S](
         ).flatten
       )
     )
-
-  def scoreMode(scoreMode: ScoreMode): NestedQuery[S] =
-    self.copy(scoreMode = Some(scoreMode))
 }
 
 sealed trait LowerBound {
-  def toJson: Option[(String, Json)]
+  private[elasticsearch] def toJson: Option[(String, Json)]
 }
 
 private[elasticsearch] final case class GreaterThan[A: ElasticPrimitive](value: A) extends LowerBound {
-  def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
+  private[elasticsearch] def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
 }
 
 private[elasticsearch] final case class GreaterThanOrEqualTo[A: ElasticPrimitive](value: A) extends LowerBound {
-  def toJson: Option[(String, Json)] = Some("gte" -> value.toJson)
+  private[elasticsearch] def toJson: Option[(String, Json)] = Some("gte" -> value.toJson)
 }
 
 sealed trait UpperBound {
-  def toJson: Option[(String, Json)]
+  private[elasticsearch] def toJson: Option[(String, Json)]
 }
 
 private[elasticsearch] final case class LessThan[A: ElasticPrimitive](value: A) extends UpperBound {
-  def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
+  private[elasticsearch] def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
 }
 
 private[elasticsearch] final case class LessThanOrEqualTo[A: ElasticPrimitive](value: A) extends UpperBound {
-  def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
+  private[elasticsearch] def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
 }
 
 private[elasticsearch] case object Unbounded extends LowerBound with UpperBound {
-  def toJson: Option[(String, Json)] = None
+  private[elasticsearch] def toJson: Option[(String, Json)] = None
 }
 
 sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
     extends ElasticQuery[S]
     with HasBoost[RangeQuery[S, A, LB, UB]]
     with HasFormat[RangeQuery[S, A, LB, UB]] {
+
+  /**
+   * Sets the greater-than bound for the [[zio.elasticsearch.query.RangeQuery]].
+   *
+   * @param value
+   *   the value for the greater-than bound
+   * @tparam B
+   *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than bound set.
+   */
   def gt[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThan[B], UB]
 
+  /**
+   * Sets the greater-than-or-equal-to bound for the [[zio.elasticsearch.query.RangeQuery]].
+   *
+   * @param value
+   *   the value for the greater-than-or-equal-to bound
+   * @tparam B
+   *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than-or-equal-to bound
+   *   set.
+   */
   def gte[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB]
 
+  /**
+   * Sets the less-than bound for the [[zio.elasticsearch.query.RangeQuery]].
+   *
+   * @param value
+   *   the value for the less-than bound
+   * @tparam B
+   *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than bound set.
+   */
   def lt[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: UB =:= Unbounded.type
   ): RangeQuery[S, B, LB, LessThan[B]]
 
+  /**
+   * Sets the less-than-or-equal-to bound for the [[zio.elasticsearch.query.RangeQuery]].
+   *
+   * @param value
+   *   the value for the less-than-or-equal-to bound
+   * @tparam B
+   *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than-or-equal-to bound set.
+   */
   def lte[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: UB =:= Unbounded.type
   ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]]
@@ -481,7 +605,7 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]] =
     self.copy(upper = LessThanOrEqualTo(value))
 
-  def toJson(fieldPath: Option[String]): Json =
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "range" -> Obj(
         fieldPath.foldRight(field)(_ + "." + _) -> Obj(
@@ -521,7 +645,7 @@ private[elasticsearch] final case class Term[S](
   def caseInsensitive(value: Boolean): TermQuery[S] =
     self.copy(caseInsensitive = Some(value))
 
-  def toJson(fieldPath: Option[String]): Json = {
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
     )
@@ -539,7 +663,7 @@ private[elasticsearch] final case class Terms[S](
   def boost(value: Double): TermsQuery[S] =
     self.copy(boost = Some(value))
 
-  def toJson(fieldPath: Option[String]): Json = {
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termsFields =
       Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)))) ++ boost.map("boost" -> Num(_))
     Obj("terms" -> Obj(Chunk.fromIterable(termsFields)))
@@ -563,7 +687,7 @@ private[elasticsearch] final case class Wildcard[S](
   def caseInsensitive(value: Boolean): WildcardQuery[S] =
     self.copy(caseInsensitive = Some(value))
 
-  def toJson(fieldPath: Option[String]): Json = {
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
       "case_insensitive" -> Json.Bool(_)
     )

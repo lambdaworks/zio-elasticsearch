@@ -226,13 +226,13 @@ object ElasticRequest {
    */
   final def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
     Search(
+      excluded = Chunk(),
+      included = Chunk(),
       index = index,
       query = query,
       sortBy = Chunk.empty,
-      excluded = None,
       from = None,
       highlights = None,
-      included = None,
       routing = None,
       searchAfter = None,
       size = None
@@ -256,14 +256,14 @@ object ElasticRequest {
     aggregation: ElasticAggregation
   ): SearchAndAggregateRequest =
     SearchAndAggregate(
+      aggregation = aggregation,
+      excluded = Chunk(),
+      included = Chunk(),
       index = index,
       query = query,
-      aggregation = aggregation,
       sortBy = Chunk.empty,
-      excluded = None,
       from = None,
       highlights = None,
-      included = None,
       routing = None,
       searchAfter = None,
       size = None
@@ -361,7 +361,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
       extends AggregateRequest {
-    def toJson: Json = Obj("aggs" -> aggregation.toJson)
+    private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }
 
   sealed trait BulkRequest
@@ -421,7 +421,7 @@ object ElasticRequest {
     def routing(value: Routing): CountRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json = query.fold(Obj())(q => Obj("query" -> q.toJson(fieldPath = None)))
+    private[elasticsearch] def toJson: Json = query.fold(Obj())(q => Obj("query" -> q.toJson(fieldPath = None)))
   }
 
   sealed trait CreateRequest
@@ -441,7 +441,7 @@ object ElasticRequest {
     def routing(value: Routing): CreateRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json =
+    private[elasticsearch] def toJson: Json =
       document.json
   }
 
@@ -463,7 +463,7 @@ object ElasticRequest {
     def routing(value: Routing): CreateWithIdRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json =
+    private[elasticsearch] def toJson: Json =
       document.json
   }
 
@@ -473,7 +473,7 @@ object ElasticRequest {
     name: IndexName,
     definition: Option[String]
   ) extends CreateIndexRequest {
-    def toJson: String = definition.getOrElse("")
+    private[elasticsearch] def toJson: String = definition.getOrElse("")
   }
 
   sealed trait CreateOrUpdateRequest
@@ -494,7 +494,7 @@ object ElasticRequest {
     def routing(value: Routing): CreateOrUpdateRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json =
+    private[elasticsearch] def toJson: Json =
       document.json
   }
 
@@ -533,7 +533,8 @@ object ElasticRequest {
     def routing(value: Routing): DeleteByQueryRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json = Obj("query" -> query.toJson(fieldPath = None))
+    private[elasticsearch] def toJson: Json =
+      Obj("query" -> query.toJson(fieldPath = None))
   }
 
   sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
@@ -572,46 +573,58 @@ object ElasticRequest {
   sealed trait SearchRequest
       extends ElasticRequest[SearchResult]
       with HasFrom[SearchRequest]
+      with HasHighlights[SearchRequest]
       with HasRouting[SearchRequest]
+      with HasSearchAfter[SearchRequest]
       with HasSize[SearchRequest]
       with HasSort[SearchRequest]
       with HasSourceFiltering[SearchRequest] {
+
+    /**
+     * Adds an [[zio.elasticsearch.aggregation.ElasticAggregation]] to the
+     * [[zio.elasticsearch.ElasticRequest.SearchRequest]].
+     *
+     * @param aggregation
+     *   the elastic aggregation to be added
+     * @return
+     *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] that represents search and
+     *   aggregate operations to be performed.
+     */
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
-
-    def highlights(value: Highlights): SearchRequest
-
-    def searchAfter(value: Json): SearchRequest
   }
 
   private[elasticsearch] final case class Search(
+    excluded: Chunk[String],
+    included: Chunk[String],
     index: IndexName,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
-    excluded: Option[Chunk[String]],
     from: Option[Int],
     highlights: Option[Highlights],
-    included: Option[Chunk[String]],
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchRequest { self =>
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
       SearchAndAggregate(
+        aggregation = aggregation,
+        excluded = excluded,
+        included = included,
         index = index,
         query = query,
-        aggregation = aggregation,
         sortBy = sortBy,
-        excluded = excluded,
         from = from,
         highlights = highlights,
-        included = included,
         routing = routing,
         searchAfter = None,
         size = size
       )
 
+    def excludes[S](field: Field[S, _], fields: Field[S, _]*): SearchRequest =
+      self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
+
     def excludes(field: String, fields: String*): SearchRequest =
-      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
+      self.copy(excluded = excluded ++ (field +: fields))
 
     def from(value: Int): SearchRequest =
       self.copy(from = Some(value))
@@ -619,12 +632,15 @@ object ElasticRequest {
     def highlights(value: Highlights): SearchRequest =
       self.copy(highlights = Some(value))
 
+    def includes[S](field: Field[S, _], fields: Field[S, _]*): SearchRequest =
+      self.copy(included = included ++ (field.toString +: fields.map(_.toString)))
+
     def includes(field: String, fields: String*): SearchRequest =
-      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
+      self.copy(included = included ++ (field +: fields))
 
     def includes[A](implicit schema: Schema.Record[A]): SearchRequest = {
       val fields = Chunk.fromIterable(getFieldNames(schema))
-      self.copy(included = included.map(_ ++ fields).orElse(Some(fields)))
+      self.copy(included = included ++ fields)
     }
 
     def routing(value: Routing): SearchRequest =
@@ -639,7 +655,7 @@ object ElasticRequest {
     def sort(sort: Sort, sorts: Sort*): SearchRequest =
       self.copy(sortBy = sortBy ++ (sort +: sorts))
 
-    def toJson: Json = {
+    private[elasticsearch] def toJson: Json = {
       val fromJson: Json = from.fold(Obj())(f => Obj("from" -> f.toJson))
 
       val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
@@ -652,11 +668,12 @@ object ElasticRequest {
 
       val sourceJson: Json =
         (included, excluded) match {
-          case (None, None) => Obj()
+          case (Chunk(), Chunk()) =>
+            Obj()
           case (included, excluded) =>
             Obj("_source" -> {
-              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson))))
-              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson))))
+              val includes = if (included.isEmpty) Obj() else Obj("includes" -> Arr(included.map(_.toJson)))
+              val excludes = if (excluded.isEmpty) Obj() else Obj("excludes" -> Arr(excluded.map(_.toJson)))
               includes merge excludes
             })
         }
@@ -674,30 +691,31 @@ object ElasticRequest {
   sealed trait SearchAndAggregateRequest
       extends ElasticRequest[SearchAndAggregateResult]
       with HasFrom[SearchAndAggregateRequest]
+      with HasHighlights[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
+      with HasSearchAfter[SearchAndAggregateRequest]
       with HasSize[SearchAndAggregateRequest]
       with HasSort[SearchAndAggregateRequest]
-      with HasSourceFiltering[SearchAndAggregateRequest] {
-    def highlights(value: Highlights): SearchAndAggregateRequest
-
-    def searchAfter(value: Json): SearchAndAggregateRequest
-  }
+      with HasSourceFiltering[SearchAndAggregateRequest]
 
   private[elasticsearch] final case class SearchAndAggregate(
+    aggregation: ElasticAggregation,
+    excluded: Chunk[String],
+    included: Chunk[String],
     index: IndexName,
     query: ElasticQuery[_],
-    aggregation: ElasticAggregation,
     sortBy: Chunk[Sort],
-    excluded: Option[Chunk[String]],
     from: Option[Int],
     highlights: Option[Highlights],
-    included: Option[Chunk[String]],
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
+    def excludes[S](field: Field[S, _], fields: Field[S, _]*): SearchAndAggregateRequest =
+      self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
+
     def excludes(field: String, fields: String*): SearchAndAggregateRequest =
-      self.copy(excluded = excluded.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
+      self.copy(excluded = excluded ++ (field +: fields))
 
     def from(value: Int): SearchAndAggregateRequest =
       self.copy(from = Some(value))
@@ -705,12 +723,15 @@ object ElasticRequest {
     def highlights(value: Highlights): SearchAndAggregateRequest =
       self.copy(highlights = Some(value))
 
+    def includes[S](field: Field[S, _], fields: Field[S, _]*): SearchAndAggregateRequest =
+      self.copy(included = included ++ (field.toString +: fields.map(_.toString)))
+
     def includes(field: String, fields: String*): SearchAndAggregateRequest =
-      self.copy(included = included.map(_ ++ (field +: fields)).orElse(Some(field +: Chunk.fromIterable(fields))))
+      self.copy(included = included ++ (field +: fields))
 
     def includes[A](implicit schema: Schema.Record[A]): SearchAndAggregateRequest = {
       val fields = Chunk.fromIterable(getFieldNames(schema))
-      self.copy(included = included.map(_ ++ fields).orElse(Some(fields)))
+      self.copy(included = included ++ fields)
     }
 
     def routing(value: Routing): SearchAndAggregateRequest =
@@ -725,7 +746,7 @@ object ElasticRequest {
     def sort(sort: Sort, sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ (sort +: sorts))
 
-    def toJson: Json = {
+    private[elasticsearch] def toJson: Json = {
       val fromJson: Json = from.fold(Obj())(f => Obj("from" -> f.toJson))
 
       val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
@@ -738,11 +759,12 @@ object ElasticRequest {
 
       val sourceJson: Json =
         (included, excluded) match {
-          case (None, None) => Obj()
+          case (Chunk(), Chunk()) =>
+            Obj()
           case (included, excluded) =>
             Obj("_source" -> {
-              val includes = included.fold(Obj())(included => Obj("includes" -> Arr(included.map(_.toJson))))
-              val excludes = excluded.fold(Obj())(excluded => Obj("excludes" -> Arr(excluded.map(_.toJson))))
+              val includes = if (included.isEmpty) Obj() else Obj("includes" -> Arr(included.map(_.toJson)))
+              val excludes = if (excluded.isEmpty) Obj() else Obj("excludes" -> Arr(excluded.map(_.toJson)))
               includes merge excludes
             })
         }
@@ -762,6 +784,18 @@ object ElasticRequest {
       extends BulkableRequest[UpdateOutcome]
       with HasRefresh[UpdateRequest]
       with HasRouting[UpdateRequest] {
+
+    /**
+     * Sets `upsert` parameter for [[zio.elasticsearch.ElasticRequest.UpdateRequest]] which allows creation of a
+     * document if it does not exists.
+     *
+     * @param doc
+     *   the document to create if it does not exist
+     * @tparam A
+     *   the type of the document, for which an implicit [[zio.schema.Schema]] is required
+     * @return
+     *   an instance of the [[zio.elasticsearch.ElasticRequest.UpdateRequest]] enriched with the `upsert` parameter.
+     */
     def orCreate[A: Schema](doc: A): UpdateRequest
   }
 
@@ -783,7 +817,7 @@ object ElasticRequest {
     def routing(value: Routing): UpdateRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json = {
+    private[elasticsearch] def toJson: Json = {
       val docToJson: Json = doc.fold(Obj())(d => Obj("doc" -> d.json))
 
       val scriptToJson: Json = script.fold(Obj())(s => Obj("script" -> s.toJson))
@@ -798,6 +832,16 @@ object ElasticRequest {
       extends ElasticRequest[UpdateByQueryResult]
       with HasRefresh[UpdateByQueryRequest]
       with HasRouting[UpdateByQueryRequest] {
+
+    /**
+     * Sets the conflict detection mode for the [[zio.elasticsearch.ElasticRequest.UpdateByQueryRequest]].
+     *
+     * @param value
+     *   the [[zio.elasticsearch.request.UpdateConflicts]] value to be set
+     * @return
+     *   an instance of the [[zio.elasticsearch.ElasticRequest.UpdateByQueryRequest]] with the conflict detection mode
+     *   configured.
+     */
     def conflicts(value: UpdateConflicts): UpdateByQueryRequest
   }
 
@@ -818,7 +862,7 @@ object ElasticRequest {
     def routing(value: Routing): UpdateByQueryRequest =
       self.copy(routing = Some(value))
 
-    def toJson: Json =
+    private[elasticsearch] def toJson: Json =
       query.foldLeft(Obj("script" -> script.toJson))((scriptJson, q) =>
         scriptJson merge Obj("query" -> q.toJson(fieldPath = None))
       )

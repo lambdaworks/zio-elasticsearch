@@ -34,9 +34,7 @@ sealed trait SortByField
     with HasMode[SortByField]
     with HasNumericType[SortByField]
     with HasOrder[SortByField]
-    with HasUnmappedType[SortByField] {
-  def toJson: Json
-}
+    with HasUnmappedType[SortByField]
 
 object SortByField {
 
@@ -129,7 +127,10 @@ private[elasticsearch] final case class SortByFieldOptions(
   def order(value: SortOrder): SortByField =
     self.copy(order = Some(value))
 
-  def toJson: Json = {
+  def unmappedType(value: String): SortByField =
+    self.copy(unmappedType = Some(value))
+
+  private[elasticsearch] def toJson: Json = {
     val allParams = Chunk(
       self.order.map(order => "order" -> order.toString.toJson),
       self.format.map(format => "format" -> format.toJson),
@@ -141,9 +142,6 @@ private[elasticsearch] final case class SortByFieldOptions(
 
     if (allParams.isEmpty) self.field.toJson else Obj(self.field -> Obj(allParams))
   }
-
-  def unmappedType(value: String): SortByField =
-    self.copy(unmappedType = Some(value))
 }
 
 sealed trait SortByScript extends Sort with HasMode[SortByScript] with HasOrder[SortByScript]
@@ -160,7 +158,7 @@ private[elasticsearch] final case class SortByScriptOptions(
   def order(value: SortOrder): SortByScript =
     self.copy(order = Some(value))
 
-  def toJson: Json =
+  private[elasticsearch] def toJson: Json =
     Obj(
       "_script" -> Obj(
         Chunk(
