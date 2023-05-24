@@ -27,4 +27,4 @@ If you want to change the `boost`, you can use `boost` method:
 val queryWithBoost: TermsQuery = terms(field = "name", "a", "b", "c").boost(2.0)
 ```
 
-You can find more information about `Terms` Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-terms-query.html).
+You can find more information about `Terms` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-terms-query.html).

@@ -188,16 +188,16 @@ object ElasticRequest {
     DeleteIndex(name = name)
 
   /**
-   * Constructs an instance of [[ExistRequest]] used for checking whether document exists.
+   * Constructs an instance of [[ExistsRequest]] used for checking whether document exists.
    *
    * @param index
    *   the name of the index where the document may be located
    * @param id
    *   the ID of the document to check for existence
    * @return
-   *   an instance of [[ExistRequest]] that represents exists operation to be performed.
+   *   an instance of [[ExistsRequest]] that represents exists operation to be performed.
    */
-  final def exists(index: IndexName, id: DocumentId): ExistRequest =
+  final def exists(index: IndexName, id: DocumentId): ExistsRequest =
     Exists(index = index, id = id, routing = None)
 
   /**
@@ -541,14 +541,14 @@ object ElasticRequest {
 
   final case class DeleteIndex(name: IndexName) extends DeleteIndexRequest
 
-  sealed trait ExistRequest extends ElasticRequest[Boolean] with HasRouting[ExistRequest]
+  sealed trait ExistsRequest extends ElasticRequest[Boolean] with HasRouting[ExistsRequest]
 
   private[elasticsearch] final case class Exists(
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing]
-  ) extends ExistRequest { self =>
-    def routing(value: Routing): ExistRequest =
+  ) extends ExistsRequest { self =>
+    def routing(value: Routing): ExistsRequest =
       self.copy(routing = Some(value))
   }
 
