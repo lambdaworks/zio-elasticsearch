@@ -5,6 +5,12 @@ import zio.schema.{DeriveSchema, Schema}
 
 import java.time.LocalDate
 
+final case class TestDoc2(subDocument: TestSubDocument)
+
+object TestDoc2 {
+  implicit val schema: Schema.CaseClass1[TestSubDocument, TestDoc2] = DeriveSchema.gen[TestDoc2]
+}
+
 final case class TestDocument(
   stringField: String,
   subDocumentList: List[TestSubDocument],

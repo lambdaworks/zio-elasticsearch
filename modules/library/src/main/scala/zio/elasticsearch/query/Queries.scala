@@ -182,11 +182,18 @@ private[elasticsearch] final case class Bool[S](
   }
 }
 
-sealed trait ExistsQuery[S] extends ElasticQuery[S]
+sealed trait ExistsQuery[S] extends ElasticQuery[S] with HasBoost[ExistsQuery[S]]
 
-private[elasticsearch] final case class Exists[S](field: String) extends ExistsQuery[S] {
+private[elasticsearch] final case class Exists[S](field: String, boost: Option[Double]) extends ExistsQuery[S] { self =>
+  def boost(value: Double): ExistsQuery[S] =
+    self.copy(boost = Some(value))
+
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("exists" -> Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson))
+    Obj(
+      "exists" -> (Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson) merge boost.fold(Obj())(b =>
+        Obj("boost" -> b.toJson)
+      ))
+    )
 }
 
 sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
@@ -353,6 +360,7 @@ private[elasticsearch] final case class HasChild[S](
 
 sealed trait HasParentQuery[S]
     extends ElasticQuery[S]
+    with HasBoost[HasParentQuery[S]]
     with HasIgnoreUnmapped[HasParentQuery[S]]
     with HasInnerHits[HasParentQuery[S]] {
 
@@ -392,11 +400,14 @@ sealed trait HasParentQuery[S]
 private[elasticsearch] final case class HasParent[S](
   parentType: String,
   query: ElasticQuery[S],
+  boost: Option[Double],
   ignoreUnmapped: Option[Boolean],
   innerHitsField: Option[InnerHits],
   score: Option[Boolean]
 ) extends HasParentQuery[S] {
   self =>
+  def boost(value: Double): HasParentQuery[S] =
+    self.copy(boost = Some(value))
 
   def ignoreUnmapped(value: Boolean): HasParentQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
@@ -413,8 +424,9 @@ private[elasticsearch] final case class HasParent[S](
         Chunk(
           Some("parent_type" -> Str(parentType)),
           Some("query"       -> query.toJson(None)),
-          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
-          score.map("score" -> Json.Bool(_)),
+          boost.map("boost" -> _.toJson),
+          ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
+          score.map("score" -> _.toJson),
           innerHitsField.map(_.toStringJsonPair)
         ).flatten
       )
@@ -438,11 +450,21 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
     Obj("match_all" -> Obj(Chunk.fromIterable(boost.map("boost" -> Num(_)))))
 }
 
-sealed trait MatchPhraseQuery[S] extends ElasticQuery[S]
+sealed trait MatchPhraseQuery[S] extends ElasticQuery[S] with HasBoost[MatchPhraseQuery[S]]
 
-private[elasticsearch] final case class MatchPhrase[S](field: String, value: String) extends MatchPhraseQuery[S] {
+private[elasticsearch] final case class MatchPhrase[S](field: String, value: String, boost: Option[Double])
+    extends MatchPhraseQuery[S] { self =>
+  def boost(value: Double): MatchPhraseQuery[S] =
+    self.copy(boost = Some(value))
+
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("match_phrase" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
+    Obj(
+      "match_phrase" -> Obj(
+        fieldPath.foldRight(field)(_ + "." + _) -> boost.fold(value.toJson)(b =>
+          Obj("query" -> value.toJson) merge Obj("boost" -> b.toJson)
+        )
+      )
+    )
 }
 
 sealed trait NestedQuery[S]

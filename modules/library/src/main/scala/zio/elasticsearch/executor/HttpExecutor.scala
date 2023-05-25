@@ -373,6 +373,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .contentType(ApplicationJson)
         .body(r.toJson)
     ).flatMap { response =>
+      println(r.toJson)
+      println(response)
       response.code match {
         case HttpOk =>
           response.body.fold(

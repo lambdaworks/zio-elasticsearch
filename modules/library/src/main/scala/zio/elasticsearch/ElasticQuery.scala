@@ -67,7 +67,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.ExistsQuery]] that represents the exists query to be performed.
    */
   final def exists[S](field: Field[S, _]): ExistsQuery[S] =
-    Exists(field = field.toString)
+    Exists(field = field.toString, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.ExistsQuery]], that checks existence of the field, using the
@@ -79,7 +79,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.ExistsQuery]] that represents the exists query to be performed.
    */
   final def exists(field: String): ExistsQuery[Any] =
-    Exists(field = field)
+    Exists(field = field, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
@@ -275,7 +275,14 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.HasParentQuery]] that represents the has parent query to be performed.
    */
   final def hasParent[S: Schema](parentType: String, query: ElasticQuery[S]): HasParentQuery[S] =
-    HasParent(parentType = parentType, query = query, ignoreUnmapped = None, innerHitsField = None, score = None)
+    HasParent(
+      parentType = parentType,
+      query = query,
+      boost = None,
+      ignoreUnmapped = None,
+      innerHitsField = None,
+      score = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.HasParentQuery]] using the specified parameters.
@@ -288,7 +295,14 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.HasParentQuery]] that represents the has parent query to be performed.
    */
   final def hasParent(parentType: String, query: ElasticQuery[Any]): HasParentQuery[Any] =
-    HasParent(parentType = parentType, query = query, ignoreUnmapped = None, innerHitsField = None, score = None)
+    HasParent(
+      parentType = parentType,
+      query = query,
+      boost = None,
+      ignoreUnmapped = None,
+      innerHitsField = None,
+      score = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchAllQuery]] used for matching all documents.
@@ -348,7 +362,7 @@ object ElasticQuery {
    *   performed.
    */
   final def matchPhrase[S](field: Field[S, String], value: String): MatchPhraseQuery[S] =
-    MatchPhrase(field = field.toString, value = value)
+    MatchPhrase(field = field.toString, value = value, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchPhraseQuery]] using the specified parameters.
@@ -363,7 +377,7 @@ object ElasticQuery {
    *   performed.
    */
   final def matchPhrase(field: String, value: String): MatchPhraseQuery[Any] =
-    MatchPhrase(field = field, value = value)
+    MatchPhrase(field = field, value = value, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
