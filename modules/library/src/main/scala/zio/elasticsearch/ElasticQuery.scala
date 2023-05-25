@@ -125,25 +125,37 @@ object ElasticQuery {
     )
 
   /**
-   * Constructs a type-safe instance of [[zio.elasticsearch.query.FunctionScore]] with one or multiple function score
-   * functions.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.FunctionScore]] query with one or multiple
+   * [[zio.elasticsearch.query.FunctionScoreFunction]]
    *
    * @param function
    *   the [[zio.elasticsearch.query.FunctionScoreFunction]] to instantiate [[zio.elasticsearch.query.FunctionScore]]
    *   with
    * @param functions
-   *   multiple [[zio.elasticsearch.query.FunctionScoreFunction]] functions that will be part of
+   *   multiple [[zio.elasticsearch.query.FunctionScoreFunction]] that will be part of
    *   [[zio.elasticsearch.query.FunctionScore]] query
    * @return
-   *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the function score query with functions
+   *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the Function Score Query with functions
    *   that are used to calculate score for result
    */
-  final def functionScore[S](
-    function: FunctionScoreFunction[S],
+  final def functionScore[S: Schema](
     functions: FunctionScoreFunction[S]*
-  ): FunctionScore[S] =
+  ): FunctionScoreQuery[S] =
     FunctionScore[S](
-      functions = Chunk.fromIterable(function +: functions),
+      functionScoreFunctions = Chunk.fromIterable(functions),
+      boost = None,
+      boostMode = None,
+      maxBoost = None,
+      minScore = None,
+      query = None,
+      scoreMode = None
+    )
+
+  final def functionScore(
+    functions: FunctionScoreFunction[Any]*
+  ): FunctionScoreQuery[Any] =
+    FunctionScore[Any](
+      functionScoreFunctions = Chunk.fromIterable(functions),
       boost = None,
       boostMode = None,
       maxBoost = None,

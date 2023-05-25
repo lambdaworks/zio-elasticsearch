@@ -398,10 +398,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val scriptScore = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
           val weight      = weightFunction(10.0)
           val randomScore = randomScoreFunction()
-          val fieldValue  = fieldValueFactor("fieldName")
+          val fieldValue  = fieldValueFactor(TestDocument.stringField)
           val decay       = expDecayFunction("field", origin = "11, 12", scale = "2km")
 
-          val query = functionScore(scriptScore, weight, randomScore, fieldValue, decay)
+          val query = functionScore(scriptScore, weight, randomScore, fieldValue)
+            .withFunctions(decay)
             .boost(2.0)
             .boostMode(FunctionScoreBoostMode.Avg)
             .maxBoost(42)
@@ -411,8 +412,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query)(
             equalTo(
-              FunctionScore[Any](
-                functions = Chunk(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(
                   scriptScore,
                   weight,
                   randomScore,

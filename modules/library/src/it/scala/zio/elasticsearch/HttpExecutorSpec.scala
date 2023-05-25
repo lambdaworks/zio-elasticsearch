@@ -30,6 +30,7 @@ import zio.elasticsearch.executor.response.{
   MaxAggregationResponse,
   TermsAggregationResponse
 }
+import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
@@ -1728,7 +1729,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                           ElasticRequest.search(
                             firstSearchIndex,
                             ElasticQuery
-                              .functionScore(FunctionScoreFunction.randomScoreFunction())
+                              .functionScore(randomScoreFunction())
                               .query(matches("stringField", firstDocument.stringField))
                           )
                         )

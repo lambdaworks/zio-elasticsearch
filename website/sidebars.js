@@ -16,6 +16,7 @@ module.exports = {
                     'overview/elastic_query',
                     'overview/queries/elastic_query_bool',
                     'overview/queries/elastic_query_exists',
+                    'overview/queries/elastic_query_function_score',
                     'overview/queries/elastic_query_geo_distance',
                     'overview/queries/elastic_query_has_child',
                     'overview/queries/elastic_query_has_parent',

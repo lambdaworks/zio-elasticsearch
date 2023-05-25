@@ -142,7 +142,7 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
               .decay(11.0)
               .multiValueMode(Max)
               .offset("1d")
-              .filter(matches("field", "value"))
+              .filter(matches(TestDocument.stringField, "value"))
 
           assert(function)(
             equalTo(
@@ -169,7 +169,7 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
                 decay = Some(11.0),
                 weight = Some(10.0),
                 multiValueMode = Some(Max),
-                filter = Some(Match("field", "value"))
+                filter = Some(Match("stringField", "value"))
               )
             )
           )

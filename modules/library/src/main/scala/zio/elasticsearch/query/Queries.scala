@@ -212,7 +212,7 @@ sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[Functio
    *   - [[zio.elasticsearch.query.FunctionScoreBoostMode.Sum]]
    *
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `boostMode` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `boostMode` parameter.
    */
   def boostMode(value: FunctionScoreBoostMode): FunctionScoreQuery[S]
 
@@ -221,31 +221,31 @@ sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[Functio
    * not to exceed a certain limit by setting this parameter.
    *
    * @param value
-   *   a non-negative real number used for maxBoost
+   *   a non-negative real number used for the `maxBoost`
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `maxBoost` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `maxBoost` parameter.
    */
   def maxBoost(value: Double): FunctionScoreQuery[S]
 
   /**
    * Sets the `minScore` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. To exclude documents that do
-   * not meet a certain score threshold the min_score parameter can be set to the desired score threshold.
+   * not meet a certain score threshold the `minScore` parameter can be set to the desired score threshold.
    *
    * @param value
-   *   a non-negative real number used for minScore
+   *   a non-negative real number used for the `minScore`
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `minScore` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `minScore` parameter.
    */
   def minScore(value: Double): FunctionScoreQuery[S]
 
   /**
    * Sets the `query` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. Represents a query to be
-   * executed in elastic search and modified by function score.
+   * executed in elasticsearch and modified by [[zio.elasticsearch.query.FunctionScore]] parameters.
    *
    * @param value
    *   a [[zio.elasticsearch.query.ElasticQuery]] to be executed
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `query` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `query` parameter.
    */
   def query(value: ElasticQuery[S]): FunctionScoreQuery[S]
 
@@ -263,14 +263,27 @@ sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[Functio
    *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.None]]
    *   - [[zio.elasticsearch.query.FunctionScoreScoreMode.Sum]]
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `scoreMode` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `scoreMode` parameter.
    */
   def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S]
 
+  /**
+   * Adds one or multiple [[zio.elasticsearch.query.FunctionScoreFunction]] to existing
+   * [[zio.elasticsearch.query.FunctionScore]] query.
+   *
+   * @param functions
+   *   list of [[zio.elasticsearch.query.FunctionScoreFunction]] to be added to query
+   * @tparam S1
+   *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreQuery]] enriched with the `functionScoreFunctions`
+   *   parameter.
+   */
+  def withFunctions[S1 <: S: Schema](functions: FunctionScoreFunction[S1]*): FunctionScoreQuery[S1]
 }
 
 private[elasticsearch] final case class FunctionScore[S](
-  functions: Chunk[FunctionScoreFunction[S]],
+  functionScoreFunctions: Chunk[FunctionScoreFunction[S]],
   boost: Option[Double],
   boostMode: Option[FunctionScoreBoostMode],
   maxBoost: Option[Double],
@@ -297,11 +310,14 @@ private[elasticsearch] final case class FunctionScore[S](
   def scoreMode(value: FunctionScoreScoreMode): FunctionScoreQuery[S] =
     self.copy(scoreMode = Some(value))
 
+  def withFunctions[S1 <: S: Schema](functions: FunctionScoreFunction[S1]*): FunctionScoreQuery[S1] =
+    self.copy(functionScoreFunctions = functionScoreFunctions ++ functions)
+
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "function_score" -> Obj(
         Chunk(
-          Some("functions" -> Arr(functions.map(_.toJson))),
+          Some("functions" -> Arr(functionScoreFunctions.map(_.toJson))),
           boost.map("boost" -> Num(_)),
           boostMode.map(bm => "boost_mode" -> Str(s"${bm.toString.toLowerCase}")),
           maxBoost.map("max_boost" -> Num(_)),
@@ -321,11 +337,11 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    * matches. The distance can be specified in various units. See [[zio.elasticsearch.query.DistanceUnit]].
    *
    * @param value
-   *   a non-negative real number used for distance
+   *   a non-negative real number used for the `distance`
    * @param unit
    *   the [[zio.elasticsearch.query.DistanceUnit]] in which we want to represent the distance
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distance` parameter.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distance` parameter.
    */
   def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S]
 
@@ -338,7 +354,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    *   - [[zio.elasticsearch.query.DistanceType.Arc]]: Default algorithm
    *   - [[zio.elasticsearch.query.DistanceType.Plane]]: Faster, but inaccurate on long distances and close to the poles
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distanceType` parameter.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distanceType` parameter.
    */
   def distanceType(value: DistanceType): GeoDistanceQuery[S]
 
@@ -349,7 +365,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    * @param value
    *   the [[String]] value to represent the name field
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `queryName` parameter.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `queryName` parameter.
    */
   def name(value: String): GeoDistanceQuery[S]
 
@@ -364,8 +380,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    *     longitude
    *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `validationMethod`
-   *   parameter.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `validationMethod` parameter.
    */
   def validationMethod(value: ValidationMethod): GeoDistanceQuery[S]
 }
@@ -417,7 +432,7 @@ sealed trait HasChildQuery[S]
    * @param value
    *   the [[scala.Int]] value for `score` parameter
    * @return
-   *   a new instance of the [[HasChildQuery]] with the `score` value set.
+   *   an instance of [[HasChildQuery]] with the `score` value set.
    */
   def maxChildren(value: Int): HasChildQuery[S]
 
@@ -429,7 +444,7 @@ sealed trait HasChildQuery[S]
    * @param value
    *   the [[scala.Int]] value for `score` parameter
    * @return
-   *   a new instance of the [[HasChildQuery]] with the `score` value set.
+   *   an instance of [[HasChildQuery]] with the `score` value set.
    */
   def minChildren(value: Int): HasChildQuery[S]
 }
@@ -488,7 +503,7 @@ sealed trait HasParentQuery[S]
    * @param value
    *   the [[scala.Boolean]] value for `score` parameter
    * @return
-   *   a new instance of the [[HasParentQuery]] with the `score` value set.
+   *   an instance of [[HasParentQuery]] with the `score` value set.
    */
   def withScore(value: Boolean): HasParentQuery[S]
 
@@ -496,7 +511,7 @@ sealed trait HasParentQuery[S]
    * Sets the `score` parameter to `false` for this [[HasParentQuery]]. Same as [[withScore]](false).
    *
    * @return
-   *   a new instance of the [[HasParentQuery]] with the `score` value set to `false`.
+   *   an instance of [[HasParentQuery]] with the `score` value set to `false`.
    * @see
    *   #withScore
    */
@@ -506,7 +521,7 @@ sealed trait HasParentQuery[S]
    * Sets the `score` parameter to `true` for this [[HasParentQuery]]. Same as [[withScore]](true).
    *
    * @return
-   *   a new instance of the [[HasParentQuery]] with the `score` value set to `true`.
+   *   an instance of [[HasParentQuery]] with the `score` value set to `true`.
    * @see
    *   #withScore
    */
@@ -661,7 +676,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    * @tparam B
    *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than bound set.
+   *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than bound set.
    */
   def gt[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: LB =:= Unbounded.type
@@ -675,8 +690,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    * @tparam B
    *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than-or-equal-to bound
-   *   set.
+   *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than-or-equal-to bound set.
    */
   def gte[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: LB =:= Unbounded.type
@@ -690,7 +704,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    * @tparam B
    *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than bound set.
+   *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than bound set.
    */
   def lt[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: UB =:= Unbounded.type
@@ -704,7 +718,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    * @tparam B
    *   the type of the value, constrained by the [[zio.elasticsearch.ElasticPrimitive]]
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than-or-equal-to bound set.
+   *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than-or-equal-to bound set.
    */
   def lte[B <: A: ElasticPrimitive](value: B)(implicit
     @unused ev: UB =:= Unbounded.type
