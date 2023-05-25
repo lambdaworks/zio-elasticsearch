@@ -272,7 +272,7 @@ sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[Functio
    * [[zio.elasticsearch.query.FunctionScore]] query.
    *
    * @param functions
-   *   list of [[zio.elasticsearch.query.FunctionScoreFunction]] to be added to query
+   *   multiple [[zio.elasticsearch.query.FunctionScoreFunction]] to be added to query
    * @tparam S1
    *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
    * @return
@@ -430,9 +430,9 @@ sealed trait HasChildQuery[S]
    * the search results.
    *
    * @param value
-   *   the [[scala.Int]] value for `score` parameter
+   *   the [[scala.Int]] value for `maxChildren` parameter
    * @return
-   *   an instance of [[HasChildQuery]] with the `score` value set.
+   *   an instance of [[HasChildQuery]] enriched with the `maxChildren` parameter.
    */
   def maxChildren(value: Int): HasChildQuery[S]
 
@@ -442,9 +442,9 @@ sealed trait HasChildQuery[S]
    * limit, it is excluded from the search results.
    *
    * @param value
-   *   the [[scala.Int]] value for `score` parameter
+   *   the [[scala.Int]] value for `minChildren` parameter
    * @return
-   *   an instance of [[HasChildQuery]] with the `score` value set.
+   *   an instance of [[HasChildQuery]] enriched with the `minChildren` parameter.
    */
   def minChildren(value: Int): HasChildQuery[S]
 }
@@ -503,7 +503,7 @@ sealed trait HasParentQuery[S]
    * @param value
    *   the [[scala.Boolean]] value for `score` parameter
    * @return
-   *   an instance of [[HasParentQuery]] with the `score` value set.
+   *   an instance of [[HasParentQuery]] enriched with the `score` parameter.
    */
   def withScore(value: Boolean): HasParentQuery[S]
 

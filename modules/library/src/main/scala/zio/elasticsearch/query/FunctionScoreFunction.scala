@@ -34,8 +34,8 @@ sealed trait FunctionScoreFunction[-S] {
    * @param filter
    *   the [[zio.elasticsearch.query.ElasticQuery]] used for filtering
    * @return
-   *   an instance of [[zio.elasticsearch.query.FunctionScoreFunction]] that represents the function score query to be
-   *   performed enriched with `filter` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] ] to be performed enriched with the `filter` parameter.
    */
   def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any]
 
@@ -45,10 +45,10 @@ sealed trait FunctionScoreFunction[-S] {
    * @param filter
    *   the [[zio.elasticsearch.query.ElasticQuery]] used for filtering
    * @tparam S1
-   *   the type of query used in filter, requires implicit schema in scope
+   *   the type of query used in filter, requires implicit [[zio.schema.Schema]] in scope
    * @return
-   *   an instance of [[zio.elasticsearch.query.FunctionScoreFunction]] that represents the function score query to be
-   *   performed enriched with `filter` parameter.
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed enriched with the `filter` parameter.
    */
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1]
 
@@ -71,8 +71,8 @@ object FunctionScoreFunction {
    * @param scale
    *   defines the distance from origin + offset at which the computed score will equal `decay` parameter
    * @return
-   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def expDecayFunction[S](field: Field[S, _], origin: String, scale: String): DecayFunction[S] =
     DecayFunction[S](
@@ -101,8 +101,8 @@ object FunctionScoreFunction {
    * @param scale
    *   defines the distance from origin + offset at which the computed score will equal `decay`
    * @return
-   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def expDecayFunction(field: String, origin: String, scale: String): DecayFunction[Any] =
     DecayFunction[Any](
@@ -126,8 +126,8 @@ object FunctionScoreFunction {
    * @param field
    *   the type-safe field to be extracted from the document
    * @return
-   *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def fieldValueFactor[S](field: Field[S, _]): FieldValueFactor[S] =
     FieldValueFactor[S](
@@ -175,8 +175,8 @@ object FunctionScoreFunction {
    * @param scale
    *   defines the distance from origin + offset at which the computed score will equal `decay` parameter
    * @return
-   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def gaussDecayFunction[S](field: Field[S, _], origin: String, scale: String): DecayFunction[S] =
     DecayFunction[S](
@@ -205,8 +205,8 @@ object FunctionScoreFunction {
    * @param scale
    *   defines the distance from origin + offset at which the computed score will equal `decay`
    * @return
-   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def gaussDecayFunction(field: String, origin: String, scale: String): DecayFunction[Any] =
     DecayFunction[Any](
@@ -235,8 +235,8 @@ object FunctionScoreFunction {
    * @param scale
    *   defines the distance from origin + offset at which the computed score will equal `decay` parameter
    * @return
-   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def linearDecayFunction[S](field: Field[S, _], origin: String, scale: String): DecayFunction[S] =
     DecayFunction[S](
@@ -265,8 +265,8 @@ object FunctionScoreFunction {
    * @param scale
    *   defines the distance from origin + offset at which the computed score will equal `decay`
    * @return
-   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.DecayFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def linearDecayFunction(field: String, origin: String, scale: String): DecayFunction[Any] =
     DecayFunction[Any](
@@ -288,8 +288,8 @@ object FunctionScoreFunction {
    * but unfortunately not reproducible since documents might be renumbered by merges.
    *
    * @return
-   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def randomScoreFunction(): RandomScoreFunction[Any] =
     RandomScoreFunction(filter = None, seedAndField = None, weight = None)
@@ -303,8 +303,8 @@ object FunctionScoreFunction {
    * @param seed
    *   the final score will be computed based on this value and default value for `field` which is "_seq_no"
    * @return
-   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def randomScoreFunction(seed: Long): RandomScoreFunction[Any] =
     RandomScoreFunction(filter = None, seedAndField = Some(SeedAndField(seed = seed)), weight = None)
@@ -320,8 +320,8 @@ object FunctionScoreFunction {
    * @param field
    *   the field value that will be used to compute final score
    * @return
-   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def randomScoreFunction(seed: Long, field: String): RandomScoreFunction[Any] =
     RandomScoreFunction(
@@ -341,8 +341,8 @@ object FunctionScoreFunction {
    * @param field
    *   the type-safe field for which [[zio.elasticsearch.query.RandomScoreFunction]] is specified for
    * @return
-   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery] to be performed.
    */
   def randomScoreFunction[S](seed: Long, field: Field[S, _]): RandomScoreFunction[S] =
     RandomScoreFunction[S](
@@ -388,8 +388,8 @@ object FunctionScoreFunction {
    * @param weight
    *   the number you wish to multiply the score with
    * @return
-   *   an instance of [[zio.elasticsearch.query.WeightFunction]] that represents the function score query to be
-   *   performed.
+   *   an instance of [[zio.elasticsearch.query.WeightFunction]] that can be used to in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery]].
    */
   def weightFunction(weight: Double): WeightFunction[Any] =
     WeightFunction(weight = weight, filter = None)
@@ -413,7 +413,7 @@ final case class DecayFunction[S](
    * at the distance given at scale. If no decay is defined, documents at the distance scale will be scored 0.5.
    *
    * @param value
-   *   the [[Double]] value for the `decay` parameter
+   *   a non-negative real number value for the `decay` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.DecayFunction]] enriched with the `decay` parameter.
    */
@@ -471,7 +471,7 @@ final case class DecayFunction[S](
    * default is 0.
    *
    * @param value
-   *   the [[String]] value for the `offset` parameter
+   *   the text value for the `offset` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.DecayFunction]] enriched with the `offset` parameter.
    */
@@ -483,7 +483,7 @@ final case class DecayFunction[S](
    * multiply the score by the provided `weight`.
    *
    * @param value
-   *   the [[Double]] value for the `weight` parameter
+   *   a non-negative real number value for the `weight` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.DecayFunction]] enriched with the `weight` parameter.
    */
@@ -530,7 +530,7 @@ final case class FieldValueFactor[S](
    * field value with, defaults to 1.
    *
    * @param value
-   *   the [[Double]] value for the `factor` parameter
+   *   a non-negative real number value for the `factor` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] enriched with the `factor` parameter.
    */
@@ -564,7 +564,7 @@ final case class FieldValueFactor[S](
    * not have that field. The modifier and factor are still applied to it as though it were read from the document.
    *
    * @param value
-   *   the [[Double]] value for the `missing` parameter
+   *   a non-negative real number value for the `missing` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] enriched with the `missing` parameter.
    */
@@ -576,7 +576,7 @@ final case class FieldValueFactor[S](
    * multiply the score by the provided `weight`.
    *
    * @param value
-   *   the [[Double]] value for the `weight` parameter
+   *   a non-negative real number value for the `weight` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] enriched with the `weight` parameter.
    */
@@ -633,7 +633,7 @@ private[elasticsearch] final case class RandomScoreFunction[S](
    * multiply the score by the provided `weight`.
    *
    * @param value
-   *   the [[Double]] value for the `weight` parameter
+   *   a non-negative real number value for the `weight` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.ScriptScoreFunction]] enriched with the `weight` parameter.
    */
@@ -669,7 +669,7 @@ private[elasticsearch] final case class ScriptScoreFunction[S](
    * multiply the score by the provided `weight`.
    *
    * @param value
-   *   the [[Double]] value for the `weight` parameter
+   *   a non-negative real number value for the `weight` parameter
    * @return
    *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] enriched with the `weight` parameter.
    */
@@ -771,6 +771,7 @@ object MultiValueMode {
 }
 
 private[elasticsearch] final case class SeedAndField(seed: Long, fieldName: String = SeedAndField.DefaultFieldName)
+
 object SeedAndField {
   private final val DefaultFieldName = "_seq_no"
 }
