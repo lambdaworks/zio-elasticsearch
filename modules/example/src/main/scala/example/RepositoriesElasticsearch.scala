@@ -17,23 +17,15 @@
 package example
 
 import zio._
-import zio.elasticsearch.ElasticQuery.{matchAll, matchPhrase}
+import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
-  def findAll(): Task[Chunk[GitHubRepo]] = {
+  def findAll(): Task[Chunk[GitHubRepo]] =
     elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
-
-    for {
-      a <-
-        elasticsearch.execute(ElasticRequest.search(Index, matchPhrase("name", "zio-prelude").boost(8)))
-      b <- a.documentAs[GitHubRepo]
-      _  = println(b)
-    } yield Chunk()
-  }
 
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
