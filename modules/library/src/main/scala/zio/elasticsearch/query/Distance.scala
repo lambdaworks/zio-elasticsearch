@@ -26,15 +26,15 @@ sealed trait DistanceUnit {
 }
 
 object DistanceUnit {
-  case object Centimeter   extends DistanceUnit { def symbol: String = "cm"  }
-  case object Feet         extends DistanceUnit { def symbol: String = "ft"  }
-  case object Inch         extends DistanceUnit { def symbol: String = "in"  }
-  case object Kilometers   extends DistanceUnit { def symbol: String = "km"  }
-  case object Mile         extends DistanceUnit { def symbol: String = "mi"  }
-  case object Meter        extends DistanceUnit { def symbol: String = "m"   }
-  case object Milimeter    extends DistanceUnit { def symbol: String = "mm"  }
-  case object NauticalMile extends DistanceUnit { def symbol: String = "nmi" }
-  case object Yard         extends DistanceUnit { def symbol: String = "yd"  }
+  case object Centimeters   extends DistanceUnit { def symbol: String = "cm"  }
+  case object Feet          extends DistanceUnit { def symbol: String = "ft"  }
+  case object Inches        extends DistanceUnit { def symbol: String = "in"  }
+  case object Kilometers    extends DistanceUnit { def symbol: String = "km"  }
+  case object Miles         extends DistanceUnit { def symbol: String = "mi"  }
+  case object Meters        extends DistanceUnit { def symbol: String = "m"   }
+  case object Millimeters   extends DistanceUnit { def symbol: String = "mm"  }
+  case object NauticalMiles extends DistanceUnit { def symbol: String = "nmi" }
+  case object Yards         extends DistanceUnit { def symbol: String = "yd"  }
 }
 
 sealed trait DistanceType {
