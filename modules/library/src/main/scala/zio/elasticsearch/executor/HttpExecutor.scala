@@ -19,28 +19,13 @@ package zio.elasticsearch.executor
 import sttp.client3.ziojson._
 import sttp.client3.{Identity, RequestT, Response, ResponseException, SttpBackend, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
-import sttp.model.StatusCode.{
-  BadRequest => HttpBadRequest,
-  Conflict => HttpConflict,
-  Created => HttpCreated,
-  Forbidden => HttpForbidden,
-  NotFound => HttpNotFound,
-  Ok => HttpOk,
-  Unauthorized => HttpUnauthorized
-}
+import sttp.model.StatusCode.{BadRequest => HttpBadRequest, Conflict => HttpConflict, Created => HttpCreated, Forbidden => HttpForbidden, NotFound => HttpNotFound, Ok => HttpOk, Unauthorized => HttpUnauthorized}
 import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
-import zio.elasticsearch.executor.response.{
-  BulkResponse,
-  CountResponse,
-  CreateResponse,
-  DocumentWithHighlightsAndSort,
-  GetResponse,
-  SearchWithAggregationsResponse,
-  UpdateByQueryResponse
-}
+import zio.elasticsearch.executor.response.{BulkResponse, CountResponse, CreateResponse, DocumentWithHighlightsAndSort, GetResponse, SearchWithAggregationsResponse, UpdateByQueryResponse}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
@@ -341,7 +326,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(Obj(ScrollId -> Str(scrollId)))
+        .body(Obj(ScrollId -> scrollId.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -405,14 +390,14 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val pointInTimeJson =
       Obj(
         "pit" -> Obj(
-          "id"      -> Str(pitId),
-          KeepAlive -> Str(config.keepAlive)
+          "id"      -> pitId.toJson,
+          KeepAlive -> config.keepAlive.toJson
         )
       )
 
     val sortsJson =
       if (r.sortBy.isEmpty) {
-        Obj("sort" -> Arr(Str(ShardDoc)))
+        Obj("sort" -> Arr(ShardDoc.toJson))
       } else {
         Obj("sort" -> Arr(r.sortBy.map(_.toJson)))
       }
@@ -427,7 +412,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             sortsJson merge
             Obj("query" -> r.query.toJson(fieldPath = None)) merge
             searchAfter.fold(Obj())(sa => Obj("search_after" -> sa)) merge
-            config.pageSize.fold(Obj())(ps => Obj("size" -> Num(ps)))
+            config.pageSize.fold(Obj())(ps => Obj("size" -> ps.toJson))
         )
     ).flatMap { response =>
       response.code match {
