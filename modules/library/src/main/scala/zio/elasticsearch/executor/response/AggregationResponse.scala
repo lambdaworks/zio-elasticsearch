@@ -23,20 +23,20 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 sealed trait AggregationResponse
 
-private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
+final case class CardinalityAggregationResponse private[elasticsearch](value: Int) extends AggregationResponse
 
-private[elasticsearch] object CardinalityAggregationResponse {
-  implicit val decoder: JsonDecoder[CardinalityAggregationResponse] =
+object CardinalityAggregationResponse {
+  private[elasticsearch] implicit val decoder: JsonDecoder[CardinalityAggregationResponse] =
     DeriveJsonDecoder.gen[CardinalityAggregationResponse]
 }
 
-private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
+final case class MaxAggregationResponse private[elasticsearch] (value: Double) extends AggregationResponse
 
-private[elasticsearch] object MaxAggregationResponse {
-  implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
+object MaxAggregationResponse {
+  private[elasticsearch] implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
 }
 
-private[elasticsearch] final case class TermsAggregationResponse(
+final case class TermsAggregationResponse private[elasticsearch] (
   @jsonField("doc_count_error_upper_bound")
   docErrorCount: Int,
   @jsonField("sum_other_doc_count")
@@ -44,21 +44,21 @@ private[elasticsearch] final case class TermsAggregationResponse(
   buckets: Chunk[TermsAggregationBucket]
 ) extends AggregationResponse
 
-private[elasticsearch] object TermsAggregationResponse {
-  implicit val decoder: JsonDecoder[TermsAggregationResponse] = DeriveJsonDecoder.gen[TermsAggregationResponse]
+object TermsAggregationResponse {
+  private[elasticsearch] implicit val decoder: JsonDecoder[TermsAggregationResponse] = DeriveJsonDecoder.gen[TermsAggregationResponse]
 }
 
-private[elasticsearch] sealed trait AggregationBucket
+sealed trait AggregationBucket
 
-private[elasticsearch] final case class TermsAggregationBucket(
+final case class TermsAggregationBucket private[elasticsearch] (
   key: String,
   @jsonField("doc_count")
   docCount: Int,
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationBucket
 
-private[elasticsearch] object TermsAggregationBucket {
-  implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
+object TermsAggregationBucket {
+  private[elasticsearch] implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val allFields = fields.flatMap { case (field, data) =>
       field match {
         case "key" =>
