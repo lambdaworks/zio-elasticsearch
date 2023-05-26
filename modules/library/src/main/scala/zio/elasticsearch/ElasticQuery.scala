@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.query._
+import zio.elasticsearch.script.Script
 import zio.schema.Schema
 
 object ElasticQuery {
@@ -506,6 +507,16 @@ object ElasticQuery {
    */
   final def range(field: String): RangeQuery[Any, Any, Unbounded.type, Unbounded.type] =
     Range.empty[Any, Any](field = field)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.ScriptQuery]] with the provided script.
+   * @param script
+   *   the script that is used by the query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.ScriptQuery]] that represents the script query to be performed.
+   */
+  final def script(script: Script): ScriptQuery =
+    query.Script(script = script, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that should satisfy the criteria using

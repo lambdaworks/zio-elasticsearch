@@ -18,12 +18,13 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticHighlight.highlight
-import zio.elasticsearch.ElasticQuery._
+import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
+import zio.elasticsearch.script.{Painless, Script}
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
@@ -958,6 +959,36 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 upper = Unbounded,
                 boost = None,
                 format = Some("yyyy-MM-dd")
+              )
+            )
+          )
+        },
+        test("script") {
+          val query =
+            ElasticQuery.script(Script("doc['day_of_week'].value > params['day']").params("day" -> 2).lang(Painless))
+          val queryWithBoost = ElasticQuery.script(Script("doc['day_of_week'].value > 2")).boost(2.0)
+
+          assert(query)(
+            equalTo(
+              zio.elasticsearch.query.Script(
+                script = Script(
+                  source = "doc['day_of_week'].value > params['day']",
+                  params = Map("day" -> 2),
+                  lang = Some(Painless)
+                ),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              zio.elasticsearch.query.Script(
+                script = Script(
+                  source = "doc['day_of_week'].value > 2",
+                  params = Map.empty,
+                  lang = None
+                ),
+                boost = Some(2.0)
               )
             )
           )
@@ -2321,6 +2352,41 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryMixedBounds.toJson(fieldPath = None))(equalTo(expectedMixedBounds.toJson)) &&
           assert(queryMixedBoundsWithBoost.toJson(fieldPath = None))(equalTo(expectedMixedBoundsWithBoost.toJson)) &&
           assert(queryWithFormat.toJson(fieldPath = None))(equalTo(expectedWithFormat.toJson))
+        },
+        test("script") {
+          val query =
+            ElasticQuery.script(Script("doc['day_of_week'].value > params['day']").params("day" -> 2).lang(Painless))
+          val queryWithBoost = ElasticQuery.script(Script("doc['day_of_week'].value > 2")).boost(2.0)
+
+          val expected =
+            """
+              |{
+              |  "script": {
+              |    "script": {
+              |      "lang": "painless",
+              |      "source": "doc['day_of_week'].value > params['day']",
+              |      "params": {
+              |        "day": 2
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "script": {
+              |    "script": {
+              |      "source": "doc['day_of_week'].value > 2"
+              |    },
+              |    "boost": 2.0
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
         },
         test("startsWith") {
           val query                    = startsWith(TestDocument.stringField, "test")
