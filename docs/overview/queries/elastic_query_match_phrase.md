@@ -21,4 +21,9 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val query: MatchPhraseQuery = matchPhrase(field = Document.stringField, value = "test")
 ```
 
+If you want to change the `boost`, you can use `boost` method:
+```scala
+val queryWithBoost: MatchPhraseQuery = matchPhrase(field = Document.stringField, value = "test")g.boost(2.0)
+```
+
 You can find more information about `MatchPhrase` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-match-query-phrase.html).
