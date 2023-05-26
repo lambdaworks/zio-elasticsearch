@@ -21,7 +21,7 @@ import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Num, Obj, Str}
+import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
 import scala.annotation.unused
@@ -174,8 +174,8 @@ private[elasticsearch] final case class Bool[S](
         if (must.nonEmpty) Some("must" -> Arr(must.map(_.toJson(fieldPath)))) else None,
         if (mustNot.nonEmpty) Some("must_not" -> Arr(mustNot.map(_.toJson(fieldPath)))) else None,
         if (should.nonEmpty) Some("should" -> Arr(should.map(_.toJson(fieldPath)))) else None,
-        boost.map("boost" -> Num(_)),
-        minimumShouldMatch.map("minimum_should_match" -> Num(_))
+        boost.map("boost" -> _.toJson),
+        minimumShouldMatch.map("minimum_should_match" -> _.toJson)
       ).collect { case Some(obj) => obj }
 
     Obj("bool" -> Obj(boolFields))
@@ -275,11 +275,11 @@ private[elasticsearch] final case class GeoDistance[S](
     Obj(
       "geo_distance" -> Obj(
         Chunk(
-          Some(field -> Str(point)),
-          distance.map(d => "distance" -> Str(d.toString)),
-          distanceType.map(dt => "distance_type" -> Str(dt.toString)),
-          queryName.map(qn => "_name" -> Str(qn)),
-          validationMethod.map(vm => "validation_method" -> Str(vm.toString))
+          Some(field -> point.toJson),
+          distance.map(d => "distance" -> d.toString.toJson),
+          distanceType.map(dt => "distance_type" -> dt.toString.toJson),
+          queryName.map(qn => "_name" -> qn.toJson),
+          validationMethod.map(vm => "validation_method" -> vm.toString.toJson)
         ).flatten: _*
       )
     )
@@ -346,13 +346,13 @@ private[elasticsearch] final case class HasChild[S](
     Obj(
       "has_child" -> Obj(
         Chunk(
-          Some("type"  -> Str(childType)),
+          Some("type"  -> childType.toJson),
           Some("query" -> query.toJson(None)),
-          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
           innerHitsField.map(_.toStringJsonPair),
-          maxChildren.map("max_children" -> Json.Num(_)),
-          minChildren.map("min_children" -> Json.Num(_)),
-          scoreMode.map(sm => "score_mode" -> Json.Str(sm.toString.toLowerCase))
+          maxChildren.map("max_children" -> _.toJson),
+          minChildren.map("min_children" -> _.toJson),
+          scoreMode.map(sm => "score_mode" -> sm.toString.toLowerCase.toJson)
         ).flatten
       )
     )
@@ -422,7 +422,7 @@ private[elasticsearch] final case class HasParent[S](
     Obj(
       "has_parent" -> Obj(
         Chunk(
-          Some("parent_type" -> Str(parentType)),
+          Some("parent_type" -> parentType.toJson),
           Some("query"       -> query.toJson(None)),
           boost.map("boost" -> _.toJson),
           ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
@@ -447,7 +447,7 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
     self.copy(boost = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("match_all" -> Obj(Chunk.fromIterable(boost.map("boost" -> Num(_)))))
+    Obj("match_all" -> Obj(Chunk.fromIterable(boost.map("boost" -> _.toJson))))
 }
 
 sealed trait MatchPhraseQuery[S] extends ElasticQuery[S] with HasBoost[MatchPhraseQuery[S]]
@@ -493,10 +493,10 @@ private[elasticsearch] final case class Nested[S](
     Obj(
       "nested" -> Obj(
         Chunk(
-          Some("path"  -> fieldPath.map(fieldPath => Str(fieldPath + "." + path)).getOrElse(Str(path))),
+          Some("path"  -> fieldPath.map(fieldPath => (fieldPath + "." + path).toJson).getOrElse(path.toJson)),
           Some("query" -> query.toJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
-          scoreMode.map(scoreMode => "score_mode" -> Str(scoreMode.toString.toLowerCase)),
-          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          scoreMode.map(scoreMode => "score_mode" -> scoreMode.toString.toLowerCase.toJson),
+          ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
           innerHitsField.map(_.toStringJsonPair)
         ).flatten
       )
@@ -634,8 +634,8 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
           Chunk(
             lower.toJson,
             upper.toJson,
-            boost.map("boost" -> Num(_)),
-            format.map("format" -> Str(_))
+            boost.map("boost" -> _.toJson),
+            format.map("format" -> _.toJson)
           ).flatten
         )
       )
@@ -668,8 +668,8 @@ private[elasticsearch] final case class Term[S](
     self.copy(caseInsensitive = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
-      "case_insensitive" -> Json.Bool(_)
+    val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> _.toJson) ++ caseInsensitive.map(
+      "case_insensitive" -> _.toJson
     )
     Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termFields))))
   }
@@ -687,7 +687,7 @@ private[elasticsearch] final case class Terms[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termsFields =
-      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(Str(_)))) ++ boost.map("boost" -> Num(_))
+      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(_.toJson))) ++ boost.map("boost" -> _.toJson)
     Obj("terms" -> Obj(Chunk.fromIterable(termsFields)))
   }
 }
@@ -710,8 +710,8 @@ private[elasticsearch] final case class Wildcard[S](
     self.copy(caseInsensitive = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> Num(_)) ++ caseInsensitive.map(
-      "case_insensitive" -> Json.Bool(_)
+    val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> _.toJson) ++ caseInsensitive.map(
+      "case_insensitive" -> _.toJson
     )
     Obj("wildcard" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(wildcardFields))))
   }

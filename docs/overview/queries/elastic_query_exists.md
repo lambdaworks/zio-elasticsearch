@@ -21,4 +21,9 @@ Also, you can create a [type-safe](https://lambdaworks.github.io/zio-elasticsear
 val query: ExistsQuery = exists(field = Document.name)
 ```
 
+If you want to change the `boost`, you can use `boost` method:
+```scala
+val queryWithBoost: ExistsQuery = exists(field = "name").boost(2.0)
+```
+
 You can find more information about Exists query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html#query-dsl-exists-query).

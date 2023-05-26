@@ -13,6 +13,11 @@ import zio.elasticsearch.ElasticQuery._
 val query: HasParentQuery = hasParent(parentType = "parent", query = matches(Document.stringField, "test"))
 ```
 
+If you want to change the `boost`, you can use `boost` method:
+```scala
+val queryWithBoost: HasParentQuery = hasParent(parentType = "parent", query = matches(Document.stringField, "test")).boost(2.0)
+```
+
 If you want to change `ignore_unmapped`, you can use `ignoreUnmapped` method:
 ```scala
 val queryWithIgnoreUnmapped: HasParentQuery = hasParent(parentType = "parent", query = matches(Document.stringField, "test")).ignoreUnmapped(true)

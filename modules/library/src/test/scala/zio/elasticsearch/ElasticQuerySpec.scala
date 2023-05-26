@@ -382,13 +382,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("exists") {
-          val query            = exists("testField")
-          val queryTs          = exists(TestDocument.intField)
-          val queryTsWithBoost = exists(TestDocument.intField).boost(3)
+          val query          = exists("testField")
+          val queryTs        = exists(TestDocument.intField)
+          val queryWithBoost = exists(TestDocument.intField).boost(3)
 
           assert(query)(equalTo(Exists[Any](field = "testField", boost = None))) &&
           assert(queryTs)(equalTo(Exists[TestDocument](field = "intField", boost = None))) &&
-          assert(queryTsWithBoost)(equalTo(Exists[TestDocument](field = "intField", boost = Some(3))))
+          assert(queryWithBoost)(equalTo(Exists[TestDocument](field = "intField", boost = Some(3))))
 
         },
         test("geoDistance") {
