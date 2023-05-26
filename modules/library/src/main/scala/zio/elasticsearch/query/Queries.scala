@@ -631,6 +631,17 @@ private[elasticsearch] object Range {
     )
 }
 
+sealed trait ScriptQuery extends ElasticQuery[Any] with HasBoost[ScriptQuery]
+
+private[elasticsearch] final case class Script(script: zio.elasticsearch.script.Script, boost: Option[Double])
+    extends ScriptQuery { self =>
+  def boost(value: Double): ScriptQuery =
+    self.copy(boost = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj("script" -> Obj(("script" -> script.toJson) +: Chunk.fromIterable(boost.map("boost" -> Num(_)))))
+}
+
 sealed trait TermQuery[S] extends ElasticQuery[S] with HasBoost[TermQuery[S]] with HasCaseInsensitive[TermQuery[S]]
 
 private[elasticsearch] final case class Term[S](
