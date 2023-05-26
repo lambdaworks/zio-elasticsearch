@@ -22,7 +22,9 @@ object ScriptSpec extends ZIOSpecDefault {
         },
         test("successfully create Script with source and lang") {
           assert(Script("doc['day_of_week'].value").lang(Painless))(
-            equalTo(Script("doc['day_of_week'].value").lang(Painless))
+            equalTo(
+              Script(source = "doc['day_of_week'].value", params = Map.empty, lang = Some(Painless))
+            )
           )
         },
         test("successfully create Script with source, params and lang") {
