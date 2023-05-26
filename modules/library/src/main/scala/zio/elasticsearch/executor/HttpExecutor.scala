@@ -44,7 +44,7 @@ import zio.elasticsearch.executor.response.{
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj, Str}
+import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
@@ -403,21 +403,19 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     searchAfter: Option[Json]
   ): Task[(Chunk[Item], Option[(String, Option[Json])])] = {
     val pointInTimeJson =
-      Json.Obj(
-        "pit" -> Json.Obj(
-          "id"      -> Json.Str(pitId),
-          KeepAlive -> Json.Str(config.keepAlive)
+      Obj(
+        "pit" -> Obj(
+          "id"      -> Str(pitId),
+          KeepAlive -> Str(config.keepAlive)
         )
       )
 
     val sortsJson =
       if (r.sortBy.isEmpty) {
-        Obj("sort" -> Json.Arr(Json.Str(ShardDoc)))
+        Obj("sort" -> Arr(Str(ShardDoc)))
       } else {
         Obj("sort" -> Arr(r.sortBy.map(_.toJson)))
       }
-
-    val searchAfterJson = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
     sendRequestWithCustomResponse(
       baseRequest
@@ -425,10 +423,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(
-          Obj("query" -> r.query.toJson(fieldPath = None)) merge
+          pointInTimeJson merge
             sortsJson merge
-            pointInTimeJson merge
-            searchAfterJson
+            Obj("query" -> r.query.toJson(fieldPath = None)) merge
+            searchAfter.fold(Obj())(sa => Obj("search_after" -> sa)) merge
+            config.pageSize.fold(Obj())(ps => Obj("size" -> Num(ps)))
         )
     ).flatMap { response =>
       response.code match {
