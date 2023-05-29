@@ -737,11 +737,11 @@ object ElasticRequest {
     def routing(value: Routing): SearchAndAggregateRequest =
       self.copy(routing = Some(value))
 
-    def size(value: Int): SearchAndAggregateRequest =
-      self.copy(size = Some(value))
-
     def searchAfter(value: Json): SearchAndAggregateRequest =
       self.copy(searchAfter = Some(value))
+
+    def size(value: Int): SearchAndAggregateRequest =
+      self.copy(size = Some(value))
 
     def sort(sort: Sort, sorts: Sort*): SearchAndAggregateRequest =
       self.copy(sortBy = sortBy ++ (sort +: sorts))

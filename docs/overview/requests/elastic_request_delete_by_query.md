@@ -11,6 +11,7 @@ import zio.elasticsearch.ElasticRequest.DeleteByQueryRequest
 import zio.elasticsearch.ElasticRequest.deleteByQuery
 // this import is required for using `IndexName`
 import zio.elasticsearch._
+import zio.elasticsearch.ElasticQuery._
 
 val request: DeleteByQueryRequest = deleteByQuery(index = IndexName("index"), query = contains(field = Document.name, value = "test"))
 ```

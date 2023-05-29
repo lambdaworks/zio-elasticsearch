@@ -54,8 +54,7 @@ module.exports = {
                     'overview/requests/elastic_request_get_by_id',
                     'overview/requests/elastic_request_search',
                     'overview/requests/elastic_request_update',
-                    'overview/requests/elastic_request_update_by_query',
-                    'overview/requests/elastic_request_upsert',
+                    'overview/requests/elastic_request_update_by_query'
                 ],
             },
             'overview/overview_zio_prelude_schema',
