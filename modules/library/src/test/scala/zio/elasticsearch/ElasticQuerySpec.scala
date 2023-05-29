@@ -16,9 +16,9 @@
 
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
-import zio.Chunk
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
@@ -400,32 +400,152 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val randomScore = randomScoreFunction()
           val fieldValue  = fieldValueFactor(TestDocument.stringField)
           val decay       = expDecayFunction("field", origin = "11, 12", scale = "2km")
+          val typedDecay  = expDecayFunction(TestDocument.intField, origin = "11,12", scale = "2km")
 
-          val query = functionScore(scriptScore, weight, randomScore, fieldValue)
+          val fullQuery: FunctionScoreQuery[TestDocument] = functionScore(scriptScore, weight, randomScore)
             .withFunctions(decay)
+            .withFunctions(fieldValue)
             .boost(2.0)
             .boostMode(FunctionScoreBoostMode.Avg)
             .maxBoost(42)
             .minScore(32)
-            .query(matches("stringField", "string"))
+            .query(matches("stringField", "value"))
             .scoreMode(FunctionScoreScoreMode.Min)
 
-          assert(query)(
+          val queryWithType: FunctionScoreQuery[TestDocument] =
+            functionScore(fieldValue).query(matches(TestDocument.stringField, "value"))
+          val queryTypeShrink: FunctionScoreQuery[TestDocument] =
+            functionScore(scriptScore).query(matches(TestDocument.stringField, "value"))
+          val queryWithoutTypeShrink: FunctionScoreQuery[Any] =
+            functionScore(scriptScore).query(matches("stringField", "value"))
+          val queryWithNewAnyQuery: FunctionScoreQuery[TestDocument] =
+            functionScore(fieldValue).query(matches("stringField", "value"))
+
+          val anyQueryWithNewTypedFunction   = functionScore(scriptScore).withFunctions(fieldValue)
+          val anyQueryWithNewAnyFunction     = functionScore(scriptScore).withFunctions(weight)
+          val typedQueryWithNewTypedFunction = functionScore(fieldValue).withFunctions(typedDecay)
+          val typedQueryWithNewAnyFunction   = functionScore(fieldValue).withFunctions(weight)
+
+          assert(fullQuery)(
             equalTo(
               FunctionScore[TestDocument](
                 functionScoreFunctions = Chunk(
                   scriptScore,
                   weight,
                   randomScore,
-                  fieldValue,
-                  decay
+                  decay,
+                  fieldValue
                 ),
                 boost = Some(2.0),
                 boostMode = Some(FunctionScoreBoostMode.Avg),
                 maxBoost = Some(42.0),
                 minScore = Some(32.0),
-                query = Some(Match("stringField", "string")),
+                query = Some(Match("stringField", "value")),
                 scoreMode = Some(FunctionScoreScoreMode.Min)
+              )
+            )
+          ) &&
+          assert(queryTypeShrink)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(scriptScore),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(queryWithType)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(queryWithoutTypeShrink)(
+            equalTo(
+              FunctionScore[Any](
+                functionScoreFunctions = Chunk(scriptScore),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(queryWithNewAnyQuery)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(anyQueryWithNewTypedFunction)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(scriptScore, fieldValue),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(anyQueryWithNewAnyFunction)(
+            equalTo(
+              FunctionScore[Any](
+                functionScoreFunctions = Chunk(scriptScore, weight),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(typedQueryWithNewTypedFunction)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue, typedDecay),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(typedQueryWithNewAnyFunction)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue, weight),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
               )
             )
           )
