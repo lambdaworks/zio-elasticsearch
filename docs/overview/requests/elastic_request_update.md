@@ -29,7 +29,6 @@ val request: UpdateRequest = update(index = IndexName("index"), id = DocumentId(
 
 You can create a `Update` request using the `updateByScript` method with specified script this way:
 ```scala
-// this import is required for using `IndexName` and `DocumentId`
 import zio.elasticsearch._
 import zio.elasticsearch.script.Script
 
@@ -50,7 +49,7 @@ val requestWithRefreshFalse: UpdateRequest = update(index = IndexName("index"), 
 val requestWithRefreshTrue: UpdateRequest = update(index = IndexName("index"), id = DocumentId("documentId"), doc = user).refreshTrue
 ```
 
-If you want to change the `routing`, you can use the `routing` method on any of previously mentioned methods:
+If you want to change the `routing`, you can use the `routing` method:
 ```scala
 // this import is required for using `Routing` also
 import zio.elasticsearch._

@@ -3,7 +3,7 @@ id: elastic_request_update_by_query
 title: "Update By Query Request"
 ---
 
-The `UpdateByQuery` request updates documents that match the specified query. If no query is specified, performs an update on every document in the Elasticsearch index.
+The `UpdateByQuery` request updates documents that match the specified query. If no query is specified, performs an update on every document in the specified Elasticsearch index.
 
 In order to use the `UpdateByQuery` request import the following:
 ```scala
@@ -22,6 +22,8 @@ val request: UpdateByQueryRequest = updateAllByQuery(index = IndexName("index"),
 
 You can create a `UpdateByQuery` request using the `updateByQuery` method in the following manner:
 ```scala
+import zio.elasticsearch._
+import zio.elasticsearch.script.Script
 import zio.elasticsearch.ElasticQuery._
 
 val request: UpdateByQueryRequest = updateByQuery(index = IndexName("index"), query = contains(field = Document.name, value = "test"), script = Script("ctx._source.intField += params['factor']").params("factor" -> 2))

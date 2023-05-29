@@ -6,9 +6,9 @@ title: "Create Request, CreateWithId Request and CreateOrUpdate Request"
 The `Create`, the `CreateWithId` and the `CreateOrUpdate` requests add a JSON document to the specified data stream and make it searchable.
 
 There are three ways of adding documents to the Elasticsearch index:
-1. By using `Create` request - creates a JSON document without ID (Elasticsearch creates one)
+1. By using `Create` request - creates a JSON document without specifying ID (Elasticsearch creates one)
 2. By using `CreateWithId` request - creates a JSON document with specified ID
-3. By using `CreateOrUpdate` request - creates JSON document, or updates it (if it already exists)
+3. By using `CreateOrUpdate` request - creates JSON document with specified ID, or updates the document (if it already exists)
 
 In order to use the `Create` request import the following:
 ```scala

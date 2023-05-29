@@ -30,4 +30,4 @@ import zio.elasticsearch._
 val requestWithRouting: GetByIdRequest = getById(index = IndexName("index"), id = DocumentId("111")).routing(Routing("routing"))
 ```
 
-You can find more information about `Exists` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-get.html).
+You can find more information about `GetById` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-get.html).

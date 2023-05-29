@@ -26,7 +26,6 @@ val request: BulkRequest = bulk(create(index = index, doc = document1), upsert(i
 
 If you want to change the `refresh`, you can use `refresh`, `refreshFalse` or `refreshTrue` method:
 ```scala
-// data from previous code sections (document1, document2, index)
 val requestWithRefresh: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refresh(true)
 val requestWithRefreshFalse: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refreshFalse
 val requestWithRefreshTrue: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refreshTrue
@@ -37,7 +36,6 @@ If you want to change the `routing`, you can use the `routing` method:
 // this import is required for using `Routing` also
 import zio.elasticsearch._
 
-// data from previous code sections (document1, document2, index)
 val requestWithRouting: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).routing(Routing("routing"))
 ```
 

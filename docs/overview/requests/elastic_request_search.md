@@ -6,8 +6,8 @@ title: "Search Request"
 The `Search` request allows you to execute a search query (and aggregation) and get back search hits that match the query.
 
 There are two ways of executing a search query: 
-1. By using `Search` request -
-2. By using `SearchAndAggregate` request -
+1. By using `Search` request
+2. By using `SearchAndAggregate` request
 
 To create a `Search` request do the following:
 ```scala
@@ -15,7 +15,7 @@ import zio.elasticsearch.ElasticRequest.SearchRequest
 import zio.elasticsearch.ElasticRequest.search
 // this import is required for using `IndexName`
 import zio.elasticsearch._
-import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.ElasticQuery._
 
 val request: SearchRequest = search(index = IndexName("index"), query = matchAll)
 ```
@@ -42,7 +42,7 @@ If you want to change the `excludes`, you can use the `excludes` method on both 
 ```scala
 val request1WithExcludes: SearchRequest = search(index = IndexName("index"), query = matchAll).excludes("longField")
 val request2WithExcludes: SearchAndAggregateRequest = search(index = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).excludes("longField", "intField")
-// type-safe:
+// type-safe fields:
 val request1TsWithExcludes: SearchRequest = search(index = IndexName("index"), query = matchAll).excludes(Document.longField)
 val request2TsWithExcludes: SearchAndAggregateRequest = search(index = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).excludes(Document.longField, Document.intField)
 ```
@@ -65,7 +65,7 @@ If you want to change the `includes`, you can use the `includes` method on both 
 ```scala
 val request1WithIncludes: SearchRequest = search(index = IndexName("index"), query = matchAll).includes("longField")
 val request2WithIncludes: SearchAndAggregateRequest = search(index = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).includes("longField", "intField")
-// type-safe:
+// type-safe fields:
 val request1TsWithIncludes: SearchRequest = search(index = IndexName("index"), query = matchAll).includes(Document.longField)
 val request2TsWithIncludes: SearchAndAggregateRequest = search(index = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).includes(Document.longField, Document.intField)
 // with schema

@@ -30,4 +30,4 @@ import zio.elasticsearch._
 val requestWithRouting: DeleteByIdRequest = deleteById(index = IndexName("index"), id = DocumentId("111")).routing(Routing("routing"))
 ```
 
-You can find more information about `Count` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-count.html).
+You can find more information about `DeleteById` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-delete.html).

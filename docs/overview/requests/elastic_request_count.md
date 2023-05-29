@@ -11,7 +11,7 @@ import zio.elasticsearch.ElasticRequest.CountRequest
 import zio.elasticsearch.ElasticRequest.count
 ```
 
-You can create a `Count` request using the `count` method without specified query this way:
+You can create a `Count` request using the `count` method without specifying query this way:
 ```scala
 // this import is required for using `IndexName`
 import zio.elasticsearch._
@@ -21,6 +21,8 @@ val request: CountRequest = count(index = IndexName("index"))
 
 You can create a `Count` request using the `count` method with specified query this way:
 ```scala
+import zio.elasticsearch.ElasticQuery._
+
 val request: CountRequest = count(index = IndexName("index"), query = contains(field = Document.name, value = "test"))
 ```
 
