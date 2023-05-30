@@ -385,7 +385,7 @@ object FunctionScoreFunction {
    * [[zio.elasticsearch.query.WeightFunction]] score allows you to multiply the score by the provided `weight`.
    *
    * @param weight
-   *   the number you wish to multiply the score with
+   *   the non-negative number you wish to multiply the score with
    * @return
    *   an instance of [[zio.elasticsearch.query.WeightFunction]] that can be used to in
    *   [[zio.elasticsearch.query.FunctionScoreQuery]].

@@ -444,7 +444,7 @@ sealed trait HasChildQuery[S]
    * limit, it is excluded from the search results.
    *
    * @param value
-   *   the [[scala.Int]] value for `minChildren` parameter
+   *   the whole number value for `minChildren` parameter
    * @return
    *   an instance of [[HasChildQuery]] enriched with the `minChildren` parameter.
    */

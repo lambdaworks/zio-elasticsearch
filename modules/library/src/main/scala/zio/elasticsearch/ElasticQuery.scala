@@ -126,14 +126,14 @@ object ElasticQuery {
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.FunctionScore]] query with one or multiple
-   * [[zio.elasticsearch.query.FunctionScoreFunction]]
+   * [[zio.elasticsearch.query.FunctionScoreFunction]].
    *
    * @param functions
    *   [[zio.elasticsearch.query.FunctionScoreFunction]] functions that will be part of
    *   [[zio.elasticsearch.query.FunctionScore]] query
    * @return
    *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the Function Score Query with functions
-   *   that are used to calculate score for result
+   *   that are used to calculate score for result.
    */
   final def functionScore[S: Schema](
     functions: FunctionScoreFunction[S]*
@@ -150,14 +150,14 @@ object ElasticQuery {
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.FunctionScore]] query with one or multiple
-   * [[zio.elasticsearch.query.FunctionScoreFunction]]
+   * [[zio.elasticsearch.query.FunctionScoreFunction]].
    *
    * @param functions
    *   [[zio.elasticsearch.query.FunctionScoreFunction]] functions that will be part of
    *   [[zio.elasticsearch.query.FunctionScore]] query
    * @return
    *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the Function Score Query with functions
-   *   that are used to calculate score for result
+   *   that are used to calculate score for result.
    */
   final def functionScore(
     functions: FunctionScoreFunction[Any]*
