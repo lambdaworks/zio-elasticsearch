@@ -44,6 +44,18 @@ object ElasticAggregation {
     BucketSelector(name = name, script = script, bucketsPath = bucketsPath)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] that represents bucket sort aggregation to
+   *   be performed.
+   */
+  final def bucketSortAggregation(name: String): BucketSortAggregation =
+    BucketSort(name = name, sortBy = Chunk.empty, from = None, size = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified
    * parameters. It calculates an approximate count of distinct values.
    *
@@ -72,6 +84,34 @@ object ElasticAggregation {
    */
   final def cardinalityAggregation(name: String, field: String): CardinalityAggregation =
     Cardinality(name = name, field = field, missing = None)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which max aggregation will be executed
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
+   */
+  final def maxAggregation[A: Numeric](name: String, field: Field[_, A]): MaxAggregation =
+    Max(name = name, field = field.toString, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which max aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
+   */
+  final def maxAggregation(name: String, field: String): MaxAggregation =
+    Max(name = name, field = field, missing = None)
 
   /**
    * Constructs an empty instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]].
@@ -110,44 +150,4 @@ object ElasticAggregation {
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, order = Chunk.empty, subAggregations = Chunk.empty, size = None)
-
-  /**
-   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param field
-   *   the type-safe field for which max aggregation will be executed
-   * @tparam A
-   *   expected number type
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
-   */
-  final def maxAggregation[A: Numeric](name: String, field: Field[_, A]): MaxAggregation =
-    Max(name = name, field = field.toString, missing = None)
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param field
-   *   the field for which max aggregation will be executed
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
-   */
-  final def maxAggregation(name: String, field: String): MaxAggregation =
-    Max(name = name, field = field, missing = None)
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] that represents bucket sort aggregation to
-   *   be performed.
-   */
-  final def bucketSortAggregation(name: String): BucketSortAggregation =
-    BucketSort(name = name, sortBy = Chunk.empty, from = None, size = None)
 }

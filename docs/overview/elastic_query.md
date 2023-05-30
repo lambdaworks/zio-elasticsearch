@@ -16,6 +16,8 @@ You can pass field names simply as strings, or you can use the type-safe query m
 An example with a `term` query is shown below:
 
 ```scala
+import zio.elasticsearch.ElasticQuery._
+
 final case class User(id: Int, name: String)
 
 object User {
