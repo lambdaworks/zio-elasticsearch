@@ -45,7 +45,7 @@ import zio.elasticsearch.executor.response.{
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.Json.{Arr, Bool, Obj}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
@@ -413,7 +413,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
     val sortsJson =
       if (r.sortBy.isEmpty) {
-        Obj("sort" -> Arr(ShardDoc.toJson))
+        Obj("sort" -> Arr(Json.Str(ShardDoc)), "track_total_hits" -> Bool(false))
       } else {
         Obj("sort" -> Arr(r.sortBy.map(_.toJson)))
       }

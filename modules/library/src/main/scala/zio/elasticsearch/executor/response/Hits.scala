@@ -20,7 +20,7 @@ import zio.Chunk
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class Hits(
-  total: Total,
+  total: Option[Total],
   @jsonField("max_score")
   maxScore: Option[Double] = None,
   hits: Chunk[Hit]
