@@ -83,8 +83,8 @@ object ElasticQuery {
     Exists(field = field, boost = None)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
-   * the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the
+   * criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `filter` inside of the `Bool` query
@@ -122,6 +122,54 @@ object ElasticQuery {
       should = Chunk.empty,
       boost = None,
       minimumShouldMatch = None
+    )
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.FunctionScore]] query with one or multiple
+   * [[zio.elasticsearch.query.FunctionScoreFunction]].
+   *
+   * @param functions
+   *   [[zio.elasticsearch.query.FunctionScoreFunction]] functions that will be part of
+   *   [[zio.elasticsearch.query.FunctionScore]] query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the Function Score Query with functions
+   *   that are used to calculate score for result.
+   */
+  final def functionScore[S: Schema](
+    functions: FunctionScoreFunction[S]*
+  ): FunctionScoreQuery[S] =
+    FunctionScore[S](
+      functionScoreFunctions = Chunk.fromIterable(functions),
+      boost = None,
+      boostMode = None,
+      maxBoost = None,
+      minScore = None,
+      query = None,
+      scoreMode = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.FunctionScore]] query with one or multiple
+   * [[zio.elasticsearch.query.FunctionScoreFunction]].
+   *
+   * @param functions
+   *   [[zio.elasticsearch.query.FunctionScoreFunction]] functions that will be part of
+   *   [[zio.elasticsearch.query.FunctionScore]] query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FunctionScore]] that represents the Function Score Query with functions
+   *   that are used to calculate score for result.
+   */
+  final def functionScore(
+    functions: FunctionScoreFunction[Any]*
+  ): FunctionScoreQuery[Any] =
+    FunctionScore[Any](
+      functionScoreFunctions = Chunk.fromIterable(functions),
+      boost = None,
+      boostMode = None,
+      maxBoost = None,
+      minScore = None,
+      query = None,
+      scoreMode = None
     )
 
   /**
@@ -381,8 +429,8 @@ object ElasticQuery {
     MatchPhrase(field = field, value = value, boost = None)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the criteria using
-   * the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the
+   * criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `must` inside of the `Bool` query
@@ -423,8 +471,8 @@ object ElasticQuery {
     )
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must not satisfy the criteria
-   * using the specified parameters.
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must not satisfy the
+   * criteria using the specified parameters.
    *
    * @param queries
    *   a list of queries to add to `mustNot` inside of the `Bool` query

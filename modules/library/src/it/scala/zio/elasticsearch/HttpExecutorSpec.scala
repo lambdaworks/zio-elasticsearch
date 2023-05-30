@@ -30,6 +30,8 @@ import zio.elasticsearch.executor.response.{
   MaxAggregationResponse,
   TermsAggregationResponse
 }
+import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
+import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -1704,6 +1706,91 @@ object HttpExecutorSpec extends IntegrationSpec {
               )
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
+        ),
+        suite("search for documents using FunctionScore query")(
+          test("using randomScore function") {
+            checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>
+              val secondDocumentUpdated = secondDocument.copy(stringField = firstDocument.stringField)
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.create[TestDocument](firstSearchIndex, firstDocument).refreshTrue
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .create[TestDocument](
+                           firstSearchIndex,
+                           secondDocumentUpdated
+                         )
+                         .refreshTrue
+                     )
+                r1 <- Executor
+                        .execute(
+                          ElasticRequest.search(
+                            firstSearchIndex,
+                            ElasticQuery
+                              .functionScore(randomScoreFunction())
+                              .query(matches("stringField", firstDocument.stringField))
+                          )
+                        )
+                        .documentAs[TestDocument]
+              } yield assert(r1)(
+                hasSameElements(Chunk(firstDocument, secondDocumentUpdated))
+              )
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
+              )
+            ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("using randomScore function and weight function") {
+            checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>
+              val secondDocumentUpdated = secondDocument.copy(stringField = firstDocument.stringField)
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.create[TestDocument](firstSearchIndex, firstDocument).refreshTrue
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .create[TestDocument](
+                           firstSearchIndex,
+                           secondDocumentUpdated
+                         )
+                         .refreshTrue
+                     )
+                r1 <- Executor
+                        .execute(
+                          ElasticRequest.search(
+                            firstSearchIndex,
+                            ElasticQuery
+                              .functionScore(
+                                FunctionScoreFunction.randomScoreFunction(),
+                                FunctionScoreFunction.weightFunction(2)
+                              )
+                              .query(matches("stringField", firstDocument.stringField))
+                              .boost(2.0)
+                              .boostMode(FunctionScoreBoostMode.Max)
+                          )
+                        )
+                        .documentAs[TestDocument]
+              } yield assert(r1)(
+                hasSameElements(Chunk(firstDocument, secondDocumentUpdated))
+              )
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
+              )
+            ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
         )
       ) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests @@ afterAll(
         Executor.execute(ElasticRequest.deleteIndex(index)).orDie

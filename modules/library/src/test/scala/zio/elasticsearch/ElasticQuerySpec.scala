@@ -22,6 +22,8 @@ import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
+import zio.elasticsearch.query.FunctionScoreFunction._
+import zio.elasticsearch.query.MultiValueMode.Max
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.{Painless, Script}
@@ -391,6 +393,162 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTs)(equalTo(Exists[TestDocument](field = "intField", boost = None))) &&
           assert(queryWithBoost)(equalTo(Exists[TestDocument](field = "intField", boost = Some(3))))
 
+        },
+        test("functionScore") {
+          val scriptScore = scriptScoreFunction(Script("params.agg1 + params.agg2 > 10"))
+          val weight      = weightFunction(10.0)
+          val randomScore = randomScoreFunction()
+          val fieldValue  = fieldValueFactor(TestDocument.stringField)
+          val decay       = expDecayFunction("field", origin = "11, 12", scale = "2km")
+          val typedDecay  = expDecayFunction(TestDocument.intField, origin = "11,12", scale = "2km")
+
+          val fullQuery: FunctionScoreQuery[TestDocument] = functionScore(scriptScore, weight, randomScore)
+            .withFunctions(decay)
+            .withFunctions(fieldValue)
+            .boost(2.0)
+            .boostMode(FunctionScoreBoostMode.Avg)
+            .maxBoost(42)
+            .minScore(32)
+            .query(matches("stringField", "value"))
+            .scoreMode(FunctionScoreScoreMode.Min)
+
+          val queryWithType: FunctionScoreQuery[TestDocument] =
+            functionScore(fieldValue).query(matches(TestDocument.stringField, "value"))
+          val queryTypeShrink: FunctionScoreQuery[TestDocument] =
+            functionScore(scriptScore).query(matches(TestDocument.stringField, "value"))
+          val queryWithoutTypeShrink: FunctionScoreQuery[Any] =
+            functionScore(scriptScore).query(matches("stringField", "value"))
+          val queryWithNewAnyQuery: FunctionScoreQuery[TestDocument] =
+            functionScore(fieldValue).query(matches("stringField", "value"))
+
+          val anyQueryWithNewTypedFunction   = functionScore(scriptScore).withFunctions(fieldValue)
+          val anyQueryWithNewAnyFunction     = functionScore(scriptScore).withFunctions(weight)
+          val typedQueryWithNewTypedFunction = functionScore(fieldValue).withFunctions(typedDecay)
+          val typedQueryWithNewAnyFunction   = functionScore(fieldValue).withFunctions(weight)
+
+          assert(fullQuery)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(
+                  scriptScore,
+                  weight,
+                  randomScore,
+                  decay,
+                  fieldValue
+                ),
+                boost = Some(2.0),
+                boostMode = Some(FunctionScoreBoostMode.Avg),
+                maxBoost = Some(42.0),
+                minScore = Some(32.0),
+                query = Some(Match("stringField", "value")),
+                scoreMode = Some(FunctionScoreScoreMode.Min)
+              )
+            )
+          ) &&
+          assert(queryTypeShrink)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(scriptScore),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(queryWithType)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(queryWithoutTypeShrink)(
+            equalTo(
+              FunctionScore[Any](
+                functionScoreFunctions = Chunk(scriptScore),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(queryWithNewAnyQuery)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = Some(Match("stringField", "value")),
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(anyQueryWithNewTypedFunction)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(scriptScore, fieldValue),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(anyQueryWithNewAnyFunction)(
+            equalTo(
+              FunctionScore[Any](
+                functionScoreFunctions = Chunk(scriptScore, weight),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(typedQueryWithNewTypedFunction)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue, typedDecay),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          ) &&
+          assert(typedQueryWithNewAnyFunction)(
+            equalTo(
+              FunctionScore[TestDocument](
+                functionScoreFunctions = Chunk(fieldValue, weight),
+                boost = None,
+                boostMode = None,
+                maxBoost = None,
+                minScore = None,
+                query = None,
+                scoreMode = None
+              )
+            )
+          )
         },
         test("geoDistance") {
           val query =
@@ -1706,6 +1864,62 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryTsWithBoost.toJson(fieldPath = None))(equalTo(expectedTsWithBoost.toJson))
+        },
+        test("functionScore") {
+          val query = functionScore(
+            scriptScoreFunction(Script("params.agg1 + params.agg2 > 10")),
+            randomScoreFunction().weight(2.0),
+            expDecayFunction("field", origin = "2013-09-17", scale = "10d")
+              .offset("5d")
+              .multiValueMode(Max)
+              .weight(10.0)
+          )
+            .boost(2.0)
+            .boostMode(FunctionScoreBoostMode.Avg)
+            .maxBoost(42)
+            .minScore(32)
+            .query(matches("stringField", "string"))
+            .scoreMode(FunctionScoreScoreMode.Min)
+
+          val expected =
+            """
+              |{
+              |  "function_score": {
+              |    "query" : { "match": { "stringField" : "string" } },
+              |    "score_mode": "min",
+              |    "boost": 2.0,
+              |    "boost_mode": "avg",
+              |    "max_boost": 42.0,
+              |    "min_score": 32.0,
+              |    "functions": [
+              |      {
+              |        "script_score": {
+              |          "script": {
+              |            "source": "params.agg1 + params.agg2 > 10"
+              |          }
+              |        }
+              |      },
+              |      {
+              |        "random_score": {},
+              |        "weight": 2.0
+              |      },
+              |      {
+              |        "exp": {
+              |          "field": {
+              |            "origin": "2013-09-17",
+              |            "scale": "10d",
+              |            "offset": "5d"
+              |          },
+              |          "multi_value_mode": "max"
+              |        },
+              |        "weight": 10.0
+              |      }
+              |    ]
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("geoDistance") {
           val query =
