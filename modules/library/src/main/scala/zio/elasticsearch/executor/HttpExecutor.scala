@@ -45,7 +45,7 @@ import zio.elasticsearch.executor.response.{
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Bool, Obj}
+import zio.json.ast.Json.{Arr, Obj}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
