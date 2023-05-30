@@ -253,7 +253,7 @@ sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[Functio
 
   /**
    * Sets the `scoreMode` parameter for the [[zio.elasticsearch.query.FunctionScoreQuery]]. The `scoreMode` parameter
-   * specifies how the computed scores are combined
+   * specifies how the computed scores are combined.
    *
    * @param value
    *   a value that we want to set `scoreMode` to, possible values are:
