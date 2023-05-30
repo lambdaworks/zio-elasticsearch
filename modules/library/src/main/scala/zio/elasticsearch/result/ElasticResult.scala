@@ -77,7 +77,7 @@ final class SearchResult private[elasticsearch] (
   lazy val total: IO[ElasticException, Long] = ZIO
     .fromOption(fullResponse.hits.total)
     .map(_.value)
-    .mapError(_ => new ElasticException("Total hits are not being tracked"))
+    .mapError(_ => new ElasticException("Total hits are not being tracked."))
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
@@ -111,5 +111,5 @@ final class SearchAndAggregateResult private[elasticsearch] (
     ZIO
       .fromOption(fullResponse.hits.total)
       .map(_.value)
-      .mapError(_ => new ElasticException("Total hits are not being tracked"))
+      .mapError(_ => new ElasticException("Total hits are not being tracked."))
 }
