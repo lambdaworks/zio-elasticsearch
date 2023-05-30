@@ -1,0 +1,41 @@
+/*
+ * Copyright 2022 LambdaWorks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package zio.elasticsearch.aggregation
+
+import zio.Chunk
+
+sealed trait AggregationResult
+
+final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
+
+final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+
+final case class TermsAggregationResult private[elasticsearch] (
+  docErrorCount: Int,
+  sumOtherDocCount: Int,
+  buckets: Chunk[TermsAggregationBucketResult]
+) extends AggregationResult
+
+final case class TermsAggregationBucketResult private[elasticsearch] (
+  key: String,
+  docCount: Int,
+  subAggregations: Option[Map[String, AggregationResult]] = None
+) extends AggregationResult {
+
+  def subAggregationAs[T <: AggregationResult](aggName: String): Option[T] =
+    subAggregations.flatMap(_.get(aggName).map(a => a.asInstanceOf[T]))
+}

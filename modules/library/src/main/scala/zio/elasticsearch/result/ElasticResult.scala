@@ -16,29 +16,30 @@
 
 package zio.elasticsearch.result
 
-import zio.elasticsearch.executor.response.{AggregationResponse, SearchWithAggregationsResponse}
+import zio.elasticsearch.aggregation.AggregationResult
+import zio.elasticsearch.executor.response.SearchWithAggregationsResponse
 import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{Chunk, IO, Task, UIO, ZIO}
 
-private[elasticsearch] sealed trait AggregationsResult {
-  def aggregation(name: String): Task[Option[AggregationResponse]]
+private[elasticsearch] sealed trait ResultWithAggregation {
+  def aggregation(name: String): Task[Option[AggregationResult]]
 
-  def aggregations: Task[Map[String, AggregationResponse]]
+  def aggregations: Task[Map[String, AggregationResult]]
 }
 
 private[elasticsearch] sealed trait DocumentResult[F[_]] {
   def documentAs[A: Schema]: Task[F[A]]
 }
 
-final class AggregationResult private[elasticsearch] (
-  private val aggs: Map[String, AggregationResponse]
-) extends AggregationsResult {
-  def aggregation(name: String): Task[Option[AggregationResponse]] =
+final class AggregateResult private[elasticsearch] (
+  private val aggs: Map[String, AggregationResult]
+) extends ResultWithAggregation {
+  def aggregation(name: String): Task[Option[AggregationResult]] =
     ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, AggregationResponse]] =
+  def aggregations: Task[Map[String, AggregationResult]] =
     ZIO.succeed(aggs)
 }
 
@@ -83,14 +84,14 @@ final class SearchResult private[elasticsearch] (
 
 final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: Chunk[Item],
-  private val aggs: Map[String, AggregationResponse],
+  private val aggs: Map[String, AggregationResult],
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[Chunk]
-    with AggregationsResult {
-  def aggregation(name: String): Task[Option[AggregationResponse]] =
+    with ResultWithAggregation {
+  def aggregation(name: String): Task[Option[AggregationResult]] =
     ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, AggregationResponse]] =
+  def aggregations: Task[Map[String, AggregationResult]] =
     ZIO.succeed(aggs)
 
   def documentAs[A: Schema]: Task[Chunk[A]] =

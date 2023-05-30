@@ -19,15 +19,10 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{matchAll, term}
+import zio.elasticsearch.aggregation.{TermsAggregationBucketResult, TermsAggregationResult}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{
-  BulkResponse,
-  CreateBulkResponse,
-  Shards,
-  TermsAggregationBucket,
-  TermsAggregationResponse
-}
+import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Shards}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.Proceed
@@ -48,7 +43,9 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
             .aggregations
         )(
-          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, Chunk(TermsAggregationBucket("name", 5, None)))))
+          equalTo(
+            Map("aggregation1" -> TermsAggregationResult(0, 0, Chunk(TermsAggregationBucketResult("name", 5, None))))
+          )
         )
       },
       test("bulk request") {
@@ -201,7 +198,9 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           .execute(ElasticRequest.search(index = index, query = matchAll, terms))
         assertZIO(req.documentAs[TestDocument])(equalTo(Chunk(doc))) &&
         assertZIO(req.aggregations)(
-          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, Chunk(TermsAggregationBucket("name", 5, None)))))
+          equalTo(
+            Map("aggregation1" -> TermsAggregationResult(0, 0, Chunk(TermsAggregationBucketResult("name", 5, None))))
+          )
         )
       },
       test("update request with script") {

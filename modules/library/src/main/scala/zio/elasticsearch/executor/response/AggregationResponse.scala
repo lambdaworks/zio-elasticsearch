@@ -17,11 +17,40 @@
 package zio.elasticsearch.executor.response
 
 import zio.Chunk
+import zio.elasticsearch.aggregation.{
+  AggregationResult,
+  CardinalityAggregationResult,
+  MaxAggregationResult,
+  TermsAggregationBucketResult,
+  TermsAggregationResult
+}
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 sealed trait AggregationResponse
+
+object AggregationResponse {
+  private[elasticsearch] def toResult(aggregationResponse: AggregationResponse): AggregationResult =
+    aggregationResponse match {
+      case CardinalityAggregationResponse(value) =>
+        CardinalityAggregationResult(value)
+      case MaxAggregationResponse(value) =>
+        MaxAggregationResult(value)
+      case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
+        TermsAggregationResult(
+          docErrorCount,
+          sumOtherDocCount,
+          buckets = buckets.map(b =>
+            TermsAggregationBucketResult(
+              b.key,
+              b.docCount,
+              b.subAggregations.map(sa => sa.view.mapValues(v => toResult(v)).toMap)
+            )
+          )
+        )
+    }
+}
 
 private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
 

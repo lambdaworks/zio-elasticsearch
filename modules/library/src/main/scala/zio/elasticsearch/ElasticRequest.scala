@@ -26,7 +26,7 @@ import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.request._
 import zio.elasticsearch.request.options._
 import zio.elasticsearch.result.{
-  AggregationResult,
+  AggregateResult,
   GetResult,
   SearchAndAggregateResult,
   SearchResult,
@@ -357,7 +357,7 @@ object ElasticRequest {
   final def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = index, id = id, document = Document.from(doc), refresh = None, routing = None)
 
-  sealed trait AggregateRequest extends ElasticRequest[AggregationResult]
+  sealed trait AggregateRequest extends ElasticRequest[AggregateResult]
 
   private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
       extends AggregateRequest {

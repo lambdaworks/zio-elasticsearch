@@ -25,13 +25,9 @@ import zio.elasticsearch.aggregation.AggregationOrder
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
-import zio.elasticsearch.executor.response.{
-  CardinalityAggregationResponse,
-  MaxAggregationResponse,
-  TermsAggregationResponse
-}
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
+import zio.elasticsearch.aggregation.{CardinalityAggregationResult, MaxAggregationResult, TermsAggregationResult}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -55,7 +51,7 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("HTTP Executor")(
         suite("aggregation")(
           test("aggregate using cardinality aggregation") {
-            val expectedResponse = ("aggregationInt", CardinalityAggregationResponse(2))
+            val expectedResponse = ("aggregationInt", CardinalityAggregationResult(2))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -80,7 +76,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("aggregate using max aggregation") {
-            val expectedResponse = ("aggregationInt", MaxAggregationResponse(20.0))
+            val expectedResponse = ("aggregationInt", MaxAggregationResult(20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -192,7 +188,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                    .aggregate(index = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
-                } yield assert(aggsRes("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size)(
+                } yield assert(aggsRes("aggregationString").asInstanceOf[TermsAggregationResult].buckets.size)(
                   equalTo(1)
                 )
             }
@@ -365,7 +361,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   docs <- res.documentAs[TestDocument]
                   aggs <- res.aggregations
                 } yield assert(docs)(isNonEmpty) && assert(
-                  aggs("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size
+                  aggs("aggregationString").asInstanceOf[TermsAggregationResult].buckets.size
                 )(equalTo(1))
             }
           } @@ around(

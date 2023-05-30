@@ -16,8 +16,8 @@
 
 package zio
 
-import zio.elasticsearch.executor.response.AggregationResponse
-import zio.elasticsearch.result.{AggregationsResult, DocumentResult}
+import zio.elasticsearch.aggregation.AggregationResult
+import zio.elasticsearch.result.{DocumentResult, ResultWithAggregation}
 import zio.prelude.Newtype
 import zio.schema.Schema
 
@@ -25,7 +25,7 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 
-  final implicit class ZIOAggregationsOps[R](zio: RIO[R, AggregationsResult]) {
+  final implicit class ZIOAggregationsOps[R](zio: RIO[R, ResultWithAggregation]) {
 
     /**
      * Executes the [[zio.elasticsearch.ElasticRequest.SearchRequest]] or the
@@ -35,9 +35,9 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce an optional
-     *   [[zio.elasticsearch.executor.response.AggregationResponse]].
+     *   [[zio.elasticsearch.aggregation.AggregationResult]].
      */
-    def aggregation(name: String): RIO[R, Option[AggregationResponse]] =
+    def aggregation(name: String): RIO[R, Option[AggregationResult]] =
       zio.flatMap(_.aggregation(name))
 
     /**
@@ -45,9 +45,10 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
      *
      * @return
-     *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and response.
+     *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and
+     *   [[zio.elasticsearch.aggregation.AggregationResult]].
      */
-    def aggregations: RIO[R, Map[String, AggregationResponse]] =
+    def aggregations: RIO[R, Map[String, AggregationResult]] =
       zio.flatMap(_.aggregations)
   }
 
