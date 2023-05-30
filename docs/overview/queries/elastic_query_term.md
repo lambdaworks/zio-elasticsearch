@@ -33,4 +33,4 @@ val queryWithCaseInsensitiveFalse: TermQuery = term(field = Document.name, value
 val queryWithCaseInsensitiveTrue: TermQuery = term(field = Document.name, value = "test").caseInsensitiveTrue
 ```
 
-You can find more information about `Term` Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-term-query.html).
+You can find more information about `Term` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-term-query.html).

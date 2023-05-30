@@ -41,4 +41,4 @@ val queryWithCaseInsensitiveFalse: WildcardQuery = contains(field = Document.nam
 val queryWithCaseInsensitiveTrue: WildcardQuery = contains(field = Document.name, value = "a").caseInsensitiveTrue
 ```
 
-You can find more information about `Wildcard` Query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-wildcard-query.html#query-dsl-wildcard-query).
+You can find more information about `Wildcard` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-wildcard-query.html#query-dsl-wildcard-query).

@@ -26,4 +26,4 @@ If you want to change the `boost`, you can use `boost` method:
 val queryWithBoost: ExistsQuery = exists(field = "name").boost(2.0)
 ```
 
-You can find more information about Exists query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html#query-dsl-exists-query).
+You can find more information about `Exists` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-exists-query.html#query-dsl-exists-query).
