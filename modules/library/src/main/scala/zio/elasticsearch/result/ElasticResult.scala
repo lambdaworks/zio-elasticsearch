@@ -74,7 +74,10 @@ final class SearchResult private[elasticsearch] (
 
   lazy val response: UIO[SearchWithAggregationsResponse] = ZIO.succeed(fullResponse)
 
-  lazy val total: IO[Option[Nothing], Long] = ZIO.fromOption(fullResponse.hits.total).map(_.value)
+  lazy val total: IO[ElasticException, Long] = ZIO
+    .fromOption(fullResponse.hits.total)
+    .map(_.value)
+    .mapError(_ => new ElasticException("Total hits are not being tracked"))
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
@@ -104,5 +107,9 @@ final class SearchAndAggregateResult private[elasticsearch] (
 
   lazy val response: UIO[SearchWithAggregationsResponse] = ZIO.succeed(fullResponse)
 
-  lazy val total: IO[Option[Nothing], Long] = ZIO.fromOption(fullResponse.hits.total).map(_.value)
+  lazy val total: IO[ElasticException, Long] =
+    ZIO
+      .fromOption(fullResponse.hits.total)
+      .map(_.value)
+      .mapError(_ => new ElasticException("Total hits are not being tracked"))
 }
