@@ -413,7 +413,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
     val sortsJson =
       if (r.sortBy.isEmpty) {
-        Obj("sort" -> Arr(ShardDoc.toJson))
+        Obj("sort" -> Arr(ShardDoc.toJson), "track_total_hits" -> false.toJson)
       } else {
         Obj("sort" -> Arr(r.sortBy.map(_.toJson)))
       }
