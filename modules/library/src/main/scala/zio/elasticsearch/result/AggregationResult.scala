@@ -18,6 +18,8 @@ package zio.elasticsearch.result
 
 import zio.Chunk
 
+import scala.util.{Failure, Success, Try}
+
 sealed trait AggregationResult
 
 final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
@@ -33,9 +35,16 @@ final case class TermsAggregationResult private[elasticsearch] (
 final case class TermsAggregationBucketResult private[elasticsearch] (
   key: String,
   docCount: Int,
-  subAggregations: Option[Map[String, AggregationResult]]
+  subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
-  def subAggregationAs[A <: AggregationResult](aggName: String): Option[A] =
-    subAggregations.flatMap(_.get(aggName).map(a => a.asInstanceOf[A]))
+  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+    subAggregations.get(aggName) match {
+      case Some(aggRes) =>
+        Try(aggRes.asInstanceOf[A]) match {
+          case Failure(_)   => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+          case Success(agg) => Right(Some(agg))
+        }
+      case None => Right(None)
+    }
 }

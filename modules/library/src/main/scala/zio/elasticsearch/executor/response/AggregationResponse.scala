@@ -45,7 +45,9 @@ object AggregationResponse {
             TermsAggregationBucketResult(
               docCount = b.docCount,
               key = b.key,
-              subAggregations = b.subAggregations.map(_.map { case (key, response) => (key, toResult(response)) })
+              subAggregations = b.subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
+                (key, toResult(response))
+              })
             )
           )
         )

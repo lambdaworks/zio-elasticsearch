@@ -47,7 +47,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               "aggregation1" -> TermsAggregationResult(
                 docErrorCount = 0,
                 sumOtherDocCount = 0,
-                buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = None))
+                buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
               )
             )
           )
@@ -208,7 +208,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               "aggregation1" -> TermsAggregationResult(
                 docErrorCount = 0,
                 sumOtherDocCount = 0,
-                buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = None))
+                buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
               )
             )
           )

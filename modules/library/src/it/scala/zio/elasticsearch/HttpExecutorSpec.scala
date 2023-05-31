@@ -56,7 +56,6 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("HTTP Executor")(
         suite("aggregation")(
           test("aggregate using cardinality aggregation") {
-            val expectedResponse = ("aggregationInt", CardinalityAggregationResult(value = 2))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -73,8 +72,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation = cardinalityAggregation(name = "aggregationInt", field = TestDocument.intField)
                   aggsRes <- Executor
                                .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
-                } yield assert(aggsRes.head)(equalTo(expectedResponse))
+
+                  cardinalityAgg <- aggsRes.asCardinalityAggregation("aggregationInt")
+                } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -192,10 +192,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                                  ElasticRequest
                                    .aggregate(index = firstSearchIndex, aggregation = aggregation)
                                )
-                               .aggregations
-                } yield assert(aggsRes("aggregationString").asInstanceOf[TermsAggregationResult].buckets.size)(
-                  equalTo(1)
-                )
+                  agg <- aggsRes.asTermsAggregation("aggregationString")
+                } yield assert(agg.map(_.buckets.size))(isSome(equalTo(1)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -363,11 +361,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                                aggregation = aggregation
                              )
                          )
-                  docs <- res.documentAs[TestDocument]
-                  aggs <- res.aggregations
+                  docs     <- res.documentAs[TestDocument]
+                  termsAgg <- res.asTermsAggregation("aggregationString")
                 } yield assert(docs)(isNonEmpty) && assert(
-                  aggs("aggregationString").asInstanceOf[TermsAggregationResult].buckets.size
-                )(equalTo(1))
+                  termsAgg.map(_.buckets.size)
+                )(isSome(equalTo(1)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

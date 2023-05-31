@@ -40,16 +40,16 @@ private[elasticsearch] sealed trait ResultWithAggregation {
       }
       .absolve
 
-  def cardinalityAggregationResult(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
+  def aggregations: Task[Map[String, AggregationResult]]
+
+  def asCardinalityAggregation(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
     aggregationAs[CardinalityAggregationResult](name)
 
-  def maxAggregationResult(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
+  def asMaxAggregation(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
     aggregationAs[MaxAggregationResult](name)
 
-  def termsAggregationResult(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
+  def asTermsAggregation(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
     aggregationAs[TermsAggregationResult](name)
-
-  def aggregations: Task[Map[String, AggregationResult]]
 }
 
 private[elasticsearch] sealed trait DocumentResult[F[_]] {

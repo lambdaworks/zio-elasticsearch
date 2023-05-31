@@ -60,13 +60,23 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
     /**
      * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
      *
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and
+     *   [[result.AggregationResult]].
+     */
+    def aggregations: RIO[R, Map[String, AggregationResult]] =
+      zio.flatMap(_.aggregations)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
      * @param name
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.CardinalityAggregationResult]].
      */
-    def cardinalityAggregationResult(name: String): RIO[R, Option[CardinalityAggregationResult]] =
+    def asCardinalityAggregation(name: String): RIO[R, Option[CardinalityAggregationResult]] =
       aggregationAs[CardinalityAggregationResult](name)
 
     /**
@@ -78,7 +88,7 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.MaxAggregationResult]].
      */
-    def maxAggregationResult(name: String): RIO[R, Option[MaxAggregationResult]] =
+    def asMaxAggregation(name: String): RIO[R, Option[MaxAggregationResult]] =
       aggregationAs[MaxAggregationResult](name)
 
     /**
@@ -90,18 +100,8 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.TermsAggregationResult]].
      */
-    def termsAggregationResult(name: String): RIO[R, Option[TermsAggregationResult]] =
+    def asTermsAggregation(name: String): RIO[R, Option[TermsAggregationResult]] =
       aggregationAs[TermsAggregationResult](name)
-
-    /**
-     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
-     *
-     * @return
-     *   a [[RIO]] effect that, when executed, will produce a Map of the aggregations name and
-     *   [[result.AggregationResult]].
-     */
-    def aggregations: RIO[R, Map[String, AggregationResult]] =
-      zio.flatMap(_.aggregations)
   }
 
   final implicit class ZIODocumentOps[R, F[_]](zio: RIO[R, DocumentResult[F]]) {
