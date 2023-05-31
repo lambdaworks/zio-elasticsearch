@@ -5,7 +5,7 @@ title: "Term Query"
 
 The `Term` query returns documents that contain an exact term in a provided field.
 
-In order to use the `TermQuery` query import the following:
+In order to use the `Term` query import the following:
 ```scala
 import zio.elasticsearch.query.TermQuery
 import zio.elasticsearch.ElasticQuery._

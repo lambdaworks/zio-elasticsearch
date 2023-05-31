@@ -55,4 +55,4 @@ If you want to change the `minimum_should_match` parameter, you can use the `min
 val queryWithMinimumShouldMatch: BoolQuery = should(contains(field = Document.name, value = "a")).minimumShouldMatch(2)
 ```
 
-You can find more information about Boolean query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-bool-query.html).
+You can find more information about `Bool` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-bool-query.html).

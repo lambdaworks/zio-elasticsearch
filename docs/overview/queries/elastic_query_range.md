@@ -51,4 +51,4 @@ If you want to change `lte` (less than or equal to), you can use the `lte` metho
 val queryWithLte: RangeQuery = range(field = Document.intField).lte(100)
 ```
 
-You can find more information about Range query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-range-query.html).
+You can find more information about `Range` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-range-query.html).
