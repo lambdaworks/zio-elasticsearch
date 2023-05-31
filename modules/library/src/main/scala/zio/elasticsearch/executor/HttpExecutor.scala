@@ -33,6 +33,7 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
+import zio.elasticsearch.executor.response.AggregationResponse.toResult
 import zio.elasticsearch.executor.response.{
   BulkResponse,
   CountResponse,
@@ -109,7 +110,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   def streamAs[A: Schema](r: SearchRequest, config: StreamConfig): Stream[Throwable, A] =
     stream(r, config).map(_.documentAs[A]).collectWhileRight
 
-  private def executeAggregate(r: Aggregate): Task[AggregationResult] =
+  private def executeAggregate(r: Aggregate): Task[AggregateResult] =
     sendRequestWithCustomResponse(
       baseRequest
         .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
@@ -121,7 +122,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new AggregationResult(value.aggs))
+            value =>
+              ZIO.succeed(new AggregateResult(value.aggs.map { case (key, response) =>
+                (key, toResult(response))
+              }))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -492,7 +496,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               ZIO.succeed(
                 new SearchAndAggregateResult(
                   itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
-                  value.aggs,
+                  value.aggs.map { case (key, response) =>
+                    (key, toResult(response))
+                  },
                   value
                 )
               )

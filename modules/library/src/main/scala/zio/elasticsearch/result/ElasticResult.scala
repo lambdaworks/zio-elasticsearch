@@ -16,29 +16,53 @@
 
 package zio.elasticsearch.result
 
-import zio.elasticsearch.executor.response.{AggregationResponse, SearchWithAggregationsResponse}
+import zio.elasticsearch.executor.response.SearchWithAggregationsResponse
 import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{Chunk, IO, Task, UIO, ZIO}
 
-private[elasticsearch] sealed trait AggregationsResult {
-  def aggregation(name: String): Task[Option[AggregationResponse]]
+import scala.util.{Failure, Success, Try}
 
-  def aggregations: Task[Map[String, AggregationResponse]]
+private[elasticsearch] sealed trait ResultWithAggregation {
+  def aggregation(name: String): Task[Option[AggregationResult]]
+
+  def aggregationAs[A <: AggregationResult](name: String): IO[DecodingException, Option[A]] =
+    aggregation(name)
+      .mapError(e => DecodingException(s"Something went wrong decoding the aggregation with name $name: $e"))
+      .map {
+        case Some(aggRes) =>
+          Try(aggRes.asInstanceOf[A]) match {
+            case Failure(_)   => Left(DecodingException(s"Aggregation with name $name was not of type you provided."))
+            case Success(agg) => Right(Some(agg))
+          }
+        case None => Right(None)
+      }
+      .absolve
+
+  def aggregations: Task[Map[String, AggregationResult]]
+
+  def asCardinalityAggregation(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
+    aggregationAs[CardinalityAggregationResult](name)
+
+  def asMaxAggregation(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
+    aggregationAs[MaxAggregationResult](name)
+
+  def asTermsAggregation(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
+    aggregationAs[TermsAggregationResult](name)
 }
 
 private[elasticsearch] sealed trait DocumentResult[F[_]] {
   def documentAs[A: Schema]: Task[F[A]]
 }
 
-final class AggregationResult private[elasticsearch] (
-  private val aggs: Map[String, AggregationResponse]
-) extends AggregationsResult {
-  def aggregation(name: String): Task[Option[AggregationResponse]] =
+final class AggregateResult private[elasticsearch] (
+  private val aggs: Map[String, AggregationResult]
+) extends ResultWithAggregation {
+  def aggregation(name: String): Task[Option[AggregationResult]] =
     ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, AggregationResponse]] =
+  def aggregations: Task[Map[String, AggregationResult]] =
     ZIO.succeed(aggs)
 }
 
@@ -54,7 +78,6 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
         case None =>
           Right(None)
       })
-      .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
 final class SearchResult private[elasticsearch] (
@@ -83,14 +106,14 @@ final class SearchResult private[elasticsearch] (
 
 final class SearchAndAggregateResult private[elasticsearch] (
   private val hits: Chunk[Item],
-  private val aggs: Map[String, AggregationResponse],
+  private val aggs: Map[String, AggregationResult],
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[Chunk]
-    with AggregationsResult {
-  def aggregation(name: String): Task[Option[AggregationResponse]] =
+    with ResultWithAggregation {
+  def aggregation(name: String): Task[Option[AggregationResult]] =
     ZIO.succeed(aggs.get(name))
 
-  def aggregations: Task[Map[String, AggregationResponse]] =
+  def aggregations: Task[Map[String, AggregationResult]] =
     ZIO.succeed(aggs)
 
   def documentAs[A: Schema]: Task[Chunk[A]] =

@@ -21,18 +21,12 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{
-  BulkResponse,
-  CreateBulkResponse,
-  Shards,
-  TermsAggregationBucket,
-  TermsAggregationResponse
-}
+import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Shards}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.Proceed
 import zio.elasticsearch.request.UpdateOutcome
-import zio.elasticsearch.result.UpdateByQueryResult
+import zio.elasticsearch.result.{TermsAggregationBucketResult, TermsAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.Script
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
@@ -48,7 +42,15 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
             .aggregations
         )(
-          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, Chunk(TermsAggregationBucket("name", 5, None)))))
+          equalTo(
+            Map(
+              "aggregation1" -> TermsAggregationResult(
+                docErrorCount = 0,
+                sumOtherDocCount = 0,
+                buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
+              )
+            )
+          )
         )
       },
       test("bulk request") {
@@ -201,7 +203,15 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           .execute(ElasticRequest.search(index = index, query = matchAll, terms))
         assertZIO(req.documentAs[TestDocument])(equalTo(Chunk(doc))) &&
         assertZIO(req.aggregations)(
-          equalTo(Map("aggregation1" -> TermsAggregationResponse(0, 0, Chunk(TermsAggregationBucket("name", 5, None)))))
+          equalTo(
+            Map(
+              "aggregation1" -> TermsAggregationResult(
+                docErrorCount = 0,
+                sumOtherDocCount = 0,
+                buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
+              )
+            )
+          )
         )
       },
       test("update request with script") {

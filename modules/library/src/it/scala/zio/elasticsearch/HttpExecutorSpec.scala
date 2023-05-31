@@ -25,18 +25,19 @@ import zio.elasticsearch.aggregation.AggregationOrder
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
-import zio.elasticsearch.executor.response.{
-  CardinalityAggregationResponse,
-  MaxAggregationResponse,
-  TermsAggregationResponse
-}
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{Item, UpdateByQueryResult}
+import zio.elasticsearch.result.{
+  CardinalityAggregationResult,
+  Item,
+  MaxAggregationResult,
+  TermsAggregationResult,
+  UpdateByQueryResult
+}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -55,7 +56,6 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("HTTP Executor")(
         suite("aggregation")(
           test("aggregate using cardinality aggregation") {
-            val expectedResponse = ("aggregationInt", CardinalityAggregationResponse(2))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -72,15 +72,16 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation = cardinalityAggregation(name = "aggregationInt", field = TestDocument.intField)
                   aggsRes <- Executor
                                .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
-                } yield assert(aggsRes.head)(equalTo(expectedResponse))
+
+                  cardinalityAgg <- aggsRes.asCardinalityAggregation("aggregationInt")
+                } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("aggregate using max aggregation") {
-            val expectedResponse = ("aggregationInt", MaxAggregationResponse(20.0))
+            val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -191,10 +192,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                                  ElasticRequest
                                    .aggregate(index = firstSearchIndex, aggregation = aggregation)
                                )
-                               .aggregations
-                } yield assert(aggsRes("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size)(
-                  equalTo(1)
-                )
+                  agg <- aggsRes.asTermsAggregation("aggregationString")
+                } yield assert(agg.map(_.buckets.size))(isSome(equalTo(1)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -362,11 +361,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                                aggregation = aggregation
                              )
                          )
-                  docs <- res.documentAs[TestDocument]
-                  aggs <- res.aggregations
+                  docs     <- res.documentAs[TestDocument]
+                  termsAgg <- res.asTermsAggregation("aggregationString")
                 } yield assert(docs)(isNonEmpty) && assert(
-                  aggs("aggregationString").asInstanceOf[TermsAggregationResponse].buckets.size
-                )(equalTo(1))
+                  termsAgg.map(_.buckets.size)
+                )(isSome(equalTo(1)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
