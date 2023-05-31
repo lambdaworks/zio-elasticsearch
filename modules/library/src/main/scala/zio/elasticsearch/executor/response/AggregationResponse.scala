@@ -17,7 +17,7 @@
 package zio.elasticsearch.executor.response
 
 import zio.Chunk
-import zio.elasticsearch.aggregation.{
+import zio.elasticsearch.result.{
   AggregationResult,
   CardinalityAggregationResult,
   MaxAggregationResult,
@@ -39,13 +39,13 @@ object AggregationResponse {
         MaxAggregationResult(value)
       case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
         TermsAggregationResult(
-          docErrorCount,
-          sumOtherDocCount,
+          docErrorCount = docErrorCount,
+          sumOtherDocCount = sumOtherDocCount,
           buckets = buckets.map(b =>
             TermsAggregationBucketResult(
-              b.key,
-              b.docCount,
-              b.subAggregations.map(sa => sa.view.mapValues(v => toResult(v)).toMap)
+              docCount = b.docCount,
+              key = b.key,
+              subAggregations = b.subAggregations.map(_.map { case (key, response) => (key, toResult(response)) })
             )
           )
         )

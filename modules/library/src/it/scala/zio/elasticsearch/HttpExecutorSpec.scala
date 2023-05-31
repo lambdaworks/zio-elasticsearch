@@ -27,12 +27,17 @@ import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
-import zio.elasticsearch.aggregation.{CardinalityAggregationResult, MaxAggregationResult, TermsAggregationResult}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{Item, UpdateByQueryResult}
+import zio.elasticsearch.result.{
+  CardinalityAggregationResult,
+  Item,
+  MaxAggregationResult,
+  TermsAggregationResult,
+  UpdateByQueryResult
+}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -51,7 +56,7 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("HTTP Executor")(
         suite("aggregation")(
           test("aggregate using cardinality aggregation") {
-            val expectedResponse = ("aggregationInt", CardinalityAggregationResult(2))
+            val expectedResponse = ("aggregationInt", CardinalityAggregationResult(value = 2))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -76,7 +81,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("aggregate using max aggregation") {
-            val expectedResponse = ("aggregationInt", MaxAggregationResult(20.0))
+            val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {

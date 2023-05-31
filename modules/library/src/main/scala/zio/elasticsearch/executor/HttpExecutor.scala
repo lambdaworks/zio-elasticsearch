@@ -33,8 +33,8 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
+import zio.elasticsearch.executor.response.AggregationResponse.toResult
 import zio.elasticsearch.executor.response.{
-  AggregationResponse,
   BulkResponse,
   CountResponse,
   CreateResponse,
@@ -122,7 +122,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => ZIO.succeed(new AggregateResult(value.aggs.view.mapValues(AggregationResponse.toResult).toMap))
+            value =>
+              ZIO.succeed(new AggregateResult(value.aggs.map { case (key, response) =>
+                (key, toResult(response))
+              }))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -493,7 +496,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
               ZIO.succeed(
                 new SearchAndAggregateResult(
                   itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
-                  value.aggs.view.mapValues(AggregationResponse.toResult).toMap,
+                  value.aggs.map { case (key, response) =>
+                    (key, toResult(response))
+                  },
                   value
                 )
               )

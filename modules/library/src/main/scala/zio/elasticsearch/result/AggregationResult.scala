@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package zio.elasticsearch.aggregation
+package zio.elasticsearch.result
 
 import zio.Chunk
 
@@ -33,9 +33,9 @@ final case class TermsAggregationResult private[elasticsearch] (
 final case class TermsAggregationBucketResult private[elasticsearch] (
   key: String,
   docCount: Int,
-  subAggregations: Option[Map[String, AggregationResult]] = None
+  subAggregations: Option[Map[String, AggregationResult]]
 ) extends AggregationResult {
 
-  def subAggregationAs[T <: AggregationResult](aggName: String): Option[T] =
-    subAggregations.flatMap(_.get(aggName).map(a => a.asInstanceOf[T]))
+  def subAggregationAs[A <: AggregationResult](aggName: String): Option[A] =
+    subAggregations.flatMap(_.get(aggName).map(a => a.asInstanceOf[A]))
 }

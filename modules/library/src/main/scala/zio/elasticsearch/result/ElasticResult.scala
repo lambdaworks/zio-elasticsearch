@@ -16,15 +16,38 @@
 
 package zio.elasticsearch.result
 
-import zio.elasticsearch.aggregation.AggregationResult
 import zio.elasticsearch.executor.response.SearchWithAggregationsResponse
 import zio.json.ast.Json
 import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{Chunk, IO, Task, UIO, ZIO}
 
+import scala.util.{Failure, Success, Try}
+
 private[elasticsearch] sealed trait ResultWithAggregation {
   def aggregation(name: String): Task[Option[AggregationResult]]
+
+  def aggregationAs[A <: AggregationResult](name: String): IO[DecodingException, Option[A]] =
+    aggregation(name)
+      .mapError(e => DecodingException(s"Something went wrong decoding the aggregation with name $name: $e"))
+      .map {
+        case Some(aggRes) =>
+          Try(aggRes.asInstanceOf[A]) match {
+            case Failure(_)   => Left(DecodingException(s"Aggregation with name $name was not of type you provided."))
+            case Success(agg) => Right(Some(agg))
+          }
+        case None => Right(None)
+      }
+      .absolve
+
+  def cardinalityAggregationResult(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
+    aggregationAs[CardinalityAggregationResult](name)
+
+  def maxAggregationResult(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
+    aggregationAs[MaxAggregationResult](name)
+
+  def termsAggregationResult(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
+    aggregationAs[TermsAggregationResult](name)
 
   def aggregations: Task[Map[String, AggregationResult]]
 }
@@ -55,7 +78,6 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
         case None =>
           Right(None)
       })
-      .mapError(e => DecodingException(s"Could not parse the document: ${e.message}"))
 }
 
 final class SearchResult private[elasticsearch] (
