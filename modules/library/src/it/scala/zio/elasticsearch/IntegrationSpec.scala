@@ -49,7 +49,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val updateByQueryIndex: IndexName = IndexName("update-by-query-index")
 
-  val geoDistanceIndex = IndexName("geo-distance-index")
+  val geoDistanceIndex: IndexName = IndexName("geo-distance-index")
 
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- Executor.execute(ElasticRequest.createIndex(index))

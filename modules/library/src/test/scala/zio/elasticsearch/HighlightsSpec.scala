@@ -1,5 +1,6 @@
 package zio.elasticsearch
 
+import zio.Chunk
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.domain.{TestNestedField, TestSubDocument}
 import zio.elasticsearch.highlights.{HighlightField, Highlights}
@@ -7,10 +8,9 @@ import zio.elasticsearch.utils.RichString
 import zio.json.ast.Json.{Arr, Bool, Num, Str}
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
-import zio.{Chunk, Scope}
 
 object HighlightsSpec extends ZIOSpecDefault {
-  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
+  def spec: Spec[TestEnvironment, Any] =
     suite("Highlight")(
       suite("creating Highlight")(
         test("successfully create Highlight with only field given without config") {
