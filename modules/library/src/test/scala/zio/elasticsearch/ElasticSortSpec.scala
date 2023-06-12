@@ -1,6 +1,5 @@
 package zio.elasticsearch
 
-import zio.Scope
 import zio.elasticsearch.ElasticSort._
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.sort.Missing._
@@ -15,7 +14,7 @@ import zio.test.Assertion.equalTo
 import zio.test._
 
 object ElasticSortSpec extends ZIOSpecDefault {
-  def spec: Spec[Environment with TestEnvironment with Scope, Any] = {
+  def spec: Spec[TestEnvironment, Any] = {
     suite("ElasticSort")(
       suite("constructing")(
         test("sortByField") {

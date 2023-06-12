@@ -12,10 +12,10 @@ import zio.elasticsearch.utils.RichString
 import zio.test.Assertion._
 import zio.test._
 
-object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
+object FunctionScoreSpec extends ZIOSpecDefault {
 
   def spec: Spec[TestEnvironment, Any] =
-    suite("functionScore")(
+    suite("FunctionScore")(
       suite("constructing")(
         test("expDecayFunction") {
           val function =
@@ -251,7 +251,7 @@ object FunctionScoreFunctionsSpec extends ZIOSpecDefault {
           )
         }
       ),
-      suite("encoding as Json")(
+      suite("encoding as JSON")(
         test("expDecayFunction") {
           val function =
             expDecayFunction("field", origin = "2013-09-17", scale = "10d")

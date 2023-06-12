@@ -52,11 +52,11 @@ lazy val library =
         "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.15",
         "dev.zio"                       %% "zio-json"        % "0.5.0",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC19",
-        "dev.zio"                       %% "zio-schema"      % "0.4.11",
-        "dev.zio"                       %% "zio-schema-json" % "0.4.11",
+        "dev.zio"                       %% "zio-schema"      % "0.4.12",
+        "dev.zio"                       %% "zio-schema-json" % "0.4.12",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.13" % Tests,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.13" % Tests
+        "dev.zio"                       %% "zio-test"        % "2.0.14" % Tests,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.14" % Tests
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
@@ -70,14 +70,14 @@ lazy val example =
       crossScalaVersions := List(Scala213),
       publish / skip     := true,
       libraryDependencies ++= List(
-        "dev.zio" %% "zio"                 % "2.0.13",
+        "dev.zio" %% "zio"                 % "2.0.14",
         "dev.zio" %% "zio-config"          % "3.0.7",
         "dev.zio" %% "zio-config-magnolia" % "3.0.7",
         "dev.zio" %% "zio-config-typesafe" % "3.0.7",
         "dev.zio" %% "zio-http"            % "0.0.5",
         "dev.zio" %% "zio-json"            % "0.5.0",
-        "dev.zio" %% "zio-schema"          % "0.4.11",
-        "dev.zio" %% "zio-schema-json"     % "0.4.11"
+        "dev.zio" %% "zio-schema"          % "0.4.12",
+        "dev.zio" %% "zio-schema-json"     % "0.4.12"
       )
     )
     .dependsOn(library)
