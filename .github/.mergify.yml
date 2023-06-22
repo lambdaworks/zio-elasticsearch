@@ -3,7 +3,7 @@ pull_request_rules:
     conditions:
       - author=scala-steward
       - "#approved-reviews-by>=1"
-      - status-success=ci
+      - check-success=ci
     actions:
       merge:
         method: squash
@@ -12,7 +12,7 @@ pull_request_rules:
     conditions:
       - author=renovate[bot]
       - "#approved-reviews-by>=1"
-      - status-success=ci
+      - check-success=ci
     actions:
       merge:
         method: squash
