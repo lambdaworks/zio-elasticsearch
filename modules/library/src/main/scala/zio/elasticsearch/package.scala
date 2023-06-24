@@ -16,14 +16,7 @@
 
 package zio
 
-import zio.elasticsearch.result.{
-  AggregationResult,
-  CardinalityAggregationResult,
-  DocumentResult,
-  MaxAggregationResult,
-  ResultWithAggregation,
-  TermsAggregationResult
-}
+import zio.elasticsearch.result._
 import zio.prelude.Newtype
 import zio.schema.Schema
 
@@ -74,6 +67,18 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.AvgAggregationResult]].
+     */
+    def asAvgAggregation(name: String): RIO[R, Option[AvgAggregationResult]] =
+      aggregationAs[AvgAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.CardinalityAggregationResult]].
      */
     def asCardinalityAggregation(name: String): RIO[R, Option[CardinalityAggregationResult]] =
@@ -90,6 +95,18 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      */
     def asMaxAggregation(name: String): RIO[R, Option[MaxAggregationResult]] =
       aggregationAs[MaxAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.MinAggregationResult]].
+     */
+    def asMinAggregation(name: String): RIO[R, Option[MinAggregationResult]] =
+      aggregationAs[MinAggregationResult](name)
 
     /**
      * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].

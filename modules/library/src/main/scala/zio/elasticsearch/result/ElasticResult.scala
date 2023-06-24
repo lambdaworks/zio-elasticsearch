@@ -41,12 +41,18 @@ private[elasticsearch] sealed trait ResultWithAggregation {
       .absolve
 
   def aggregations: Task[Map[String, AggregationResult]]
-// min i avg
+
+  def asAvgAggregation(name: String): IO[DecodingException, Option[AvgAggregationResult]] =
+    aggregationAs[AvgAggregationResult](name)
+
   def asCardinalityAggregation(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
     aggregationAs[CardinalityAggregationResult](name)
 
   def asMaxAggregation(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
     aggregationAs[MaxAggregationResult](name)
+
+  def asMinAggregation(name: String): IO[DecodingException, Option[MinAggregationResult]] =
+    aggregationAs[MinAggregationResult](name)
 
   def asTermsAggregation(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
     aggregationAs[TermsAggregationResult](name)
