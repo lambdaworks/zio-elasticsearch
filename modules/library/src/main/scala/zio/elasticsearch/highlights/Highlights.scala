@@ -22,7 +22,7 @@ import zio.elasticsearch.highlights.Highlights.HighlightConfig
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 
-final case class Highlights(
+private[elasticsearch] final case class Highlights(
   fields: Chunk[HighlightField],
   config: HighlightConfig = Map.empty,
   explicitFieldOrder: Boolean = false

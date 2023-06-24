@@ -410,10 +410,10 @@ private[elasticsearch] final case class GeoDistance[S](
       "geo_distance" -> Obj(
         Chunk(
           Some(field -> point.toJson),
-          distance.map(d => "distance" -> d.toString.toJson),
-          distanceType.map(dt => "distance_type" -> dt.toString.toJson),
-          queryName.map(qn => "_name" -> qn.toJson),
-          validationMethod.map(vm => "validation_method" -> vm.toString.toJson)
+          distance.map("distance" -> _.toString.toJson),
+          distanceType.map("distance_type" -> _.toString.toJson),
+          queryName.map("_name" -> _.toJson),
+          validationMethod.map("validation_method" -> _.toString.toJson)
         ).flatten: _*
       )
     )
@@ -486,7 +486,7 @@ private[elasticsearch] final case class HasChild[S](
           innerHitsField.map(_.toStringJsonPair),
           maxChildren.map("max_children" -> _.toJson),
           minChildren.map("min_children" -> _.toJson),
-          scoreMode.map(sm => "score_mode" -> sm.toString.toLowerCase.toJson)
+          scoreMode.map("score_mode" -> _.toString.toLowerCase.toJson)
         ).flatten
       )
     )
@@ -627,9 +627,9 @@ private[elasticsearch] final case class Nested[S](
     Obj(
       "nested" -> Obj(
         Chunk(
-          Some("path"  -> fieldPath.map(fieldPath => (fieldPath + "." + path).toJson).getOrElse(path.toJson)),
+          Some("path"  -> fieldPath.map(_ + "." + path).map(_.toJson).getOrElse(path.toJson)),
           Some("query" -> query.toJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
-          scoreMode.map(scoreMode => "score_mode" -> scoreMode.toString.toLowerCase.toJson),
+          scoreMode.map("score_mode" -> _.toString.toLowerCase.toJson),
           ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
           innerHitsField.map(_.toStringJsonPair)
         ).flatten
