@@ -253,11 +253,11 @@ object HighlightsSpec extends ZIOSpecDefault {
               expectedPlainWithArrayOfFields.toJson
             )
           ) &&
-            assert(highlightWithMultipleConfig.toJson)(
-              equalTo(
-                expectedFvhType.toJson
-              )
+          assert(highlightWithMultipleConfig.toJson)(
+            equalTo(
+              expectedFvhType.toJson
             )
+          )
         }
       )
     )
