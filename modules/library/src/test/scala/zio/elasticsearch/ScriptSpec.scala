@@ -52,7 +52,7 @@ object ScriptSpec extends ZIOSpecDefault {
 
           val script           = Script(source)
           val scriptWithParams = Script(sourceWithParams).params(params)
-          val scriptWithLang   = Script(sourceWithParams).lang(lang)
+          val scriptWithLang   = Script(source).lang(lang)
           val scriptWithLangAndParams =
             Script(sourceWithParams).params(params).lang(lang)
 
