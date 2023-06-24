@@ -565,7 +565,7 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
 
 private[elasticsearch] final case class GeoPolygon[S](
   field: String,
-  points: List[String] ,
+  points: List[String],
   queryName: Option[String],
   validationMethod: Option[ValidationMethod]
 ) extends GeoPolygonQuery[S] { self =>
@@ -578,7 +578,7 @@ private[elasticsearch] final case class GeoPolygon[S](
     Obj(
       "geo_polygon" -> Obj(
         Chunk(
-          Some(field -> Obj("points" -> Arr(points.map(Json.Str(_)):_*))),
+          Some(field -> Obj("points" -> Arr(points.map(Json.Str(_)): _*))),
           queryName.map(qn => "_name" -> qn.toJson),
           validationMethod.map(vm => "validation_method" -> vm.toString.toJson)
         ).flatten: _*

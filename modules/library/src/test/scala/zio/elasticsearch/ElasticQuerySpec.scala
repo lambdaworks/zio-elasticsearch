@@ -821,7 +821,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithName =
             geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).name("name")
           val queryWithValidationMethod =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(IgnoreMalformed)
+            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(
+              IgnoreMalformed
+            )
           val queryWithAllParams = geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
             .validationMethod(IgnoreMalformed)
             .name("name")
@@ -836,16 +838,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               )
             )
           ) &&
-            assert(queryString)(
-              equalTo(
-                GeoPolygon[TestDocument](
-                  field = "stringField",
-                  points = List("drm3btev3e86", "drm3btev3e87"),
-                  queryName = None,
-                  validationMethod = None
-                )
+          assert(queryString)(
+            equalTo(
+              GeoPolygon[TestDocument](
+                field = "stringField",
+                points = List("drm3btev3e86", "drm3btev3e87"),
+                queryName = None,
+                validationMethod = None
               )
-            ) && assert(queryWithName)(
+            )
+          ) && assert(queryWithName)(
             equalTo(
               GeoPolygon[TestDocument](
                 field = "stringField",
@@ -2979,7 +2981,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithName =
             geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).name("name")
           val queryWithValidationMethod =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(IgnoreMalformed)
+            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(
+              IgnoreMalformed
+            )
           val queryWithAllParams = geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
             .validationMethod(IgnoreMalformed)
             .name("name")
