@@ -10,40 +10,32 @@ object ScriptSpec extends ZIOSpecDefault {
   def spec: Spec[Environment with TestEnvironment with Scope, Any] =
     suite("Script")(
       suite("constructing")(
-        test("create script with source") {
-          val source = "doc['day_of_week'].value"
+        test("script") {
+          val source           = "doc['day_of_week'].value"
+          val sourceWithParams = "doc['day_of_week'].value * params['factor']"
+          val params           = "factor" -> 2
+          val lang             = Painless
 
-          assert(Script(source))(equalTo(Script(source, Map.empty, None)))
-        },
-        test("create script with source and params") {
-          val source = "doc['day_of_week'].value * params['factor']"
-          val params = "factor" -> 2
+          val script           = Script(source)
+          val scriptWithParams = Script(sourceWithParams).params(params)
+          val scriptWithLang   = Script(sourceWithParams).lang(lang)
+          val scriptWithLangAndParams =
+            Script(sourceWithParams).params(params).lang(lang)
 
-          assert(Script(source).params(params))(
+          assert(script)(equalTo(Script(source, Map.empty, None))) && assert(
+            scriptWithParams
+          )(
             equalTo(
-              Script(source = source, params = Map(params), lang = None)
+              Script(source = sourceWithParams, params = Map(params), lang = None)
             )
-          )
-        },
-        test("create script with source and lang") {
-          val source = "doc['day_of_week'].value * params['factor']"
-          val lang   = Painless
-
-          assert(Script(source).lang(lang))(
+          ) && assert(scriptWithLang)(
             equalTo(
-              Script(source = source, params = Map.empty, lang = Some(lang))
+              Script(source = sourceWithParams, params = Map.empty, lang = Some(lang))
             )
-          )
-        },
-        test("create script with source, params and lang") {
-          val source = "doc['day_of_week'].value * params['factor']"
-          val params = "factor" -> 2
-          val lang   = Painless
-
-          assert(Script(source).params(params).lang(lang))(
+          ) && assert(scriptWithLangAndParams)(
             equalTo(
               Script(
-                source = source,
+                source = sourceWithParams,
                 params = Map(params),
                 lang = Some(lang)
               )
@@ -52,8 +44,18 @@ object ScriptSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
-        test("create script with source") {
-          val script = Script("doc['day_of_week'].value")
+        test("script") {
+          val source           = "doc['day_of_week'].value"
+          val sourceWithParams = "doc['day_of_week'].value * params['factor']"
+          val params           = "factor" -> 2
+          val lang             = Painless
+
+          val script           = Script(source)
+          val scriptWithParams = Script(sourceWithParams).params(params)
+          val scriptWithLang   = Script(source).lang(lang)
+          val scriptWithLangAndParams =
+            Script(sourceWithParams).params(params).lang(lang)
+
           val expected =
             """
               |{
@@ -61,11 +63,7 @@ object ScriptSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(script.toJson)(equalTo(expected.toJson))
-        },
-        test("create script with source and params") {
-          val script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2)
-          val expected =
+          val expectedWithParams =
             """
               |{
               |  "source": "doc['day_of_week'].value * params['factor']",
@@ -75,11 +73,7 @@ object ScriptSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(script.toJson)(equalTo(expected.toJson))
-        },
-        test("create script with source and lang") {
-          val script = Script("doc['day_of_week'].value").lang(Painless)
-          val expected =
+          val expectedWithLang =
             """
               |{
               |  "lang": "painless",
@@ -87,12 +81,7 @@ object ScriptSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(script.toJson)(equalTo(expected.toJson))
-        },
-        test("create script with source, params and lang") {
-          val script =
-            Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2).lang(Painless)
-          val expected =
+          val expectedWithLangAndParams =
             """
               |{
               |  "lang": "painless",
@@ -103,7 +92,11 @@ object ScriptSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(script.toJson)(equalTo(expected.toJson))
+          assert(script.toJson)(equalTo(expected.toJson)) && assert(scriptWithParams.toJson)(
+            equalTo(expectedWithParams.toJson)
+          ) && assert(scriptWithLang.toJson)(equalTo(expectedWithLang.toJson)) && assert(
+            scriptWithLangAndParams.toJson
+          )(equalTo(expectedWithLangAndParams.toJson))
         }
       )
     )
