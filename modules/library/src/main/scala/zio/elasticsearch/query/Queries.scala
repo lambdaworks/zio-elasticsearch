@@ -321,11 +321,11 @@ private[elasticsearch] final case class FunctionScore[S](
         Chunk(
           Some("functions" -> Arr(functionScoreFunctions.map(_.toJson))),
           boost.map("boost" -> _.toJson),
-          boostMode.map(bm => "boost_mode" -> bm.toString.toLowerCase.toJson),
+          boostMode.map("boost_mode" -> _.toString.toLowerCase.toJson),
           maxBoost.map("max_boost" -> _.toJson),
           minScore.map("min_score" -> _.toJson),
-          query.map(q => "query" -> q.toJson(None)),
-          scoreMode.map(sm => "score_mode" -> sm.toString.toLowerCase.toJson)
+          query.map("query" -> _.toJson(None)),
+          scoreMode.map("score_mode" -> _.toString.toLowerCase.toJson)
         ).flatten
       )
     )
