@@ -21,6 +21,7 @@ import zio.Chunk
 import scala.util.{Failure, Success, Try}
 
 sealed trait AggregationResult
+
 final case class AvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult

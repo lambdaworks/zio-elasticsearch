@@ -17,13 +17,7 @@
 package zio.elasticsearch.executor.response
 
 import zio.Chunk
-import zio.elasticsearch.result.{
-  AggregationResult,
-  CardinalityAggregationResult,
-  MaxAggregationResult,
-  TermsAggregationBucketResult,
-  TermsAggregationResult
-}
+import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
@@ -33,6 +27,8 @@ sealed trait AggregationResponse
 object AggregationResponse {
   private[elasticsearch] def toResult(aggregationResponse: AggregationResponse): AggregationResult =
     aggregationResponse match {
+      case AvgAggregationResponse(value) =>
+        AvgAggregationResult(value)
       case CardinalityAggregationResponse(value) =>
         CardinalityAggregationResult(value)
       case MaxAggregationResponse(value) =>
@@ -52,6 +48,12 @@ object AggregationResponse {
           )
         )
     }
+}
+
+private[elasticsearch] final case class AvgAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object AvgAggregationResponse {
+  implicit val decoder: JsonDecoder[AvgAggregationResponse] = DeriveJsonDecoder.gen[AvgAggregationResponse]
 }
 
 private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse

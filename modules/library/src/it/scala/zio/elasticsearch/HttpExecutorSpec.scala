@@ -50,24 +50,26 @@ object HttpExecutorSpec extends IntegrationSpec {
       suite("HTTP Executor")(
         suite("aggregation")(
           test("aggregate using avg aggregation") {
-            val expectedResponse = ("aggregationInt", AvgAggregationResult(value = 20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _ <- Executor.execute(
-                         ElasticRequest
-                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 20))
-                       )
-                  _ <- Executor.execute(
-                         ElasticRequest
-                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 10))
-                           .refreshTrue
-                       )
-                  aggregation = avgAggregation(name = "aggregationInt", field = TestDocument.intField)
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(doubleField = 20))
+                    )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(doubleField = 10))
+                        .refreshTrue
+                    )
+                  aggregation = avgAggregation(name = "aggregationDouble", field = TestDocument.doubleField)
                   aggsRes <- Executor
                                .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
                                .aggregations
+                  expectedResponse = ("aggregationDouble", AvgAggregationResult(value = 15.0))
                 } yield assert(aggsRes.head)(equalTo(expectedResponse))
             }
           } @@ around(
