@@ -1007,6 +1007,29 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("prefix") {
+          val query                    = prefix("stringField", "test")
+          val queryTs                  = prefix(TestDocument.stringField, "test")
+          val queryWithSuffix          = prefix(TestDocument.stringField.keyword, "test")
+          val queryWithCaseInsensitive = prefix(TestDocument.stringField, "test").caseInsensitiveTrue
+
+          assert(query)(
+            equalTo(Prefix[Any](field = "stringField", value = "test", caseInsensitive = None))
+          ) &&
+          assert(queryTs)(
+            equalTo(Prefix[TestDocument](field = "stringField", value = "test", caseInsensitive = None))
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Prefix[TestDocument](field = "stringField.keyword", value = "test", caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithCaseInsensitive)(
+            equalTo(
+              Prefix[TestDocument](field = "stringField", value = "test", caseInsensitive = Some(true))
+            )
+          )
+        },
         test("range") {
           val query                    = range("testField")
           val queryString              = range(TestDocument.stringField)
