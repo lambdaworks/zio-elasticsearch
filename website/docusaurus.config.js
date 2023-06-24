@@ -44,16 +44,14 @@ const config = {
         },
         items: [
           {
-            type: 'doc',
-            docId: 'overview/overview_index',
             position: 'right',
-            label: 'Overview'
+            label: 'Overview',
+            to: 'overview/'
           },
           {
-            type: 'doc',
-            docId: 'about/about_index',
             position: 'right',
-            label: 'About'
+            label: 'About',
+            to: 'about/',
           },
           {
             href: 'https://github.com/lambdaworks/zio-elasticsearch',
