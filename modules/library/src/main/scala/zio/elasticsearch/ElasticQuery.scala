@@ -552,7 +552,7 @@ object ElasticQuery {
    * @param field
    *   the type-safe field for which query is specified for
    * @param value
-   *   the value that will be used for the query, represented by an instance of type `A`
+   *   text value that will be used for the query
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -569,7 +569,7 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @param value
-   *   the value that will be used for the query, represented by an instance of type `A`
+   *   text value that will be used for the query
    * @return
    *   an instance of [[zio.elasticsearch.query.PrefixQuery]] that represents the prefix query to be performed.
    */
@@ -694,7 +694,7 @@ object ElasticQuery {
    * @param field
    *   the type-safe field for which query is specified for
    * @param value
-   *   the value that will be used for the query, represented by an instance of type `A`
+   *   text value that will be used for the query
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -711,7 +711,7 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @param value
-   *   the value that will be used for the query, represented by an instance of type `A`
+   *   text value that will be used for the query
    * @return
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */

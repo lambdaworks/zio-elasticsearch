@@ -673,10 +673,10 @@ private[elasticsearch] final case class Prefix[S](
   caseInsensitive: Option[Boolean]
 ) extends PrefixQuery[S] { self =>
 
-  override def caseInsensitive(value: Boolean): PrefixQuery[S] =
+  def caseInsensitive(value: Boolean): PrefixQuery[S] =
     self.copy(caseInsensitive = Some(value))
 
-  override private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val prefixFields = Some("value" -> value.toJson) ++ caseInsensitive.map(
       "case_insensitive" -> _.toJson
     )
