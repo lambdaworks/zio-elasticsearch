@@ -673,8 +673,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 relation = None
               )
             )
-          ) &&
-          assert(queryWithGeoPoint)(
+          ) && assert(queryWithGeoPoint)(
             equalTo(
               GeoShapeInline[TestDocument](
                 field = "locationField",
@@ -682,8 +681,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 relation = Some(SpatialRelation.Intersects)
               )
             )
-          ) &&
-          assert(queryWithGeoLine)(
+          ) && assert(queryWithGeoLine)(
             equalTo(
               GeoShapeInline[TestDocument](
                 field = "locationField",
