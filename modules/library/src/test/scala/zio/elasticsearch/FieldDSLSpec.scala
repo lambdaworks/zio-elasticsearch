@@ -22,37 +22,66 @@ import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assertTrue}
 object FieldDSLSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("Field DSL")(
-      test("properly encode single field path")(
-        assertTrue(Field(None, "name").toString == "name")
-      ),
-      test("properly encode single field path using accessor")(
-        assertTrue(TestSubDocument.stringField.toString == "stringField")
-      ),
-      test("properly encode nested field path")(
-        assertTrue(Field(Some(Field(None, "address")), "number").toString == "address.number")
-      ),
-      test("properly encode nested field path using accessors")(
-        assertTrue((TestSubDocument.nestedField / TestNestedField.longField).toString == "nestedField.longField")
-      ),
-      test("properly encode single field with suffix")(
-        assertTrue(Field[Any, String](None, "name").suffix("keyword").toString == "name.keyword")
-      ),
-      test("properly encode single field with suffixes")(
-        assertTrue(
-          Field[Any, String](None, "name")
-            .suffix("multi_field")
-            .suffix("keyword")
-            .toString == "name.multi_field.keyword"
-        )
-      ),
-      test("properly encode single field with suffix using accessor")(
-        assertTrue(TestSubDocument.stringField.suffix("keyword").toString == "stringField.keyword")
-      ),
-      test("properly encode single field with keyword suffix")(
-        assertTrue(Field[Any, String](None, "name").keyword.toString == "name.keyword")
-      ),
-      test("properly encode single field with raw suffix")(
-        assertTrue(Field[Any, String](None, "name").raw.toString == "name.raw")
+      suite("constructing")(
+        test("field") {
+          val encodeName = "name"
+
+          val encodeNestedNumber      = "number"
+          val encodeNestedAddress     = "address"
+          val encodeNestedExpectedVal = "address.number"
+
+          val encodeSuffixName        = "name"
+          val encodeSuffixKeyword     = "keyword"
+          val encodeSuffixExpectedVal = "name.keyword"
+
+          val encodeSingleFieldSuffixName        = "name"
+          val encodeSingleFieldSuffixMultiField  = "multi_field"
+          val encodeSingleFieldSuffixKeyword     = "keyword"
+          val encodeSingleFieldSuffixExpectedVal = "name.multi_field.keyword"
+
+          val encodeSingleFieldKeywordSuffixName        = "name"
+          val encodeSingleFieldKeywordSuffixExpectedVal = "name.keyword"
+
+          val encodeSingleFieldRawSuffixKeyword     = "name"
+          val encodeSingleFieldRawSuffixExpectedVal = "name.raw"
+
+          assertTrue(Field(None, encodeName).toString == encodeName) && assertTrue(
+            Field(Some(Field(None, encodeNestedAddress)), encodeNestedNumber).toString == encodeNestedExpectedVal
+          ) && assertTrue(
+            Field[Any, String](None, encodeSuffixName).suffix(encodeSuffixKeyword).toString == encodeSuffixExpectedVal
+          ) && assertTrue(
+            Field[Any, String](None, encodeSingleFieldSuffixName)
+              .suffix(encodeSingleFieldSuffixMultiField)
+              .suffix(encodeSingleFieldSuffixKeyword)
+              .toString == encodeSingleFieldSuffixExpectedVal
+          ) && assertTrue(
+            Field[Any, String](
+              None,
+              encodeSingleFieldKeywordSuffixName
+            ).keyword.toString == encodeSingleFieldKeywordSuffixExpectedVal
+          ) && assertTrue(
+            Field[Any, String](
+              None,
+              encodeSingleFieldRawSuffixKeyword
+            ).raw.toString == encodeSingleFieldRawSuffixExpectedVal
+          )
+        },
+        test("path") {
+          val singleFieldExpectedVal = "stringField"
+
+          val nestedFieldAccessorsExpectedVal = "nestedField.longField"
+
+          val singleFieldSuffixAccessorKeyword     = "keyword"
+          val singleFieldSuffixAccessorExpectedVal = "stringField.keyword"
+
+          assertTrue(TestSubDocument.stringField.toString == singleFieldExpectedVal) && assertTrue(
+            (TestSubDocument.nestedField / TestNestedField.longField).toString == nestedFieldAccessorsExpectedVal
+          ) && assertTrue(
+            TestSubDocument.stringField
+              .suffix(singleFieldSuffixAccessorKeyword)
+              .toString == singleFieldSuffixAccessorExpectedVal
+          )
+        }
       )
     )
 }
