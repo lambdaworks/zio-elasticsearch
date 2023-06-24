@@ -156,18 +156,18 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 200))
-                  )
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 200))
+                       )
                   _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 23))
-                      .refreshTrue
-                  )
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 23))
+                           .refreshTrue
+                       )
                   aggregation = sumAggregation(name = "aggregationInt", field = TestDocument.intField)
                   aggsRes <- Executor
-                    .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                    .asSumAggregation("aggregationInt")
+                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .asSumAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(223.0))
             }
           } @@ around(

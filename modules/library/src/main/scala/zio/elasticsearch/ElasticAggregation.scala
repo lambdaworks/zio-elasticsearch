@@ -178,18 +178,17 @@ object ElasticAggregation {
   final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Chunk.empty)
 
-
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
    *
    * @param name
-   * aggregation name
+   *   aggregation name
    * @param field
-   * the type-safe field for which sum aggregation will be executed
+   *   the type-safe field for which sum aggregation will be executed
    * @tparam A
-   * expected number type
+   *   expected number type
    * @return
-   * an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents avg aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents avg aggregation to be performed.
    */
   final def sumAggregation[A: Numeric](name: String, field: Field[_, A]): SumAggregation =
     Sum(name = name, field = field.toString, missing = None)
@@ -198,11 +197,11 @@ object ElasticAggregation {
    * Constructs an instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
    *
    * @param name
-   * aggregation name
+   *   aggregation name
    * @param field
-   * the field for which sum aggregation will be executed
+   *   the field for which sum aggregation will be executed
    * @return
-   * an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents avg aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents avg aggregation to be performed.
    */
   final def sumAggregation(name: String, field: String): SumAggregation =
     Sum(name = name, field = field, missing = None)

@@ -202,7 +202,7 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
 sealed trait SumAggregation extends SingleElasticAggregation with HasMissing[SumAggregation] with WithAgg
 
 private[elasticsearch] final case class Sum(name: String, field: String, missing: Option[Double])
-  extends SumAggregation { self =>
+    extends SumAggregation { self =>
   def missing(value: Double): SumAggregation =
     self.copy(missing = Some(value))
 
