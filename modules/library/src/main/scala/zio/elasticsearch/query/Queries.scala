@@ -541,7 +541,7 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
    * field to identify the query
    *
    * @param value
-   *   the [[String]] value to represent the name field
+   *   the text value to represent the name field
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] enriched with the `queryName` parameter.
    */
@@ -570,9 +570,11 @@ private[elasticsearch] final case class GeoPolygon[S](
   validationMethod: Option[ValidationMethod]
 ) extends GeoPolygonQuery[S] { self =>
 
-  def name(value: String): GeoPolygonQuery[S] = self.copy(queryName = Some(value))
+  def name(value: String): GeoPolygonQuery[S] =
+    self.copy(queryName = Some(value))
 
-  def validationMethod(value: ValidationMethod): GeoPolygonQuery[S] = self.copy(validationMethod = Some(value))
+  def validationMethod(value: ValidationMethod): GeoPolygonQuery[S] =
+    self.copy(validationMethod = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
