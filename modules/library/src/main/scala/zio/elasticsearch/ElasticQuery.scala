@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
+import zio.elasticsearch.data.GeoShape
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
 import zio.schema.Schema
@@ -263,6 +264,50 @@ object ElasticQuery {
       distanceType = None,
       queryName = None,
       validationMethod = None
+    )
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoShapeInlineQuery]] using the specified parameters.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param shape
+   *   the shape upon which the spatial relation is defined
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoShapeInlineQuery]] that represents `geo_shape` query to be performed.
+   */
+  final def geoShapeInline[S](
+    field: Field[S, _],
+    shape: GeoShape
+  ): GeoShapeInlineQuery[S] =
+    GeoShapeInline(
+      field = field.toString,
+      shape = shape,
+      relation = None
+    )
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoShapeInlineQuery]] using the specified parameters.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param shape
+   *   the shape upon which the spatial relation is defined
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoShapeInlineQuery]] that represents `geo_shape` query to be performed.
+   */
+  final def geoShapeInline[S](
+    field: String,
+    shape: GeoShape
+  ): GeoShapeInlineQuery[Any] =
+    GeoShapeInline(
+      field = field,
+      shape = shape,
+      relation = None
     )
 
   /**

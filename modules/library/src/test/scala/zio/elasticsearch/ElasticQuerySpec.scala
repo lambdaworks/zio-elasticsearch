@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
+import zio.elasticsearch.data.{GeoLineString, GeoPoint, GeoPolygon}
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
@@ -2040,6 +2041,84 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithDistanceType.toJson(fieldPath = None))(equalTo(expectedWithDistanceType.toJson)) &&
           assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
           assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+        },
+        test("geoShapeInline") {
+          val query =
+            geoShapeInline("testField", GeoPoint(20.0, 21.1))
+          val queryWithGeoPoint =
+            geoShapeInline(TestDocument.locationField, GeoPoint(20.0, 21.1)).relation(SpatialRelation.Intersects)
+          val queryWithGeoLine =
+            geoShapeInline(TestDocument.locationField, GeoLineString(Chunk(GeoPoint(20.0, 21.1), GeoPoint(21.0, 22.1))))
+              .relation(SpatialRelation.Contains)
+          val queryWithAllParams =
+            geoShapeInline(
+              TestDocument.locationField,
+              GeoPolygon(Chunk(GeoPoint(20.0, 21.1), GeoPoint(21.0, 22.1), GeoPoint(43.0, 43.1), GeoPoint(20.0, 21.1)))
+            ).relation(SpatialRelation.Contains)
+
+          val expected =
+            """
+              |{
+              |  "geo_shape": {
+              |    "testField": {
+              |      "shape": {
+              |        "type": "point",
+              |        "coordinates": [ 21.1, 20.0 ]
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithGeoPoint =
+            """
+              |{
+              |  "geo_shape": {
+              |    "locationField": {
+              |      "shape": {
+              |        "type": "point",
+              |        "coordinates": [ 21.1, 20.0 ]
+              |      },
+              |      "relation": "intersects"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithGeoLine =
+            """
+              |{
+              |  "geo_shape": {
+              |    "locationField": {
+              |      "shape": {
+              |        "type": "linestring",
+              |        "coordinates": [ [ 21.1, 20.0 ] , [ 22.1, 21.0 ] ]
+              |      },
+              |      "relation": "contains"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "geo_shape": {
+              |    "locationField": {
+              |      "shape": {
+              |        "type": "polygon",
+              |        "coordinates": [ [ [ 21.1, 20.0 ],  [ 22.1, 21.0 ],  [ 43.1, 43.0 ], [ 21.1, 20.0 ] ] ]
+              |      },
+              |      "relation": "contains"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithGeoPoint.toJson(fieldPath = None))(equalTo(expectedWithGeoPoint.toJson)) &&
+          assert(queryWithGeoLine.toJson(fieldPath = None))(equalTo(expectedWithGeoLine.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("hasChild") {

@@ -22,6 +22,7 @@ import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.aggregation.AggregationOrder
+import zio.elasticsearch.data.{GeoPoint, GeoPolygon}
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
@@ -29,7 +30,7 @@ import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
+import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction, SpatialRelation}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result._
 import zio.elasticsearch.script.{Painless, Script}
@@ -1776,6 +1777,53 @@ object HttpExecutorSpec extends IntegrationSpec {
               )
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
+        ),
+        suite("geo-shape query")(
+          test("using geo-shape-inline query") {
+            checkOnce(genTestDocument) { document =>
+              val indexDefinition =
+                """
+                  |{
+                  |  "mappings": {
+                  |      "properties": {
+                  |        "locationField": {
+                  |          "type": "geo_point"
+                  |      }
+                  |    }
+                  |  }
+                  |}
+                  |""".stripMargin
+
+              for {
+                _ <- Executor.execute(ElasticRequest.createIndex(geoShapeIndex, indexDefinition))
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(geoShapeIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.create[TestDocument](geoShapeIndex, document).refreshTrue
+                     )
+                r1 <- Executor
+                        .execute(
+                          ElasticRequest.search(
+                            geoShapeIndex,
+                            ElasticQuery
+                              .geoShapeInline(
+                                "locationField",
+                                GeoPolygon(
+                                  Chunk(
+                                    GeoPoint(0.0, 0.0),
+                                    GeoPoint(90.0, 0.0),
+                                    GeoPoint(90.0, 90.0),
+                                    GeoPoint(0.0, 90.0),
+                                    GeoPoint(0.0, 0.0)
+                                  )
+                                )
+                              )
+                              .relation(SpatialRelation.Within)
+                          )
+                        )
+                        .documentAs[TestDocument]
+              } yield assertTrue(r1 == Chunk(document))
+            }
+          } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoShapeIndex)).orDie)
         ),
         suite("search for documents using FunctionScore query")(
           test("using randomScore function") {

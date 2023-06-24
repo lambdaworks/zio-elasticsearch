@@ -18,6 +18,7 @@ package zio.elasticsearch.query
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
+import zio.elasticsearch.data.GeoShape
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
@@ -418,6 +419,44 @@ private[elasticsearch] final case class GeoDistance[S](
       )
     )
 
+}
+
+sealed trait GeoShapeInlineQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * Sets the `relation` parameter for the [[zio.elasticsearch.query.GeoShapeInline]]. `Relation` represents which
+   * spatial relation operators may be used at search time. See [[zio.elasticsearch.query.SpatialRelation]].
+   *
+   * @param value
+   *   One of spatial relation operators: intersects, contained, within or disjoint.
+   *
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoShapeInlineQuery]] enriched with the `relation` parameter.
+   */
+  def relation(value: SpatialRelation): GeoShapeInlineQuery[S]
+
+}
+
+private[elasticsearch] final case class GeoShapeInline[S](
+  field: String,
+  shape: GeoShape,
+  relation: Option[SpatialRelation]
+) extends GeoShapeInlineQuery[S] { self =>
+
+  def relation(value: SpatialRelation): GeoShapeInlineQuery[S] =
+    self.copy(relation = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "geo_shape" -> Obj(
+        field -> Obj(
+          Chunk(
+            Some("shape" -> shape.toJson),
+            relation.map("relation" -> _.toJson)
+          ).flatten: _*
+        )
+      )
+    )
 }
 
 sealed trait HasChildQuery[S]
