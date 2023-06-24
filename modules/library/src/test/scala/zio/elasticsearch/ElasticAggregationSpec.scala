@@ -141,6 +141,19 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(Max(name = "aggregation", field = "intField", missing = Some(20.0)))
           )
         },
+        test("min") {
+          val aggregation            = minAggregation("aggregation", "testField")
+          val aggregationTs          = minAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw       = minAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing = minAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+
+          assert(aggregation)(equalTo(Min(name = "aggregation", field = "testField", missing = None))) &&
+          assert(aggregationTs)(equalTo(Min(name = "aggregation", field = "intField", missing = None))) &&
+          assert(aggregationTsRaw)(equalTo(Min(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregationWithMissing)(
+            equalTo(Min(name = "aggregation", field = "intField", missing = Some(20.0)))
+          )
+        },
         test("multiple") {
           val aggregation =
             multipleAggregations.aggregations(
@@ -570,6 +583,49 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |{
               |  "aggregation": {
               |    "max": {
+              |      "field": "intField",
+              |      "missing": 20.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
+        test("min") {
+          val aggregation            = minAggregation("aggregation", "testField")
+          val aggregationTs          = minAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing = minAggregation("aggregation", TestDocument.intField).missing(20.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "min": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "min": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "min": {
               |      "field": "intField",
               |      "missing": 20.0
               |    }

@@ -28,6 +28,8 @@ final case class CardinalityAggregationResult private[elasticsearch] (value: Int
 
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
+final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+
 final case class TermsAggregationResult private[elasticsearch] (
   docErrorCount: Int,
   sumOtherDocCount: Int,

@@ -157,6 +157,23 @@ private[elasticsearch] final case class Max(name: String, field: String, missing
   }
 }
 
+sealed trait MinAggregation extends SingleElasticAggregation with HasMissing[MinAggregation] with WithAgg
+
+private[elasticsearch] final case class Min(name: String, field: String, missing: Option[Double])
+    extends MinAggregation { self =>
+  def missing(value: Double): MinAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("min" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
 
   /**
