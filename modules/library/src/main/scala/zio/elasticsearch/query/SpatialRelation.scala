@@ -25,8 +25,8 @@ sealed trait SpatialRelation {
 }
 
 object SpatialRelation {
-  case object Intersects extends SpatialRelation { def value: String = "intersects" }
-  case object Disjoint   extends SpatialRelation { def value: String = "disjoint"   }
-  case object Within     extends SpatialRelation { def value: String = "within"     }
   case object Contains   extends SpatialRelation { def value: String = "contains"   }
+  case object Disjoint   extends SpatialRelation { def value: String = "disjoint"   }
+  case object Intersects extends SpatialRelation { def value: String = "intersects" }
+  case object Within     extends SpatialRelation { def value: String = "within"     }
 }

@@ -429,7 +429,6 @@ sealed trait GeoShapeInlineQuery[S] extends ElasticQuery[S] {
    *
    * @param value
    *   One of spatial relation operators: intersects, contained, within or disjoint.
-   *
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoShapeInlineQuery]] enriched with the `relation` parameter.
    */

@@ -20,29 +20,32 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 
-private[elasticsearch] sealed trait GeoShape {
-  def toJson: Json
+sealed trait GeoShape {
+  private[elasticsearch] def toJson: Json
 }
 
-private[elasticsearch] final case class GeoPoint(latitude: Double, longitude: Double) extends GeoShape {
-  override def toJson: Json = Obj(
-    "type"        -> Str("point"),
-    "coordinates" -> coordinatesToJson
-  )
-
-  def coordinatesToJson: Json = Arr(Chunk(Num(longitude), Num(latitude)))
+final case class GeoLineString(coordinates: Chunk[GeoPoint]) extends GeoShape {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "type"        -> Str("linestring"),
+      "coordinates" -> Arr(coordinates.map(_.coordinatesToJson))
+    )
 }
 
-private[elasticsearch] final case class GeoLineString(coordinates: Chunk[GeoPoint]) extends GeoShape {
-  override def toJson: Json = Obj(
-    "type"        -> Str("linestring"),
-    "coordinates" -> Arr(coordinates.map(_.coordinatesToJson))
-  )
+final case class GeoPoint(latitude: Double, longitude: Double) extends GeoShape {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "type"        -> Str("point"),
+      "coordinates" -> coordinatesToJson
+    )
+
+  private[elasticsearch] def coordinatesToJson: Json = Arr(Chunk(Num(longitude), Num(latitude)))
 }
 
-private[elasticsearch] final case class GeoPolygon(coordinates: Chunk[GeoPoint]) extends GeoShape {
-  override def toJson: Json = Obj(
-    "type"        -> Str("polygon"),
-    "coordinates" -> Arr(Arr(coordinates.map(_.coordinatesToJson)))
-  )
+final case class GeoPolygon(coordinates: Chunk[GeoPoint]) extends GeoShape {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "type"        -> Str("polygon"),
+      "coordinates" -> Arr(Arr(coordinates.map(_.coordinatesToJson)))
+    )
 }

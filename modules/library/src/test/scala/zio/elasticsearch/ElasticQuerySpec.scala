@@ -651,6 +651,59 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("geoShapeInline") {
+          val query =
+            geoShapeInline("testField", GeoPoint(20.0, 21.1))
+          val queryWithGeoPoint =
+            geoShapeInline(TestDocument.locationField, GeoPoint(20.0, 21.1)).relation(SpatialRelation.Intersects)
+          val queryWithGeoLine =
+            geoShapeInline(TestDocument.locationField, GeoLineString(Chunk(GeoPoint(20.0, 21.1), GeoPoint(21.0, 22.1))))
+              .relation(SpatialRelation.Contains)
+          val queryWithAllParams =
+            geoShapeInline(
+              TestDocument.locationField,
+              GeoPolygon(Chunk(GeoPoint(20.0, 21.1), GeoPoint(21.0, 22.1), GeoPoint(43.0, 43.1), GeoPoint(20.0, 21.1)))
+            ).relation(SpatialRelation.Contains)
+
+          assert(query)(
+            equalTo(
+              GeoShapeInline[Any](
+                field = "testField",
+                shape = GeoPoint(20.0, 21.1),
+                relation = None
+              )
+            )
+          ) &&
+          assert(queryWithGeoPoint)(
+            equalTo(
+              GeoShapeInline[TestDocument](
+                field = "locationField",
+                shape = GeoPoint(20.0, 21.1),
+                relation = Some(SpatialRelation.Intersects)
+              )
+            )
+          ) &&
+          assert(queryWithGeoLine)(
+            equalTo(
+              GeoShapeInline[TestDocument](
+                field = "locationField",
+                shape = GeoLineString(Chunk(GeoPoint(20.0, 21.1), GeoPoint(21.0, 22.1))),
+                relation = Some(SpatialRelation.Contains)
+              )
+            )
+          ) && assert(queryWithAllParams)(
+            equalTo(
+              GeoShapeInline[TestDocument](
+                field = "locationField",
+                shape = GeoPolygon(
+                  Chunk(GeoPoint(20.0, 21.1), GeoPoint(21.0, 22.1), GeoPoint(43.0, 43.1), GeoPoint(20.0, 21.1))
+                ),
+                relation = Some(SpatialRelation.Contains)
+              )
+            )
+          )
+
+        },
         test("hasChild") {
           val query                   = hasChild("child", matchAll)
           val queryWithIgnoreUnmapped = hasChild("child", matchAll).ignoreUnmappedTrue
