@@ -863,10 +863,7 @@ private[elasticsearch] final case class Wildcard[S](
 
 sealed trait IdsQuery[S] extends ElasticQuery[S]
 
-private[elasticsearch] final case class Ids[S](
-  values: Chunk[String]
-) extends IdsQuery[S] { self =>
-
+private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends IdsQuery[S] { self =>
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
 }

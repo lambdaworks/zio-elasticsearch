@@ -757,8 +757,10 @@ object ElasticQuery {
    * [[zio.elasticsearch.query.IdsQuery]] is used for matching documents containing a value that matches a provided
    * pattern value.
    *
+   * @param value
+   *   value that will be used for the query
    * @param values
-   *   array of values that will be used for the query
+   *   array of optional values that will be used for the query
    * @return
    *   an instance of [[zio.elasticsearch.query.IdsQuery]] that represents the ids query to be performed.
    */
