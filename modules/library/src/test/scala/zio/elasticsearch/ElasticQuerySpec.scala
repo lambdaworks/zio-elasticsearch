@@ -837,8 +837,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 validationMethod = None
               )
             )
-          ) &&
-          assert(queryString)(
+          ) && assert(queryString)(
             equalTo(
               GeoPolygon[TestDocument](
                 field = "stringField",
@@ -2987,8 +2986,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithAllParams = geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
             .validationMethod(IgnoreMalformed)
             .name("name")
-
-          println(queryWithName.toJson(fieldPath = None))
 
           val expected =
             """

@@ -579,8 +579,8 @@ private[elasticsearch] final case class GeoPolygon[S](
       "geo_polygon" -> Obj(
         Chunk(
           Some(field -> Obj("points" -> Arr(points.map(Json.Str(_)): _*))),
-          queryName.map(qn => "_name" -> qn.toJson),
-          validationMethod.map(vm => "validation_method" -> vm.toString.toJson)
+          queryName.map("_name" -> _.toJson),
+          validationMethod.map("validation_method" -> _.toString.toJson)
         ).flatten: _*
       )
     )
