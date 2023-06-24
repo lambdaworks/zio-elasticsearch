@@ -2531,6 +2531,50 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithScoreMode.toJson(fieldPath = None))(equalTo(expectedWithScoreMode.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
+        test("prefix") {
+          val query                    = prefix(TestDocument.stringField, "test")
+          val queryWithCaseInsensitive = prefix(TestDocument.stringField, "test").caseInsensitiveTrue
+          val queryWithAllParams       = prefix(TestDocument.stringField, "test").caseInsensitiveFalse
+
+          val expected =
+            """
+              |{
+              |  "prefix": {
+              |    "stringField": {
+              |      "value": "test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithCaseInsensitive =
+            """
+              |{
+              |  "prefix": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "case_insensitive": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "prefix": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "case_insensitive": false
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson)) &&
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+        },
         test("range") {
           val queryEmpty                = range(TestDocument.intField)
           val queryEmptyWithBoost       = range(TestDocument.intField).boost(3.14)
