@@ -27,27 +27,32 @@ object IndexNameSpec extends ZIOSpecDefault {
       suite("constructing")(
         test("fail for empty string") {
           val name = ""
+
           assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
         },
         test("fail for string '.'") {
           val invalidName = "."
+
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
         },
         test("fail for string containing character '*'") {
           check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
             val invalidName = s"$part1*$part2"
+
             assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
           }
         },
         test("fail for string containing character ':'") {
           check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
             val invalidName = s"$part1:$part2"
+
             assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
           }
         },
         test("fail for string containing upper letter") {
           check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
             val invalidName = s"${part1}A$part2"
+
             assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
           }
         },
@@ -61,6 +66,7 @@ object IndexNameSpec extends ZIOSpecDefault {
         test("fail for string starting with character '-'") {
           check(genString(1, 255)) { name =>
             val invalidName = s"-$name"
+
             assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
           }
         },
