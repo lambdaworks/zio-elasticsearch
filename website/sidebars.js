@@ -35,10 +35,12 @@ module.exports = {
                 label: 'Elastic Aggregation',
                 items: [
                     'overview/elastic_aggregation',
+                    'overview/aggregations/elastic_aggregation_avg',
                     'overview/aggregations/elastic_aggregation_bucket_selector',
                     'overview/aggregations/elastic_aggregation_bucket_sort',
                     'overview/aggregations/elastic_aggregation_cardinality',
                     'overview/aggregations/elastic_aggregation_max',
+                    'overview/aggregations/elastic_aggregation_min',
                     'overview/aggregations/elastic_aggregation_terms',
                 ],
             },
