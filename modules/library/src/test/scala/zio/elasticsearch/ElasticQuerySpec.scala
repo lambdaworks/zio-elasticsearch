@@ -838,6 +838,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("ids") {
+          val idsQuery = ids("1", "2", "3")
+
+          assert(idsQuery)(
+            equalTo(
+              Ids[Any](
+                values = Chunk("1", "2", "3")
+              )
+            )
+          )
+        },
         test("matchAll") {
           val query          = matchAll
           val queryWithBoost = matchAll.boost(3.14)
