@@ -23,6 +23,34 @@ import zio.elasticsearch.script.Script
 object ElasticAggregation {
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.AvgAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which avg aggregation will be executed
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.AvgAggregation]] that represents avg aggregation to be performed.
+   */
+  final def avgAggregation[A: Numeric](name: String, field: Field[_, A]): AvgAggregation =
+    Avg(name = name, field = field.toString, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.AvgAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which avg aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.AvgAggregation]] that represents avg aggregation to be performed.
+   */
+  final def avgAggregation(name: String, field: String): AvgAggregation =
+    Avg(name = name, field = field, missing = None)
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSelectorAggregation]] using the specified
    * parameters.
    *

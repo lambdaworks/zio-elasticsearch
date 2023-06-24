@@ -26,18 +26,12 @@ import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocum
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
-import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
+import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{
-  CardinalityAggregationResult,
-  Item,
-  MaxAggregationResult,
-  TermsAggregationResult,
-  UpdateByQueryResult
-}
+import zio.elasticsearch.result.{AvgAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -55,6 +49,31 @@ object HttpExecutorSpec extends IntegrationSpec {
     suite("Executor")(
       suite("HTTP Executor")(
         suite("aggregation")(
+          test("aggregate using avg aggregation") {
+            val expectedResponse = ("aggregationInt", AvgAggregationResult(value = 20.0))
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 20))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 10))
+                           .refreshTrue
+                       )
+                  aggregation = avgAggregation(name = "aggregationInt", field = TestDocument.intField)
+                  aggsRes <- Executor
+                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .aggregations
+                } yield assert(aggsRes.head)(equalTo(expectedResponse))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using cardinality aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

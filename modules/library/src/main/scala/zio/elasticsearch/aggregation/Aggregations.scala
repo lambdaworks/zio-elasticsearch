@@ -31,10 +31,30 @@ sealed trait ElasticAggregation { self =>
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
 
+sealed trait AvgAggregation extends SingleElasticAggregation with HasMissing[AvgAggregation] with WithAgg
+
+private[elasticsearch] final case class Avg(name: String, field: String, missing: Option[Double])
+    extends AvgAggregation {
+  self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  def missing(value: Double): AvgAggregation =
+    self.copy(missing = Some(value))
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("avg" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait BucketSelectorAggregation extends SingleElasticAggregation with WithAgg
 
 private[elasticsearch] final case class BucketSelector(name: String, script: Script, bucketsPath: Map[String, String])
-    extends BucketSelectorAggregation { self =>
+    extends BucketSelectorAggregation {
+  self =>
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
@@ -62,6 +82,7 @@ sealed trait BucketSortAggregation extends SingleElasticAggregation with HasSize
 
   /**
    * Sets the sorting criteria for the [[zio.elasticsearch.aggregation.BucketSortAggregation]].
+   *
    * @param sort
    *   required [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
    * @param sorts
@@ -77,7 +98,8 @@ private[elasticsearch] final case class BucketSort(
   sortBy: Chunk[Sort],
   from: Option[Int],
   size: Option[Int]
-) extends BucketSortAggregation { self =>
+) extends BucketSortAggregation {
+  self =>
   def from(value: Int): BucketSortAggregation =
     self.copy(from = Some(value))
 
@@ -108,7 +130,8 @@ sealed trait CardinalityAggregation
     with WithAgg
 
 private[elasticsearch] final case class Cardinality(name: String, field: String, missing: Option[Double])
-    extends CardinalityAggregation { self =>
+    extends CardinalityAggregation {
+  self =>
   def missing(value: Double): CardinalityAggregation =
     self.copy(missing = Some(value))
 
@@ -125,7 +148,8 @@ private[elasticsearch] final case class Cardinality(name: String, field: String,
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
 
 private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])
-    extends MaxAggregation { self =>
+    extends MaxAggregation {
+  self =>
   def missing(value: Double): MaxAggregation =
     self.copy(missing = Some(value))
 
@@ -153,7 +177,8 @@ sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
 }
 
 private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElasticAggregation])
-    extends MultipleAggregations { self =>
+    extends MultipleAggregations {
+  self =>
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
     self.copy(aggregations = self.aggregations ++ aggregations)
 
@@ -177,7 +202,8 @@ private[elasticsearch] final case class Terms(
   order: Chunk[AggregationOrder],
   subAggregations: Chunk[SingleElasticAggregation],
   size: Option[Int]
-) extends TermsAggregation { self =>
+) extends TermsAggregation {
+  self =>
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
     self.copy(order = self.order ++ (order +: orders))
 

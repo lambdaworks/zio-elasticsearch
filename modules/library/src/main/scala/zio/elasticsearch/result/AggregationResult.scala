@@ -21,6 +21,7 @@ import zio.Chunk
 import scala.util.{Failure, Success, Try}
 
 sealed trait AggregationResult
+final case class AvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
 
@@ -45,6 +46,7 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
           case Failure(_)   => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
           case Success(agg) => Right(Some(agg))
         }
-      case None => Right(None)
+      case None =>
+        Right(None)
     }
 }
