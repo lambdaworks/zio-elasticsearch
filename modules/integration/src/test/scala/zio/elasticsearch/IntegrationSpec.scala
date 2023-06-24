@@ -56,6 +56,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val IndexPatternAll: IndexPattern = IndexPattern("_all")
 
+  val geoPolygonIndex: IndexName = IndexName("geo-polygon-index")
+
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- Executor.execute(ElasticRequest.createIndex(index))
     _ <- Executor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)
