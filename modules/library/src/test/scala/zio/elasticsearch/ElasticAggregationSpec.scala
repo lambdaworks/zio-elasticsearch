@@ -155,13 +155,13 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("missing") {
-          val aggregation = missingAggregation("aggregation", "testField")
-          val aggregationTs = missingAggregation("aggregation", TestSubDocument.stringField)
+          val aggregation      = missingAggregation("aggregation", "testField")
+          val aggregationTs    = missingAggregation("aggregation", TestSubDocument.stringField)
           val aggregationTsRaw = missingAggregation("aggregation", TestSubDocument.stringField.raw)
 
           assert(aggregation)(equalTo(Missing(name = "aggregation", field = "testField"))) &&
-            assert(aggregationTs)(equalTo(Missing(name = "aggregation", field = "stringField"))) &&
-            assert(aggregationTsRaw)(equalTo(Missing(name = "aggregation", field = "stringField.raw")))
+          assert(aggregationTs)(equalTo(Missing(name = "aggregation", field = "stringField"))) &&
+          assert(aggregationTsRaw)(equalTo(Missing(name = "aggregation", field = "stringField.raw")))
         },
         test("multiple") {
           val aggregation =
