@@ -31,6 +31,23 @@ sealed trait ElasticAggregation { self =>
 
 sealed trait SingleElasticAggregation extends ElasticAggregation
 
+sealed trait AvgAggregation extends SingleElasticAggregation with HasMissing[AvgAggregation] with WithAgg
+
+private[elasticsearch] final case class Avg(name: String, field: String, missing: Option[Double])
+    extends AvgAggregation { self =>
+  def missing(value: Double): AvgAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("avg" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait BucketSelectorAggregation extends SingleElasticAggregation with WithAgg
 
 private[elasticsearch] final case class BucketSelector(name: String, script: Script, bucketsPath: Map[String, String])
@@ -62,6 +79,7 @@ sealed trait BucketSortAggregation extends SingleElasticAggregation with HasSize
 
   /**
    * Sets the sorting criteria for the [[zio.elasticsearch.aggregation.BucketSortAggregation]].
+   *
    * @param sort
    *   required [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
    * @param sorts

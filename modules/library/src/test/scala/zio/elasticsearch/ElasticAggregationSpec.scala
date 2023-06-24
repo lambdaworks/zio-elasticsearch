@@ -15,6 +15,19 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticAggregation")(
       suite("constructing")(
+        test("avg") {
+          val aggregation            = avgAggregation("aggregation", "testField")
+          val aggregationTs          = avgAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw       = avgAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing = avgAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+
+          assert(aggregation)(equalTo(Avg(name = "aggregation", field = "testField", missing = None))) &&
+          assert(aggregationTs)(equalTo(Avg(name = "aggregation", field = "intField", missing = None))) &&
+          assert(aggregationTsRaw)(equalTo(Avg(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregationWithMissing)(
+            equalTo(Avg(name = "aggregation", field = "intField", missing = Some(20.0)))
+          )
+        },
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
             name = "aggregation",
@@ -329,6 +342,49 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
         }
       ),
       suite("encoding as JSON")(
+        test("avg") {
+          val aggregation            = avgAggregation("aggregation", "testField")
+          val aggregationTs          = avgAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing = avgAggregation("aggregation", TestDocument.intField).missing(20.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "avg": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "avg": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "avg": {
+              |      "field": "intField",
+              |      "missing": 20.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
             name = "aggregation",
