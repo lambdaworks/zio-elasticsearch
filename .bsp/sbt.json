@@ -1,0 +1,1 @@
+{"name":"sbt","version":"1.8.3","bspVersion":"2.1.0-M1","languages":["scala"],"argv":["/usr/lib/jvm/java-20-openjdk/bin/java","-Xms100m","-Xmx100m","-classpath","/home/fiki/.sbt/launchers/1.8.3/sbt-launch.jar","xsbt.boot.Boot","-bsp","--sbt-launch-jar=/home/fiki/.sbt/launchers/1.8.3/sbt-launch.jar"]}

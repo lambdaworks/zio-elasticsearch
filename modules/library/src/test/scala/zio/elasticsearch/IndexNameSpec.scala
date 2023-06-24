@@ -24,7 +24,7 @@ import zio.test._
 object IndexNameSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("IndexName")(
-      suite("constructing") (
+      suite("constructing")(
         test("fail for empty string") {
           val name = ""
           assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
@@ -64,11 +64,11 @@ object IndexNameSpec extends ZIOSpecDefault {
             assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
           }
         },
-        test ("succeed for valid string") {
+        test("succeed for valid string") {
           check(genString(1, 255)) { name =>
             assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
           }
-        },
+        }
       )
     )
 
