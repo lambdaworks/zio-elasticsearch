@@ -665,6 +665,25 @@ private[elasticsearch] case object Unbounded extends LowerBound with UpperBound 
   private[elasticsearch] def toJson: Option[(String, Json)] = None
 }
 
+sealed trait PrefixQuery[S] extends ElasticQuery[S] with HasCaseInsensitive[PrefixQuery[S]]
+
+private[elasticsearch] final case class Prefix[S](
+  field: String,
+  value: String,
+  caseInsensitive: Option[Boolean]
+) extends PrefixQuery[S] { self =>
+
+  override def caseInsensitive(value: Boolean): PrefixQuery[S] =
+    self.copy(caseInsensitive = Some(value))
+
+  override private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val prefixFields = Some("value" -> value.toJson) ++ caseInsensitive.map(
+      "case_insensitive" -> _.toJson
+    )
+    Obj("prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(prefixFields))))
+  }
+}
+
 sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
     extends ElasticQuery[S]
     with HasBoost[RangeQuery[S, A, LB, UB]]
