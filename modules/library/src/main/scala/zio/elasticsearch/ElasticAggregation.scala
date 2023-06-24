@@ -188,7 +188,7 @@ object ElasticAggregation {
    * @tparam A
    *   expected number type
    * @return
-   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents avg aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents sum aggregation to be performed.
    */
   final def sumAggregation[A: Numeric](name: String, field: Field[_, A]): SumAggregation =
     Sum(name = name, field = field.toString, missing = None)
