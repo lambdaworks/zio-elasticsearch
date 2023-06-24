@@ -14,26 +14,26 @@ object HighlightsSpec extends ZIOSpecDefault {
     suite("Highlight")(
       suite("constructing")(
         test("highlight") {
-          val highlightObject = highlight(field = "day_of_week")
+          val highlightObject =
+            highlight(field = "day_of_week")
           val highlightWithGlobalConfig =
             highlight(field = "day_of_week").withGlobalConfig(field = "type", Str("plain"))
-          val highlightWithHighlight = highlight(field = "day_of_week").withHighlight(field = "first_name")
-          val highlightWithMap = highlight(
-            field = "day_of_week",
-            config = Map("type" -> Str("plain"))
-          )
-          val highlightWithMapAndGlobalConfig = highlight(
-            field = "day_of_week",
-            config = Map("type" -> Str("plain"))
-          ).withGlobalConfig(field = "pre_tags", Arr(Str("<tag1>")))
-          val highlightOfStringField = highlight(field = TestSubDocument.stringField)
+          val highlightWithHighlight =
+            highlight(field = "day_of_week").withHighlight(field = "first_name")
+          val highlightWithConfig =
+            highlight(field = "day_of_week", config = Map("type" -> Str("plain")))
+          val highlightWithConfigAndGlobalConfig =
+            highlight(field = "day_of_week", config = Map("type" -> Str("plain")))
+              .withGlobalConfig(field = "pre_tags", Arr(Str("<tag1>")))
+          val highlightOfStringField =
+            highlight(field = TestSubDocument.stringField)
           val highlightOfStringFieldWithHighlight =
             highlight(field = TestSubDocument.stringField).withHighlight(TestSubDocument.intField)
           val highlightOfStringFieldWithGlobalConfig =
             highlight(field = TestSubDocument.stringField).withGlobalConfig("type", value = Str("plain"))
-          val highlightOfNestedFieldWithGlobalConfig = highlight(field =
-            TestSubDocument.nestedField / TestNestedField.stringField
-          ).withGlobalConfig("type", value = Str("plain"))
+          val highlightOfNestedFieldWithGlobalConfig =
+            highlight(field = TestSubDocument.nestedField / TestNestedField.stringField)
+              .withGlobalConfig("type", value = Str("plain"))
 
           assert(highlightObject)(
             equalTo(
@@ -57,7 +57,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               )
             )
           ) &&
-          assert(highlightWithMap)(
+          assert(highlightWithConfig)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week", Map("type" -> Str("plain"))))
@@ -65,7 +65,7 @@ object HighlightsSpec extends ZIOSpecDefault {
             )
           ) &&
           assert(
-            highlightWithMapAndGlobalConfig
+            highlightWithConfigAndGlobalConfig
           )(
             equalTo(
               Highlights(
@@ -111,22 +111,25 @@ object HighlightsSpec extends ZIOSpecDefault {
       ),
       suite("encoding  as JSON")(
         test("highlight") {
-          val highlightObject        = highlight(field = "day_of_week")
-          val highlightWithHighlight = highlight(field = "day_of_week").withHighlight(field = "first_name")
-          val highlightWithHighlightAndGlobalConfig = highlight(field = "day_of_week")
-            .withHighlight(field = "first_name")
-            .withGlobalConfig(field = "type", Str("plain"))
-          val highlightWithMap =
+          val highlightObject =
+            highlight(field = "day_of_week")
+          val highlightWithHighlight =
+            highlight(field = "day_of_week").withHighlight(field = "first_name")
+          val highlightWithHighlightAndGlobalConfig =
+            highlight(field = "day_of_week")
+              .withHighlight(field = "first_name")
+              .withGlobalConfig(field = "type", Str("plain"))
+          val highlightWithConfig =
             highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
               .withGlobalConfig("type", Str("plain"))
-          val highlightWithMapAndHighlight =
+          val highlightWithConfigAndHighlight =
             highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
               .withGlobalConfig("type", Str("plain"))
               .withHighlight(
                 "first_name",
                 Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
               )
-          val highlightWithMapHighlightAndExplicitFieldOrder =
+          val highlightWithConfigHighlightAndExplicitFieldOrder =
             highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
               .withGlobalConfig("type", Str("plain"))
               .withHighlight(
@@ -134,7 +137,7 @@ object HighlightsSpec extends ZIOSpecDefault {
                 Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
               )
               .withExplicitFieldOrder
-          val highlightWithMultipleGlobalConfig =
+          val highlightWithMultipleConfig =
             highlight("day_of_week", Map("require_field_match" -> Bool(false)))
               .withGlobalConfig("type", Str("plain"))
               .withGlobalConfig("type", Str("fvh"))
@@ -248,14 +251,14 @@ object HighlightsSpec extends ZIOSpecDefault {
               expectedPlainWithFirstName.toJson
             )
           ) &&
-          assert(highlightWithMap.toJson)(
+          assert(highlightWithConfig.toJson)(
             equalTo(expectedPlainWithRequiredFieldMatch.toJson)
           ) &&
-          assert(highlightWithMapAndHighlight.toJson)(equalTo(expectedPlainWithMatchedFields.toJson)) &&
-          assert(highlightWithMapHighlightAndExplicitFieldOrder.toJson)(
+          assert(highlightWithConfigAndHighlight.toJson)(equalTo(expectedPlainWithMatchedFields.toJson)) &&
+          assert(highlightWithConfigHighlightAndExplicitFieldOrder.toJson)(
             equalTo(expectedPlainWithArrayOfFields.toJson)
           ) &&
-          assert(highlightWithMultipleGlobalConfig.toJson)(
+          assert(highlightWithMultipleConfig.toJson)(
             equalTo(expectedFvhType.toJson)
           )
         }
