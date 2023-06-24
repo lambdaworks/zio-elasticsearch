@@ -160,7 +160,7 @@ private[elasticsearch] final case class Max(name: String, field: String, missing
 sealed trait MinAggregation extends SingleElasticAggregation with HasMissing[MinAggregation] with WithAgg
 
 private[elasticsearch] final case class Min(name: String, field: String, missing: Option[Double])
-  extends MinAggregation { self =>
+    extends MinAggregation { self =>
   def missing(value: Double): MinAggregation =
     self.copy(missing = Some(value))
 
