@@ -29,6 +29,7 @@ object IndexNameValidator
       def isValid(name: String): Boolean =
         name.toLowerCase == name &&
           !startsWithAny(name, "+", "-", "_") &&
+          name.nonEmpty &&
           !containsAny(string = name, params = Chunk("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
           !equalsAny(name, ".", "..") &&
           name.getBytes().length <= 255
