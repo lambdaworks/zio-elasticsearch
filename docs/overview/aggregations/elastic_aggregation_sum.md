@@ -22,7 +22,7 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val aggregation: SumAggregation = sumAggregation(name = "sumAggregation", field = Document.intField)
 ```
 
-If you want to change the `missing`, you can use `missing` method:
+If you want to change the `missing` parameter, you can use `missing` method:
 ```scala
 val aggregationWithMissing: SumAggregation = sumAggregation(name = "sumAggregation", field = Document.intField).missing(10.0)
 ```

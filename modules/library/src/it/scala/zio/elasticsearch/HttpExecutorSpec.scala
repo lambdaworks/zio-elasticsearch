@@ -150,6 +150,30 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("aggregate using sum aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 200))
+                  )
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 23))
+                      .refreshTrue
+                  )
+                  aggregation = sumAggregation(name = "aggregationInt", field = TestDocument.intField)
+                  aggsRes <- Executor
+                    .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                    .asSumAggregation("aggregationInt")
+                } yield assert(aggsRes.head.value)(equalTo(223.0))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using terms aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

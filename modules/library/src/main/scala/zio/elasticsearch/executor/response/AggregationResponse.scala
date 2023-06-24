@@ -77,6 +77,7 @@ private[elasticsearch] final case class MinAggregationResponse(value: Double) ex
 
 private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
+}
 
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
 
