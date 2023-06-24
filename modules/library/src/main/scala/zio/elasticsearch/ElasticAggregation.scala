@@ -201,7 +201,7 @@ object ElasticAggregation {
    * @param field
    *   the field for which sum aggregation will be executed
    * @return
-   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents avg aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents sum aggregation to be performed.
    */
   final def sumAggregation(name: String, field: String): SumAggregation =
     Sum(name = name, field = field, missing = None)
