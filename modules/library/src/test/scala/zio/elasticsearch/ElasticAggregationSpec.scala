@@ -269,6 +269,49 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("sum") {
+          val aggregation = sumAggregation("aggregation", "testField")
+          val aggregationTs = sumAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing = sumAggregation("aggregation", TestDocument.intField).missing(20.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum": {
+              |      "field": "intField",
+              |      "missing": 20.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+            assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+            assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
         test("terms") {
           val aggregation      = termsAggregation("aggregation", "testField")
           val aggregationTs    = termsAggregation("aggregation", TestSubDocument.stringField)
@@ -724,6 +767,49 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(aggregation.toJson)(equalTo(expected.toJson))
+        },
+        test("sum") {
+          val aggregation = sumAggregation("aggregation", "testField")
+          val aggregationTs = sumAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing = sumAggregation("aggregation", TestDocument.intField).missing(20.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum": {
+              |      "field": "intField",
+              |      "missing": 20.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+            assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+            assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("terms") {
           val aggregation          = termsAggregation("aggregation", "testField")
