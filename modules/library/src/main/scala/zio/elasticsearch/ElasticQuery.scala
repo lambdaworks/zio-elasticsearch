@@ -545,6 +545,38 @@ object ElasticQuery {
     Nested(path = path, query = query, scoreMode = None, ignoreUnmapped = None, innerHitsField = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.PrefixQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.PrefixQuery]] is used for matching documents that contain a specific prefix in a provided
+   * field.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param value
+   *   text value that will be used for the query
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.PrefixQuery]] that represents the prefix query to be performed.
+   */
+  final def prefix[S](field: Field[S, String], value: String): PrefixQuery[S] =
+    Prefix(field = field.toString, value = value, caseInsensitive = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.PrefixQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.PrefixQuery]] is used for matching documents that contain a specific prefix in a provided
+   * field.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param value
+   *   text value that will be used for the query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.PrefixQuery]] that represents the prefix query to be performed.
+   */
+  final def prefix(field: String, value: String): Prefix[Any] =
+    Prefix(field = field, value = value, caseInsensitive = None)
+
+  /**
    * Constructs a type-safe unbounded instance of [[zio.elasticsearch.query.RangeQuery]] using the specified parameters.
    *
    * @param field
@@ -662,7 +694,7 @@ object ElasticQuery {
    * @param field
    *   the type-safe field for which query is specified for
    * @param value
-   *   the value that will be used for the query, represented by an instance of type `A`
+   *   text value that will be used for the query
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -679,7 +711,7 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @param value
-   *   the value that will be used for the query, represented by an instance of type `A`
+   *   text value that will be used for the query
    * @return
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */

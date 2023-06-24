@@ -1007,6 +1007,29 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("prefix") {
+          val query                    = prefix("stringField", "test")
+          val queryTs                  = prefix(TestDocument.stringField, "test")
+          val queryWithSuffix          = prefix(TestDocument.stringField.keyword, "test")
+          val queryWithCaseInsensitive = prefix(TestDocument.stringField, "test").caseInsensitiveTrue
+
+          assert(query)(
+            equalTo(Prefix[Any](field = "stringField", value = "test", caseInsensitive = None))
+          ) &&
+          assert(queryTs)(
+            equalTo(Prefix[TestDocument](field = "stringField", value = "test", caseInsensitive = None))
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Prefix[TestDocument](field = "stringField.keyword", value = "test", caseInsensitive = None)
+            )
+          ) &&
+          assert(queryWithCaseInsensitive)(
+            equalTo(
+              Prefix[TestDocument](field = "stringField", value = "test", caseInsensitive = Some(true))
+            )
+          )
+        },
         test("range") {
           val query                    = range("testField")
           val queryString              = range(TestDocument.stringField)
@@ -2530,6 +2553,36 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithInnerHitsEmpty.toJson(fieldPath = None))(equalTo(expectedWithInnerHitsEmpty.toJson)) &&
           assert(queryWithScoreMode.toJson(fieldPath = None))(equalTo(expectedWithScoreMode.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+        },
+        test("prefix") {
+          val query                    = prefix(TestDocument.stringField, "test")
+          val queryWithCaseInsensitive = prefix(TestDocument.stringField, "test").caseInsensitiveTrue
+
+          val expected =
+            """
+              |{
+              |  "prefix": {
+              |    "stringField": {
+              |      "value": "test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithCaseInsensitive =
+            """
+              |{
+              |  "prefix": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "case_insensitive": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson))
         },
         test("range") {
           val queryEmpty                = range(TestDocument.intField)

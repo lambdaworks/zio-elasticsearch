@@ -3,7 +3,7 @@ id: elastic_query_term
 title: "Term Query"
 ---
 
-The `Term` query returns documents that contain an exact term in a provided field.
+The `Term` query returns documents that contain an exact term in the provided field.
 
 In order to use the `Term` query import the following:
 ```scala
