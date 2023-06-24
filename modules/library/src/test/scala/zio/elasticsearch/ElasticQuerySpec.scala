@@ -2983,9 +2983,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(
               IgnoreMalformed
             )
-          val queryWithAllParams = geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
-            .validationMethod(IgnoreMalformed)
-            .name("name")
+          val queryWithAllParams =
+            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
+              .validationMethod(IgnoreMalformed)
+              .name("name")
 
           val expected =
             """

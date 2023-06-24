@@ -2688,7 +2688,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   |{
                   |  "mappings": {
                   |      "properties": {
-                  |        "locationField": {
+                  |        "geoPointField": {
                   |          "type": "geo_point"
                   |      }
                   |    }
@@ -2702,16 +2702,17 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.create[TestDocument](geoPolygonIndex, document).refreshTrue
                      )
+
                 r1 <- Executor
                         .execute(
                           ElasticRequest.search(
                             geoPolygonIndex,
                             ElasticQuery
-                              .geoPolygon("locationField", List("0, 0", "0, 90", "90, 90", "90, 0"))
+                              .geoPolygon("geoPointField", List("0, 0", "0, 90", "90, 90", "90, 0"))
                           )
                         )
                         .documentAs[TestDocument]
-              } yield assertTrue(r1 == Chunk(document))
+              } yield assert(r1)(equalTo(Chunk(document)))
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoPolygonIndex)).orDie)
         ),

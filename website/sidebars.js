@@ -22,6 +22,7 @@ module.exports = {
                     'overview/queries/elastic_query_function_score',
                     'overview/queries/elastic_query_fuzzy',
                     'overview/queries/elastic_query_geo_distance',
+                    'overview/queries/elastic_query_geo_polygon',
                     'overview/queries/elastic_query_has_child',
                     'overview/queries/elastic_query_has_parent',
                     'overview/queries/elastic_query_match',
