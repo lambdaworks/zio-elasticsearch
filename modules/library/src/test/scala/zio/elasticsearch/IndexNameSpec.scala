@@ -23,51 +23,53 @@ import zio.test._
 
 object IndexNameSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
-    suite("IndexName validation")(
-      test("succeed for valid string") {
-        check(genString(1, 255)) { name =>
-          assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
-        }
-      },
-      test("fail for string containing upper letter") {
-        check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
-          val invalidName = s"${part1}A$part2"
+    suite("IndexName")(
+      suite("constructing") (
+        test("fail for empty string") {
+          val name = ""
+          assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
+        },
+        test("fail for string '.'") {
+          val invalidName = "."
           assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
-        }
-      },
-      test("fail for string containing character '*'") {
-        check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
-          val invalidName = s"$part1*$part2"
-          assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
-        }
-      },
-      test("fail for string containing character ':'") {
-        check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
-          val invalidName = s"$part1:$part2"
-          assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
-        }
-      },
-      test("fail for empty string") {
-        val name = ""
-        assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
-      },
-      test("fail for string starting with character '-'") {
-        check(genString(1, 255)) { name =>
-          val invalidName = s"-$name"
-          assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
-        }
-      },
-      test("fail for string '.'") {
-        val name = "."
-        assert(IndexName.make(name))(equalTo(Validation.fail(indexNameFailureMessage(name))))
-      },
-      test("fail for string longer than 255 bytes") {
-        check(genString(256, 300)) { name =>
-          assert(IndexName.make(name))(
-            equalTo(Validation.fail(indexNameFailureMessage(name)))
-          )
-        }
-      }
+        },
+        test("fail for string containing character '*'") {
+          check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
+            val invalidName = s"$part1*$part2"
+            assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+          }
+        },
+        test("fail for string containing character ':'") {
+          check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
+            val invalidName = s"$part1:$part2"
+            assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+          }
+        },
+        test("fail for string containing upper letter") {
+          check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
+            val invalidName = s"${part1}A$part2"
+            assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+          }
+        },
+        test("fail for string longer than 255 bytes") {
+          check(genString(256, 300)) { invalidName =>
+            assert(IndexName.make(invalidName))(
+              equalTo(Validation.fail(indexNameFailureMessage(invalidName)))
+            )
+          }
+        },
+        test("fail for string starting with character '-'") {
+          check(genString(1, 255)) { name =>
+            val invalidName = s"-$name"
+            assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+          }
+        },
+        test ("succeed for valid string") {
+          check(genString(1, 255)) { name =>
+            assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
+          }
+        },
+      )
     )
 
   private def indexNameFailureMessage(name: String): String =

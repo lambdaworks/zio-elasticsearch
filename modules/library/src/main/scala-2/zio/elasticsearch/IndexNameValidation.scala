@@ -26,6 +26,7 @@ object IndexNameValidation {
       params.exists(StringUtils.contains(string, _))
 
     name.toLowerCase == name &&
+    name.nonEmpty &&
     !startsWithAny(name, "+", "-", "_") &&
     !containsAny(string = name, params = Chunk("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
     !equalsAny(name, ".", "..") &&
