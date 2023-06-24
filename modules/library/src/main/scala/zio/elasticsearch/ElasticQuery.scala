@@ -734,7 +734,7 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.WildcardQuery]] that represents the wildcard query to be performed.
    */
-  final def wildcard[S](field: Field[S, _], value: String): Wildcard[S] =
+  final def wildcard[S](field: Field[S, String], value: String): Wildcard[S] =
     Wildcard(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   /**
