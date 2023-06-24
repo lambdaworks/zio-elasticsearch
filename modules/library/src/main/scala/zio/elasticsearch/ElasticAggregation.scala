@@ -141,6 +141,35 @@ object ElasticAggregation {
   final def maxAggregation(name: String, field: String): MaxAggregation =
     Max(name = name, field = field, missing = None)
 
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MinAggregation]] using the specified parameters.
+   *
+   * @param name
+   * aggregation name
+   * @param field
+   * the type-safe field for which min aggregation will be executed
+   * @tparam A
+   * expected number type
+   * @return
+   * an instance of [[zio.elasticsearch.aggregation.MinAggregation]] that represents min aggregation to be performed.
+   */
+  final def minAggregation[A: Numeric](name: String, field: Field[_, A]): MinAggregation =
+    Min(name = name, field = field.toString, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.MinAggregation]] using the specified parameters.
+   *
+   * @param name
+   * aggregation name
+   * @param field
+   * the field for which min aggregation will be executed
+   * @return
+   * an instance of [[zio.elasticsearch.aggregation.MinAggregation]] that represents min aggregation to be performed.
+   */
+  final def minAggregation(name: String, field: String): MinAggregation =
+    Min(name = name, field = field, missing = None)
+  
   /**
    * Constructs an empty instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]].
    *

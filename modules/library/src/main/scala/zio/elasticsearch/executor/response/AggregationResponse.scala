@@ -33,6 +33,8 @@ object AggregationResponse {
         CardinalityAggregationResult(value)
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
+      case MinAggregationResponse(value) =>
+        MinAggregationResult(value)
       case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
         TermsAggregationResult(
           docErrorCount = docErrorCount,
@@ -69,6 +71,12 @@ private[elasticsearch] object MaxAggregationResponse {
   implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
 }
 
+private[elasticsearch] final case class MinAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object MinAggregationResponse {
+  implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
+}
+
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
   docErrorCount: Int,
@@ -102,10 +110,14 @@ private[elasticsearch] object TermsAggregationBucket {
           val objFields = data.unsafeAs[Obj].fields.toMap
 
           (field: @unchecked) match {
+            case str if str.contains("avg#") =>
+              Some(field -> AvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("cardinality#") =>
               Some(field -> CardinalityAggregationResponse(value = objFields("value").unsafeAs[Int]))
             case str if str.contains("max#") =>
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
+            case str if str.contains("min#") =>
+              Some(field -> MinAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
               Some(
                 field -> TermsAggregationResponse(
@@ -125,10 +137,14 @@ private[elasticsearch] object TermsAggregationBucket {
     val subAggs = allFields.collect {
       case (field, data) if field != "key" && field != "doc_count" =>
         (field: @unchecked) match {
+          case str if str.contains("avg#") =>
+            (field.split("#")(1), data.asInstanceOf[AvgAggregationResponse])
           case str if str.contains("cardinality#") =>
             (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
           case str if str.contains("max#") =>
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
+          case str if str.contains("min#") =>
+            (field.split("#")(1), data.asInstanceOf[MinAggregationResponse])
           case str if str.contains("terms#") =>
             (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
         }

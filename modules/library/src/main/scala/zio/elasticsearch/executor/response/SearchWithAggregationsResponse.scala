@@ -76,6 +76,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       AvgAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("max#") =>
                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("min#") =>
+                      MinAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("cardinality#") =>
                       CardinalityAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("terms#") =>

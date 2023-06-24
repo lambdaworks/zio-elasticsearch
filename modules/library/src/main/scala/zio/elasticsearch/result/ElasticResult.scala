@@ -41,7 +41,7 @@ private[elasticsearch] sealed trait ResultWithAggregation {
       .absolve
 
   def aggregations: Task[Map[String, AggregationResult]]
-
+// min i avg
   def asCardinalityAggregation(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
     aggregationAs[CardinalityAggregationResult](name)
 

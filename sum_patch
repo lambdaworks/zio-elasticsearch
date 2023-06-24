@@ -1,0 +1,325 @@
+diff --git a/docs/overview/aggregations/elastic_aggregation_sum.md b/docs/overview/aggregations/elastic_aggregation_sum.md
+new file mode 100644
+index 0000000..b2f3d6d
+--- /dev/null
++++ b/docs/overview/aggregations/elastic_aggregation_sum.md
+@@ -0,0 +1,35 @@
++---
++id: elastic_aggregation_sum
++title: "Sum Aggregation"
++---
++
++The `Sum` aggregation is a single-value metrics aggregation that keeps track and returns the average value among the numeric values extracted from the aggregated documents.
++
++In order to use the `Sum` aggregation import the following:
++```scala
++import zio.elasticsearch.aggregation.SumAggregation
++import zio.elasticsearch.ElasticAggregation.sumAggregation
++```
++
++You can create a `Sum` aggregation using the `sumAggregation` method this way:
++```scala
++val aggregation: SumAggregation = sumAggregation(name = "sumAggregation", field = "intField")
++```
++
++You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Sum` aggregation using the `sumAggregation` method this way:
++```scala
++// Document.intField must be number value, because of Sum aggregation
++val aggregation: SumAggregation = sumAggregation(name = "sumAggregation", field = Document.intField)
++```
++
++If you want to change the `missing`, you can use `missing` method:
++```scala
++val aggregationWithMissing: SumAggregation = sumAggregation(name = "sumAggregation", field = Document.intField).missing(10.0)
++```
++
++If you want to add aggregation (on the same level), you can use `withAgg` method:
++```scala
++val multipleAggregations: MultipleAggregations = sumAggregation(name = "sumAggregation1", field = Document.intField).withAgg(sumAggregation(name = "sumAggregation2", field = Document.doubleField))
++```
++
++You can find more information about `Sum` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-aggregations-metrics-sum-aggregation.html).
+diff --git a/modules/library/src/it/scala/zio/elasticsearch/HttpExecutorSpec.scala b/modules/library/src/it/scala/zio/elasticsearch/HttpExecutorSpec.scala
+index af29102..1811880 100644
+--- a/modules/library/src/it/scala/zio/elasticsearch/HttpExecutorSpec.scala
++++ b/modules/library/src/it/scala/zio/elasticsearch/HttpExecutorSpec.scala
+@@ -26,18 +26,12 @@ import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocum
+ import zio.elasticsearch.executor.Executor
+ import zio.elasticsearch.query.DistanceUnit.Kilometers
+ import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
+-import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
+ import zio.elasticsearch.query.sort.SortMode.Max
+ import zio.elasticsearch.query.sort.SortOrder._
+ import zio.elasticsearch.query.sort.SourceType.NumberType
++import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
+ import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
+-import zio.elasticsearch.result.{
+-  CardinalityAggregationResult,
+-  Item,
+-  MaxAggregationResult,
+-  TermsAggregationResult,
+-  UpdateByQueryResult
+-}
++import zio.elasticsearch.result.{SumAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
+ import zio.elasticsearch.script.{Painless, Script}
+ import zio.json.ast.Json.{Arr, Str}
+ import zio.schema.codec.JsonCodec
+@@ -55,6 +49,33 @@ object HttpExecutorSpec extends IntegrationSpec {
+     suite("Executor")(
+       suite("HTTP Executor")(
+         suite("aggregation")(
++          test("aggregate using sum aggregation") {
++            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
++              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
++                for {
++                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
++                  _ <-
++                    Executor.execute(
++                      ElasticRequest
++                        .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(doubleField = 20))
++                    )
++                  _ <-
++                    Executor.execute(
++                      ElasticRequest
++                        .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(doubleField = 10))
++                        .refreshTrue
++                    )
++                  aggregation = sumAggregation(name = "aggregationDouble", field = TestDocument.doubleField)
++                  aggsRes <- Executor
++                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
++                               .aggregations
++                  expectedResponse = ("aggregationDouble", SumAggregationResult(value = 15.0))
++                } yield assert(aggsRes.head)(equalTo(expectedResponse))
++            }
++          } @@ around(
++            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
++            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
++          ),
+           test("aggregate using cardinality aggregation") {
+             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+diff --git a/modules/library/src/main/scala/zio/elasticsearch/ElasticAggregation.scala b/modules/library/src/main/scala/zio/elasticsearch/ElasticAggregation.scala
+index e50bd46..87611b4 100644
+--- a/modules/library/src/main/scala/zio/elasticsearch/ElasticAggregation.scala
++++ b/modules/library/src/main/scala/zio/elasticsearch/ElasticAggregation.scala
+@@ -22,6 +22,34 @@ import zio.elasticsearch.script.Script
+ 
+ object ElasticAggregation {
+ 
++  /**
++   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
++   *
++   * @param name
++   *   aggregation name
++   * @param field
++   *   the type-safe field for which sum aggregation will be executed
++   * @tparam A
++   *   expected number type
++   * @return
++   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents sum aggregation to be performed.
++   */
++  final def sumAggregation[A: Numeric](name: String, field: Field[_, A]): SumAggregation =
++    Sum(name = name, field = field.toString, missing = None)
++
++  /**
++   * Constructs an instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
++   *
++   * @param name
++   *   aggregation name
++   * @param field
++   *   the field for which sum aggregation will be executed
++   * @return
++   *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents sum aggregation to be performed.
++   */
++  final def sumAggregation(name: String, field: String): SumAggregation =
++    Sum(name = name, field = field, missing = None)
++
+   /**
+    * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSelectorAggregation]] using the specified
+    * parameters.
+diff --git a/modules/library/src/main/scala/zio/elasticsearch/aggregation/Aggregations.scala b/modules/library/src/main/scala/zio/elasticsearch/aggregation/Aggregations.scala
+index b2a24e3..bc64ab0 100644
+--- a/modules/library/src/main/scala/zio/elasticsearch/aggregation/Aggregations.scala
++++ b/modules/library/src/main/scala/zio/elasticsearch/aggregation/Aggregations.scala
+@@ -31,6 +31,23 @@ sealed trait ElasticAggregation { self =>
+ 
+ sealed trait SingleElasticAggregation extends ElasticAggregation
+ 
++sealed trait SumAggregation extends SingleElasticAggregation with HasMissing[SumAggregation] with WithAgg
++
++private[elasticsearch] final case class Sum(name: String, field: String, missing: Option[Double])
++    extends SumAggregation { self =>
++  def missing(value: Double): SumAggregation =
++    self.copy(missing = Some(value))
++
++  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
++    multipleAggregations.aggregations(self, agg)
++
++  private[elasticsearch] def toJson: Json = {
++    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
++
++    Obj(name -> Obj("sum" -> (Obj("field" -> field.toJson) merge missingJson)))
++  }
++}
++
+ sealed trait BucketSelectorAggregation extends SingleElasticAggregation with WithAgg
+ 
+ private[elasticsearch] final case class BucketSelector(name: String, script: Script, bucketsPath: Map[String, String])
+@@ -62,6 +79,7 @@ sealed trait BucketSortAggregation extends SingleElasticAggregation with HasSize
+ 
+   /**
+    * Sets the sorting criteria for the [[zio.elasticsearch.aggregation.BucketSortAggregation]].
++   *
+    * @param sort
+    *   required [[zio.elasticsearch.query.sort.Sort]] object that define the sorting criteria
+    * @param sorts
+diff --git a/modules/library/src/main/scala/zio/elasticsearch/executor/response/AggregationResponse.scala b/modules/library/src/main/scala/zio/elasticsearch/executor/response/AggregationResponse.scala
+index f4ee9f7..ae1dc8a 100644
+--- a/modules/library/src/main/scala/zio/elasticsearch/executor/response/AggregationResponse.scala
++++ b/modules/library/src/main/scala/zio/elasticsearch/executor/response/AggregationResponse.scala
+@@ -17,13 +17,7 @@
+ package zio.elasticsearch.executor.response
+ 
+ import zio.Chunk
+-import zio.elasticsearch.result.{
+-  AggregationResult,
+-  CardinalityAggregationResult,
+-  MaxAggregationResult,
+-  TermsAggregationBucketResult,
+-  TermsAggregationResult
+-}
++import zio.elasticsearch.result._
+ import zio.json.ast.Json
+ import zio.json.ast.Json.Obj
+ import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
+@@ -33,6 +27,8 @@ sealed trait AggregationResponse
+ object AggregationResponse {
+   private[elasticsearch] def toResult(aggregationResponse: AggregationResponse): AggregationResult =
+     aggregationResponse match {
++      case SumAggregationResponse(value) =>
++        SumAggregationResult(value)
+       case CardinalityAggregationResponse(value) =>
+         CardinalityAggregationResult(value)
+       case MaxAggregationResponse(value) =>
+@@ -54,6 +50,12 @@ object AggregationResponse {
+     }
+ }
+ 
++private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
++
++private[elasticsearch] object SumAggregationResponse {
++  implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
++}
++
+ private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
+ 
+ private[elasticsearch] object CardinalityAggregationResponse {
+diff --git a/modules/library/src/main/scala/zio/elasticsearch/executor/response/SearchWithAggregationsResponse.scala b/modules/library/src/main/scala/zio/elasticsearch/executor/response/SearchWithAggregationsResponse.scala
+index c8ec207..a39b4a2 100644
+--- a/modules/library/src/main/scala/zio/elasticsearch/executor/response/SearchWithAggregationsResponse.scala
++++ b/modules/library/src/main/scala/zio/elasticsearch/executor/response/SearchWithAggregationsResponse.scala
+@@ -72,6 +72,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
+               res.fields.map { case (field, data) =>
+                 ZValidation.fromEither(
+                   (field: @unchecked) match {
++                    case str if str.contains("sum#") =>
++                      SumAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                     case str if str.contains("max#") =>
+                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                     case str if str.contains("cardinality#") =>
+diff --git a/modules/library/src/main/scala/zio/elasticsearch/result/AggregationResult.scala b/modules/library/src/main/scala/zio/elasticsearch/result/AggregationResult.scala
+index 051fef5..9790c92 100644
+--- a/modules/library/src/main/scala/zio/elasticsearch/result/AggregationResult.scala
++++ b/modules/library/src/main/scala/zio/elasticsearch/result/AggregationResult.scala
+@@ -22,6 +22,8 @@ import scala.util.{Failure, Success, Try}
+ 
+ sealed trait AggregationResult
+ 
++final case class SumAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
++
+ final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
+ 
+ final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+@@ -45,6 +47,7 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
+           case Failure(_)   => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+           case Success(agg) => Right(Some(agg))
+         }
+-      case None => Right(None)
++      case None =>
++        Right(None)
+     }
+ }
+diff --git a/modules/library/src/test/scala/zio/elasticsearch/ElasticAggregationSpec.scala b/modules/library/src/test/scala/zio/elasticsearch/ElasticAggregationSpec.scala
+index f43b304..8d72d26 100644
+--- a/modules/library/src/test/scala/zio/elasticsearch/ElasticAggregationSpec.scala
++++ b/modules/library/src/test/scala/zio/elasticsearch/ElasticAggregationSpec.scala
+@@ -15,6 +15,19 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
+   def spec: Spec[TestEnvironment, Any] =
+     suite("ElasticAggregation")(
+       suite("constructing")(
++        test("sum") {
++          val aggregation            = sumAggregation("aggregation", "testField")
++          val aggregationTs          = sumAggregation("aggregation", TestSubDocument.intField)
++          val aggregationTsRaw       = sumAggregation("aggregation", TestSubDocument.intField.raw)
++          val aggregationWithMissing = sumAggregation("aggregation", TestSubDocument.intField).missing(20.0)
++
++          assert(aggregation)(equalTo(Sum(name = "aggregation", field = "testField", missing = None))) &&
++          assert(aggregationTs)(equalTo(Sum(name = "aggregation", field = "intField", missing = None))) &&
++          assert(aggregationTsRaw)(equalTo(Sum(name = "aggregation", field = "intField.raw", missing = None))) &&
++          assert(aggregationWithMissing)(
++            equalTo(Sum(name = "aggregation", field = "intField", missing = Some(20.0)))
++          )
++        },
+         test("bucketSelector") {
+           val aggregation1 = bucketSelectorAggregation(
+             name = "aggregation",
+@@ -329,6 +342,49 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
+         }
+       ),
+       suite("encoding as JSON")(
++        test("sum") {
++          val aggregation            = sumAggregation("aggregation", "testField")
++          val aggregationTs          = sumAggregation("aggregation", TestDocument.intField)
++          val aggregationWithMissing = sumAggregation("aggregation", TestDocument.intField).missing(20.0)
++
++          val expected =
++            """
++              |{
++              |  "aggregation": {
++              |    "sum": {
++              |      "field": "testField"
++              |    }
++              |  }
++              |}
++              |""".stripMargin
++
++          val expectedTs =
++            """
++              |{
++              |  "aggregation": {
++              |    "sum": {
++              |      "field": "intField"
++              |    }
++              |  }
++              |}
++              |""".stripMargin
++
++          val expectedWithMissing =
++            """
++              |{
++              |  "aggregation": {
++              |    "sum": {
++              |      "field": "intField",
++              |      "missing": 20.0
++              |    }
++              |  }
++              |}
++              |""".stripMargin
++
++          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
++          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
++          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
++        },
+         test("bucketSelector") {
+           val aggregation1 = bucketSelectorAggregation(
+             name = "aggregation",
