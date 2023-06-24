@@ -103,6 +103,18 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.SumAggregationResult]].
+     */
+    def asSumAggregation(name: String): RIO[R, Option[SumAggregationResult]] =
+      aggregationAs[SumAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.MinAggregationResult]].
      */
     def asMinAggregation(name: String): RIO[R, Option[MinAggregationResult]] =

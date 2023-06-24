@@ -43,6 +43,7 @@ module.exports = {
                     'overview/aggregations/elastic_aggregation_max',
                     'overview/aggregations/elastic_aggregation_min',
                     'overview/aggregations/elastic_aggregation_terms',
+                    'overview/aggregations/elastic_aggregation_sum',
                 ],
             },
             {

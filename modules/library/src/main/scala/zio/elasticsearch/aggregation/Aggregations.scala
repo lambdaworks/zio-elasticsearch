@@ -199,6 +199,23 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
     aggregations.map(_.toJson).reduce(_ merge _)
 }
 
+sealed trait SumAggregation extends SingleElasticAggregation with HasMissing[SumAggregation] with WithAgg
+
+private[elasticsearch] final case class Sum(name: String, field: String, missing: Option[Double])
+    extends SumAggregation { self =>
+  def missing(value: Double): SumAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("sum" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait TermsAggregation
     extends SingleElasticAggregation
     with HasOrder[TermsAggregation]
