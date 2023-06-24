@@ -177,8 +177,6 @@ object ElasticAggregation {
    * aggregation name
    * @param field
    * the type-safe field for which missing aggregation will be executed
-   * @tparam A
-   * expected number type
    * @return
    * an instance of [[zio.elasticsearch.aggregation.MissingAggregation]] that represents missing aggregation to be
    * performed.
