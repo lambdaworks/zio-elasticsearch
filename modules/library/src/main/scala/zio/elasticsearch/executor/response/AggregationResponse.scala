@@ -35,6 +35,8 @@ object AggregationResponse {
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>
         MinAggregationResult(value)
+      case MissingAggregationResponse(value) =>
+        MissingAggregationResult(value)
       case SumAggregationResponse(value) =>
         SumAggregationResult(value)
       case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
@@ -77,6 +79,13 @@ private[elasticsearch] final case class MinAggregationResponse(value: Double) ex
 
 private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
+}
+
+private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Int)
+  extends AggregationResponse
+
+private[elasticsearch] object MissingAggregationResponse {
+  implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
 }
 
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
