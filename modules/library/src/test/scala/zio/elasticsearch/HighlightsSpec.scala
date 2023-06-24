@@ -12,47 +12,60 @@ import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
 object HighlightsSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("Highlight")(
-      suite("creating Highlight")(
-        test("successfully create Highlight with only field given without config") {
-          assert(highlight("day_of_week"))(
+      suite("constructing")(
+        test("highlight") {
+          val highlightObject = highlight(field = "day_of_week")
+          val highlightWithGlobalConfig =
+            highlight(field = "day_of_week").withGlobalConfig(field = "type", Str("plain"))
+          val highlightWithHighlight = highlight(field = "day_of_week").withHighlight(field = "first_name")
+          val highlightWithMap = highlight(
+            field = "day_of_week",
+            config = Map("type" -> Str("plain"))
+          )
+          val highlightWithMapAndGlobalConfig = highlight(
+            field = "day_of_week",
+            config = Map("type" -> Str("plain"))
+          ).withGlobalConfig(field = "pre_tags", Arr(Str("<tag1>")))
+          val highlightOfStringField = highlight(field = TestSubDocument.stringField)
+          val highlightOfStringFieldWithHighlight =
+            highlight(field = TestSubDocument.stringField).withHighlight(TestSubDocument.intField)
+          val highlightOfStringFieldWithGlobalConfig =
+            highlight(field = TestSubDocument.stringField).withGlobalConfig("type", value = Str("plain"))
+          val highlightOfNestedFieldWithGlobalConfig = highlight(field =
+            TestSubDocument.nestedField / TestNestedField.stringField
+          ).withGlobalConfig("type", value = Str("plain"))
+
+          assert(highlightObject)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week"))
               )
             )
-          )
-        },
-        test("successfully create Highlight with two fields given without config") {
-          assert(highlight("day_of_week").withHighlight("first_name"))(
+          ) &&
+          assert(highlightWithHighlight)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("first_name"), HighlightField("day_of_week"))
               )
             )
-          )
-        },
-        test("successfully create Highlight with only one field given with global config") {
-          assert(highlight("day_of_week").withGlobalConfig("type", Str("plain")))(
+          ) &&
+          assert(highlightWithGlobalConfig)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week")),
                 config = Map("type" -> Str("plain"))
               )
             )
-          )
-        },
-        test("successfully create Highlight with only one field given with field config") {
-          assert(highlight("day_of_week", Map("type" -> Str("plain"))))(
+          ) &&
+          assert(highlightWithMap)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week", Map("type" -> Str("plain"))))
               )
             )
-          )
-        },
-        test("successfully create Highlight with only field given with both global and field config") {
+          ) &&
           assert(
-            highlight("day_of_week", Map("type" -> Str("plain"))).withGlobalConfig("pre_tags", Arr(Str("<tag1>")))
+            highlightWithMapAndGlobalConfig
           )(
             equalTo(
               Highlights(
@@ -60,31 +73,23 @@ object HighlightsSpec extends ZIOSpecDefault {
                 config = Map("pre_tags" -> Arr(Str("<tag1>")))
               )
             )
-          )
-        }
-      ),
-      suite("creating Highlight using accessors from Schema")(
-        test("successfully create Highlight with only field given without config") {
-          assert(highlight(TestSubDocument.stringField))(
+          ) &&
+          assert(highlightOfStringField)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("stringField"))
               )
             )
-          )
-        },
-        test("successfully create Highlight with two fields given without config") {
-          assert(highlight(TestSubDocument.stringField).withHighlight(TestSubDocument.intField))(
+          ) &&
+          assert(highlightOfStringFieldWithHighlight)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("intField"), HighlightField("stringField"))
               )
             )
-          )
-        },
-        test("successfully create Highlight with nested field ") {
+          ) &&
           assert(
-            highlight(TestSubDocument.nestedField / TestNestedField.stringField).withGlobalConfig("type", Str("plain"))
+            highlightOfNestedFieldWithGlobalConfig
           )(
             equalTo(
               Highlights(
@@ -92,10 +97,8 @@ object HighlightsSpec extends ZIOSpecDefault {
                 config = Map("type" -> Str("plain"))
               )
             )
-          )
-        },
-        test("successfully create Highlight with one field given with global config") {
-          assert(highlight(TestSubDocument.stringField).withGlobalConfig("type", Str("plain")))(
+          ) &&
+          assert(highlightOfStringFieldWithGlobalConfig)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("stringField")),
@@ -103,11 +106,45 @@ object HighlightsSpec extends ZIOSpecDefault {
               )
             )
           )
+
         }
       ),
-      suite("encoding Highlight as JSON")(
-        test("properly encode Highlight with only field given without config") {
-          val highlightObject = highlight("day_of_week")
+      suite("encoding  as JSON")(
+        test("highlight") {
+          val highlightObject        = highlight(field = "day_of_week")
+          val highlightWithHighlight = highlight(field = "day_of_week").withHighlight(field = "first_name")
+          val highlightWithHighlightAndGlobalConfig = highlight(field = "day_of_week")
+            .withHighlight(field = "first_name")
+            .withGlobalConfig(field = "type", Str("plain"))
+          val highlightWithMap =
+            highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
+              .withGlobalConfig("type", Str("plain"))
+          val highlightWithMapAndHighlight =
+            highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
+              .withGlobalConfig("type", Str("plain"))
+              .withHighlight(
+                "first_name",
+                Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
+              )
+          val highlightWithMapHighlightAndExplicitFieldOrder =
+            highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
+              .withGlobalConfig("type", Str("plain"))
+              .withHighlight(
+                "first_name",
+                Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
+              )
+              .withExplicitFieldOrder
+          val highlightWithMultipleGlobalConfig =
+            highlight("day_of_week", Map("require_field_match" -> Bool(false)))
+              .withGlobalConfig("type", Str("plain"))
+              .withGlobalConfig("type", Str("fvh"))
+              .withGlobalConfig("fragment_size", Num(150))
+              .withHighlight(
+                field = "first_name",
+                config = Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
+              )
+              .withHighlight("last_name")
+
           val expected =
             """
               |{
@@ -116,12 +153,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Highlight with two fields given without config") {
-          val highlightObject = highlight("day_of_week").withHighlight("first_name")
-          val expected =
+          val expectedWithFirstName =
             """
               |{
               |  "fields" : {
@@ -130,13 +162,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Highlight with two fields given with global config") {
-          val highlightObject =
-            highlight("day_of_week").withHighlight("first_name").withGlobalConfig("type", Str("plain"))
-          val expected =
+          val expectedPlainWithFirstName =
             """
               |{
               |  "type" : "plain",
@@ -146,14 +172,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Highlight with one field given with both global and field config") {
-          val highlightObject =
-            highlight("day_of_week", config = Map("require_field_match" -> Bool(false)))
-              .withGlobalConfig("type", Str("plain"))
-          val expected =
+          val expectedPlainWithRequiredFieldMatch =
             """
               |{
               |  "type" : "plain",
@@ -164,18 +183,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Highlight with two fields given with both having global and field config") {
-          val highlightObject =
-            highlight("day_of_week", Map("require_field_match" -> Bool(false)))
-              .withGlobalConfig("type", Str("plain"))
-              .withHighlight(
-                "first_name",
-                Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
-              )
-          val expected =
+          val expectedPlainWithMatchedFields =
             """
               |{
               |  "type" : "plain",
@@ -190,21 +198,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
-        },
-        test(
-          "properly encode Highlight with two fields given with both having global and field config and explicit order"
-        ) {
-          val highlightObject =
-            highlight("day_of_week", Map("require_field_match" -> Bool(false)))
-              .withGlobalConfig("type", Str("plain"))
-              .withHighlight(
-                "first_name",
-                Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
-              )
-              .withExplicitFieldOrder
-          val expected =
+          val expectedPlainWithArrayOfFields =
             """
               |{
               |  "type" : "plain",
@@ -221,21 +215,7 @@ object HighlightsSpec extends ZIOSpecDefault {
               |  ]
               |}
               |""".stripMargin
-
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
-        },
-        test("properly encode Highlight with three fields and multiple configurations") {
-          val highlightObject =
-            highlight("day_of_week", Map("require_field_match" -> Bool(false)))
-              .withGlobalConfig("type", Str("plain"))
-              .withGlobalConfig("type", Str("fvh"))
-              .withGlobalConfig("fragment_size", Num(150))
-              .withHighlight(
-                field = "first_name",
-                config = Map("matched_fields" -> Arr(Str("comment"), Str("comment.plain")), "type" -> Str("fvh"))
-              )
-              .withHighlight("last_name")
-          val expected =
+          val expectedFvhType =
             """
               |{
               |  "type" : "fvh",
@@ -253,7 +233,31 @@ object HighlightsSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(highlightObject.toJson)(equalTo(expected.toJson))
+          assert(highlightObject.toJson)(
+            equalTo(
+              expected.toJson
+            )
+          ) &&
+          assert(highlightWithHighlight.toJson)(
+            equalTo(
+              expectedWithFirstName.toJson
+            )
+          ) &&
+          assert(highlightWithHighlightAndGlobalConfig.toJson)(
+            equalTo(
+              expectedPlainWithFirstName.toJson
+            )
+          ) &&
+          assert(highlightWithMap.toJson)(
+            equalTo(expectedPlainWithRequiredFieldMatch.toJson)
+          ) &&
+          assert(highlightWithMapAndHighlight.toJson)(equalTo(expectedPlainWithMatchedFields.toJson)) &&
+          assert(highlightWithMapHighlightAndExplicitFieldOrder.toJson)(
+            equalTo(expectedPlainWithArrayOfFields.toJson)
+          ) &&
+          assert(highlightWithMultipleGlobalConfig.toJson)(
+            equalTo(expectedFvhType.toJson)
+          )
         }
       )
     )
