@@ -120,6 +120,9 @@ package object elasticsearch extends IndexNameNewtype with RoutingNewtype {
     def asMinAggregation(name: String): RIO[R, Option[MinAggregationResult]] =
       aggregationAs[MinAggregationResult](name)
 
+    // TODO asRangeAggregation
+    // TODO asKeyedRangeAggregation
+
     /**
      * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
      *
