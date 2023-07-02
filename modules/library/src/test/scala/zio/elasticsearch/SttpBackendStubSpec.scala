@@ -4,6 +4,7 @@ import sttp.client3.httpclient.zio.HttpClientZioBackend
 import sttp.client3.testing.SttpBackendStub
 import sttp.client3.{Request, Response, StringBody}
 import sttp.model.{Method, StatusCode}
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
 import zio.test.ZIOSpecDefault
@@ -42,7 +43,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       intField = 10,
       doubleField = 10.0,
       booleanField = true,
-      locationField = Location(1.0, 1.0)
+      geoPointField = GeoPoint(1.0, 1.0)
     )
 
   val secondDoc: TestDocument =
@@ -53,7 +54,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       intField = 12,
       doubleField = 12.0,
       booleanField = true,
-      locationField = Location(1.0, 1.0)
+      geoPointField = GeoPoint(1.0, 1.0)
     )
 
   private val url = "http://localhost:9200"
@@ -205,7 +206,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |    "intField": 10,
         |    "doubleField": 10.0,
         |    "booleanField": true,
-        |    "locationField": {
+        |    "geoPointField": {
         |      "lat": 1.0,
         |      "lon": 1.0
         |    }
@@ -256,7 +257,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          "intField": 10,
         |          "doubleField": 10.0,
         |          "booleanField": true,
-        |          "locationField": {
+        |          "geoPointField": {
         |            "lat": 1.0,
         |            "lon": 1.0
         |          }
@@ -310,7 +311,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          "intField": 10,
         |          "doubleField": 10.0,
         |          "booleanField": true,
-        |          "locationField": {
+        |          "geoPointField": {
         |            "lat": 1.0,
         |            "lon": 1.0
         |          }

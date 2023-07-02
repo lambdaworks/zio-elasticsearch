@@ -22,6 +22,7 @@ import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.aggregation.AggregationOrder
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
@@ -29,7 +30,7 @@ import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result._
 import zio.elasticsearch.script.{Painless, Script}
@@ -1760,7 +1761,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   |{
                   |  "mappings": {
                   |      "properties": {
-                  |        "locationField": {
+                  |        "geoPointField": {
                   |          "type": "geo_point"
                   |      }
                   |    }
@@ -1774,30 +1775,20 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.create[TestDocument](geoDistanceIndex, document).refreshTrue
                      )
-                r1 <- Executor
-                        .execute(
-                          ElasticRequest.search(
-                            geoDistanceIndex,
-                            ElasticQuery
-                              .geoDistance("locationField", document.locationField.lat, document.locationField.lon)
-                              .distance(300, Kilometers)
-                          )
-                        )
-                        .documentAs[TestDocument]
-                r2 <-
-                  Executor
-                    .execute(
-                      ElasticRequest.search(
-                        geoDistanceIndex,
-                        ElasticQuery
-                          .geoDistance("locationField", s"${document.locationField.lat}, ${document.locationField.lon}")
-                          .distance(300, Kilometers)
-                      )
-                    )
-                    .documentAs[TestDocument]
-              } yield assert(r1 ++ r2)(
-                equalTo(Chunk(document, document))
-              )
+                result <- Executor
+                            .execute(
+                              ElasticRequest.search(
+                                geoDistanceIndex,
+                                ElasticQuery
+                                  .geoDistance(
+                                    "geoPointField",
+                                    GeoPoint(document.geoPointField.lat, document.geoPointField.lon),
+                                    Distance(300, Kilometers)
+                                  )
+                              )
+                            )
+                            .documentAs[TestDocument]
+              } yield assert(result)(equalTo(Chunk(document)))
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
         ),

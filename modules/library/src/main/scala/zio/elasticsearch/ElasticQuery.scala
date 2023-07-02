@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
 import zio.schema.Schema
@@ -176,25 +177,22 @@ object ElasticQuery {
    * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
-   *   the type-safe field for which query is specified for
-   * @param longitude
-   *   longitude of the desired point
-   * @param latitude
-   *   latitude of the desired point
+   *   the type-safe GeoPoint field for which the query is specified
+   * @param point
+   *   the geo-point from which the distance should be measured
+   * @param distance
+   *   the distance within which values should be matched
    * @tparam S
-   *   document for which field query is executed
+   *   the type of document on which the query is defined
    * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents the `geo_distance` query to be
+   *   performed.
    */
-  final def geoDistance[S](
-    field: Field[S, _],
-    latitude: Double,
-    longitude: Double
-  ): GeoDistanceQuery[S] =
+  final def geoDistance[S](field: Field[S, GeoPoint], point: GeoPoint, distance: Distance): GeoDistanceQuery[S] =
     GeoDistance(
       field = field.toString,
-      point = s"$latitude,$longitude",
-      distance = None,
+      point = s"${point.lat},${point.lon}",
+      distance = distance,
       distanceType = None,
       queryName = None,
       validationMethod = None
@@ -204,19 +202,20 @@ object ElasticQuery {
    * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
-   *   the field for which query is specified for
-   * @param longitude
-   *   longitude of the desired point
-   * @param latitude
-   *   latitude of the desired point
+   *   the field for which the query is specified
+   * @param point
+   *   the geo-point from which the distance should be measured
+   * @param distance
+   *   the distance within which values should be matched
    * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents the `geo_distance` query to be
+   *   performed.
    */
-  final def geoDistance(field: String, latitude: Double, longitude: Double): GeoDistanceQuery[Any] =
+  final def geoDistance(field: String, point: GeoPoint, distance: Distance): GeoDistanceQuery[Any] =
     GeoDistance(
       field = field,
-      point = s"$latitude,$longitude",
-      distance = None,
+      point = s"${point.lat},${point.lon}",
+      distance = distance,
       distanceType = None,
       queryName = None,
       validationMethod = None
@@ -226,20 +225,22 @@ object ElasticQuery {
    * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
-   *   the type-safe field for which query is specified for
-   * @param coordinates
-   *   longitude and latitude the of the desired point written as string (e.g. "40,31") or geo hash (e.g.
-   *   "drm3btev3e86")
+   *   the type-safe field for which the query is specified
+   * @param point
+   *   the geo-point from which the distance should be measured, defined as geo-hash
+   * @param distance
+   *   the distance within which values should be matched
    * @tparam S
-   *   document for which field query is executed
+   *   the type of document on which the query is defined
    * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents the `geo_distance` query to be
+   *   performed.
    */
-  final def geoDistance[S](field: Field[S, _], coordinates: String): GeoDistanceQuery[S] =
+  final def geoDistance[S](field: Field[S, GeoPoint], point: GeoHash, distance: Distance): GeoDistanceQuery[S] =
     GeoDistance(
       field = field.toString,
-      point = coordinates,
-      distance = None,
+      point = GeoHash.unwrap(point),
+      distance = distance,
       distanceType = None,
       queryName = None,
       validationMethod = None
@@ -249,17 +250,20 @@ object ElasticQuery {
    * Constructs an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
-   *   the field for which query is specified for
-   * @param coordinates
-   *   longitude and latitude of the desired point written as string (e.g. "40,31") or geo hash (e.g. "drm3btev3e86")
+   *   the field for which the query is specified
+   * @param point
+   *   the geo-point from which the distance should be measured, defined as geo-hash
+   * @param distance
+   *   the distance within which values should be matched
    * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents `geo_distance` query to be performed.
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] that represents the `geo_distance` query to be
+   *   performed.
    */
-  final def geoDistance(field: String, coordinates: String): GeoDistanceQuery[Any] =
+  final def geoDistance(field: String, point: GeoHash, distance: Distance): GeoDistanceQuery[Any] =
     GeoDistance(
       field = field,
-      point = coordinates,
-      distance = None,
+      point = GeoHash.unwrap(point),
+      distance = distance,
       distanceType = None,
       queryName = None,
       validationMethod = None
