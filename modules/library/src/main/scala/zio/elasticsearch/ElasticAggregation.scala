@@ -17,7 +17,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
-import zio.elasticsearch.aggregation._
+import zio.elasticsearch.aggregation.{Range => IRange, SingleRange => Range, _}
 import zio.elasticsearch.script.Script
 
 object ElasticAggregation {
@@ -177,6 +177,34 @@ object ElasticAggregation {
    */
   final def multipleAggregations: MultipleAggregations =
     Multiple(aggregations = Chunk.empty)
+
+  // TODO: Add docs
+  final def rangeAggregation[A: Numeric](
+    name: String,
+    field: Field[_, A],
+    range: Range,
+    ranges: Range*
+  ): RangeAggregation =
+    IRange(
+      name = name,
+      field = field.toString,
+      ranges = Chunk.fromIterable(ranges.prepended(range)),
+      keyed = None
+    )
+
+  // TODO: Add docs
+  final def rangeAggregation(
+    name: String,
+    field: String,
+    range: Range,
+    ranges: Range*
+  ): RangeAggregation =
+    IRange(
+      name = name,
+      field = field,
+      ranges = Chunk.fromIterable(ranges.prepended(range)),
+      keyed = None
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.

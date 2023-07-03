@@ -212,6 +212,73 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("range") {
+          val aggregationTo   = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
+          val aggregationFrom = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
+          val aggregationFromTo =
+            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0)).keyed(false)
+          val aggregationKeyed = rangeAggregation("aggregation4", "testField", SingleRange.to(139)).keyed(true)
+          val aggregationMultiple = rangeAggregation(
+            "aggregation5",
+            "testField",
+            SingleRange.to(23.9),
+            SingleRange.from(3).key("secondKey"),
+            SingleRange.to(12).from(0).key("thirdKey")
+          ).keyed(true)
+
+          assert(aggregationTo)(
+            equalTo(
+              Range(
+                "aggregation1",
+                "testField",
+                Chunk.from(List(SingleRange(from = None, to = Some(23.9), key = None))),
+                None
+              )
+            )
+          ) && assert(aggregationFrom)(
+            equalTo(
+              Range(
+                "aggregation2",
+                "testField",
+                Chunk.from(List(SingleRange(from = Some(2), to = None, key = None))),
+                None
+              )
+            )
+          ) && assert(aggregationFromTo)(
+            equalTo(
+              Range(
+                "aggregation3",
+                "testField",
+                Chunk.from(List(SingleRange(from = Some(4), to = Some(344.0), key = None))),
+                Some(false)
+              )
+            )
+          ) && assert(aggregationKeyed)(
+            equalTo(
+              Range(
+                "aggregation4",
+                "testField",
+                Chunk.from(List(SingleRange(from = None, to = Some(139), key = None))),
+                Some(true)
+              )
+            )
+          ) && assert(aggregationMultiple)(
+            equalTo(
+              Range(
+                "aggregation5",
+                "testField",
+                Chunk.from(
+                  List(
+                    SingleRange(from = None, to = Some(23.9), key = None),
+                    SingleRange(from = Some(3), to = None, key = Some("secondKey")),
+                    SingleRange(from = Some(0), to = Some(12), key = Some("thirdKey"))
+                  )
+                ),
+                Some(true)
+              )
+            )
+          )
+        },
         test("subAggregation") {
           val aggregation1 = termsAggregation(name = "first", field = TestDocument.stringField).withSubAgg(
             termsAggregation(name = "second", field = TestSubDocument.stringField.raw)
@@ -712,6 +779,97 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
 
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
+        },
+        test("range") {
+          val aggregationTo   = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
+          val aggregationFrom = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
+          val aggregationFromTo =
+            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0)).keyed(false)
+          val aggregationKeyed = rangeAggregation("aggregation4", "testField", SingleRange.to(139)).keyed(true)
+          val aggregationMultiple = rangeAggregation(
+            "aggregation5",
+            "testField",
+            SingleRange.to(23.9),
+            SingleRange.from(3).key("secondKey"),
+            SingleRange.to(12).from(0).key("thirdKey")
+          ).keyed(true)
+
+          val expectedTo =
+            """
+              |{
+              |  "aggregation1": {
+              |    "range": {
+              |      "field": "testField",
+              |      "ranges": [
+              |        { "to": 23.9 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedFrom =
+            """
+              |{
+              |  "aggregation2": {
+              |    "range": {
+              |      "field": "testField",
+              |      "ranges": [
+              |        { "from": 2.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedFromTo =
+            """
+              |{
+              |  "aggregation3": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": false,
+              |      "ranges": [
+              |        { "from": 4.0, "to": 344.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedKeyed =
+            """
+              |{
+              |  "aggregation4": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": true,
+              |      "ranges": [
+              |        { "to": 139.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedMultiple =
+            """
+              |{
+              |  "aggregation5": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": true,
+              |      "ranges": [
+              |        { "to": 23.9 },
+              |        { "key": "secondKey", "from": 3.0 },
+              |        { "key": "thirdKey", "from": 0.0, "to": 12.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregationTo.toJson)(equalTo(expectedTo.toJson)) &&
+          assert(aggregationFrom.toJson)(equalTo(expectedFrom.toJson)) &&
+          assert(aggregationFromTo.toJson)(equalTo(expectedFromTo.toJson)) &&
+          assert(aggregationKeyed.toJson)(equalTo(expectedKeyed.toJson)) &&
+          assert(aggregationMultiple.toJson)(equalTo(expectedMultiple.toJson))
         },
         test("subAggregation") {
           val aggregation =

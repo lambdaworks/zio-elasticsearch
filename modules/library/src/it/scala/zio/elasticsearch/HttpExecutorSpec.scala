@@ -151,6 +151,38 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("aggregate using range aggregation") {
+
+            // TODO
+
+            val expectedResponse = ("aggregationInt", MinAggregationResult(value = 23.0))
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 200))
+                  )
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 23))
+                      .refreshTrue
+                  )
+                  aggregation = minAggregation(name = "aggregationInt", field = TestDocument.intField)
+                  aggsRes <- Executor
+                    .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                    .asMinAggregation("aggregationInt")
+                } yield assert(aggsRes.head.value)(equalTo(23.0))
+            }
+
+
+
+
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using sum aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
