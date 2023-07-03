@@ -170,6 +170,35 @@ object ElasticAggregation {
     Min(name = name, field = field, missing = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which missing aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.MissingAggregation]] that represents missing aggregation to be
+   *   performed.
+   */
+  final def missingAggregation(name: String, field: Field[_, String]): MissingAggregation =
+    Missing(name = name, field = field.toString)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which missing aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.MissingAggregation]] that represents missing aggregation to be
+   *   performed.
+   */
+  final def missingAggregation(name: String, field: String): MissingAggregation =
+    Missing(name = name, field = field)
+
+  /**
    * Constructs an empty instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]].
    *
    * @return

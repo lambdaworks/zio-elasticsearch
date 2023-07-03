@@ -174,6 +174,17 @@ private[elasticsearch] final case class Min(name: String, field: String, missing
   }
 }
 
+sealed trait MissingAggregation extends SingleElasticAggregation with WithAgg
+
+private[elasticsearch] final case class Missing(name: String, field: String) extends MissingAggregation { self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json =
+    Obj(name -> Obj("missing" -> Obj("field" -> field.toJson)))
+}
+
 sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
 
   /**

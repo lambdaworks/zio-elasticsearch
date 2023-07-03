@@ -154,6 +154,15 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(Min(name = "aggregation", field = "intField", missing = Some(20.0)))
           )
         },
+        test("missing") {
+          val aggregation      = missingAggregation("aggregation", "testField")
+          val aggregationTs    = missingAggregation("aggregation", TestSubDocument.stringField)
+          val aggregationTsRaw = missingAggregation("aggregation", TestSubDocument.stringField.raw)
+
+          assert(aggregation)(equalTo(Missing(name = "aggregation", field = "testField"))) &&
+          assert(aggregationTs)(equalTo(Missing(name = "aggregation", field = "stringField"))) &&
+          assert(aggregationTsRaw)(equalTo(Missing(name = "aggregation", field = "stringField.raw")))
+        },
         test("multiple") {
           val aggregation =
             multipleAggregations.aggregations(
@@ -649,6 +658,35 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
+        test("missing") {
+          val aggregation   = missingAggregation("aggregation", "testField")
+          val aggregationTs = missingAggregation("aggregation", TestDocument.stringField)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "missing": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "missing": {
+              |      "field": "stringField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson))
         },
         test("multiple") {
           val aggregation =
