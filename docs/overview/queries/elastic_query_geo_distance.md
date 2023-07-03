@@ -11,50 +11,48 @@ import zio.elasticsearch.query.GeoDistanceQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-You can create a `GeoDistance` query using the `geoDistance` method with latitude and longitude in the following manner:
+You can create a `GeoDistance` query using the `geoDistance` method with a `GeoPoint` in the following manner:
 ```scala
-val query: GeoDistanceQuery = geoDistance(field = "location", latitude = 20.0, longitude = 20.0)
+val query: GeoDistanceQuery =
+  geoDistance(field = "location", point = GeoPoint(20.0, 20.0), distance = Distance(200, Kilometers))
 ```
 
 You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `GeoDistance` query using the `geoDistance` method with latitude and longitude in the following manner:
 ```scala
-val query: GeoDistanceQuery = geoDistance(field = Document.location, latitude = 20.0, longitude = 20.0)
+val query: GeoDistanceQuery =
+  geoDistance(field = Document.location, point = GeoPoint(20.0, 20.0), distance = Distance(200, Kilometers))
 ```
 
-You can create a `GeoDistance` query using the `geoDistance` method with coordinates in the following manner:
-```scala
-val query: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31")
-```
-
-You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `GeoDistance` query using the `geoDistance` method with coordinates in the following manner:
-```scala
-val query: GeoDistanceQuery = geoDistance(field = Document.location, coordinates = "40,31")
-```
-
-If you want to change the `distance`, you can use `distance` method:
-```scala
-import zio.elasticsearch.query.DistanceUnit
-
-val queryWithDistance: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31").distance(value = 20.0, unit = DistanceUnit.Kilometers)
-```
-
-If you want to change the `distance_type`, you can use `distanceType` method:
+If you want to specify the `distance_type`, you can use the `distanceType` method:
 ```scala
 import zio.elasticsearch.query.DistanceType
 
-val queryWithDistanceType: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31").distanceType(value = DistanceType.Plane)
+val queryWithDistanceType: GeoDistanceQuery = 
+  geoDistance(field = "location", point = GeoPoint(20.0, 20.0), distance = Distance(200, Kilometers))
+    .distanceType(value = DistanceType.Plane)
 ```
 
-If you want to change the `_name`, you can use `name` method:
+If you want to specify a query name, you can use the `name` method:
 ```scala
-val queryWithName: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31").name("name")
+val queryWithName: GeoDistanceQuery =
+  geoDistance(field = "location", point = GeoPoint(20.0, 20.0), distance = Distance(200, Kilometers)).name("name")
 ```
 
-If you want to change the `validation_method`, you can use `validationMethod` method:
+If you want to specify the `validation_method`, you can use the `validationMethod` method:
 ```scala
 import zio.elasticsearch.query.ValidationMethod
 
-val queryWithValidationMethod: GeoDistanceQuery = geoDistance(field = "location", coordinates = "40,31").validationMethod(value = ValidationMethod.IgnoreMalformed)
+val queryWithValidationMethod: GeoDistanceQuery =
+  geoDistance(field = "location", point = GeoPoint(20.0, 20.0), distance = Distance(200, Kilometers))
+    .validationMethod(value = ValidationMethod.IgnoreMalformed)
+```
+
+You can also specify the point as a geo-hash:
+```scala
+import zio.elasticsearch.query.ValidationMethod
+
+val queryWithValidationMethod: GeoDistanceQuery =
+  geoDistance(field = "location", point = GeoHash("drm3btev3e86"), distance = Distance(200, Kilometers))
 ```
 
 You can find more information about `GeoDistance` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-geo-distance-query.html#query-dsl-geo-distance-query).

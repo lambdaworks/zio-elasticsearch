@@ -19,6 +19,7 @@ package zio.elasticsearch
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
 import zio.test.Assertion.{containsString, hasMessage}
@@ -62,11 +63,11 @@ trait IntegrationSpec extends ZIOSpecDefault {
   def genDocumentId: Gen[Any, DocumentId] =
     Gen.stringBounded(10, 40)(Gen.alphaNumericChar).map(DocumentId(_))
 
-  def genLocation: Gen[Any, Location] =
+  def genGeoPoint: Gen[Any, GeoPoint] =
     for {
-      latField <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
-      lonField <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
-    } yield Location(lat = latField, lon = lonField)
+      latitude  <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
+      longitude <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
+    } yield GeoPoint(latitude, longitude)
 
   def genTestDocument: Gen[Any, TestDocument] = for {
     stringField     <- Gen.stringBounded(5, 10)(Gen.alphaChar)
@@ -75,7 +76,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
     intField        <- Gen.int(1, 2000)
     doubleField     <- Gen.double(100, 2000)
     booleanField    <- Gen.boolean
-    locationField   <- genLocation
+    geoPointField   <- genGeoPoint
   } yield TestDocument(
     stringField = stringField,
     dateField = dateField,
@@ -83,7 +84,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
     intField = intField,
     doubleField = doubleField,
     booleanField = booleanField,
-    locationField = locationField
+    geoPointField = geoPointField
   )
 
   def genTestSubDocument: Gen[Any, TestSubDocument] = for {

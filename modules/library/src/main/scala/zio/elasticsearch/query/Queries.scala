@@ -334,20 +334,6 @@ private[elasticsearch] final case class FunctionScore[S](
 sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 
   /**
-   * Sets the `distance` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. `Distance` represents the
-   * radius of the circle centred on the specified location. Points which fall into this circle are considered to be
-   * matches. The distance can be specified in various units. See [[zio.elasticsearch.query.DistanceUnit]].
-   *
-   * @param value
-   *   a non-negative real number used for the `distance`
-   * @param unit
-   *   the [[zio.elasticsearch.query.DistanceUnit]] in which we want to represent the distance
-   * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distance` parameter.
-   */
-  def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S]
-
-  /**
    * Sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines how to compute the
    * distance.
    *
@@ -390,14 +376,11 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 private[elasticsearch] final case class GeoDistance[S](
   field: String,
   point: String,
-  distance: Option[Distance],
+  distance: Distance,
   distanceType: Option[DistanceType],
   queryName: Option[String],
   validationMethod: Option[ValidationMethod]
 ) extends GeoDistanceQuery[S] { self =>
-
-  def distance(value: Double, unit: DistanceUnit): GeoDistanceQuery[S] =
-    self.copy(distance = Some(Distance(value, unit)))
 
   def distanceType(value: DistanceType): GeoDistanceQuery[S] = self.copy(distanceType = Some(value))
 
@@ -409,8 +392,8 @@ private[elasticsearch] final case class GeoDistance[S](
     Obj(
       "geo_distance" -> Obj(
         Chunk(
-          Some(field -> point.toJson),
-          distance.map("distance" -> _.toString.toJson),
+          Some(field      -> point.toJson),
+          Some("distance" -> distance.toString.toJson),
           distanceType.map("distance_type" -> _.toString.toJson),
           queryName.map("_name" -> _.toJson),
           validationMethod.map("validation_method" -> _.toString.toJson)

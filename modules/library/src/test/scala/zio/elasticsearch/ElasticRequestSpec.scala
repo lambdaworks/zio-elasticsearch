@@ -5,7 +5,8 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.domain.{Location, TestDocument}
+import zio.elasticsearch.data.GeoPoint
+import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.elasticsearch.query.sort.Missing.First
 import zio.elasticsearch.query.sort.SortByFieldOptions
@@ -990,9 +991,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           val expected =
             """|{ "create" : { "_index" : "index", "routing" : "routing" } }
-               |{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"locationField":{"lat":20.0,"lon":21.0}}
+               |{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0}}
                |{ "index" : { "_index" : "index", "_id" : "documentid" } }
-               |{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"locationField":{"lat":10.0,"lon":11.0}}
+               |{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0}}
                |""".stripMargin
 
           assert(requestBody)(equalTo(expected))
@@ -1037,7 +1038,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |  "intField": 5,
               |  "doubleField": 7.0,
               |  "booleanField": true,
-              |  "locationField": {
+              |  "geoPointField": {
               |    "lat": 20.0,
               |    "lon": 21.0
               |  }
@@ -1060,7 +1061,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |  "intField": 5,
               |  "doubleField": 7.0,
               |  "booleanField": true,
-              |  "locationField": {
+              |  "geoPointField": {
               |    "lat": 20.0,
               |    "lon": 21.0
               |  }
@@ -1102,7 +1103,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |  "intField": 5,
               |  "doubleField": 7.0,
               |  "booleanField": true,
-              |  "locationField": {
+              |  "geoPointField": {
               |    "lat": 20.0,
               |    "lon": 21.0
               |  }
@@ -1264,8 +1265,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |      "intField",
               |      "doubleField",
               |      "booleanField",
-              |      "locationField.lat",
-              |      "locationField.lon"
+              |      "geoPointField.lat",
+              |      "geoPointField.lon"
               |    ]
               |  }
               |}
@@ -1483,7 +1484,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "intField": 5,
               |    "doubleField": 7.0,
               |    "booleanField": true,
-              |    "locationField": {
+              |    "geoPointField": {
               |      "lat": 20.0,
               |      "lon": 21.0
               |    }
@@ -1501,7 +1502,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "intField": 5,
               |    "doubleField": 7.0,
               |    "booleanField": true,
-              |    "locationField": {
+              |    "geoPointField": {
               |      "lat": 20.0,
               |      "lon": 21.0
               |    }
@@ -1513,7 +1514,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "intField": 10,
               |    "doubleField": 17.0,
               |    "booleanField": false,
-              |    "locationField": {
+              |    "geoPointField": {
               |      "lat": 10.0,
               |      "lon": 11.0
               |    }
@@ -1560,7 +1561,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "intField": 10,
               |    "doubleField": 17.0,
               |    "booleanField": false,
-              |    "locationField": {
+              |    "geoPointField": {
               |      "lat": 10.0,
               |      "lon": 11.0
               |    }
@@ -1623,7 +1624,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     intField = 5,
     doubleField = 7.0,
     booleanField = true,
-    locationField = Location(20.0, 21.0)
+    geoPointField = GeoPoint(20.0, 21.0)
   )
   private val Doc2 = TestDocument(
     stringField = "stringField2",
@@ -1632,7 +1633,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     intField = 10,
     doubleField = 17.0,
     booleanField = false,
-    locationField = Location(10.0, 11.0)
+    geoPointField = GeoPoint(10.0, 11.0)
   )
   private val DocId            = DocumentId("documentid")
   private val Index            = IndexName("index")
