@@ -11,7 +11,7 @@ import zio.elasticsearch.query.GeoDistanceQuery
 import zio.elasticsearch.ElasticQuery._
 ```
 
-You can create a `GeoDistance` query using the `geoDistance` method with a GeoPoint in the following manner:
+You can create a `GeoDistance` query using the `geoDistance` method with a `GeoPoint` in the following manner:
 ```scala
 val query: GeoDistanceQuery =
   geoDistance(field = "location", point = GeoPoint(20.0, 20.0), distance = Distance(200, Kilometers))
