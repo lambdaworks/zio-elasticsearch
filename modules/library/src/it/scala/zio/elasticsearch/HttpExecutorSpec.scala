@@ -635,6 +635,33 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
+        suite("retrieving document by IDs")(
+          test("find documents by ids") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = ids(firstDocumentId.toString, secondDocumentId.toString)
+                  res <-
+                    Executor.execute(
+                      ElasticRequest.search(firstSearchIndex, query)
+                    )
+                  items <- res.items
+                } yield assert(items != null)(isTrue)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ),
         suite("searching for documents")(
           test("search for first 2 documents using range query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

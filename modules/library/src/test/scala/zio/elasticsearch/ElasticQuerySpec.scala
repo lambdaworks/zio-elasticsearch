@@ -827,6 +827,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("ids") {
+          val idsQuery = ids("1", "2", "3")
+
+          assert(idsQuery)(
+            equalTo(
+              Ids[Any](
+                values = Chunk("1", "2", "3")
+              )
+            )
+          )
+        },
         test("matchAll") {
           val query          = matchAll
           val queryWithBoost = matchAll.boost(3.14)
@@ -2285,6 +2296,20 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           ) &&
           assert(queryWithInnerHits.toJson(fieldPath = None))(equalTo(expectedWithInnerHits.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+        },
+        test("ids") {
+          val query = ids("1", "2", "3")
+
+          val expected =
+            """
+              |{
+              |  "ids": {
+              |     "values": ["1", "2", "3"]
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("matchAll") {
           val query          = matchAll
