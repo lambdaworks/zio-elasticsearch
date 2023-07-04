@@ -42,57 +42,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 .aggregate(index, termsAggregation(name = "aggregation1", field = "name"))
             )
             .aggregations
-        val executorSearch =
-          Executor
-            .execute(ElasticRequest.search(index = index, query = matchAll))
-            .documentAs[TestDocument]
-        val terms = termsAggregation(name = "aggregation1", field = "name")
-        val executorSearchWithTerms = Executor
-          .execute(ElasticRequest.search(index = index, query = matchAll, terms))
-          .documentAs[TestDocument]
-        val executorSearchAggregations = Executor
-          .execute(ElasticRequest.search(index = index, query = matchAll, terms))
-          .aggregations
-        val executorUpdateByScript =
-          Executor.execute(
-            ElasticRequest
-              .updateByScript(
-                index = index,
-                id = DocumentId("V4x8q4UB3agN0z75fv5r"),
-                script = Script("ctx._source.intField += params['factor']").params("factor" -> 2)
-              )
-              .orCreate(doc = secondDoc)
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
-        val executorUpdate =
-          Executor.execute(
-            ElasticRequest
-              .update[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
-              .orCreate(doc = secondDoc)
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
-        val executorUpdateAllByQuery =
-          Executor.execute(
-            ElasticRequest
-              .updateAllByQuery(index = index, script = Script("ctx._source['intField']++"))
-              .conflicts(Proceed)
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
-        val executorUpdateByQuery =
-          Executor.execute(
-            ElasticRequest
-              .updateByQuery(
-                index = index,
-                query = term(field = TestDocument.stringField.keyword, value = "StringField"),
-                script = Script("ctx._source['intField']++")
-              )
-              .conflicts(Proceed)
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
 
         val expectedTermsAggregationResult =
           Map(
@@ -102,8 +51,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
             )
           )
-        val expectedUpdateByQueryResult =
-          UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)
 
         assertZIO(
           executorAgregate
@@ -111,50 +58,9 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           equalTo(
             expectedTermsAggregationResult
           )
-        ) && assertZIO(
-          executorSearch
-        )(
-          equalTo(
-            Chunk(doc)
-          )
-        ) && assertZIO(
-          executorSearchWithTerms
-        )(
-          equalTo(Chunk(doc))
-        ) && assertZIO(
-          executorSearchAggregations
-        )(
-          equalTo(
-            expectedTermsAggregationResult
-          )
-        ) && assertZIO(
-          executorUpdateByScript
-        )(
-          equalTo(
-            UpdateOutcome.Updated
-          )
-        ) && assertZIO(
-          executorUpdate
-        )(
-          equalTo(
-            UpdateOutcome.Updated
-          )
-        ) && assertZIO(
-          executorUpdateAllByQuery
-        )(
-          equalTo(
-            expectedUpdateByQueryResult
-          )
-        ) && assertZIO(
-          executorUpdateByQuery
-        )(
-          equalTo(
-            expectedUpdateByQueryResult
-          )
         )
       },
-
-      test("bulk"){
+      test("bulk") {
         val executorBulk =
           Executor
             .execute(
@@ -179,26 +85,26 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
           )
         assertZIO(
-            executorBulk
-          )(
-            equalTo(
-              expectedBulkResponse
-            )
+          executorBulk
+        )(
+          equalTo(
+            expectedBulkResponse
           )
+        )
       },
-      test("count"){
+      test("count") {
         val executorCount =
           Executor
             .execute(ElasticRequest.count(index, matchAll).routing(Routing("routing")))
-        assertZIO (
+        assertZIO(
           executorCount
-          )(
+        )(
           equalTo(
             2
           )
         )
       },
-      test("create"){
+      test("create") {
         val executorCreate =
           Executor
             .execute(
@@ -207,15 +113,15 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 .routing(Routing("routing"))
                 .refreshTrue
             )
-        assertZIO (
+        assertZIO(
           executorCreate
-          )(
+        )(
           equalTo(
             DocumentId("V4x8q4UB3agN0z75fv5r")
           )
         )
       },
-      test("create with ID"){
+      test("create with ID") {
         val executorCreateDocumentId =
           Executor.execute(
             ElasticRequest
@@ -224,14 +130,14 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .refreshTrue
           )
         assertZIO(
-            executorCreateDocumentId
-          )(
-            equalTo(
-              Created
-            )
+          executorCreateDocumentId
+        )(
+          equalTo(
+            Created
           )
+        )
       },
-      test("createIndex"){
+      test("createIndex") {
         val executorCreateIndex =
           Executor.execute(ElasticRequest.createIndex(name = index))
         val mapping =
@@ -256,9 +162,9 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             |""".stripMargin
         val executorCreateIndexMapping =
           Executor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
-        assertZIO (
+        assertZIO(
           executorCreateIndex
-          )(
+        )(
           equalTo(
             Created
           )
@@ -270,7 +176,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           )
         )
       },
-      test("deleteById"){
+      test("deleteById") {
         val executorDeleteById =
           Executor.execute(
             ElasticRequest
@@ -279,51 +185,51 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .refreshTrue
           )
         assertZIO(
-            executorDeleteById
-          )(
-            equalTo(
-              Deleted
-            )
+          executorDeleteById
+        )(
+          equalTo(
+            Deleted
           )
+        )
       },
-      test("deleteByQuery"){
+      test("deleteByQuery") {
         val executorDeleteByQuery =
           Executor.execute(
             ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.routing(Routing("routing"))
           )
-        assertZIO (
+        assertZIO(
           executorDeleteByQuery
-          )(
+        )(
           equalTo(
             Deleted
           )
         )
       },
-      test("deleteIndex"){
+      test("deleteIndex") {
         val executorDeleteIndex =
           Executor.execute(ElasticRequest.deleteIndex(name = index))
-        assertZIO (
+        assertZIO(
           executorDeleteIndex
-          )(
+        )(
           equalTo(
             Deleted
           )
         )
       },
-      test("exists"){
+      test("exists") {
         val executorExists =
           Executor.execute(
             ElasticRequest
               .exists(index = index, id = DocumentId("example-id"))
               .routing(Routing("routing"))
           )
-        assertZIO (
+        assertZIO(
           executorExists
-          )(
+        )(
           isTrue
         )
       },
-      test("getById"){
+      test("getById") {
         val executorGetById =
           Executor
             .execute(
@@ -332,15 +238,137 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 .routing(Routing("routing"))
             )
             .documentAs[TestDocument]
-        assertZIO (
+        assertZIO(
           executorGetById
-          )(
+        )(
           isSome(
             equalTo(doc)
           )
         )
       },
-      test("upsert"){
+      test("search") {
+        val executorSearch =
+          Executor
+            .execute(ElasticRequest.search(index = index, query = matchAll))
+            .documentAs[TestDocument]
+        val terms = termsAggregation(name = "aggregation1", field = "name")
+        val executorSearchWithTerms = Executor
+          .execute(ElasticRequest.search(index = index, query = matchAll, terms))
+          .documentAs[TestDocument]
+        assertZIO(
+          executorSearch
+        )(
+          equalTo(
+            Chunk(doc)
+          )
+        ) && assertZIO(
+          executorSearchWithTerms
+        )(
+          equalTo(Chunk(doc))
+        )
+      },
+      test("search and aggergate") {
+        val terms = termsAggregation(name = "aggregation1", field = "name")
+        val executorSearchAggregations = Executor
+          .execute(ElasticRequest.search(index = index, query = matchAll, terms))
+          .aggregations
+        val expectedTermsAggregationResult =
+          Map(
+            "aggregation1" -> TermsAggregationResult(
+              docErrorCount = 0,
+              sumOtherDocCount = 0,
+              buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
+            )
+          )
+        assertZIO(
+          executorSearchAggregations
+        )(
+          equalTo(
+            expectedTermsAggregationResult
+          )
+        )
+      },
+      test("update") {
+        val executorUpdate =
+          Executor.execute(
+            ElasticRequest
+              .update[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
+              .orCreate(doc = secondDoc)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        assertZIO(
+          executorUpdate
+        )(
+          equalTo(
+            UpdateOutcome.Updated
+          )
+        )
+      },
+      test("updateAllByQuery") {
+        val executorUpdateAllByQuery =
+          Executor.execute(
+            ElasticRequest
+              .updateAllByQuery(index = index, script = Script("ctx._source['intField']++"))
+              .conflicts(Proceed)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        val expectedUpdateByQueryResult =
+          UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)
+        assertZIO(
+          executorUpdateAllByQuery
+        )(
+          equalTo(
+            expectedUpdateByQueryResult
+          )
+        )
+      },
+      test("updateByQuery") {
+        val executorUpdateByQuery =
+          Executor.execute(
+            ElasticRequest
+              .updateByQuery(
+                index = index,
+                query = term(field = TestDocument.stringField.keyword, value = "StringField"),
+                script = Script("ctx._source['intField']++")
+              )
+              .conflicts(Proceed)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        val expectedUpdateByQueryResult =
+          UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)
+        assertZIO(
+          executorUpdateByQuery
+        )(
+          equalTo(
+            expectedUpdateByQueryResult
+          )
+        )
+      },
+      test("updateByScript") {
+        val executorUpdateByScript =
+          Executor.execute(
+            ElasticRequest
+              .updateByScript(
+                index = index,
+                id = DocumentId("V4x8q4UB3agN0z75fv5r"),
+                script = Script("ctx._source.intField += params['factor']").params("factor" -> 2)
+              )
+              .orCreate(doc = secondDoc)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        assertZIO(
+          executorUpdateByScript
+        )(
+          equalTo(
+            UpdateOutcome.Updated
+          )
+        )
+      },
+      test("upsert") {
         val executorUpsert =
           Executor.execute(
             ElasticRequest
@@ -348,9 +376,9 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               .routing(Routing("routing"))
               .refreshTrue
           )
-        assertZIO (
+        assertZIO(
           executorUpsert
-          )(
+        )(
           isUnit
         )
       }
