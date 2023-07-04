@@ -30,6 +30,10 @@ final case class MaxAggregationResult private[elasticsearch] (value: Double) ext
 
 final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
+final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
+
+final case class SumAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+
 final case class TermsAggregationResult private[elasticsearch] (
   docErrorCount: Int,
   sumOtherDocCount: Int,

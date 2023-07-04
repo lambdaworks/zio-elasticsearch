@@ -137,7 +137,7 @@ object FunctionScoreSpec extends ZIOSpecDefault {
               .filter(matches("field", "value"))
 
           val typeSafeFunction =
-            linearDecayFunction(TestDocument.locationField, origin = "11, 12", scale = "2km")
+            linearDecayFunction(TestDocument.geoPointField, origin = "11, 12", scale = "2km")
               .weight(10.0)
               .decay(11.0)
               .multiValueMode(Max)
@@ -161,7 +161,7 @@ object FunctionScoreSpec extends ZIOSpecDefault {
           ) && assert(typeSafeFunction)(
             equalTo(
               DecayFunction[TestDocument](
-                field = "locationField",
+                field = "geoPointField",
                 decayFunctionType = Linear,
                 origin = "11, 12",
                 scale = "2km",

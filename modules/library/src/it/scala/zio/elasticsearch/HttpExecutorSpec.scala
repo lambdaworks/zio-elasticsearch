@@ -22,6 +22,7 @@ import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.aggregation.AggregationOrder
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
@@ -29,7 +30,7 @@ import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result._
 import zio.elasticsearch.script.{Painless, Script}
@@ -150,6 +151,30 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("aggregate using sum aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 200))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 23))
+                           .refreshTrue
+                       )
+                  aggregation = sumAggregation(name = "aggregationInt", field = TestDocument.intField)
+                  aggsRes <- Executor
+                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .asSumAggregation("aggregationInt")
+                } yield assert(aggsRes.head.value)(equalTo(223.0))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using terms aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
@@ -167,6 +192,38 @@ object HttpExecutorSpec extends IntegrationSpec {
                     termsAggregation(name = "aggregationString", field = TestDocument.stringField.keyword)
                   aggsRes <- Executor
                                .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .aggregations
+                } yield assert(aggsRes)(isNonEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using missing aggregations") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  aggregation = multipleAggregations.aggregations(
+                                  missingAggregation(
+                                    name = "aggregationString",
+                                    field = TestDocument.stringField.keyword
+                                  ),
+                                  missingAggregation(name = "aggregationString", field = "stringField.keyword")
+                                )
+                  aggsRes <- Executor
+                               .execute(
+                                 ElasticRequest
+                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                               )
                                .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
             }
@@ -577,6 +634,33 @@ object HttpExecutorSpec extends IntegrationSpec {
               )
             }
           }
+        ),
+        suite("retrieving document by IDs")(
+          test("find documents by ids") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = ids(firstDocumentId.toString, secondDocumentId.toString)
+                  res <-
+                    Executor.execute(
+                      ElasticRequest.search(firstSearchIndex, query)
+                    )
+                  items <- res.items
+                } yield assert(items != null)(isTrue)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
         ),
         suite("searching for documents")(
           test("search for first 2 documents using range query") {
@@ -1736,7 +1820,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   |{
                   |  "mappings": {
                   |      "properties": {
-                  |        "locationField": {
+                  |        "geoPointField": {
                   |          "type": "geo_point"
                   |      }
                   |    }
@@ -1750,30 +1834,20 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.create[TestDocument](geoDistanceIndex, document).refreshTrue
                      )
-                r1 <- Executor
-                        .execute(
-                          ElasticRequest.search(
-                            geoDistanceIndex,
-                            ElasticQuery
-                              .geoDistance("locationField", document.locationField.lat, document.locationField.lon)
-                              .distance(300, Kilometers)
-                          )
-                        )
-                        .documentAs[TestDocument]
-                r2 <-
-                  Executor
-                    .execute(
-                      ElasticRequest.search(
-                        geoDistanceIndex,
-                        ElasticQuery
-                          .geoDistance("locationField", s"${document.locationField.lat}, ${document.locationField.lon}")
-                          .distance(300, Kilometers)
-                      )
-                    )
-                    .documentAs[TestDocument]
-              } yield assert(r1 ++ r2)(
-                equalTo(Chunk(document, document))
-              )
+                result <- Executor
+                            .execute(
+                              ElasticRequest.search(
+                                geoDistanceIndex,
+                                ElasticQuery
+                                  .geoDistance(
+                                    "geoPointField",
+                                    GeoPoint(document.geoPointField.lat, document.geoPointField.lon),
+                                    Distance(300, Kilometers)
+                                  )
+                              )
+                            )
+                            .documentAs[TestDocument]
+              } yield assert(result)(equalTo(Chunk(document)))
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
         ),

@@ -29,6 +29,7 @@ module.exports = {
                     'overview/queries/elastic_query_term',
                     'overview/queries/elastic_query_terms',
                     'overview/queries/elastic_query_wildcard',
+                    'overview/queries/elastic_query_ids',
                 ],
             },
             {
@@ -42,7 +43,9 @@ module.exports = {
                     'overview/aggregations/elastic_aggregation_cardinality',
                     'overview/aggregations/elastic_aggregation_max',
                     'overview/aggregations/elastic_aggregation_min',
+                    'overview/aggregations/elastic_aggregation_missing',
                     'overview/aggregations/elastic_aggregation_terms',
+                    'overview/aggregations/elastic_aggregation_sum',
                 ],
             },
             {

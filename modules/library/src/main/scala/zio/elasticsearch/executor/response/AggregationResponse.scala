@@ -35,6 +35,10 @@ object AggregationResponse {
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>
         MinAggregationResult(value)
+      case MissingAggregationResponse(value) =>
+        MissingAggregationResult(value)
+      case SumAggregationResponse(value) =>
+        SumAggregationResult(value)
       case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
         TermsAggregationResult(
           docErrorCount = docErrorCount,
@@ -75,6 +79,20 @@ private[elasticsearch] final case class MinAggregationResponse(value: Double) ex
 
 private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
+}
+
+private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Int)
+    extends AggregationResponse
+
+private[elasticsearch] object MissingAggregationResponse {
+  implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
+}
+
+private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object SumAggregationResponse {
+  implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
+
 }
 
 private[elasticsearch] final case class TermsAggregationResponse(
@@ -118,6 +136,10 @@ private[elasticsearch] object TermsAggregationBucket {
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("min#") =>
               Some(field -> MinAggregationResponse(value = objFields("value").unsafeAs[Double]))
+            case str if str.contains("missing#") =>
+              Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
+            case str if str.contains("sum#") =>
+              Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
               Some(
                 field -> TermsAggregationResponse(
@@ -145,6 +167,10 @@ private[elasticsearch] object TermsAggregationBucket {
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
           case str if str.contains("min#") =>
             (field.split("#")(1), data.asInstanceOf[MinAggregationResponse])
+          case str if str.contains("missing#") =>
+            (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
+          case str if str.contains("sum#") =>
+            (field.split("#")(1), data.asInstanceOf[SumAggregationResponse])
           case str if str.contains("terms#") =>
             (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
         }

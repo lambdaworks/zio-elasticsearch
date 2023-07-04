@@ -41,30 +41,26 @@ object HighlightsSpec extends ZIOSpecDefault {
                 fields = Chunk(HighlightField("day_of_week"))
               )
             )
-          ) &&
-          assert(highlightWithHighlight)(
+          ) && assert(highlightWithHighlight)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("first_name"), HighlightField("day_of_week"))
               )
             )
-          ) &&
-          assert(highlightWithGlobalConfig)(
+          ) && assert(highlightWithGlobalConfig)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week")),
                 config = Map("type" -> Str("plain"))
               )
             )
-          ) &&
-          assert(highlightWithConfig)(
+          ) && assert(highlightWithConfig)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("day_of_week", Map("type" -> Str("plain"))))
               )
             )
-          ) &&
-          assert(
+          ) && assert(
             highlightWithConfigAndGlobalConfig
           )(
             equalTo(
@@ -73,22 +69,19 @@ object HighlightsSpec extends ZIOSpecDefault {
                 config = Map("pre_tags" -> Arr(Str("<tag1>")))
               )
             )
-          ) &&
-          assert(highlightOfStringField)(
+          ) && assert(highlightOfStringField)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("stringField"))
               )
             )
-          ) &&
-          assert(highlightOfStringFieldWithHighlight)(
+          ) && assert(highlightOfStringFieldWithHighlight)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("intField"), HighlightField("stringField"))
               )
             )
-          ) &&
-          assert(
+          ) && assert(
             highlightOfNestedFieldWithGlobalConfig
           )(
             equalTo(
@@ -97,8 +90,7 @@ object HighlightsSpec extends ZIOSpecDefault {
                 config = Map("type" -> Str("plain"))
               )
             )
-          ) &&
-          assert(highlightOfStringFieldWithGlobalConfig)(
+          ) && assert(highlightOfStringFieldWithGlobalConfig)(
             equalTo(
               Highlights(
                 fields = Chunk(HighlightField("stringField")),
@@ -240,26 +232,31 @@ object HighlightsSpec extends ZIOSpecDefault {
             equalTo(
               expected.toJson
             )
-          ) &&
-          assert(highlightWithHighlight.toJson)(
+          ) && assert(highlightWithHighlight.toJson)(
             equalTo(
               expectedWithFirstName.toJson
             )
-          ) &&
-          assert(highlightWithHighlightAndGlobalConfig.toJson)(
+          ) && assert(highlightWithHighlightAndGlobalConfig.toJson)(
             equalTo(
               expectedPlainWithFirstName.toJson
             )
-          ) &&
-          assert(highlightWithConfig.toJson)(
-            equalTo(expectedPlainWithRequiredFieldMatch.toJson)
-          ) &&
-          assert(highlightWithConfigAndHighlight.toJson)(equalTo(expectedPlainWithMatchedFields.toJson)) &&
-          assert(highlightWithConfigHighlightAndExplicitFieldOrder.toJson)(
-            equalTo(expectedPlainWithArrayOfFields.toJson)
+          ) && assert(highlightWithConfig.toJson)(
+            equalTo(
+              expectedPlainWithRequiredFieldMatch.toJson
+            )
+          ) && assert(highlightWithConfigAndHighlight.toJson)(
+            equalTo(
+              expectedPlainWithMatchedFields.toJson
+            )
+          ) && assert(highlightWithConfigHighlightAndExplicitFieldOrder.toJson)(
+            equalTo(
+              expectedPlainWithArrayOfFields.toJson
+            )
           ) &&
           assert(highlightWithMultipleConfig.toJson)(
-            equalTo(expectedFvhType.toJson)
+            equalTo(
+              expectedFvhType.toJson
+            )
           )
         }
       )
