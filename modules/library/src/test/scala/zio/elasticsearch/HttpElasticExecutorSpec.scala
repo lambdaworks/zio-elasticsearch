@@ -34,8 +34,7 @@ import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
 object HttpElasticExecutorSpec extends SttpBackendStubSpec {
   def spec: Spec[TestEnvironment, Any] =
     suite("HttpElasticExecutor")(
-      test("aggregation request") {
-
+      test("aggregation") {
         val executorAgregate =
           Executor
             .execute(
@@ -43,89 +42,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 .aggregate(index, termsAggregation(name = "aggregation1", field = "name"))
             )
             .aggregations
-        val executorBulk =
-          Executor
-            .execute(
-              ElasticRequest
-                .bulk(ElasticRequest.create(index, doc))
-                .refreshTrue
-            )
-        val executorCount =
-          Executor
-            .execute(ElasticRequest.count(index, matchAll).routing(Routing("routing")))
-        val executorCreate =
-          Executor
-            .execute(
-              ElasticRequest
-                .create[TestDocument](index = index, doc = doc)
-                .routing(Routing("routing"))
-                .refreshTrue
-            )
-        val executorCreateDocumentId =
-          Executor.execute(
-            ElasticRequest
-              .create[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
-        val executorCreateIndex =
-          Executor.execute(ElasticRequest.createIndex(name = index))
-        val mapping =
-          """
-            |{
-            |  "settings": {
-            |    "index": {
-            |      "number_of_shards": 1
-            |    }
-            |  },
-            |  "mappings": {
-            |    "_routing": {
-            |      "required": true
-            |    },
-            |    "properties": {
-            |      "id": {
-            |        "type": "keyword"
-            |      }
-            |    }
-            |  }
-            |}
-            |""".stripMargin
-        val executorCreateIndexMapping =
-          Executor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
-        val executorUpsert =
-          Executor.execute(
-            ElasticRequest
-              .upsert[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
-        val executorDeleteById =
-          Executor.execute(
-            ElasticRequest
-              .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
-              .routing(Routing("routing"))
-              .refreshTrue
-          )
-        val executorDeleteByQuery =
-          Executor.execute(
-            ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.routing(Routing("routing"))
-          )
-        val executorDeleteIndex =
-          Executor.execute(ElasticRequest.deleteIndex(name = index))
-        val executorExists =
-          Executor.execute(
-            ElasticRequest
-              .exists(index = index, id = DocumentId("example-id"))
-              .routing(Routing("routing"))
-          )
-        val executorGetById =
-          Executor
-            .execute(
-              ElasticRequest
-                .getById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
-                .routing(Routing("routing"))
-            )
-            .documentAs[TestDocument]
         val executorSearch =
           Executor
             .execute(ElasticRequest.search(index = index, query = matchAll))
@@ -186,22 +102,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               buckets = Chunk(TermsAggregationBucketResult(docCount = 5, key = "name", subAggregations = Map.empty))
             )
           )
-        val expectedBulkResponse =
-          BulkResponse(
-            took = 3,
-            errors = false,
-            items = Chunk(
-              CreateBulkResponse(
-                index = "repositories",
-                id = "123",
-                version = Some(1),
-                result = Some("created"),
-                shards = Some(Shards(total = 1, successful = 1, failed = 0)),
-                status = Some(201),
-                error = None
-              )
-            )
-          )
         val expectedUpdateByQueryResult =
           UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)
 
@@ -211,70 +111,6 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           equalTo(
             expectedTermsAggregationResult
           )
-        ) && assertZIO(
-          executorBulk
-        )(
-          equalTo(
-            expectedBulkResponse
-          )
-        ) && assertZIO(
-          executorCount
-        )(
-          equalTo(
-            2
-          )
-        ) && assertZIO(
-          executorCreate
-        )(
-          equalTo(
-            DocumentId("V4x8q4UB3agN0z75fv5r")
-          )
-        ) && assertZIO(
-          executorCreateDocumentId
-        )(
-          equalTo(
-            Created
-          )
-        ) && assertZIO(
-          executorCreateIndex
-        )(
-          equalTo(
-            Created
-          )
-        ) && assertZIO(
-          executorCreateIndexMapping
-        )(
-          equalTo(
-            Created
-          )
-        ) && assertZIO(
-          executorUpsert
-        )(
-          isUnit
-        ) && assertZIO(
-          executorDeleteById
-        )(
-          equalTo(
-            Deleted
-          )
-        ) && assertZIO(
-          executorDeleteByQuery
-        )(
-          equalTo(
-            Deleted
-          )
-        ) && assertZIO(
-          executorDeleteIndex
-        )(
-          equalTo(
-            Deleted
-          )
-        ) && assertZIO(
-          executorExists
-        )(isTrue) && assertZIO(
-          executorGetById
-        )(
-          isSome(equalTo(doc))
         ) && assertZIO(
           executorSearch
         )(
@@ -315,6 +151,207 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           equalTo(
             expectedUpdateByQueryResult
           )
+        )
+      },
+
+      test("bulk"){
+        val executorBulk =
+          Executor
+            .execute(
+              ElasticRequest
+                .bulk(ElasticRequest.create(index, doc))
+                .refreshTrue
+            )
+        val expectedBulkResponse =
+          BulkResponse(
+            took = 3,
+            errors = false,
+            items = Chunk(
+              CreateBulkResponse(
+                index = "repositories",
+                id = "123",
+                version = Some(1),
+                result = Some("created"),
+                shards = Some(Shards(total = 1, successful = 1, failed = 0)),
+                status = Some(201),
+                error = None
+              )
+            )
+          )
+        assertZIO(
+            executorBulk
+          )(
+            equalTo(
+              expectedBulkResponse
+            )
+          )
+      },
+      test("count"){
+        val executorCount =
+          Executor
+            .execute(ElasticRequest.count(index, matchAll).routing(Routing("routing")))
+        assertZIO (
+          executorCount
+          )(
+          equalTo(
+            2
+          )
+        )
+      },
+      test("create"){
+        val executorCreate =
+          Executor
+            .execute(
+              ElasticRequest
+                .create[TestDocument](index = index, doc = doc)
+                .routing(Routing("routing"))
+                .refreshTrue
+            )
+        assertZIO (
+          executorCreate
+          )(
+          equalTo(
+            DocumentId("V4x8q4UB3agN0z75fv5r")
+          )
+        )
+      },
+      test("create with ID"){
+        val executorCreateDocumentId =
+          Executor.execute(
+            ElasticRequest
+              .create[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        assertZIO(
+            executorCreateDocumentId
+          )(
+            equalTo(
+              Created
+            )
+          )
+      },
+      test("createIndex"){
+        val executorCreateIndex =
+          Executor.execute(ElasticRequest.createIndex(name = index))
+        val mapping =
+          """
+            |{
+            |  "settings": {
+            |    "index": {
+            |      "number_of_shards": 1
+            |    }
+            |  },
+            |  "mappings": {
+            |    "_routing": {
+            |      "required": true
+            |    },
+            |    "properties": {
+            |      "id": {
+            |        "type": "keyword"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+        val executorCreateIndexMapping =
+          Executor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
+        assertZIO (
+          executorCreateIndex
+          )(
+          equalTo(
+            Created
+          )
+        ) && assertZIO(
+          executorCreateIndexMapping
+        )(
+          equalTo(
+            Created
+          )
+        )
+      },
+      test("deleteById"){
+        val executorDeleteById =
+          Executor.execute(
+            ElasticRequest
+              .deleteById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        assertZIO(
+            executorDeleteById
+          )(
+            equalTo(
+              Deleted
+            )
+          )
+      },
+      test("deleteByQuery"){
+        val executorDeleteByQuery =
+          Executor.execute(
+            ElasticRequest.deleteByQuery(index = index, query = matchAll).refreshTrue.routing(Routing("routing"))
+          )
+        assertZIO (
+          executorDeleteByQuery
+          )(
+          equalTo(
+            Deleted
+          )
+        )
+      },
+      test("deleteIndex"){
+        val executorDeleteIndex =
+          Executor.execute(ElasticRequest.deleteIndex(name = index))
+        assertZIO (
+          executorDeleteIndex
+          )(
+          equalTo(
+            Deleted
+          )
+        )
+      },
+      test("exists"){
+        val executorExists =
+          Executor.execute(
+            ElasticRequest
+              .exists(index = index, id = DocumentId("example-id"))
+              .routing(Routing("routing"))
+          )
+        assertZIO (
+          executorExists
+          )(
+          isTrue
+        )
+      },
+      test("getById"){
+        val executorGetById =
+          Executor
+            .execute(
+              ElasticRequest
+                .getById(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"))
+                .routing(Routing("routing"))
+            )
+            .documentAs[TestDocument]
+        assertZIO (
+          executorGetById
+          )(
+          isSome(
+            equalTo(doc)
+          )
+        )
+      },
+      test("upsert"){
+        val executorUpsert =
+          Executor.execute(
+            ElasticRequest
+              .upsert[TestDocument](index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), doc = doc)
+              .routing(Routing("routing"))
+              .refreshTrue
+          )
+        assertZIO (
+          executorUpsert
+          )(
+          isUnit
         )
       }
     ).provideShared(elasticsearchSttpLayer)
