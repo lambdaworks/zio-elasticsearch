@@ -2952,9 +2952,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("terms") {
-          val queryString          = terms(TestDocument.stringField, "a", "b", "c")
-          val queryBool          = terms(TestDocument.booleanField, true, false)
-          val queryInt          = terms(TestDocument.intField, 1, 2, 3, 4)
+          val queryString    = terms(TestDocument.stringField, "a", "b", "c")
+          val queryBool      = terms(TestDocument.booleanField, true, false)
+          val queryInt       = terms(TestDocument.intField, 1, 2, 3, 4)
           val queryWithBoost = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
           val expectedString =
