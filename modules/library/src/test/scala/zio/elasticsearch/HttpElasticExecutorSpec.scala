@@ -37,10 +37,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       test("aggregation") {
         val executorAgregate =
           Executor
-            .execute(
-              ElasticRequest
-                .aggregate(index, termsAggregation(name = "aggregation1", field = "name"))
-            )
+            .execute(ElasticRequest.aggregate(index, termsAggregation(name = "aggregation1", field = "name")))
             .aggregations
 
         val expectedTermsAggregationResult =
