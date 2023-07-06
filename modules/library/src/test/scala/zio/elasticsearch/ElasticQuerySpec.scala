@@ -1251,29 +1251,29 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryAllParams           = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
 
           assert(query)(
-            equalTo(Term[Any](field = "stringField", value = "test", boost = None, caseInsensitive = None))
+            equalTo(Term[Any, String](field = "stringField", value = "test", boost = None, caseInsensitive = None))
           ) &&
           assert(queryTs)(
-            equalTo(Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = None))
+            equalTo(Term[TestDocument, String](field = "stringField", value = "test", boost = None, caseInsensitive = None))
           ) &&
           assert(queryWithSuffix)(
             equalTo(
-              Term[TestDocument](field = "stringField.keyword", value = "test", boost = None, caseInsensitive = None)
+              Term[TestDocument, String](field = "stringField.keyword", value = "test", boost = None, caseInsensitive = None)
             )
           ) &&
           assert(queryWithBoost)(
             equalTo(
-              Term[TestDocument](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
+              Term[TestDocument, String](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
             )
           ) &&
           assert(queryWithCaseInsensitive)(
             equalTo(
-              Term[TestDocument](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
+              Term[TestDocument, String](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
             )
           ) &&
           assert(queryAllParams)(
             equalTo(
-              Term[TestDocument](
+              Term[TestDocument, String](
                 field = "stringField",
                 value = "test",
                 boost = Some(3.14),
@@ -1288,15 +1288,15 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
           val queryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
-          assert(query)(equalTo(Terms[Any](field = "stringField", values = Chunk("a", "b", "c"), boost = None))) &&
+          assert(query)(equalTo(Terms[Any, String](field = "stringField", values = Chunk("a", "b", "c"), boost = None))) &&
           assert(queryTs)(
-            equalTo(Terms[TestDocument](field = "stringField", values = Chunk("a", "b", "c"), boost = None))
+            equalTo(Terms[TestDocument, String](field = "stringField", values = Chunk("a", "b", "c"), boost = None))
           ) &&
           assert(queryWithSuffix)(
-            equalTo(Terms[TestDocument](field = "stringField.keyword", values = Chunk("a", "b", "c"), boost = None))
+            equalTo(Terms[TestDocument, String](field = "stringField.keyword", values = Chunk("a", "b", "c"), boost = None))
           ) &&
           assert(queryWithBoost)(
-            equalTo(Terms[TestDocument](field = "stringField", values = Chunk("a", "b", "c"), boost = Some(10.21)))
+            equalTo(Terms[TestDocument, String](field = "stringField", values = Chunk("a", "b", "c"), boost = Some(10.21)))
           )
         },
         test("wildcard") {
