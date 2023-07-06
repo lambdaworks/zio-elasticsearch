@@ -1243,32 +1243,67 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("term") {
-          val query                    = term("stringField", "test")
-          val queryTs                  = term(TestDocument.stringField, "test")
+          val queryString              = term("stringField", "test")
+          val queryBool                = term("booleanField", true)
+          val queryInt                 = term("intField", 1)
+          val queryStringTs            = term(TestDocument.stringField, "test")
+          val queryBoolTs              = term(TestDocument.booleanField, true)
+          val queryIntTs               = term(TestDocument.intField, 1)
           val queryWithSuffix          = term(TestDocument.stringField.keyword, "test")
           val queryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
           val queryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
           val queryAllParams           = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
 
-          assert(query)(
+          assert(queryString)(
             equalTo(Term[Any, String](field = "stringField", value = "test", boost = None, caseInsensitive = None))
           ) &&
-          assert(queryTs)(
-            equalTo(Term[TestDocument, String](field = "stringField", value = "test", boost = None, caseInsensitive = None))
+          assert(queryBool)(
+            equalTo(Term[Any, Boolean](field = "booleanField", value = true, boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryInt)(
+            equalTo(Term[Any, Int](field = "intField", value = 1, boost = None, caseInsensitive = None))
+          ) &&
+          assert(queryStringTs)(
+            equalTo(
+              Term[TestDocument, String](field = "stringField", value = "test", boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryBoolTs)(
+            equalTo(
+              Term[TestDocument, Boolean](field = "booleanField", value = true, boost = None, caseInsensitive = None)
+            )
+          ) &&
+          assert(queryIntTs)(
+            equalTo(Term[TestDocument, Int](field = "intField", value = 1, boost = None, caseInsensitive = None))
           ) &&
           assert(queryWithSuffix)(
             equalTo(
-              Term[TestDocument, String](field = "stringField.keyword", value = "test", boost = None, caseInsensitive = None)
+              Term[TestDocument, String](
+                field = "stringField.keyword",
+                value = "test",
+                boost = None,
+                caseInsensitive = None
+              )
             )
           ) &&
           assert(queryWithBoost)(
             equalTo(
-              Term[TestDocument, String](field = "stringField", value = "test", boost = Some(10.21), caseInsensitive = None)
+              Term[TestDocument, String](
+                field = "stringField",
+                value = "test",
+                boost = Some(10.21),
+                caseInsensitive = None
+              )
             )
           ) &&
           assert(queryWithCaseInsensitive)(
             equalTo(
-              Term[TestDocument, String](field = "stringField", value = "test", boost = None, caseInsensitive = Some(true))
+              Term[TestDocument, String](
+                field = "stringField",
+                value = "test",
+                boost = None,
+                caseInsensitive = Some(true)
+              )
             )
           ) &&
           assert(queryAllParams)(
@@ -1283,20 +1318,42 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("terms") {
-          val query           = terms("stringField", "a", "b", "c")
-          val queryTs         = terms(TestDocument.stringField, "a", "b", "c")
+          val queryString     = terms("stringField", "a", "b", "c")
+          val queryBool       = terms("booleanField", true, false)
+          val queryInt        = terms("intField", 1, 2, 3)
+          val queryStringTs   = terms(TestDocument.stringField, "a", "b", "c")
+          val queryBoolTs     = terms(TestDocument.booleanField, true, false)
+          val queryIntTs      = terms(TestDocument.intField, 1, 2, 3)
           val queryWithSuffix = terms(TestDocument.stringField.keyword, "a", "b", "c")
           val queryWithBoost  = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
-          assert(query)(equalTo(Terms[Any, String](field = "stringField", values = Chunk("a", "b", "c"), boost = None))) &&
-          assert(queryTs)(
+          assert(queryString)(
+            equalTo(Terms[Any, String](field = "stringField", values = Chunk("a", "b", "c"), boost = None))
+          ) &&
+          assert(queryBool)(
+            equalTo(Terms[Any, Boolean](field = "booleanField", values = Chunk(true, false), boost = None))
+          ) &&
+          assert(queryInt)(
+            equalTo(Terms[Any, Int](field = "intField", values = Chunk(1, 2, 3), boost = None))
+          ) &&
+          assert(queryStringTs)(
             equalTo(Terms[TestDocument, String](field = "stringField", values = Chunk("a", "b", "c"), boost = None))
           ) &&
+          assert(queryBoolTs)(
+            equalTo(Terms[TestDocument, Boolean](field = "booleanField", values = Chunk(true, false), boost = None))
+          ) &&
+          assert(queryIntTs)(
+            equalTo(Terms[TestDocument, Int](field = "intField", values = Chunk(1, 2, 3), boost = None))
+          ) &&
           assert(queryWithSuffix)(
-            equalTo(Terms[TestDocument, String](field = "stringField.keyword", values = Chunk("a", "b", "c"), boost = None))
+            equalTo(
+              Terms[TestDocument, String](field = "stringField.keyword", values = Chunk("a", "b", "c"), boost = None)
+            )
           ) &&
           assert(queryWithBoost)(
-            equalTo(Terms[TestDocument, String](field = "stringField", values = Chunk("a", "b", "c"), boost = Some(10.21)))
+            equalTo(
+              Terms[TestDocument, String](field = "stringField", values = Chunk("a", "b", "c"), boost = Some(10.21))
+            )
           )
         },
         test("wildcard") {
@@ -2810,17 +2867,41 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("term") {
-          val query                    = term(TestDocument.stringField, "test")
+          val queryString              = term(TestDocument.stringField, "test")
+          val queryBool                = term(TestDocument.booleanField, true)
+          val queryInt                 = term(TestDocument.intField, 21)
           val queryWithBoost           = term(TestDocument.stringField, "test").boost(10.21)
           val queryWithCaseInsensitive = term(TestDocument.stringField, "test").caseInsensitiveTrue
           val queryWithAllParams       = term(TestDocument.stringField, "test").boost(3.14).caseInsensitiveFalse
 
-          val expected =
+          val expectedString =
             """
               |{
               |  "term": {
               |    "stringField": {
               |      "value": "test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedBool =
+            """
+              |{
+              |  "term": {
+              |    "booleanField": {
+              |      "value": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedInt =
+            """
+              |{
+              |  "term": {
+              |    "intField": {
+              |      "value": 21
               |    }
               |  }
               |}
@@ -2863,20 +2944,42 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryString.toJson(fieldPath = None))(equalTo(expectedString.toJson)) &&
+          assert(queryBool.toJson(fieldPath = None))(equalTo(expectedBool.toJson)) &&
+          assert(queryInt.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
           assert(queryWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("terms") {
-          val query          = terms(TestDocument.stringField, "a", "b", "c")
+          val queryString          = terms(TestDocument.stringField, "a", "b", "c")
+          val queryBool          = terms(TestDocument.booleanField, true, false)
+          val queryInt          = terms(TestDocument.intField, 1, 2, 3, 4)
           val queryWithBoost = terms(TestDocument.stringField, "a", "b", "c").boost(10.21)
 
-          val expected =
+          val expectedString =
             """
               |{
               |  "terms": {
               |    "stringField": [ "a", "b", "c" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedBool =
+            """
+              |{
+              |  "terms": {
+              |    "booleanField": [ true, false ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedInt =
+            """
+              |{
+              |  "terms": {
+              |    "intField": [ 1, 2, 3, 4 ]
               |  }
               |}
               |""".stripMargin
@@ -2891,7 +2994,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryString.toJson(fieldPath = None))(equalTo(expectedString.toJson)) &&
+          assert(queryBool.toJson(fieldPath = None))(equalTo(expectedBool.toJson)) &&
+          assert(queryInt.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
         },
         test("wildcard") {
