@@ -363,11 +363,11 @@ object ElasticQuery {
    * pattern value.
    *
    * @param value
-   * value that will be used for the query
+   *   value that will be used for the query
    * @param values
-   * array of optional values that will be used for the query
+   *   array of optional values that will be used for the query
    * @return
-   * an instance of [[zio.elasticsearch.query.IdsQuery]] that represents the ids query to be performed.
+   *   an instance of [[zio.elasticsearch.query.IdsQuery]] that represents the ids query to be performed.
    */
   final def ids(value: String, values: String*): IdsQuery[Any] =
     Ids(values = Chunk.fromIterable(value +: values))
