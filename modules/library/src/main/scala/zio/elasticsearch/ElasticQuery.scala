@@ -358,6 +358,21 @@ object ElasticQuery {
     )
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.query.IdsQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.IdsQuery]] is used for matching documents containing a value that matches a provided
+   * pattern value.
+   *
+   * @param value
+   *   value that will be used for the query
+   * @param values
+   *   array of optional values that will be used for the query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IdsQuery]] that represents the ids query to be performed.
+   */
+  final def ids(value: String, values: String*): IdsQuery[Any] =
+    Ids(values = Chunk.fromIterable(value +: values))
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchAllQuery]] used for matching all documents.
    *
    * @return
@@ -719,7 +734,7 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */
-  final def term(field: String, value: String): Term[Any] =
+  final def term(field: String, value: String): TermQuery[Any] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
 
   /**
@@ -737,7 +752,7 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
-  final def terms[S](field: Field[S, String], values: String*): Terms[S] =
+  final def terms[S](field: Field[S, String], values: String*): TermsQuery[S] =
     Terms(field = field.toString, values = Chunk.fromIterable(values), boost = None)
 
   /**
@@ -753,7 +768,7 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
-  final def terms(field: String, values: String*): Terms[Any] =
+  final def terms(field: String, values: String*): TermsQuery[Any] =
     Terms(field = field, values = Chunk.fromIterable(values), boost = None)
 
   /**
@@ -770,7 +785,7 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.WildcardQuery]] that represents the wildcard query to be performed.
    */
-  final def wildcard[S](field: Field[S, String], value: String): Wildcard[S] =
+  final def wildcard[S](field: Field[S, String], value: String): WildcardQuery[S] =
     Wildcard(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   /**
@@ -785,21 +800,6 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.WildcardQuery]] that represents the wildcard query to be performed.
    */
-  final def wildcard(field: String, value: String): Wildcard[Any] =
+  final def wildcard(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.query.IdsQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.IdsQuery]] is used for matching documents containing a value that matches a provided
-   * pattern value.
-   *
-   * @param value
-   *   value that will be used for the query
-   * @param values
-   *   array of optional values that will be used for the query
-   * @return
-   *   an instance of [[zio.elasticsearch.query.IdsQuery]] that represents the ids query to be performed.
-   */
-  final def ids(value: String, values: String*): Ids[Any] =
-    Ids(values = Chunk.fromIterable(value +: values))
 }
