@@ -801,9 +801,9 @@ private[elasticsearch] final case class Script(script: zio.elasticsearch.script.
 
 sealed trait TermQuery[S] extends ElasticQuery[S] with HasBoost[TermQuery[S]] with HasCaseInsensitive[TermQuery[S]]
 
-private[elasticsearch] final case class Term[S](
+private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
   field: String,
-  value: String,
+  value: A,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
 ) extends TermQuery[S] { self =>
@@ -823,9 +823,9 @@ private[elasticsearch] final case class Term[S](
 
 sealed trait TermsQuery[S] extends ElasticQuery[S] with HasBoost[TermsQuery[S]]
 
-private[elasticsearch] final case class Terms[S](
+private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   field: String,
-  values: Chunk[String],
+  values: Chunk[A],
   boost: Option[Double]
 ) extends TermsQuery[S] { self =>
   def boost(value: Double): TermsQuery[S] =

@@ -714,12 +714,14 @@ object ElasticQuery {
    *   the type-safe field for which query is specified for
    * @param value
    *   text value that will be used for the query
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @tparam S
    *   document for which field query is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */
-  final def term[S](field: Field[S, String], value: String): TermQuery[S] =
+  final def term[S, A: ElasticPrimitive](field: Field[S, A], value: A): TermQuery[S] =
     Term(field = field.toString, value = value, boost = None, caseInsensitive = None)
 
   /**
@@ -731,10 +733,12 @@ object ElasticQuery {
    *   the field for which query is specified for
    * @param value
    *   text value that will be used for the query
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */
-  final def term(field: String, value: String): TermQuery[Any] =
+  final def term[A: ElasticPrimitive](field: String, value: A): TermQuery[Any] =
     Term(field = field, value = value, boost = None, caseInsensitive = None)
 
   /**
@@ -749,10 +753,12 @@ object ElasticQuery {
    *   a list of terms that should be find in the provided field
    * @tparam S
    *   document for which field query is executed
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
-  final def terms[S](field: Field[S, String], values: String*): TermsQuery[S] =
+  final def terms[S, A: ElasticPrimitive](field: Field[S, A], values: A*): TermsQuery[S] =
     Terms(field = field.toString, values = Chunk.fromIterable(values), boost = None)
 
   /**
@@ -765,10 +771,12 @@ object ElasticQuery {
    *   the field for which query is specified for
    * @param values
    *   a list of terms that should be find in the provided field
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
-  final def terms(field: String, values: String*): TermsQuery[Any] =
+  final def terms[A: ElasticPrimitive](field: String, values: A*): TermsQuery[Any] =
     Terms(field = field, values = Chunk.fromIterable(values), boost = None)
 
   /**
