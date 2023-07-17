@@ -129,7 +129,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("aggregate using min aggregation") {
-            val expectedResponse = ("aggregationInt", MinAggregationResult(value = 23.0))
+            ("aggregationInt", MinAggregationResult(value = 23.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {

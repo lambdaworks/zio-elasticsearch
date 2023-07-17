@@ -1,5 +1,4 @@
 import BuildHelper._
-import sbt.librarymanagement.Configurations.IntegrationTest
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -34,7 +33,7 @@ lazy val root =
   project
     .in(file("."))
     .settings(publish / skip := true)
-    .aggregate(library, example, docs)
+    .aggregate(library, integration, example, docs)
 
 lazy val library =
   project
@@ -44,9 +43,7 @@ lazy val library =
     .settings(stdSettings("zio-elasticsearch"))
     .settings(buildInfoSettings("zio.elasticsearch"))
     .settings(scalacOptions += "-language:higherKinds")
-    .configs(IntegrationTest.extend(Test))
     .settings(
-      Defaults.itSettings,
       libraryDependencies ++= List(
         "com.softwaremill.sttp.client3" %% "zio"             % "3.8.16",
         "com.softwaremill.sttp.client3" %% "zio-json"        % "3.8.16",
@@ -55,10 +52,20 @@ lazy val library =
         "dev.zio"                       %% "zio-schema"      % "0.4.12",
         "dev.zio"                       %% "zio-schema-json" % "0.4.12",
         "org.apache.commons"             % "commons-lang3"   % "3.12.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.15" % Tests,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.15" % Tests
+        "dev.zio"                       %% "zio-test"        % "2.0.15" % Test,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.15" % Test
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
+    )
+
+lazy val integration =
+  project
+    .in(file("modules/integration"))
+    .disablePlugins(RevolverPlugin)
+    .settings(stdSettings("integration"))
+    .dependsOn(library % "test->test")
+    .settings(
+      publish / skip := true
     )
 
 lazy val example =
@@ -102,5 +109,3 @@ lazy val docs =
       docusaurusCreateSite     := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
       docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
     )
-
-val Tests = List(IntegrationTest, Test).mkString(",")
