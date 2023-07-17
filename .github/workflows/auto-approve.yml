@@ -12,3 +12,7 @@ jobs:
         uses: hmarr/auto-approve-action@v3.2.1
         with:
           github-token: "${{ secrets.AUTO_APPROVE_GITHUB_ACCESS_TOKEN }}"
+      - name: Auto approve 1
+        uses: hmarr/auto-approve-action@v3.2.1
+        with:
+          github-token: "${{ secrets.AUTO_APPROVE_GITHUB_ACCESS_TOKEN_1 }}"
