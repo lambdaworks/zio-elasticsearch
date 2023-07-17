@@ -27,13 +27,11 @@ import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocum
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
-import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result._
 import zio.elasticsearch.result.{Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
@@ -129,7 +127,6 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("aggregate using min aggregation") {
-            val expectedResponse = ("aggregationInt", MinAggregationResult(value = 23.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {

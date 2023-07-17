@@ -56,7 +56,7 @@ jobs:
       - name: Run test container
         run: docker-compose -f docker-compose.yml up -d
       - name: Run integration tests
-        run: ./sbt ++${{ matrix.scala }}! it:test
+        run: ./sbt ++${{ matrix.scala }}! integration/test
 
   website:
     runs-on: ubuntu-20.04

@@ -18,10 +18,9 @@ object BuildHelper {
       scalacOptions            := stdOptions ++ extraOptions(scalaVersion.value),
       semanticdbEnabled        := scalaVersion.value != Scala3, // enable SemanticDB
       semanticdbOptions += "-P:semanticdb:synthetics:on",
-      semanticdbVersion                                          := scalafixSemanticdb.revision,
-      ThisBuild / scalafixScalaBinaryVersion                     := CrossVersion.binaryScalaVersion(scalaVersion.value),
-      ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0",
-      Test / parallelExecution                                   := true,
+      semanticdbVersion                      := scalafixSemanticdb.revision,
+      ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
+      Test / parallelExecution               := true,
       incOptions ~= (_.withLogRecompileOnMacro(false)),
       autoAPIMappings := true
     )

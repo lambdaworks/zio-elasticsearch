@@ -22,11 +22,11 @@ import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.utils.unsafeWrap
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
 import zio.test.{Assertion, Gen, TestAspect, ZIOSpecDefault, checkN}
-import zio.elasticsearch.utils.unsafeWrap
 
 import java.time.LocalDate
 
