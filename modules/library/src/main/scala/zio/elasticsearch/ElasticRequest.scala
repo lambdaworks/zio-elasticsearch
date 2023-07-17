@@ -660,7 +660,7 @@ object ElasticRequest {
 
       val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
 
-      val highlightsJson: Json = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson))
+      val highlightsJson: Json = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
 
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 
@@ -751,7 +751,7 @@ object ElasticRequest {
 
       val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
 
-      val highlightsJson: Json = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson))
+      val highlightsJson: Json = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
 
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
 

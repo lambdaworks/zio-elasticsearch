@@ -466,7 +466,7 @@ private[elasticsearch] final case class HasChild[S](
           Some("type"  -> childType.toJson),
           Some("query" -> query.toJson(None)),
           ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
-          innerHitsField.map(_.toStringJsonPair),
+          innerHitsField.map(_.toStringJsonPair(None)),
           maxChildren.map("max_children" -> _.toJson),
           minChildren.map("min_children" -> _.toJson),
           scoreMode.map("score_mode" -> _.toString.toLowerCase.toJson)
@@ -544,7 +544,7 @@ private[elasticsearch] final case class HasParent[S](
           boost.map("boost" -> _.toJson),
           ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
           score.map("score" -> _.toJson),
-          innerHitsField.map(_.toStringJsonPair)
+          innerHitsField.map(_.toStringJsonPair(None))
         ).flatten
       )
     )
@@ -614,7 +614,7 @@ private[elasticsearch] final case class Nested[S](
           Some("query" -> query.toJson(fieldPath.map(_ + "." + path).orElse(Some(path)))),
           scoreMode.map("score_mode" -> _.toString.toLowerCase.toJson),
           ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
-          innerHitsField.map(_.toStringJsonPair)
+          innerHitsField.map(_.toStringJsonPair(fieldPath.map(_ + "." + path).orElse(Some(path))))
         ).flatten
       )
     )

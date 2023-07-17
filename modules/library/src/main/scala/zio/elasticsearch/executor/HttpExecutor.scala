@@ -40,6 +40,7 @@ import zio.elasticsearch.executor.response.{
   CreateResponse,
   DocumentWithHighlightsAndSort,
   GetResponse,
+  Hit,
   SearchWithAggregationsResponse,
   UpdateByQueryResponse
 }
@@ -382,7 +383,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value =>
+            value => {
               ZIO
                 .fromEither(value.innerHitsResults)
                 .map { innerHitsResults =>
@@ -395,6 +396,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                   )
                 }
                 .mapError(error => DecodingException(s"Could not parse inner_hits: $error"))
+            }
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -610,7 +612,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def itemsFromDocumentsWithHighlightsSortAndInnerHits(
     results: Chunk[DocumentWithHighlightsAndSort],
-    innerHits: Chunk[Map[String, Chunk[Json]]]
+    innerHits: Chunk[Map[String, Chunk[Hit]]]
   ): Chunk[Item] =
     results.zip(innerHits).map { case (r, innerHits) =>
       Item(raw = r.source, highlight = r.highlight, innerHits = innerHits, sort = r.sort)

@@ -27,12 +27,14 @@ import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocum
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
+import zio.elasticsearch.query.{FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result._
+import zio.elasticsearch.result.{Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -1139,6 +1141,55 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("successfully find inner hit document with highlight") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = nested(
+                            path = TestDocument.subDocumentList,
+                            query = must(
+                              matches(
+                                TestSubDocument.stringField,
+                                secondDocument.subDocumentList.headOption.map(_.stringField).getOrElse("foo")
+                              )
+                            )
+                          ).innerHits(
+                            InnerHits().highlights(highlight(TestSubDocument.stringField))
+                          )
+                  result <- Executor.execute(ElasticRequest.search(firstSearchIndex, query))
+                  items  <- result.items
+                  res = items
+                          .flatMap(_.innerHit("subDocumentList"))
+                          .flatten
+                          .flatMap(_.highlight("subDocumentList.stringField"))
+                          .flatten
+                } yield assert(res)(
+                  Assertion.contains(
+                    secondDocument.subDocumentList.headOption
+                      .map(doc => s"<em>${doc.stringField}</em>")
+                      .getOrElse("<em>foo</em>")
+                  )
+                )
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
+              )
+            ),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("successfully find document with highlight using field accessor") {

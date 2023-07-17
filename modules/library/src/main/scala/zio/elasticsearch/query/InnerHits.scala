@@ -132,7 +132,7 @@ final case class InnerHits private[elasticsearch] (
   def size(value: Int): InnerHits =
     self.copy(size = Some(value))
 
-  private[elasticsearch] def toStringJsonPair: (String, Json) = {
+  private[elasticsearch] def toStringJsonPair(fieldPath: Option[String]): (String, Json) = {
     val sourceJson: Option[Json] =
       (included, excluded) match {
         case (Chunk(), Chunk()) =>
@@ -148,7 +148,7 @@ final case class InnerHits private[elasticsearch] (
         from.map("from" -> Num(_)),
         size.map("size" -> Num(_)),
         name.map("name" -> Str(_)),
-        highlights.map("highlight" -> _.toJson),
+        highlights.map("highlight" -> _.toJson(fieldPath)),
         sourceJson.map("_source" -> _)
       ).flatten
     )
