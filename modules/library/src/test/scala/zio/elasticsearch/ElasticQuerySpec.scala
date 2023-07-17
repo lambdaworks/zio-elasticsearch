@@ -2550,7 +2550,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |      "name": "innerHitName",
               |      "highlight" : {
               |        "fields" : {
-              |          "stringField" : {}
+              |          "subDocumentList.stringField" : {}
               |        }
               |      },
               |      "_source" : {

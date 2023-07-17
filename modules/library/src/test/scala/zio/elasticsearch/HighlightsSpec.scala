@@ -228,32 +228,32 @@ object HighlightsSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(highlightObject.toJson)(
+          assert(highlightObject.toJson(None))(
             equalTo(
               expected.toJson
             )
-          ) && assert(highlightWithHighlight.toJson)(
+          ) && assert(highlightWithHighlight.toJson(None))(
             equalTo(
               expectedWithFirstName.toJson
             )
-          ) && assert(highlightWithHighlightAndGlobalConfig.toJson)(
+          ) && assert(highlightWithHighlightAndGlobalConfig.toJson(None))(
             equalTo(
               expectedPlainWithFirstName.toJson
             )
-          ) && assert(highlightWithConfig.toJson)(
+          ) && assert(highlightWithConfig.toJson(None))(
             equalTo(
               expectedPlainWithRequiredFieldMatch.toJson
             )
-          ) && assert(highlightWithConfigAndHighlight.toJson)(
+          ) && assert(highlightWithConfigAndHighlight.toJson(None))(
             equalTo(
               expectedPlainWithMatchedFields.toJson
             )
-          ) && assert(highlightWithConfigHighlightAndExplicitFieldOrder.toJson)(
+          ) && assert(highlightWithConfigHighlightAndExplicitFieldOrder.toJson(None))(
             equalTo(
               expectedPlainWithArrayOfFields.toJson
             )
           ) &&
-          assert(highlightWithMultipleConfig.toJson)(
+          assert(highlightWithMultipleConfig.toJson(None))(
             equalTo(
               expectedFvhType.toJson
             )

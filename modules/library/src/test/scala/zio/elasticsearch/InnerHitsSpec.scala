@@ -231,14 +231,14 @@ object InnerHitsSpec extends ZIOSpecDefault {
             |}
             |""".stripMargin
 
-        assert(Obj(innerHits.toStringJsonPair))(equalTo(expected.toJson)) &&
-        assert(Obj(innerHitsWithExcluded.toStringJsonPair))(equalTo(expectedWithExcluded.toJson)) &&
-        assert(Obj(innerHitsWithFrom.toStringJsonPair))(equalTo(expectedWithFrom.toJson)) &&
-        assert(Obj(innerHitsWithHighlights.toStringJsonPair))(equalTo(expectedWithHighlights.toJson)) &&
-        assert(Obj(innerHitsWithIncluded.toStringJsonPair))(equalTo(expectedWithIncluded.toJson)) &&
-        assert(Obj(innerHitsWithName.toStringJsonPair))(equalTo(expectedWithName.toJson)) &&
-        assert(Obj(innerHitsWithSize.toStringJsonPair))(equalTo(expectedWithSize.toJson)) &&
-        assert(Obj(innerHitsWithAllParams.toStringJsonPair))(equalTo(expectedWithAllParams.toJson))
+        assert(Obj(innerHits.toStringJsonPair(None)))(equalTo(expected.toJson)) &&
+        assert(Obj(innerHitsWithExcluded.toStringJsonPair(None)))(equalTo(expectedWithExcluded.toJson)) &&
+        assert(Obj(innerHitsWithFrom.toStringJsonPair(None)))(equalTo(expectedWithFrom.toJson)) &&
+        assert(Obj(innerHitsWithHighlights.toStringJsonPair(None)))(equalTo(expectedWithHighlights.toJson)) &&
+        assert(Obj(innerHitsWithIncluded.toStringJsonPair(None)))(equalTo(expectedWithIncluded.toJson)) &&
+        assert(Obj(innerHitsWithName.toStringJsonPair(None)))(equalTo(expectedWithName.toJson)) &&
+        assert(Obj(innerHitsWithSize.toStringJsonPair(None)))(equalTo(expectedWithSize.toJson)) &&
+        assert(Obj(innerHitsWithAllParams.toStringJsonPair(None)))(equalTo(expectedWithAllParams.toJson))
       }
     )
 }
