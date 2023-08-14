@@ -634,6 +634,18 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
+        suite("refresh index")(
+          test("successfully refresh existing index") {
+            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(
+              equalTo(true)
+            )
+          },
+          test("return 'NotFound' if index does not exists") {
+            assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
+              equalTo(false)
+            )
+          }
+        ),
         suite("retrieving document by IDs")(
           test("find documents by ids") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

@@ -216,6 +216,11 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val refreshRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_refresh",
+    response = Response("OK", StatusCode.Ok)
+  )
+
   private val searchRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search",
     response = Response(
@@ -372,6 +377,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     deleteIndexRequestStub,
     existsRequestStub,
     getByIdRequestStub,
+    refreshRequestStub,
     searchRequestStub,
     searchWithAggregationRequestStub,
     UpdateRequestStub,

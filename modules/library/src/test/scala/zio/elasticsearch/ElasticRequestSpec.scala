@@ -261,6 +261,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
           )
         },
+        test("refresh") {
+          val refreshRequest = refresh(Index)
+          assert(refreshRequest)(equalTo(Refresh(Index)))
+        },
         test("search") {
           val searchRequest         = search(index = Index, query = Query)
           val searchRequestWithSort = search(index = Index, query = Query).sort(sortBy(TestDocument.intField))
