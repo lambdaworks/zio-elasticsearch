@@ -448,6 +448,42 @@ object ElasticQuery {
     MatchPhrase(field = field, value = value, boost = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] using the specified
+   * parameters. [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] returns documents that contain the words of a
+   * provided text, in the same order as provided. The last term of the provided text is treated as a prefix, matching
+   * any words that begin with that term.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `String`
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] that represents the match phrase prefix query
+   *   to be performed.
+   */
+  final def matchPhrasePrefix[S](field: Field[S, String], value: String): MatchPhrasePrefixQuery[S] =
+    MatchPhrasePrefix(field = field.toString, value = value)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] returns documents that contain the words of a provided text, in
+   * the same order as provided. The last term of the provided text is treated as a prefix, matching any words that
+   * begin with that term.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `String`
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] that represents the match phrase prefix query
+   *   to be performed.
+   */
+  final def matchPhrasePrefix(field: String, value: String): MatchPhrasePrefixQuery[Any] =
+    MatchPhrasePrefix(field = field, value = value)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the
    * criteria using the specified parameters.
    *
