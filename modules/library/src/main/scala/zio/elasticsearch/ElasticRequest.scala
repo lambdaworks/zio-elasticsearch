@@ -215,7 +215,7 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[RefreshRequest]] used for deleting an index by specified name.
+   * Constructs an instance of [[RefreshRequest]] used for refreshing an index by specified name.
    *
    * @param name
    *   the name of the index to be refreshed

@@ -640,7 +640,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               equalTo(true)
             )
           },
-          test("return 'NotFound' if index does not exists") {
+          test("return false if index does not exists") {
             assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
               equalTo(false)
             )
