@@ -788,6 +788,23 @@ private[elasticsearch] object Range {
     )
 }
 
+sealed trait RegexpQuery[S] extends ElasticQuery[S] with HasCaseInsensitive[RegexpQuery[S]]
+
+private[elasticsearch] final case class Regexp[S](
+  field: String,
+  value: String,
+  caseInsensitive: Option[Boolean]
+) extends RegexpQuery[S] { self =>
+
+  def caseInsensitive(value: Boolean): RegexpQuery[S] =
+    self.copy(caseInsensitive = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val regexpFields = Some("value" -> value.toJson) ++ caseInsensitive.map("case_insensitive" -> _.toJson)
+    Obj("regexp" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(regexpFields))))
+  }
+}
+
 sealed trait ScriptQuery extends ElasticQuery[Any] with HasBoost[ScriptQuery]
 
 private[elasticsearch] final case class Script(script: zio.elasticsearch.script.Script, boost: Option[Double])
