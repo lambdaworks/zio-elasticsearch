@@ -20,3 +20,4 @@ val request: RefreshRequest = refresh(index = IndexName("index"))
 ```
 
 You can find more information about `Refresh` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/indices-refresh.html).
+
