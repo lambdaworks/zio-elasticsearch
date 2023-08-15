@@ -29,3 +29,4 @@ val queryWithCaseInsensitiveTrue: RegexpQuery = regexp(field = Document.name, va
 ```
 
 You can find more information about `Regexp` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-regexp-query.html).
+
