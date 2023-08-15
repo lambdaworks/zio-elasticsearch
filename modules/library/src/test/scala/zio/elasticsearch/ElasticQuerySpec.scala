@@ -2477,6 +2477,22 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryRawTs.toJson(fieldPath = None))(equalTo(expectedRaw.toJson)) &&
           assert(querySimpleTsWithBoost.toJson(fieldPath = None))(equalTo(expectedSimpleTsWithBoost.toJson))
         },
+        test("matchPhrasePrefix"){
+          val query   = matchPhrasePrefix("stringField", "test")
+          val queryTs = matchPhrasePrefix(TestDocument.stringField, "test")
+
+          val expected =
+            """
+              |{
+              |  "match_phrase_prefix": {
+              |    "stringField": "test"
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
+        },
         test("nested") {
           val query                   = nested(TestDocument.subDocumentList, matchAll)
           val queryWithNested         = nested(TestDocument.subDocumentList, nested("items", term("testField", "test")))
