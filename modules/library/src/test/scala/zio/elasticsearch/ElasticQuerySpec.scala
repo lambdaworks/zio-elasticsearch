@@ -895,9 +895,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryTs = matchPhrasePrefix(TestDocument.stringField, "test")
 
           assert(query)(equalTo(MatchPhrasePrefix[Any](field = "stringField", value = "test"))) &&
-          assert(queryTs)(
-            equalTo(MatchPhrasePrefix[TestDocument](field = "stringField", value = "test"))
-          )
+          assert(queryTs)(equalTo(MatchPhrasePrefix[TestDocument](field = "stringField", value = "test")))
         },
         test("nested") {
           val query                   = nested("testField", matchAll)

@@ -3,7 +3,7 @@ id: elastic_query_match_phrase_prefix
 title: "Match Phrase Prefix Query"
 ---
 
-The `MatchPhrasePrefix` returns documents that contain the words of a provided text, in the same order as provided. 
+The `MatchPhrasePrefix` query returns documents that contain the words of a provided text, in the same order as provided. 
 The last term of the provided text is treated as a prefix, matching any words that begin with that term.
 
 In order to use the `MatchPhrasePrefix` query import the following:
@@ -23,3 +23,4 @@ val query: MatchPhrasePrefixQuery = matchPhrasePrefix(field = Document.stringFie
 ```
 
 You can find more information about `MatchPhrasePrefix` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-match-query-phrase-prefix.html).
+

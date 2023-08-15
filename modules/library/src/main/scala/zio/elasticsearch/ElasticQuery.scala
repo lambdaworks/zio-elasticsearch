@@ -456,7 +456,7 @@ object ElasticQuery {
    * @param field
    *   the type-safe field for which query is specified for
    * @param value
-   *   the value to be matched, represented by an instance of type `String`
+   *   the text value to be matched
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -475,7 +475,7 @@ object ElasticQuery {
    * @param field
    *   the field for which query is specified for
    * @param value
-   *   the value to be matched, represented by an instance of type `String`
+   *   the text value to be matched
    * @return
    *   an instance of [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] that represents the match phrase prefix query
    *   to be performed.
