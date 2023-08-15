@@ -79,6 +79,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: DeleteIndex        => executeDeleteIndex(r)
       case r: Exists             => executeExists(r)
       case r: GetById            => executeGetById(r)
+      case r: Refresh            => executeRefresh(r)
       case r: Search             => executeSearch(r)
       case r: SearchAndAggregate => executeSearchAndAggregate(r)
       case r: Update             => executeUpdate(r)
@@ -371,6 +372,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
+  private def executeRefresh(r: Refresh): Task[Boolean] =
+    sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.name}/$Refresh")).flatMap { response =>
+      response.code match {
+        case HttpOk       => ZIO.succeed(true)
+        case HttpNotFound => ZIO.succeed(false)
+        case _            => ZIO.fail(handleFailures(response))
+      }
+    }
+
   private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       baseRequest
@@ -646,6 +656,7 @@ private[elasticsearch] object HttpExecutor {
   private final val Doc           = "_doc"
   private final val KeepAlive     = "keep_alive"
   private final val PointInTime   = "_pit"
+  private final val Refresh       = "_refresh"
   private final val Scroll        = "scroll"
   private final val ScrollId      = "scroll_id"
   private final val Search        = "_search"

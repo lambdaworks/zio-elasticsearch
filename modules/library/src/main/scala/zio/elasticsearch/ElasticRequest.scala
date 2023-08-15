@@ -215,6 +215,17 @@ object ElasticRequest {
     GetById(index = index, id = id, refresh = None, routing = None)
 
   /**
+   * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
+   *
+   * @param name
+   *   the name of the index to be refreshed
+   * @return
+   *   an instance of [[RefreshRequest]] that represents refresh operation to be performed.
+   */
+  final def refresh(name: IndexName): RefreshRequest =
+    Refresh(name = name)
+
+  /**
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
    *
    * @param index
@@ -539,7 +550,7 @@ object ElasticRequest {
 
   sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
 
-  final case class DeleteIndex(name: IndexName) extends DeleteIndexRequest
+  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends DeleteIndexRequest
 
   sealed trait ExistsRequest extends ElasticRequest[Boolean] with HasRouting[ExistsRequest]
 
@@ -569,6 +580,10 @@ object ElasticRequest {
     def routing(value: Routing): GetByIdRequest =
       self.copy(routing = Some(value))
   }
+
+  sealed trait RefreshRequest extends ElasticRequest[Boolean]
+
+  private[elasticsearch] final case class Refresh(name: IndexName) extends RefreshRequest
 
   sealed trait SearchRequest
       extends ElasticRequest[SearchResult]

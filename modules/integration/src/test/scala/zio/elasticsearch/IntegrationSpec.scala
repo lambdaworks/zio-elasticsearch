@@ -52,6 +52,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val geoDistanceIndex: IndexName = IndexName("geo-distance-index")
 
+  val refreshFailIndex: IndexName = IndexName("refresh-fail")
+
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- Executor.execute(ElasticRequest.createIndex(index))
     _ <- Executor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)

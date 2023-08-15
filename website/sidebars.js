@@ -63,6 +63,7 @@ module.exports = {
                     'overview/requests/elastic_request_delete_index',
                     'overview/requests/elastic_request_exists',
                     'overview/requests/elastic_request_get_by_id',
+                    'overview/requests/elastic_request_refresh',
                     'overview/requests/elastic_request_search',
                     'overview/requests/elastic_request_update',
                     'overview/requests/elastic_request_update_by_query'
