@@ -22,6 +22,7 @@ module.exports = {
                     'overview/queries/elastic_query_has_parent',
                     'overview/queries/elastic_query_match',
                     'overview/queries/elastic_query_match_all',
+                    'overview/queries/elastic_query_match_boolean_prefix',
                     'overview/queries/elastic_query_match_phrase',
                     'overview/queries/elastic_query_nested',
                     'overview/queries/elastic_query_prefix',

@@ -567,6 +567,26 @@ private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends 
     Obj("match_all" -> Obj(Chunk.fromIterable(boost.map("boost" -> _.toJson))))
 }
 
+sealed trait MatchBooleanPrefixQuery[S] extends ElasticQuery[S] with HasMinimumShouldMatch[MatchBooleanPrefixQuery[S]]
+
+private[elasticsearch] final case class MatchBooleanPrefix[S, A: ElasticPrimitive](
+  field: String,
+  value: A,
+  minimumShouldMatch: Option[Int]
+) extends MatchBooleanPrefixQuery[S] { self =>
+  def minimumShouldMatch(value: Int): MatchBooleanPrefixQuery[S] =
+    self.copy(minimumShouldMatch = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "match_bool_prefix" -> Obj(
+        fieldPath.foldRight(field)(_ + "." + _) -> minimumShouldMatch.fold(value.toJson)(m =>
+          Obj("query" -> value.toJson) merge Obj("minimum_should_match" -> m.toJson)
+        )
+      )
+    )
+}
+
 sealed trait MatchPhraseQuery[S] extends ElasticQuery[S] with HasBoost[MatchPhraseQuery[S]]
 
 private[elasticsearch] final case class MatchPhrase[S](field: String, value: String, boost: Option[Double])

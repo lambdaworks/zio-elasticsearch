@@ -416,6 +416,44 @@ object ElasticQuery {
     Match(field = field, value = value)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] using the specified
+   * parameters. [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a `bool` query
+   * from the terms. Each term except the last is used in a `term` query. The last term is used in a `prefix` query.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `A`
+   * @tparam S
+   *   document for which field query is executed
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] that represents the match boolean prefix query
+   *   to be performed.
+   */
+  final def matchBooleanPrefix[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchBooleanPrefixQuery[S] =
+    MatchBooleanPrefix(field = field.toString, value, minimumShouldMatch = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a `bool` query from the
+   * terms. Each term except the last is used in a `term` query. The last term is used in a `prefix` query.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `A`
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] that represents the match boolean prefix query
+   *   to be performed.
+   */
+  final def matchBooleanPrefix[A: ElasticPrimitive](field: String, value: A): MatchBooleanPrefixQuery[Any] =
+    MatchBooleanPrefix(field = field, value = value, minimumShouldMatch = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchPhraseQuery]] using the specified parameters.
    * [[zio.elasticsearch.query.MatchPhraseQuery]] analyzes the text and creates a phrase query out of the analyzed text.
    *
