@@ -1050,7 +1050,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using regexp query") {
+          test("search for a document that doesn't exist using regexp query without case insensitive ") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1100,7 +1100,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query))
                            .documentAs[TestDocument]
-                } yield (assert(res)(Assertion.contains(firstDocument)) && assert(res)(!Assertion.contains(secondDocument)))
+                } yield (assert(res)(Assertion.contains(firstDocument)) && assert(res)(
+                  !Assertion.contains(secondDocument)
+                ))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

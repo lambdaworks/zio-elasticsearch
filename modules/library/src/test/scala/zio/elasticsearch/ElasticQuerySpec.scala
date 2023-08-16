@@ -1166,15 +1166,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("regexp") {
-          val query                      = regexp("stringField", "t.*st")
-          val queryTs                    = regexp(TestDocument.stringField, "t.*st")
-          val queryWithCaseInsensitive   = regexp("stringField", "t.*st").caseInsensitiveTrue
-          val queryTsWithCaseInsensitive = regexp(TestDocument.stringField, "t.*st").caseInsensitiveTrue
+          val query                    = regexp("stringField", "t.*st")
+          val queryTs                  = regexp(TestDocument.stringField, "t.*st")
+          val queryWithCaseInsensitive = regexp(TestDocument.stringField, "t.*st").caseInsensitiveTrue
+          val queryWithSuffix          = regexp(TestDocument.stringField.raw, "t.*st")
 
           assert(query)(equalTo(Regexp[Any](field = "stringField", value = "t.*st", caseInsensitive = None))) &&
-          assert(queryTs)(equalTo(Regexp[TestDocument](field = "stringField", value = "t.*st", caseInsensitive = None))) &&
-          assert(queryWithCaseInsensitive)(equalTo(Regexp[Any](field = "stringField", value = "t.*st", caseInsensitive = Some(true)))) &&
-          assert(queryTsWithCaseInsensitive)(equalTo(Regexp[TestDocument](field = "stringField", value = "t.*st", caseInsensitive = Some(true))))
+          assert(queryTs)(
+            equalTo(Regexp[TestDocument](field = "stringField", value = "t.*st", caseInsensitive = None))
+          ) &&
+          assert(queryWithCaseInsensitive)(
+            equalTo(Regexp[TestDocument](field = "stringField", value = "t.*st", caseInsensitive = Some(true)))
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(Regexp[TestDocument](field = "stringField.raw", value = "t.*st", caseInsensitive = None))
+          )
         },
         test("script") {
           val query =
@@ -2784,10 +2790,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithFormat.toJson(fieldPath = None))(equalTo(expectedWithFormat.toJson))
         },
         test("regexp") {
-          val query                      = regexp("stringField", "t.*st")
-          val queryTs                    = regexp(TestDocument.stringField, "t.*st")
-          val queryWithCaseInsensitive   = regexp("stringField", "t.*st").caseInsensitiveTrue
-          val queryTsWithCaseInsensitive = regexp(TestDocument.stringField, "t.*st").caseInsensitiveTrue
+          val query                    = regexp("stringField", "t.*st")
+          val queryTs                  = regexp(TestDocument.stringField, "t.*st")
+          val queryWithCaseInsensitive = regexp(TestDocument.stringField, "t.*st").caseInsensitiveTrue
+          val queryWithSuffix          = regexp(TestDocument.stringField.raw, "t.*st")
 
           val expected =
             """
@@ -2812,10 +2818,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithSuffix =
+            """
+              |{
+              |  "regexp": {
+              |    "stringField.raw": {
+              |      "value": "t.*st"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson)) &&
-          assert(queryTsWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson))
+          assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson))
         },
         test("script") {
           val query =

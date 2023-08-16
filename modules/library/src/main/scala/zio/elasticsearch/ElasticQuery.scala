@@ -626,7 +626,7 @@ object ElasticQuery {
    * [[zio.elasticsearch.query.RegexpQuery]] returns documents that contain terms matching a regular expression.
    *
    * @param field
-   *   the field for which query is specified for
+   *   the type-safe field for which query is specified for
    * @param value
    *   regular expression that will be used for the query
    * @tparam S
