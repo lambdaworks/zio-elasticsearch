@@ -2477,7 +2477,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryRawTs.toJson(fieldPath = None))(equalTo(expectedRaw.toJson)) &&
           assert(querySimpleTsWithBoost.toJson(fieldPath = None))(equalTo(expectedSimpleTsWithBoost.toJson))
         },
-        test("matchPhrasePrefix"){
+        test("matchPhrasePrefix") {
           val query   = matchPhrasePrefix("stringField", "test")
           val queryTs = matchPhrasePrefix(TestDocument.stringField, "test")
 
