@@ -2485,7 +2485,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             """
               |{
               |  "match_phrase_prefix": {
-              |    "stringField": "test"
+              |    "stringField": {
+              |       "query" : "test"
+              |    }
               |  }
               |}
               |""".stripMargin

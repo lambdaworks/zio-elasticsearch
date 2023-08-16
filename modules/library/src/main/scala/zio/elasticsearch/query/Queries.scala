@@ -590,7 +590,7 @@ private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, valu
     extends MatchPhrasePrefixQuery[S] {
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
+    Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj("query" -> value.toJson)))
 }
 
 sealed trait NestedQuery[S]
