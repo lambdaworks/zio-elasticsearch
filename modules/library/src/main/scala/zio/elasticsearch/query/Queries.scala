@@ -584,6 +584,15 @@ private[elasticsearch] final case class MatchPhrase[S](field: String, value: Str
     )
 }
 
+sealed trait MatchPhrasePrefixQuery[S] extends ElasticQuery[S]
+
+private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, value: String)
+    extends MatchPhrasePrefixQuery[S] {
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj("query" -> value.toJson)))
+}
+
 sealed trait NestedQuery[S]
     extends ElasticQuery[S]
     with HasIgnoreUnmapped[NestedQuery[S]]
