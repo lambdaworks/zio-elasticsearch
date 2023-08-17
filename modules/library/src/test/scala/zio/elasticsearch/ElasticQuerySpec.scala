@@ -891,11 +891,20 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("matchPhrasePrefix") {
-          val query   = matchPhrasePrefix("stringField", "test")
+          val query = matchPhrasePrefix("stringField", "test")
           val queryTs = matchPhrasePrefix(TestDocument.stringField, "test")
 
           assert(query)(equalTo(MatchPhrasePrefix[Any](field = "stringField", value = "test"))) &&
-          assert(queryTs)(equalTo(MatchPhrasePrefix[TestDocument](field = "stringField", value = "test")))
+            assert(queryTs)(equalTo(MatchPhrasePrefix[TestDocument](field = "stringField", value = "test")))
+        },
+        test("multiMatch") {
+          val query              = multiMatch("this is a test").fields("stringField1", "stringField2")
+          val queryTs            = multiMatch("this is a test").fields(TestDocument.stringField)
+          val queryWithoutFields = multiMatch("this is a test")
+
+          assert(query)(equalTo(MultiMatch[Any](Some(Chunk("stringField1", "stringField2")), "this is a test"))) &&
+          assert(queryTs)(equalTo(MultiMatch[Any](Some(Chunk("stringField")), "this is a test"))) &&
+          assert(queryWithoutFields)(equalTo(MultiMatch[Any](fields = None, "this is a test")))
         },
         test("nested") {
           val query                   = nested("testField", matchAll)
@@ -2495,7 +2504,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(querySimpleTsWithBoost.toJson(fieldPath = None))(equalTo(expectedSimpleTsWithBoost.toJson))
         },
         test("matchPhrasePrefix") {
-          val query   = matchPhrasePrefix("stringField", "test")
+          val query = matchPhrasePrefix("stringField", "test")
           val queryTs = matchPhrasePrefix(TestDocument.stringField, "test")
 
           val expected =
@@ -2505,12 +2514,39 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |    "stringField": {
               |       "query" : "test"
               |    }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+            assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
+        },
+        test("multiMatch") {
+          val query              = multiMatch("this is a test").fields("stringField", "stringField")
+          val queryTs            = multiMatch("this is a test").fields(TestDocument.stringField, TestDocument.stringField)
+          val queryWithoutFields = multiMatch("this is a test")
+
+          val expected =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "fields": [ "stringField", "stringField" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithoutFields =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test"
               |  }
               |}
               |""".stripMargin
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
-          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithoutFields.toJson(fieldPath = None))(equalTo(expectedWithoutFields.toJson))
         },
         test("nested") {
           val query                   = nested(TestDocument.subDocumentList, matchAll)

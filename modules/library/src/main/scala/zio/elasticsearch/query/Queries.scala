@@ -18,6 +18,7 @@ package zio.elasticsearch.query
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
+import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
@@ -591,6 +592,25 @@ private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, valu
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj("query" -> value.toJson)))
+}
+
+sealed trait MultiMatchQuery[S] extends ElasticQuery[S] with HasFields[MultiMatchQuery[S]]
+
+private[elasticsearch] final case class MultiMatch[S](fields: Option[Chunk[String]], value: String)
+    extends MultiMatchQuery[S] { self =>
+
+  def fields(fields: String*): MultiMatchQuery[S] =
+    self.copy(fields = Some(Chunk.fromIterable(fields)))
+
+  def fields[S1: Schema](fields: Field[S1, String]*): MultiMatchQuery[S] =
+    self.copy(fields = Some(Chunk.fromIterable(fields.map(_.toString))))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge fields.fold(Obj())(f =>
+        Obj("fields" -> Arr(f.map(_.toJson)))
+      ))
+    )
 }
 
 sealed trait NestedQuery[S]
