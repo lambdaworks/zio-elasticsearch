@@ -883,14 +883,42 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryIntTs                    = matchBooleanPrefix(TestDocument.intField, 1)
           val queryWithMinimumShouldMatchTs = matchBooleanPrefix(TestDocument.stringField, "test").minimumShouldMatch(3)
 
-          assert(queryString)(equalTo(MatchBooleanPrefix[Any, String](field = "stringField", value = "test", minimumShouldMatch = None))) &&
-          assert(queryBool)(equalTo(MatchBooleanPrefix[Any, Boolean](field = "booleanField", value = true, minimumShouldMatch = None))) &&
-          assert(queryInt)(equalTo(MatchBooleanPrefix[Any, Int](field = "intField", value = 1, minimumShouldMatch = None))) &&
-          assert(queryWithMinimumShouldMatch)(equalTo(MatchBooleanPrefix[Any, String](field = "stringField", value = "test", minimumShouldMatch = Some(3)))) &&
-          assert(queryStringTs)(equalTo(MatchBooleanPrefix[TestDocument, String](field = "stringField", value = "test", minimumShouldMatch = None))) &&
-          assert(queryBoolTs)(equalTo(MatchBooleanPrefix[TestDocument, Boolean](field = "booleanField", value = true, minimumShouldMatch = None))) &&
-          assert(queryIntTs)(equalTo(MatchBooleanPrefix[TestDocument, Int](field = "intField", value = 1, minimumShouldMatch = None))) &&
-          assert(queryWithMinimumShouldMatchTs)(equalTo(MatchBooleanPrefix[TestDocument, String](field = "stringField", value = "test", minimumShouldMatch = Some(3))))
+          assert(queryString)(
+            equalTo(MatchBooleanPrefix[Any, String](field = "stringField", value = "test", minimumShouldMatch = None))
+          ) &&
+          assert(queryBool)(
+            equalTo(MatchBooleanPrefix[Any, Boolean](field = "booleanField", value = true, minimumShouldMatch = None))
+          ) &&
+          assert(queryInt)(
+            equalTo(MatchBooleanPrefix[Any, Int](field = "intField", value = 1, minimumShouldMatch = None))
+          ) &&
+          assert(queryWithMinimumShouldMatch)(
+            equalTo(
+              MatchBooleanPrefix[Any, String](field = "stringField", value = "test", minimumShouldMatch = Some(3))
+            )
+          ) &&
+          assert(queryStringTs)(
+            equalTo(
+              MatchBooleanPrefix[TestDocument, String](field = "stringField", value = "test", minimumShouldMatch = None)
+            )
+          ) &&
+          assert(queryBoolTs)(
+            equalTo(
+              MatchBooleanPrefix[TestDocument, Boolean](field = "booleanField", value = true, minimumShouldMatch = None)
+            )
+          ) &&
+          assert(queryIntTs)(
+            equalTo(MatchBooleanPrefix[TestDocument, Int](field = "intField", value = 1, minimumShouldMatch = None))
+          ) &&
+          assert(queryWithMinimumShouldMatchTs)(
+            equalTo(
+              MatchBooleanPrefix[TestDocument, String](
+                field = "stringField",
+                value = "test",
+                minimumShouldMatch = Some(3)
+              )
+            )
+          )
         },
         test("matchPhrase") {
           val query           = matchPhrase("stringField", "this is a test")
@@ -2498,7 +2526,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryString.toJson(fieldPath = None))(equalTo(expectedString.toJson)) &&
           assert(queryBool.toJson(fieldPath = None))(equalTo(expectedBool.toJson)) &&
           assert(queryInt.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
-          assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(equalTo(expectedWithMinimumShouldMatch.toJson)) &&
+          assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(
+            equalTo(expectedWithMinimumShouldMatch.toJson)
+          ) &&
           assert(queryStringTs.toJson(fieldPath = None))(equalTo(expectedString.toJson)) &&
           assert(queryBoolTs.toJson(fieldPath = None))(equalTo(expectedBool.toJson)) &&
           assert(queryIntTs.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
