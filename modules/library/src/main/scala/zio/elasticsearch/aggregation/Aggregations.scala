@@ -221,7 +221,8 @@ sealed trait PercentilesAggregation
    * @param percents
    *   a array of percentiles for calculation for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
    * @return
-   *   an instance of the [[zio.elasticsearch.aggregation.PercentilesAggregation]] enriched with the `percents` parameter.
+   *   an instance of the [[zio.elasticsearch.aggregation.PercentilesAggregation]] enriched with the `percents`
+   *   parameter.
    */
   def percents(percents: Double*): PercentilesAggregation
 }
