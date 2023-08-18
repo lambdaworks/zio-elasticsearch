@@ -37,6 +37,8 @@ object AggregationResponse {
         MinAggregationResult(value)
       case MissingAggregationResponse(value) =>
         MissingAggregationResult(value)
+      case PercentilesAggregationResponse(values) =>
+        PercentilesAggregationResult(values)
       case SumAggregationResponse(value) =>
         SumAggregationResult(value)
       case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
@@ -86,6 +88,14 @@ private[elasticsearch] final case class MissingAggregationResponse(@jsonField("d
 
 private[elasticsearch] object MissingAggregationResponse {
   implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
+}
+
+private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Double])
+    extends AggregationResponse
+
+private[elasticsearch] object PercentilesAggregationResponse {
+  implicit val decoder: JsonDecoder[PercentilesAggregationResponse] =
+    DeriveJsonDecoder.gen[PercentilesAggregationResponse]
 }
 
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse

@@ -54,6 +54,9 @@ private[elasticsearch] sealed trait ResultWithAggregation {
   def asMinAggregation(name: String): IO[DecodingException, Option[MinAggregationResult]] =
     aggregationAs[MinAggregationResult](name)
 
+  def asPercentilesAggregation(name: String): IO[DecodingException, Option[PercentilesAggregationResult]] =
+    aggregationAs[PercentilesAggregationResult](name)
+
   def asSumAggregation(name: String): IO[DecodingException, Option[SumAggregationResult]] =
     aggregationAs[SumAggregationResult](name)
 
