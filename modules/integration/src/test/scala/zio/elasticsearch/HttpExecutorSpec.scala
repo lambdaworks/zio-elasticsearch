@@ -1086,6 +1086,64 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document that doesn't exist using regexp query without case insensitive ") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query =
+                    ElasticQuery.regexp(
+                      field = TestDocument.stringField,
+                      value =
+                        s"${firstDocument.stringField.take(1)}.*${firstDocument.stringField.takeRight(1)}".toUpperCase
+                    )
+                  res <- Executor
+                           .execute(ElasticRequest.search(firstSearchIndex, query))
+                           .documentAs[TestDocument]
+                } yield assert(res)(!Assertion.contains(firstDocument))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using regexp query with case insensitive") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = ElasticQuery
+                            .regexp(
+                              field = TestDocument.stringField,
+                              value = s"${firstDocument.stringField.take(1)}.*${firstDocument.stringField.takeRight(1)}"
+                            )
+                            .caseInsensitiveTrue
+                  res <- Executor
+                           .execute(ElasticRequest.search(firstSearchIndex, query))
+                           .documentAs[TestDocument]
+                } yield (assert(res)(Assertion.contains(firstDocument)) && assert(res)(
+                  !Assertion.contains(secondDocument)
+                ))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document using script query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

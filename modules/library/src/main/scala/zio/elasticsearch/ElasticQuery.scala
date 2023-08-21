@@ -658,6 +658,36 @@ object ElasticQuery {
     Range.empty[Any, Any](field = field)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.RegexpQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.RegexpQuery]] returns documents that contain terms matching a regular expression.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param value
+   *   regular expression that will be used for the query
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.RegexpQuery]] that represents the regexp query to be performed.
+   */
+  final def regexp[S](field: Field[S, String], value: String): RegexpQuery[S] =
+    Regexp(field = field.toString, value = value, caseInsensitive = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.RegexpQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.RegexpQuery]] returns documents that contain terms matching a regular expression.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param value
+   *   regular expression that will be used for the query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.RegexpQuery]] that represents the regexp query to be performed.
+   */
+  final def regexp(field: String, value: String): RegexpQuery[Any] =
+    Regexp(field = field, value = value, caseInsensitive = None)
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.query.ScriptQuery]] with the provided script.
    * @param script
    *   the script that is used by the query

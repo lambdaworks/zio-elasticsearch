@@ -27,6 +27,7 @@ module.exports = {
                     'overview/queries/elastic_query_nested',
                     'overview/queries/elastic_query_prefix',
                     'overview/queries/elastic_query_range',
+                    'overview/queries/elastic_query_regexp',
                     'overview/queries/elastic_query_term',
                     'overview/queries/elastic_query_terms',
                     'overview/queries/elastic_query_wildcard',
