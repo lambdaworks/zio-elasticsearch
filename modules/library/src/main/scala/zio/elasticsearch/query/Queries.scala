@@ -182,6 +182,21 @@ private[elasticsearch] final case class Bool[S](
   }
 }
 
+sealed trait ConstantScoreQuery[S] extends ElasticQuery[S] with HasBoost[ConstantScoreQuery[S]]
+
+private[elasticsearch] final case class ConstantScore[S](query: ElasticQuery[S], boost: Option[Double])
+    extends ConstantScoreQuery[S] { self =>
+  def boost(value: Double): ConstantScoreQuery[S] =
+    self.copy(boost = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "constant_score" -> (Obj("filter" -> query.toJson(fieldPath)) merge boost.fold(Obj())(b =>
+        Obj("boost" -> b.toJson)
+      ))
+    )
+}
+
 sealed trait ExistsQuery[S] extends ElasticQuery[S] with HasBoost[ExistsQuery[S]]
 
 private[elasticsearch] final case class Exists[S](field: String, boost: Option[Double]) extends ExistsQuery[S] { self =>

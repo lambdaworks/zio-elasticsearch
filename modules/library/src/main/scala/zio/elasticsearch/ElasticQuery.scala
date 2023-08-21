@@ -26,6 +26,36 @@ import zio.schema.Schema
 object ElasticQuery {
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.ConstantScoreQuery]] with a specified query.
+   * [[zio.elasticsearch.query.ConstantScoreQuery]] wraps a filter query and returns every matching document with a
+   * relevance score equal to the boost parameter value.
+   *
+   * @param query
+   *   query you wish to run
+   * @tparam S
+   *   document for which field query is executed. An implicit `Schema` instance must be in scope
+   * @return
+   *   an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] that represents the constant score query with query
+   *   that must satisfy the criteria.
+   */
+  final def constantScore[S: Schema](query: ElasticQuery[S]): ConstantScoreQuery[S] =
+    ConstantScore[S](query, boost = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] with a specified query.
+   * [[zio.elasticsearch.query.ConstantScoreQuery]] wraps a filter query and returns every matching document with a
+   * relevance score equal to the boost parameter value.
+   *
+   * @param query
+   *   query you wish to run
+   * @return
+   *   an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] that represents the constant score query with query
+   *   that must satisfy the criteria.
+   */
+  final def constantScore(query: ElasticQuery[Any]): ConstantScoreQuery[Any] =
+    ConstantScore[Any](query, boost = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
    * [[zio.elasticsearch.query.WildcardQuery]] is used for matching documents containing a value that contains the
    * specified value in the specified field.
