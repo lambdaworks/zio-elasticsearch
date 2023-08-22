@@ -574,6 +574,7 @@ private[elasticsearch] final case class MatchBooleanPrefix[S, A: ElasticPrimitiv
   value: A,
   minimumShouldMatch: Option[Int]
 ) extends MatchBooleanPrefixQuery[S] { self =>
+
   def minimumShouldMatch(value: Int): MatchBooleanPrefixQuery[S] =
     self.copy(minimumShouldMatch = Some(value))
 

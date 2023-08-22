@@ -392,7 +392,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
    */
@@ -408,7 +408,7 @@ object ElasticQuery {
    * @param value
    *   the value to be matched, represented by an instance of type `A`
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
    */
@@ -417,8 +417,9 @@ object ElasticQuery {
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] using the specified
-   * parameters. [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a `bool` query
-   * from the terms. Each term except the last is used in a `term` query. The last term is used in a `prefix` query.
+   * parameters. [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a
+   * [[zio.elasticsearch.query.BoolQuery]] from the terms. Each term except the last is used in a
+   * [[zio.elasticsearch.query.TermQuery]]. The last term is used in a [[zio.elasticsearch.query.PrefixQuery]] query.
    *
    * @param field
    *   the type-safe field for which query is specified for
@@ -427,7 +428,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] that represents the match boolean prefix query
    *   to be performed.
@@ -437,15 +438,16 @@ object ElasticQuery {
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a `bool` query from the
-   * terms. Each term except the last is used in a `term` query. The last term is used in a `prefix` query.
+   * [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a
+   * [[zio.elasticsearch.query.BoolQuery]] from the terms. Each term except the last is used in a
+   * [[zio.elasticsearch.query.TermQuery]]. The last term is used in a [[zio.elasticsearch.query.PrefixQuery]].
    *
    * @param field
    *   the field for which query is specified for
    * @param value
    *   the value to be matched, represented by an instance of type `A`
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] that represents the match boolean prefix query
    *   to be performed.
@@ -753,7 +755,7 @@ object ElasticQuery {
    * @param value
    *   text value that will be used for the query
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -772,7 +774,7 @@ object ElasticQuery {
    * @param value
    *   text value that will be used for the query
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.TermQuery]] that represents the term query to be performed.
    */
@@ -792,7 +794,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */
@@ -810,7 +812,7 @@ object ElasticQuery {
    * @param values
    *   a list of terms that should be find in the provided field
    * @tparam A
-   *   the type of value to be matched. A JSON decoder must be in scope for this type
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
    */

@@ -22,5 +22,10 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val query: MatchBooleanPrefixQuery = matchBooleanPrefix(field = Document.stringField, value = "test")
 ```
 
+If you want to change the `minimum_should_match` parameter, you can use the `minimumShouldMatch` method:
+```scala
+val queryWithMinimumShouldMatch: MatchBooleanPrefixQuery = matchBooleanPrefix(field = Document.stringField, value = "test").minimumShouldMatch(2)
+```
+
 You can find more information about `MatchBooleanPrefix` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-match-bool-prefix-query.html).
 
