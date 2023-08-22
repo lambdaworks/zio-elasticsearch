@@ -228,7 +228,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithMissing = percentilesAggregation("aggregation", TestSubDocument.intField).missing(20.0)
           val aggregationWithPercents =
             percentilesAggregation("aggregation", TestSubDocument.intField).percents(75, 90, 99)
-          val aggregationWithAllParams = percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99).missing(20.0)
+          val aggregationWithAllParams =
+            percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99).missing(20.0)
 
           assert(aggregation)(
             equalTo(Percentiles(name = "aggregation", field = "testField", percents = Chunk.empty, missing = None))
@@ -246,7 +247,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(Percentiles(name = "aggregation", field = "intField", percents = Chunk(75, 90, 99), missing = None))
           ) &&
           assert(aggregationWithAllParams)(
-            equalTo(Percentiles(name = "aggregation", field = "intField", percents = Chunk(75, 90, 99), missing = Some(20.0)))
+            equalTo(
+              Percentiles(name = "aggregation", field = "intField", percents = Chunk(75, 90, 99), missing = Some(20.0))
+            )
           )
         },
         test("subAggregation") {
@@ -806,7 +809,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithPercents =
             percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99)
           val aggregationWithMissing = percentilesAggregation("aggregation", TestDocument.intField).missing(20.0)
-          val aggregationWithAllParams = percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99).missing(20.0)
+          val aggregationWithAllParams =
+            percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99).missing(20.0)
 
           val expected =
             """
@@ -879,7 +883,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               .withSubAgg(maxAggregation("second", TestSubDocument.intField))
 
           val aggregationWithPercentilesAgg = termsAggregation("first", TestDocument.stringField)
-              .withSubAgg(percentilesAggregation("second", TestSubDocument.intField).percents(75, 90, 99))
+            .withSubAgg(percentilesAggregation("second", TestSubDocument.intField).percents(75, 90, 99))
 
           val expected =
             """

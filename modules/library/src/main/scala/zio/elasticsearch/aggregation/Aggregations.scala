@@ -244,7 +244,10 @@ private[elasticsearch] final case class Percentiles(
     self.copy(percents = Chunk.fromIterable(percent +: percents))
 
   private[elasticsearch] def toJson: Json = {
-    val percentsField  = (if (percents.nonEmpty) Some("percents" -> Arr(percents.map(_.toJson))) else None) ++ missing.map("missing" -> _.toJson)
+    val percentsField =
+      (if (percents.nonEmpty) Some("percents" -> Arr(percents.map(_.toJson))) else None) ++ missing.map(
+        "missing" -> _.toJson
+      )
     Obj(name -> Obj("percentiles" -> (Obj("field" -> field.toJson) merge Obj(Chunk.fromIterable(percentsField)))))
   }
 }

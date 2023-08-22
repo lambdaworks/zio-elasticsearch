@@ -181,19 +181,19 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
-                    ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
-                  )
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
                   _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
-                      .refreshTrue
-                  )
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
                   aggregation =
                     termsAggregation(name = "first", field = TestDocument.stringField.keyword)
                       .withSubAgg(percentilesAggregation(name = "second", field = TestSubDocument.intField))
                   aggsRes <- Executor
-                    .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                    .aggregations
+                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
             }
           } @@ around(
