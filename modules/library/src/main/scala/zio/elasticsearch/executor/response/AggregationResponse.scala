@@ -148,6 +148,8 @@ private[elasticsearch] object TermsAggregationBucket {
               Some(field -> MinAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("missing#") =>
               Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
+            case str if str.contains("percentiles#") =>
+              Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
             case str if str.contains("sum#") =>
               Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
@@ -179,6 +181,8 @@ private[elasticsearch] object TermsAggregationBucket {
             (field.split("#")(1), data.asInstanceOf[MinAggregationResponse])
           case str if str.contains("missing#") =>
             (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
+          case str if str.contains("percentiles#") =>
+            (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
           case str if str.contains("sum#") =>
             (field.split("#")(1), data.asInstanceOf[SumAggregationResponse])
           case str if str.contains("terms#") =>

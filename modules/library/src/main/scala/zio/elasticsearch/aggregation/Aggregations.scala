@@ -216,15 +216,15 @@ sealed trait PercentilesAggregation
     with WithAgg {
 
   /**
-   * Sets the `percents` field for the [[zio.elasticsearch.aggregation.PercentilesAggregation]].
+   * Sets the `percents` parameter for the [[zio.elasticsearch.aggregation.PercentilesAggregation]].
    *
    * @param percents
-   *   a array of percentiles for calculation for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
+   *   a array of percentiles to be calculated for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
    * @return
    *   an instance of the [[zio.elasticsearch.aggregation.PercentilesAggregation]] enriched with the `percents`
    *   parameter.
    */
-  def percents(percents: Double*): PercentilesAggregation
+  def percents(percent: Double, percents: Double*): PercentilesAggregation
 }
 
 private[elasticsearch] final case class Percentiles(
@@ -233,19 +233,19 @@ private[elasticsearch] final case class Percentiles(
   percents: Chunk[Double],
   missing: Option[Double]
 ) extends PercentilesAggregation { self =>
+
   def missing(value: Double): PercentilesAggregation =
     self.copy(missing = Some(value))
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
-  def percents(percents: Double*): PercentilesAggregation =
-    self.copy(percents = Chunk.fromIterable(percents))
+  def percents(percent: Double, percents: Double*): PercentilesAggregation =
+    self.copy(percents = Chunk.fromIterable(percent +: percents))
 
   private[elasticsearch] def toJson: Json = {
-    val percentsField  = if (percents.nonEmpty) Some("percents" -> Arr(percents.map(_.toJson))) else None
-    val optionalFields = percentsField ++ missing.map("missing" -> _.toJson)
-    Obj(name -> Obj("percentiles" -> (Obj("field" -> field.toJson) merge Obj(Chunk.fromIterable(optionalFields)))))
+    val percentsField  = (if (percents.nonEmpty) Some("percents" -> Arr(percents.map(_.toJson))) else None) ++ missing.map("missing" -> _.toJson)
+    Obj(name -> Obj("percentiles" -> (Obj("field" -> field.toJson) merge Obj(Chunk.fromIterable(percentsField)))))
   }
 }
 

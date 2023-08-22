@@ -222,7 +222,7 @@ object ElasticAggregation {
    *   to be performed.
    */
   final def percentilesAggregation[A: Numeric](name: String, field: Field[_, A]): PercentilesAggregation =
-    Percentiles(name = name, field = field.toString, Chunk.empty, missing = None)
+    Percentiles(name = name, field = field.toString, percents = Chunk.empty, missing = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified parameters.
