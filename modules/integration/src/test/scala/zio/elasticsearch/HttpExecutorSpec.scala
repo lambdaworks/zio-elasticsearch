@@ -30,7 +30,7 @@ import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits, MultiMatchType}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
@@ -957,19 +957,19 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = s"${firstDocument.stringField} test")
                   _ <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
-                      .refreshTrue
-                  )
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
                   query = matchPhrasePrefix(
-                    field = TestDocument.stringField,
-                    value = s"${firstDocument.stringField} te"
-                  )
+                            field = TestDocument.stringField,
+                            value = s"${firstDocument.stringField} te"
+                          )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
             }
@@ -981,17 +981,18 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = "test")
                   _ <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
-                      .refreshTrue
-                  )
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
 
-                  query = multiMatch(value = "test").fields(TestDocument.stringField)
+                  query =
+                    multiMatch(value = "test").fields(TestDocument.stringField).matchingType(MultiMatchType.BestFields)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield assert(res)(Assertion.contains(document))
             }

@@ -27,6 +27,8 @@ import zio.schema.Schema
 
 import scala.annotation.unused
 
+import MultiMatchType.MultiMatchType
+
 sealed trait ElasticQuery[-S] { self =>
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json
 }
@@ -594,23 +596,80 @@ private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, valu
     Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj("query" -> value.toJson)))
 }
 
-sealed trait MultiMatchQuery[S] extends ElasticQuery[S] with HasFields[MultiMatchQuery[S]]
+sealed trait MultiMatchQuery[S]
+    extends ElasticQuery[S]
+    with HasBoost[MultiMatchQuery[S]]
+    with HasMinimumShouldMatch[MultiMatchQuery[S]] {
 
-private[elasticsearch] final case class MultiMatch[S](fields: Option[Chunk[String]], value: String)
-    extends MultiMatchQuery[S] { self =>
+  /**
+   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is the array
+   * of fields that will be searched.
+   *
+   * @param fields
+   *   a array of fields to set `fields` parameter to
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `fields` array set.
+   */
+  def fields(field: String, fields: String*): MultiMatchQuery[S]
 
-  def fields(fields: String*): MultiMatchQuery[S] =
-    self.copy(fields = Some(Chunk.fromIterable(fields)))
+  /**
+   * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
+   * the type-safe array of fields that will be searched.
+   *
+   * @param fields
+   *   a type-safe array of fields to set `fields` parameter to
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `fields` array set.
+   */
+  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1]
 
-  def fields[S1: Schema](fields: Field[S1, String]*): MultiMatchQuery[S] =
-    self.copy(fields = Some(Chunk.fromIterable(fields.map(_.toString))))
+  /**
+   * Sets the `type` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `type` parameter decides the way
+   * [[zio.elasticsearch.query.ElasticQuery]] is executed internally.
+   *
+   * @param matchingType
+   *   the [[zio.elasticsearch.query.MultiMatchType]] value of 'type' parameter
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `type` parameter set.
+   */
+  def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S]
+}
 
-  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+private[elasticsearch] final case class MultiMatch[S](
+  fields: Chunk[String],
+  value: String,
+  matchingType: Option[MultiMatchType],
+  boost: Option[Double],
+  minimumShouldMatch: Option[Int]
+) extends MultiMatchQuery[S] { self =>
+
+  def boost(boost: Double): MultiMatchQuery[S] =
+    self.copy(boost = Some(boost))
+
+  def fields(field: String, fields: String*): MultiMatchQuery[S] =
+    self.copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1] =
+    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
+
+  def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S] =
+    self.copy(matchingType = Some(matchingType))
+
+  def minimumShouldMatch(minimumShouldMatch: Int): MultiMatchQuery[S] =
+    self.copy(minimumShouldMatch = Some(minimumShouldMatch))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val multiMatchFields =
+      matchingType.map("type" -> _.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+                                               else None) ++ boost.map("boost" -> _.toJson) ++ minimumShouldMatch.map(
+        "minimum_should_match" -> _.toJson
+      )
     Obj(
-      "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge fields.fold(Obj())(f =>
-        Obj("fields" -> Arr(f.map(_.toJson)))
+      "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge Obj(
+        Chunk.fromIterable(multiMatchFields)
       ))
     )
+  }
 }
 
 sealed trait NestedQuery[S]
