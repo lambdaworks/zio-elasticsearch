@@ -846,33 +846,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(MatchAll(boost = Some(3.14)))
           )
         },
-        test("matches") {
-          val queryString     = matches("stringField", "test")
-          val queryBool       = matches("booleanField", true)
-          val queryInt        = matches("intField", 1)
-          val queryStringTs   = matches(TestDocument.stringField, "test")
-          val queryBoolTs     = matches(TestDocument.booleanField, true)
-          val queryIntTs      = matches(TestDocument.intField, 1)
-          val queryWithSuffix = matches(TestDocument.stringField.raw, "test")
-          val queryWithBoost  = matches(TestDocument.doubleField, 3.14)
-
-          assert(queryString)(equalTo(Match[Any, String](field = "stringField", value = "test"))) &&
-          assert(queryBool)(equalTo(Match[Any, Boolean](field = "booleanField", value = true))) &&
-          assert(queryInt)(equalTo(Match[Any, Int](field = "intField", value = 1))) &&
-          assert(queryStringTs)(
-            equalTo(Match[TestDocument, String](field = "stringField", value = "test"))
-          ) &&
-          assert(queryBoolTs)(
-            equalTo(Match[TestDocument, Boolean](field = "booleanField", value = true))
-          ) &&
-          assert(queryIntTs)(equalTo(Match[TestDocument, Int](field = "intField", value = 1))) &&
-          assert(queryWithSuffix)(
-            equalTo(Match[TestDocument, String](field = "stringField.raw", value = "test"))
-          ) &&
-          assert(queryWithBoost)(
-            equalTo(Match[TestDocument, Double](field = "doubleField", value = 3.14))
-          )
-        },
         test("matchBooleanPrefix") {
           val queryString                 = matchBooleanPrefix("stringField", "test")
           val queryBool                   = matchBooleanPrefix("booleanField", true)
@@ -922,6 +895,33 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 minimumShouldMatch = Some(3)
               )
             )
+          )
+        },
+        test("matches") {
+          val queryString     = matches("stringField", "test")
+          val queryBool       = matches("booleanField", true)
+          val queryInt        = matches("intField", 1)
+          val queryStringTs   = matches(TestDocument.stringField, "test")
+          val queryBoolTs     = matches(TestDocument.booleanField, true)
+          val queryIntTs      = matches(TestDocument.intField, 1)
+          val queryWithSuffix = matches(TestDocument.stringField.raw, "test")
+          val queryWithBoost  = matches(TestDocument.doubleField, 3.14)
+
+          assert(queryString)(equalTo(Match[Any, String](field = "stringField", value = "test"))) &&
+          assert(queryBool)(equalTo(Match[Any, Boolean](field = "booleanField", value = true))) &&
+          assert(queryInt)(equalTo(Match[Any, Int](field = "intField", value = 1))) &&
+          assert(queryStringTs)(
+            equalTo(Match[TestDocument, String](field = "stringField", value = "test"))
+          ) &&
+          assert(queryBoolTs)(
+            equalTo(Match[TestDocument, Boolean](field = "booleanField", value = true))
+          ) &&
+          assert(queryIntTs)(equalTo(Match[TestDocument, Int](field = "intField", value = 1))) &&
+          assert(queryWithSuffix)(
+            equalTo(Match[TestDocument, String](field = "stringField.raw", value = "test"))
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(Match[TestDocument, Double](field = "doubleField", value = 3.14))
           )
         },
         test("matchPhrase") {
@@ -2442,42 +2442,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
         },
-        test("matches") {
-          val query         = matches("testField", true)
-          val queryTsInt    = matches(TestDocument.intField, 39)
-          val queryTsString = matches(TestDocument.stringField, "test")
-
-          val expected =
-            """
-              |{
-              |  "match": {
-              |    "testField": true
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedTsInt =
-            """
-              |{
-              |  "match": {
-              |    "intField": 39
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedTsString =
-            """
-              |{
-              |  "match": {
-              |    "stringField": "test"
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
-          assert(queryTsInt.toJson(fieldPath = None))(equalTo(expectedTsInt.toJson)) &&
-          assert(queryTsString.toJson(fieldPath = None))(equalTo(expectedTsString.toJson))
-        },
         test("matchBooleanPrefix") {
           val queryString                 = matchBooleanPrefix("stringField", "test")
           val queryBool                   = matchBooleanPrefix("booleanField", true)
@@ -2547,6 +2511,42 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryIntTs.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
           assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson)) &&
           assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(equalTo(expectedWithMinimumShouldMatch.toJson))
+        },
+        test("matches") {
+          val query         = matches("testField", true)
+          val queryTsInt    = matches(TestDocument.intField, 39)
+          val queryTsString = matches(TestDocument.stringField, "test")
+
+          val expected =
+            """
+              |{
+              |  "match": {
+              |    "testField": true
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTsInt =
+            """
+              |{
+              |  "match": {
+              |    "intField": 39
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTsString =
+            """
+              |{
+              |  "match": {
+              |    "stringField": "test"
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTsInt.toJson(fieldPath = None))(equalTo(expectedTsInt.toJson)) &&
+          assert(queryTsString.toJson(fieldPath = None))(equalTo(expectedTsString.toJson))
         },
         test("matchPhrase") {
           val querySimple            = matchPhrase("stringField", "this is a test")
