@@ -230,18 +230,18 @@ sealed trait PercentilesAggregation
 private[elasticsearch] final case class Percentiles(
   name: String,
   field: String,
-  percents: Chunk[Double],
-  missing: Option[Double]
+  missing: Option[Double],
+  percents: Chunk[Double]
 ) extends PercentilesAggregation { self =>
 
   def missing(value: Double): PercentilesAggregation =
     self.copy(missing = Some(value))
 
-  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
-    multipleAggregations.aggregations(self, agg)
-
   def percents(percent: Double, percents: Double*): PercentilesAggregation =
     self.copy(percents = Chunk.fromIterable(percent +: percents))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
 
   private[elasticsearch] def toJson: Json = {
     val percentsField =
