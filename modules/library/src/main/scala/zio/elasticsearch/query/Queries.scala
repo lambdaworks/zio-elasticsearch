@@ -638,8 +638,8 @@ sealed trait MultiMatchQuery[S]
 private[elasticsearch] final case class MultiMatch[S](
   fields: Chunk[String],
   value: String,
-  matchingType: Option[MultiMatchType],
   boost: Option[Double],
+  matchingType: Option[MultiMatchType],
   minimumShouldMatch: Option[Int]
 ) extends MultiMatchQuery[S] { self =>
 

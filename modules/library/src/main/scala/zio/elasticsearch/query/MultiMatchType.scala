@@ -19,9 +19,9 @@ package zio.elasticsearch.query
 private[elasticsearch] object MultiMatchType extends Enumeration {
   type MultiMatchType = String
   val BestFields   = "best_fields"
-  val MostFields   = "most_fields"
+  val BoolPrefix   = "bool_prefix"
   val CrossFields  = "cross_fields"
+  val MostFields   = "most_fields"
   val Phrase       = "phrase"
   val PhrasePrefix = "phrase_prefix"
-  val BoolPrefix   = "bool_prefix"
 }
