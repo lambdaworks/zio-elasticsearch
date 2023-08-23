@@ -210,6 +210,48 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
     aggregations.map(_.toJson).reduce(_ merge _)
 }
 
+sealed trait PercentilesAggregation
+    extends SingleElasticAggregation
+    with HasMissing[PercentilesAggregation]
+    with WithAgg {
+
+  /**
+   * Sets the `percents` parameter for the [[zio.elasticsearch.aggregation.PercentilesAggregation]].
+   *
+   * @param percents
+   *   a array of percentiles to be calculated for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.PercentilesAggregation]] enriched with the `percents`
+   *   parameter.
+   */
+  def percents(percent: Double, percents: Double*): PercentilesAggregation
+}
+
+private[elasticsearch] final case class Percentiles(
+  name: String,
+  field: String,
+  missing: Option[Double],
+  percents: Chunk[Double]
+) extends PercentilesAggregation { self =>
+
+  def missing(value: Double): PercentilesAggregation =
+    self.copy(missing = Some(value))
+
+  def percents(percent: Double, percents: Double*): PercentilesAggregation =
+    self.copy(percents = Chunk.fromIterable(percent +: percents))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val percentsField =
+      (if (percents.nonEmpty) Some("percents" -> Arr(percents.map(_.toJson))) else None) ++ missing.map(
+        "missing" -> _.toJson
+      )
+    Obj(name -> Obj("percentiles" -> (Obj("field" -> field.toJson) merge Obj(Chunk.fromIterable(percentsField)))))
+  }
+}
+
 sealed trait SumAggregation extends SingleElasticAggregation with HasMissing[SumAggregation] with WithAgg
 
 private[elasticsearch] final case class Sum(name: String, field: String, missing: Option[Double])

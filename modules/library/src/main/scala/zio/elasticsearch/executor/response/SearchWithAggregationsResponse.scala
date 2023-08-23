@@ -80,6 +80,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       MinAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("missing#") =>
                       MissingAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("percentiles#") =>
+                      PercentilesAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("sum#") =>
                       SumAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("cardinality#") =>

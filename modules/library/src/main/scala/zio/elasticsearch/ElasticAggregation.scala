@@ -208,6 +208,37 @@ object ElasticAggregation {
     Multiple(aggregations = Chunk.empty)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which percentiles aggregation will be executed
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] that represents percentiles aggregation
+   *   to be performed.
+   */
+  final def percentilesAggregation[A: Numeric](name: String, field: Field[_, A]): PercentilesAggregation =
+    Percentiles(name = name, field = field.toString, percents = Chunk.empty, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which percentiles aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] that represents percentiles aggregation
+   *   to be performed.
+   */
+  final def percentilesAggregation(name: String, field: String): PercentilesAggregation =
+    Percentiles(name = name, field = field, percents = Chunk.empty, missing = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
    *
    * @param name
