@@ -27,8 +27,6 @@ import zio.schema.Schema
 
 import scala.annotation.unused
 
-import MultiMatchType.MultiMatchType
-
 sealed trait ElasticQuery[-S] { self =>
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json
 }
@@ -608,18 +606,18 @@ sealed trait MultiMatchQuery[S]
    * @param fields
    *   a array of fields to set `fields` parameter to
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `fields` array set.
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
    */
   def fields(field: String, fields: String*): MultiMatchQuery[S]
 
   /**
    * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
-   * the type-safe array of fields that will be searched.
+   * the array of type-safe fields that will be searched.
    *
    * @param fields
-   *   a type-safe array of fields to set `fields` parameter to
+   *   a array of type-safe fields to set `fields` parameter to
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `fields` array set.
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the type-safe `fields` parameter.
    */
   def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1]
 
@@ -628,9 +626,15 @@ sealed trait MultiMatchQuery[S]
    * [[zio.elasticsearch.query.ElasticQuery]] is executed internally.
    *
    * @param matchingType
-   *   the [[zio.elasticsearch.query.MultiMatchType]] value of 'type' parameter
+   *   the [[zio.elasticsearch.query.MultiMatchType]] value of 'type' parameter, possible values are:
+   *   - [[zio.elasticsearch.query.MultiMatchType.BestFields]]
+   *   - [[zio.elasticsearch.query.MultiMatchType.BoolPrefix]]
+   *   - [[zio.elasticsearch.query.MultiMatchType.CrossFields]]
+   *   - [[zio.elasticsearch.query.MultiMatchType.MostFields]]
+   *   - [[zio.elasticsearch.query.MultiMatchType.Phrase]]
+   *   - [[zio.elasticsearch.query.MultiMatchType.PhrasePrefix]]
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `type` parameter set.
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `type` parameter.
    */
   def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S]
 }
@@ -660,10 +664,11 @@ private[elasticsearch] final case class MultiMatch[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val multiMatchFields =
-      matchingType.map("type" -> _.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
-                                               else None) ++ boost.map("boost" -> _.toJson) ++ minimumShouldMatch.map(
-        "minimum_should_match" -> _.toJson
-      )
+      matchingType.map("type" -> _.value.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+                                                     else None) ++ boost.map("boost" -> _.toJson) ++ minimumShouldMatch
+        .map(
+          "minimum_should_match" -> _.toJson
+        )
     Obj(
       "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge Obj(
         Chunk.fromIterable(multiMatchFields)

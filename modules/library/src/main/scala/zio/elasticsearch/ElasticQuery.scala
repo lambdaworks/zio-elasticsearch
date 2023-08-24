@@ -493,7 +493,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.MultiMatchQuery]] that represents the multi match query to be performed.
    */
   final def multiMatch(value: String): MultiMatchQuery[Any] =
-    MultiMatch(fields = Chunk.empty, value = value, matchingType = None, boost = None, minimumShouldMatch = None)
+    MultiMatch(fields = Chunk.empty, value = value, boost = None, matchingType = None, minimumShouldMatch = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the

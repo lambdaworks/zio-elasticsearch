@@ -27,10 +27,11 @@ import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocum
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
+import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits, MultiMatchType}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
@@ -992,9 +993,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
 
                   query =
-                    multiMatch(value = "test").fields(TestDocument.stringField).matchingType(MultiMatchType.BestFields)
+                    multiMatch(value = "test").fields(TestDocument.stringField).matchingType(BestFields)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(document))
+                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

@@ -24,6 +24,7 @@ import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction._
+import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.MultiValueMode.Max
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
@@ -902,12 +903,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithFields             = multiMatch("this is a test").fields("stringField1", "stringField2")
           val queryWithFieldsTs           = multiMatch("this is a test").fields(TestDocument.stringField)
           val queryWithFieldsSuffix       = multiMatch("this is a test").fields(TestDocument.stringField.raw)
-          val queryWithType               = multiMatch("this is a test").matchingType(MultiMatchType.BestFields)
+          val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
           val queryWithBoost              = multiMatch("this is a test").boost(2.2)
           val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
           val queryWithAllParams = multiMatch("this is a test")
             .fields(TestDocument.stringField)
-            .matchingType(MultiMatchType.BestFields)
+            .matchingType(BestFields)
             .boost(2.2)
             .minimumShouldMatch(2)
 
@@ -960,7 +961,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               MultiMatch[Any](
                 fields = Chunk.empty,
                 value = "this is a test",
-                matchingType = Some(MultiMatchType.BestFields),
+                matchingType = Some(BestFields),
                 boost = None,
                 minimumShouldMatch = None
               )
@@ -993,7 +994,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               MultiMatch[TestDocument](
                 fields = Chunk("stringField"),
                 value = "this is a test",
-                matchingType = Some(MultiMatchType.BestFields),
+                matchingType = Some(BestFields),
                 boost = Some(2.2),
                 minimumShouldMatch = Some(2)
               )
@@ -2620,12 +2621,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithFields             = multiMatch("this is a test").fields("stringField1", "stringField2")
           val queryWithFieldsTs           = multiMatch("this is a test").fields(TestDocument.stringField)
           val queryWithFieldsSuffix       = multiMatch("this is a test").fields(TestDocument.stringField.raw)
-          val queryWithType               = multiMatch("this is a test").matchingType(MultiMatchType.BestFields)
+          val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
           val queryWithBoost              = multiMatch("this is a test").boost(2.2)
           val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
           val queryWithAllParams = multiMatch("this is a test")
             .fields(TestDocument.stringField)
-            .matchingType(MultiMatchType.BestFields)
+            .matchingType(BestFields)
             .boost(2.2)
             .minimumShouldMatch(2)
 

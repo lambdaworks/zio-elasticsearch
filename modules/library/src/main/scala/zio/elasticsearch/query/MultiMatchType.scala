@@ -16,12 +16,16 @@
 
 package zio.elasticsearch.query
 
-private[elasticsearch] object MultiMatchType extends Enumeration {
-  type MultiMatchType = String
-  val BestFields   = "best_fields"
-  val BoolPrefix   = "bool_prefix"
-  val CrossFields  = "cross_fields"
-  val MostFields   = "most_fields"
-  val Phrase       = "phrase"
-  val PhrasePrefix = "phrase_prefix"
+sealed trait MultiMatchType {
+  def value: String
+  override def toString: String = value
+}
+
+object MultiMatchType {
+  case object BestFields   extends MultiMatchType { def value: String = "best_fields"   }
+  case object BoolPrefix   extends MultiMatchType { def value: String = "bool_prefix"   }
+  case object CrossFields  extends MultiMatchType { def value: String = "cross_fields"  }
+  case object MostFields   extends MultiMatchType { def value: String = "most_fields"   }
+  case object Phrase       extends MultiMatchType { def value: String = "phrase_fields" }
+  case object PhrasePrefix extends MultiMatchType { def value: String = "phrase_prefix" }
 }
