@@ -31,15 +31,15 @@ object ElasticQuery {
    * relevance score equal to the boost parameter value.
    *
    * @param query
-   *   query you wish to run
+   *   query to be wrapped inside of constant score query
    * @tparam S
-   *   document for which field query is executed. An implicit `Schema` instance must be in scope
+   *   document for which field query is specified for. An implicit `Schema` instance must be in scope
    * @return
    *   an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] that represents the constant score query with query
-   *   that must satisfy the criteria.
+   *   that must satisfy the criteria to be performed.
    */
   final def constantScore[S: Schema](query: ElasticQuery[S]): ConstantScoreQuery[S] =
-    ConstantScore[S](query, boost = None)
+    ConstantScore[S](query = query, boost = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] with a specified query.
@@ -47,13 +47,13 @@ object ElasticQuery {
    * relevance score equal to the boost parameter value.
    *
    * @param query
-   *   query you wish to run
+   *   query to be wrapped inside of constant score query
    * @return
    *   an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] that represents the constant score query with query
-   *   that must satisfy the criteria.
+   *   that must satisfy the criteria to be performed.
    */
   final def constantScore(query: ElasticQuery[Any]): ConstantScoreQuery[Any] =
-    ConstantScore[Any](query, boost = None)
+    ConstantScore[Any](query = query, boost = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.

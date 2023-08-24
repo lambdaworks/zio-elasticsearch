@@ -16,14 +16,14 @@ You can create a `ConstantScore` query with arbitrary query(`MatchPhrase` in thi
 val query: ConstantScoreQuery = constantScore(matchPhrase(field = "name", value = "test"))
 ```
 
-You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `ConstantScore` query with arbitrary query(`MatchPhrase` in this example) using the `constantScore` method in the following manner:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `ConstantScore` query with arbitrary [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) query(`MatchPhrase` in this example) using the `constantScore` method in the following manner:
 ```scala
-val query: ConstantScoreQuery = constantScore(matchPhrase(field = Document.name, value ="test"))
+val query: ConstantScoreQuery = constantScore(matchPhrase(field = Document.name, value = "test"))
 ```
 
 If you want to change the `boost`, you can use `boost` method:
 ```scala
-val queryWithBoost: ConstantScoreQuery = constantScore(matchPhrase(field = Document.name, value ="test")).boost(2.2)
+val queryWithBoost: ConstantScoreQuery = constantScore(matchPhrase(field = Document.name, value = "test")).boost(2.2)
 ```
 
 You can find more information about `ConstantScore` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-constant-score-query.html).

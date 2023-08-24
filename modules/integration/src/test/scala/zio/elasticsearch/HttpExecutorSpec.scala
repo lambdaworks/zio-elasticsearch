@@ -694,7 +694,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             )
                           ).boost(2.1)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(document))
+                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

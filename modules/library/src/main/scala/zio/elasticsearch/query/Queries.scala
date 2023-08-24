@@ -186,6 +186,7 @@ sealed trait ConstantScoreQuery[S] extends ElasticQuery[S] with HasBoost[Constan
 
 private[elasticsearch] final case class ConstantScore[S](query: ElasticQuery[S], boost: Option[Double])
     extends ConstantScoreQuery[S] { self =>
+
   def boost(value: Double): ConstantScoreQuery[S] =
     self.copy(boost = Some(value))
 

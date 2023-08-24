@@ -1904,9 +1904,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           }
         ),
         test("constantScore") {
-          val query          = constantScore(matchPhrase("stringField", value = "test"))
-          val queryTs        = constantScore(matchPhrase(TestDocument.stringField, value = "test"))
-          val queryWithBoost = constantScore(matchPhrase(TestDocument.stringField, value = "test")).boost(1.5)
+          val query          = constantScore(matchPhrase("stringField", "test"))
+          val queryTs        = constantScore(matchPhrase(TestDocument.stringField, "test"))
+          val queryWithBoost = constantScore(matchPhrase(TestDocument.stringField, "test")).boost(1.5)
 
           val expected =
             """
