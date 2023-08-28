@@ -40,7 +40,7 @@ If you want to change the `type`, you can use the `matchingType` method:
 ```scala
 import zio.elasticsearch.query.MultiMatchType._
 
-val queryWithType: MultiMatchQuery = multiMatch(value = "test").fields(Document.stringField1, Document.stringField2).matchingType(MultiMatchType.MostFields)
+val queryWithType: MultiMatchQuery = multiMatch(value = "test").fields(Document.stringField1, Document.stringField2).matchingType(MostFields)
 ```
 
 You can find more information about `MultiMatch` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-multi-match-query.html#query-dsl-multi-match-query).
