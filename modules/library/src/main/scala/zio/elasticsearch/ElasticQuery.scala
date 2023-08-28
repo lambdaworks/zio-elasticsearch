@@ -33,7 +33,7 @@ object ElasticQuery {
    * @param query
    *   query to be wrapped inside of constant score query
    * @tparam S
-   *   document for which field query is specified for. An implicit `Schema` instance must be in scope
+   *   document for which field query is specified for. An implicit `Schema` instance must be provided in the scope
    * @return
    *   an instance of [[zio.elasticsearch.query.ConstantScoreQuery]] that represents the constant score query with query
    *   that must satisfy the criteria to be performed.
