@@ -600,8 +600,8 @@ sealed trait MultiMatchQuery[S]
     with HasMinimumShouldMatch[MultiMatchQuery[S]] {
 
   /**
-   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is the array
-   * of fields that will be searched.
+   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
+   * fields that will be searched.
    *
    * @param fields
    *   a array of fields to set `fields` parameter to
@@ -612,7 +612,7 @@ sealed trait MultiMatchQuery[S]
 
   /**
    * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
-   * the array of type-safe fields that will be searched.
+   * array of type-safe fields that will be searched.
    *
    * @param fields
    *   a array of type-safe fields to set `fields` parameter to
@@ -627,12 +627,18 @@ sealed trait MultiMatchQuery[S]
    *
    * @param matchingType
    *   the [[zio.elasticsearch.query.MultiMatchType]] value of 'type' parameter, possible values are:
-   *   - [[zio.elasticsearch.query.MultiMatchType.BestFields]]
-   *   - [[zio.elasticsearch.query.MultiMatchType.BoolPrefix]]
-   *   - [[zio.elasticsearch.query.MultiMatchType.CrossFields]]
-   *   - [[zio.elasticsearch.query.MultiMatchType.MostFields]]
-   *   - [[zio.elasticsearch.query.MultiMatchType.Phrase]]
-   *   - [[zio.elasticsearch.query.MultiMatchType.PhrasePrefix]]
+   *   - [[zio.elasticsearch.query.MultiMatchType.BestFields]]: runs a [[zio.elasticsearch.query.MatchQuery]] on each
+   *     field and uses the score of the single best matching field
+   *   - [[zio.elasticsearch.query.MultiMatchType.BoolPrefix]]: runs a
+   *     [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] on each field and combines the score from each field
+   *   - [[zio.elasticsearch.query.MultiMatchType.CrossFields]]: looks for each word in any field
+   *   - [[zio.elasticsearch.query.MultiMatchType.MostFields]]: runs a [[zio.elasticsearch.query.MatchQuery]] on each
+   *     field and combines the score from each field
+   *   - [[zio.elasticsearch.query.MultiMatchType.Phrase]]: runs a [[zio.elasticsearch.query.MatchPhraseQuery]] on each
+   *     field and uses the score of the single best matching field
+   *   - [[zio.elasticsearch.query.MultiMatchType.PhrasePrefix]]: runs a
+   *     [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] on each field and uses the score of the single best matching
+   *     field
    * @return
    *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `type` parameter.
    */
@@ -664,11 +670,10 @@ private[elasticsearch] final case class MultiMatch[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val multiMatchFields =
-      matchingType.map("type" -> _.value.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
-                                                     else None) ++ boost.map("boost" -> _.toJson) ++ minimumShouldMatch
-        .map(
-          "minimum_should_match" -> _.toJson
-        )
+      matchingType.map("type" -> _.toString.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+                                                        else None) ++
+        boost.map("boost" -> _.toJson) ++ minimumShouldMatch.map("minimum_should_match" -> _.toJson)
+
     Obj(
       "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge Obj(
         Chunk.fromIterable(multiMatchFields)
