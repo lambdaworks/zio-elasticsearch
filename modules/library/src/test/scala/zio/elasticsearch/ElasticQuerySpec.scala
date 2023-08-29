@@ -333,6 +333,36 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           }
         ),
+        test("constantScore") {
+          val query          = constantScore(terms("stringField", "a", "b", "c"))
+          val queryTs        = constantScore(terms(TestDocument.stringField, "a", "b", "c"))
+          val queryWithBoost = constantScore(terms(TestDocument.stringField, "a", "b", "c")).boost(2.2)
+
+          assert(query)(
+            equalTo(
+              ConstantScore[Any](
+                Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryTs)(
+            equalTo(
+              ConstantScore[TestDocument](
+                Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              ConstantScore[TestDocument](
+                Terms(field = "stringField", values = Chunk("a", "b", "c"), boost = None),
+                boost = Some(2.2)
+              )
+            )
+          )
+        },
         test("contains") {
           val query                    = contains("testField", "test")
           val queryTs                  = contains(TestDocument.stringField, "test")
@@ -1924,6 +1954,41 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
           }
         ),
+        test("constantScore") {
+          val query          = constantScore(matchPhrase("stringField", "test"))
+          val queryTs        = constantScore(matchPhrase(TestDocument.stringField, "test"))
+          val queryWithBoost = constantScore(matchPhrase(TestDocument.stringField, "test")).boost(1.5)
+
+          val expected =
+            """
+              |{
+              |  "constant_score": {
+              |    "filter": {
+              |      "match_phrase": {
+              |         "stringField": "test"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedWithBoost =
+            """
+              |{
+              |  "constant_score": {
+              |    "filter": {
+              |      "match_phrase": {
+              |         "stringField": "test"
+              |      }
+              |    },
+              |    "boost": 1.5
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
+        },
         test("contains") {
           val query                    = contains(TestDocument.stringField, "test")
           val queryWithBoost           = contains(TestDocument.stringField, "test").boost(3.14)

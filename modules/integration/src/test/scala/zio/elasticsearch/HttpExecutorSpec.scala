@@ -724,6 +724,32 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ),
         suite("searching for documents")(
+          test("search for a document using a constant score query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  document = firstDocument.copy(stringField = "this is a test")
+                  _ <-
+                    Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  query = constantScore(
+                            matchPhrase(
+                              field = TestDocument.stringField,
+                              value = "test"
+                            )
+                          ).boost(2.1)
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for first 2 documents using range query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
