@@ -27,6 +27,7 @@ import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocum
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
+import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
@@ -1067,6 +1068,29 @@ object HttpExecutorSpec extends IntegrationSpec {
                             field = TestDocument.stringField,
                             value = s"${firstDocument.stringField} te"
                           )
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using a multi match query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  document = firstDocument.copy(stringField = "test")
+                  _ <-
+                    Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+
+                  query =
+                    multiMatch(value = "test").fields(TestDocument.stringField).matchingType(BestFields)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
             }

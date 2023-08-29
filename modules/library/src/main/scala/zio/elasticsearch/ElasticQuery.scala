@@ -554,6 +554,18 @@ object ElasticQuery {
     MatchPhrasePrefix(field = field, value = value)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.query.MultiMatchQuery]] using the specified parameter.
+   * [[zio.elasticsearch.query.MultiMatchQuery]] query builds on the `match` query to allow multi-field queries.
+   *
+   * @param value
+   *   the text value to be matched
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MultiMatchQuery]] that represents the multi match query to be performed.
+   */
+  final def multiMatch(value: String): MultiMatchQuery[Any] =
+    MultiMatch(fields = Chunk.empty, value = value, boost = None, matchingType = None, minimumShouldMatch = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.BoolQuery]] with queries that must satisfy the
    * criteria using the specified parameters.
    *

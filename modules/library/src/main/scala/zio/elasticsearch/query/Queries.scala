@@ -18,6 +18,7 @@ package zio.elasticsearch.query
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
+import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
@@ -628,6 +629,94 @@ private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, valu
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj("query" -> value.toJson)))
+}
+
+sealed trait MultiMatchQuery[S]
+    extends ElasticQuery[S]
+    with HasBoost[MultiMatchQuery[S]]
+    with HasMinimumShouldMatch[MultiMatchQuery[S]] {
+
+  /**
+   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
+   * fields that will be searched.
+   *
+   * @param fields
+   *   a array of fields to set `fields` parameter to
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
+   */
+  def fields(field: String, fields: String*): MultiMatchQuery[S]
+
+  /**
+   * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
+   * array of type-safe fields that will be searched.
+   *
+   * @param fields
+   *   a array of type-safe fields to set `fields` parameter to
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the type-safe `fields` parameter.
+   */
+  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1]
+
+  /**
+   * Sets the `type` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `type` parameter decides the way
+   * [[zio.elasticsearch.query.ElasticQuery]] is executed internally.
+   *
+   * @param matchingType
+   *   the [[zio.elasticsearch.query.MultiMatchType]] value of 'type' parameter, possible values are:
+   *   - [[zio.elasticsearch.query.MultiMatchType.BestFields]]: runs a [[zio.elasticsearch.query.MatchQuery]] on each
+   *     field and uses the score of the single best matching field
+   *   - [[zio.elasticsearch.query.MultiMatchType.BoolPrefix]]: runs a
+   *     [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] on each field and combines the score from each field
+   *   - [[zio.elasticsearch.query.MultiMatchType.CrossFields]]: looks for each word in any field
+   *   - [[zio.elasticsearch.query.MultiMatchType.MostFields]]: runs a [[zio.elasticsearch.query.MatchQuery]] on each
+   *     field and combines the score from each field
+   *   - [[zio.elasticsearch.query.MultiMatchType.Phrase]]: runs a [[zio.elasticsearch.query.MatchPhraseQuery]] on each
+   *     field and uses the score of the single best matching field
+   *   - [[zio.elasticsearch.query.MultiMatchType.PhrasePrefix]]: runs a
+   *     [[zio.elasticsearch.query.MatchPhrasePrefixQuery]] on each field and uses the score of the single best matching
+   *     field
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `type` parameter.
+   */
+  def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S]
+}
+
+private[elasticsearch] final case class MultiMatch[S](
+  fields: Chunk[String],
+  value: String,
+  boost: Option[Double],
+  matchingType: Option[MultiMatchType],
+  minimumShouldMatch: Option[Int]
+) extends MultiMatchQuery[S] { self =>
+
+  def boost(boost: Double): MultiMatchQuery[S] =
+    self.copy(boost = Some(boost))
+
+  def fields(field: String, fields: String*): MultiMatchQuery[S] =
+    self.copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1] =
+    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
+
+  def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S] =
+    self.copy(matchingType = Some(matchingType))
+
+  def minimumShouldMatch(minimumShouldMatch: Int): MultiMatchQuery[S] =
+    self.copy(minimumShouldMatch = Some(minimumShouldMatch))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val multiMatchFields =
+      matchingType.map("type" -> _.toString.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+                                                        else None) ++
+        boost.map("boost" -> _.toJson) ++ minimumShouldMatch.map("minimum_should_match" -> _.toJson)
+
+    Obj(
+      "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge Obj(
+        Chunk.fromIterable(multiMatchFields)
+      ))
+    )
+  }
 }
 
 sealed trait NestedQuery[S]

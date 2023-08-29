@@ -24,6 +24,7 @@ import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
 import zio.elasticsearch.query.FunctionScoreFunction._
+import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.MultiValueMode.Max
 import zio.elasticsearch.query.ValidationMethod.IgnoreMalformed
 import zio.elasticsearch.query._
@@ -977,6 +978,109 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query)(equalTo(MatchPhrasePrefix[Any](field = "stringField", value = "test"))) &&
           assert(queryTs)(equalTo(MatchPhrasePrefix[TestDocument](field = "stringField", value = "test")))
+        },
+        test("multiMatch") {
+          val query                       = multiMatch("this is a test")
+          val queryWithFields             = multiMatch("this is a test").fields("stringField1", "stringField2")
+          val queryWithFieldsTs           = multiMatch("this is a test").fields(TestDocument.stringField)
+          val queryWithFieldsSuffix       = multiMatch("this is a test").fields(TestDocument.stringField.raw)
+          val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
+          val queryWithBoost              = multiMatch("this is a test").boost(2.2)
+          val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
+          val queryWithAllParams = multiMatch("this is a test")
+            .fields(TestDocument.stringField)
+            .matchingType(BestFields)
+            .boost(2.2)
+            .minimumShouldMatch(2)
+
+          assert(query)(
+            equalTo(
+              MultiMatch[Any](
+                fields = Chunk.empty,
+                value = "this is a test",
+                matchingType = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithFields)(
+            equalTo(
+              MultiMatch[Any](
+                fields = Chunk("stringField1", "stringField2"),
+                value = "this is a test",
+                matchingType = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithFieldsTs)(
+            equalTo(
+              MultiMatch[TestDocument](
+                fields = Chunk("stringField"),
+                value = "this is a test",
+                matchingType = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithFieldsSuffix)(
+            equalTo(
+              MultiMatch[TestDocument](
+                fields = Chunk("stringField.raw"),
+                value = "this is a test",
+                matchingType = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithType)(
+            equalTo(
+              MultiMatch[Any](
+                fields = Chunk.empty,
+                value = "this is a test",
+                matchingType = Some(BestFields),
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              MultiMatch[Any](
+                fields = Chunk.empty,
+                value = "this is a test",
+                matchingType = None,
+                boost = Some(2.2),
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithMinimumShouldMatch)(
+            equalTo(
+              MultiMatch[Any](
+                fields = Chunk.empty,
+                value = "this is a test",
+                matchingType = None,
+                boost = None,
+                minimumShouldMatch = Some(2)
+              )
+            )
+          ) &&
+          assert(queryWithAllParams)(
+            equalTo(
+              MultiMatch[TestDocument](
+                fields = Chunk("stringField"),
+                value = "this is a test",
+                matchingType = Some(BestFields),
+                boost = Some(2.2),
+                minimumShouldMatch = Some(2)
+              )
+            )
+          )
         },
         test("nested") {
           val query                   = nested("testField", matchAll)
@@ -2691,12 +2795,119 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |    "stringField": {
               |       "query" : "test"
               |    }
-              |  }
+              |   }
               |}
               |""".stripMargin
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
+        },
+        test("multiMatch") {
+          val query                       = multiMatch("this is a test")
+          val queryWithFields             = multiMatch("this is a test").fields("stringField1", "stringField2")
+          val queryWithFieldsTs           = multiMatch("this is a test").fields(TestDocument.stringField)
+          val queryWithFieldsSuffix       = multiMatch("this is a test").fields(TestDocument.stringField.raw)
+          val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
+          val queryWithBoost              = multiMatch("this is a test").boost(2.2)
+          val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
+          val queryWithAllParams = multiMatch("this is a test")
+            .fields(TestDocument.stringField)
+            .matchingType(BestFields)
+            .boost(2.2)
+            .minimumShouldMatch(2)
+
+          val expected =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFields =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "fields": [ "stringField1", "stringField2" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFieldsTs =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "fields": [ "stringField" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSuffix =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "fields": [ "stringField.raw" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithType =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "type": "best_fields"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "boost": 2.2
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMinimumShouldMatch =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "minimum_should_match": 2
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "type": "best_fields",
+              |    "fields": [ "stringField" ],
+              |    "boost": 2.2,
+              |    "minimum_should_match": 2
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithFields.toJson(fieldPath = None))(equalTo(expectedWithFields.toJson)) &&
+          assert(queryWithFieldsTs.toJson(fieldPath = None))(equalTo(expectedWithFieldsTs.toJson)) &&
+          assert(queryWithFieldsSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson)) &&
+          assert(queryWithType.toJson(fieldPath = None))(equalTo(expectedWithType.toJson)) &&
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(
+            equalTo(expectedWithMinimumShouldMatch.toJson)
+          ) &&
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("nested") {
           val query                   = nested(TestDocument.subDocumentList, matchAll)
