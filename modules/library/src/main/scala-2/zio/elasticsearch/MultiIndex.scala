@@ -21,25 +21,25 @@ import zio.prelude.AssertionError.failure
 import zio.prelude.Newtype
 
 trait IndexSelector[A] {
-  def selectorString(a: A): String
+  def toSelector(a: A): String
 }
 
 object IndexSelector {
 
   implicit object IndexNameSelector extends IndexSelector[IndexName] {
-    def selectorString(a: IndexName): String = IndexName.unwrap(a)
+    def toSelector(name: IndexName): String = IndexName.unwrap(name)
   }
 
   implicit object IndexPatternSelector extends IndexSelector[IndexPattern] {
-    def selectorString(a: IndexPattern): String = IndexPattern.unwrap(a)
+    def toSelector(pattern: IndexPattern): String = IndexPattern.unwrap(pattern)
   }
 
   implicit object MultiIndexSelector extends IndexSelector[MultiIndex] {
-    def selectorString(a: MultiIndex): String = a.indices.mkString(",")
+    def toSelector(multi: MultiIndex): String = multi.indices.mkString(",")
   }
 
   implicit class IndexNameSyntax[A](a: A)(implicit IS: IndexSelector[A]) {
-    def selectorString: String = IS.selectorString(a)
+    def toSelector: String = IS.toSelector(a)
   }
 
 }
@@ -92,23 +92,24 @@ trait IndexPatternNewType {
         )
       }
     }
+    def All: IndexPattern = this("_all")
   }
-
   type IndexPattern = IndexPattern.Type
+
 }
 
 final case class MultiIndex private (indices: Chunk[String]) { self =>
-  def names(indexNames: IndexName*): MultiIndex =
-    self.copy(indices = indices ++ Chunk.fromIterable(indexNames.map(IndexName.unwrap)))
+  def names(name: IndexName, names: IndexName*): MultiIndex =
+    self.copy(indices = indices ++ Chunk.fromIterable(name.toString +: names.map(IndexName.unwrap)))
 
-  def patterns(indexPatterns: IndexPattern*): MultiIndex =
-    self.copy(indices = indices ++ Chunk.fromIterable(indexPatterns.map(IndexPattern.unwrap)))
+  def patterns(pattern: IndexPattern, patterns: IndexPattern*): MultiIndex =
+    self.copy(indices = indices ++ Chunk.fromIterable(pattern.toString +: patterns.map(IndexPattern.unwrap)))
 }
 
 object MultiIndex {
-  def names(indexNames: IndexName*): MultiIndex =
-    new MultiIndex(Chunk.fromIterable(indexNames.map(IndexName.unwrap)))
+  def names(name: IndexName, names: IndexName*): MultiIndex =
+    new MultiIndex(Chunk.fromIterable(name.toString +: names.map(IndexName.unwrap)))
 
-  def patterns(indexPatterns: IndexPattern*): MultiIndex =
-    new MultiIndex(Chunk.fromIterable(indexPatterns.map(IndexPattern.unwrap)))
+  def patterns(pattern: IndexPattern, patterns: IndexPattern*): MultiIndex =
+    new MultiIndex(Chunk.fromIterable(pattern.toString +: patterns.map(IndexPattern.unwrap)))
 }

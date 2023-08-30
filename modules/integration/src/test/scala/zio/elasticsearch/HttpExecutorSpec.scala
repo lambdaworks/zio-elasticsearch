@@ -695,7 +695,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             } yield assert(res)(equalTo(true))
           },
           test("successfully refresh all indices") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPattern("_all"))))(equalTo(true))
+            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPattern.All)))(equalTo(true))
           },
           test("return false if index does not exists") {
             assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
@@ -986,6 +986,36 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document using a match all query with index pattern") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  document = firstDocument.copy(stringField = s"this is test")
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document).refreshTrue
+                    )
+                  secondDocumentCopy = secondDocument.copy(stringField = s"this is test")
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
+                           .refreshTrue
+                       )
+                  query = matchAll
+                  res <- Executor
+                           .execute(ElasticRequest.search(IndexPattern("search-index*"), query))
+                           .documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(document)) && assert(res)(Assertion.contains(secondDocumentCopy))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
           test("search for a document using a match boolean prefix query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
@@ -1006,6 +1036,40 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using a match phrase query with multi index") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _       <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  document = firstDocument.copy(stringField = s"this is test")
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document).refreshTrue
+                    )
+                  secondDocumentCopy = secondDocument.copy(stringField = s"this is test")
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
+                           .refreshTrue
+                       )
+                  query = matchPhrase(
+                            field = TestDocument.stringField,
+                            value = document.stringField
+                          )
+
+                  res <- Executor
+                           .execute(ElasticRequest.search(MultiIndex.names(firstSearchIndex, secondSearchIndex), query))
+                           .documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(document)) && assert(res)(Assertion.contains(secondDocumentCopy))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("search for a document using a match phrase query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

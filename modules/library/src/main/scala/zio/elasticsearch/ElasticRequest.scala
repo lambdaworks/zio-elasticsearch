@@ -213,7 +213,7 @@ object ElasticRequest {
    *   an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
    */
   final def getById[I: IndexSelector](index: I, id: DocumentId): GetByIdRequest =
-    GetById(index = index.selectorString, id = id, refresh = None, routing = None)
+    GetById(index = index.toSelector, id = id, refresh = None, routing = None)
 
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
@@ -224,7 +224,7 @@ object ElasticRequest {
    *   an instance of [[RefreshRequest]] that represents refresh operation to be performed.
    */
   final def refresh[I: IndexSelector](index: I): RefreshRequest =
-    Refresh(index = index.selectorString)
+    Refresh(index = index.toSelector)
 
   /**
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
@@ -240,7 +240,7 @@ object ElasticRequest {
     Search(
       excluded = Chunk(),
       included = Chunk(),
-      index = index.selectorString,
+      index = index.toSelector,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -271,7 +271,7 @@ object ElasticRequest {
       aggregation = aggregation,
       excluded = Chunk(),
       included = Chunk(),
-      index = index.selectorString,
+      index = index.toSelector,
       query = query,
       sortBy = Chunk.empty,
       from = None,
