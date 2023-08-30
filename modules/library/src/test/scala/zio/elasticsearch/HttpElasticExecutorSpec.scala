@@ -177,8 +177,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(executorGetById)(isSome(equalTo(doc)))
       },
       test("refresh") {
-        val executorRefresh = Executor.execute(ElasticRequest.refresh(name = index))
-
+        val executorRefresh = Executor.execute(ElasticRequest.refresh(index = index))
         assertZIO(executorRefresh)(equalTo(true))
       },
       test("search") {

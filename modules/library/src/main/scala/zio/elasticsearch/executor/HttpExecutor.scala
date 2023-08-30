@@ -250,7 +250,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   }
 
   private def executeCreatePointInTime(
-    index: IndexName,
+    index: String,
     config: StreamConfig
   ): Task[(Chunk[Item], Option[(String, Option[Json])])] =
     sendRequestWithCustomResponse(
@@ -373,7 +373,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
 
   private def executeRefresh(r: Refresh): Task[Boolean] =
-    sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.name}/$Refresh")).flatMap { response =>
+    sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.index}/$Refresh")).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(true)
         case HttpNotFound => ZIO.succeed(false)

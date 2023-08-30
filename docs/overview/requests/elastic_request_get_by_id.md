@@ -30,4 +30,9 @@ import zio.elasticsearch._
 val requestWithRouting: GetByIdRequest = getById(index = IndexName("index"), id = DocumentId("111")).routing(Routing("routing"))
 ```
 
+If you want to create `GetById` request with `IndexPattern`, you can do that in the following manner:
+```scala
+val requestWithIndexPattern: GetByIdRequest = getById(index = IndexPattern("index*"), id = DocumentId("111"))
+```
+
 You can find more information about `GetById` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-get.html).

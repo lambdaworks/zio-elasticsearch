@@ -686,16 +686,23 @@ object HttpExecutorSpec extends IntegrationSpec {
         ),
         suite("refresh index")(
           test("successfully refresh existing index") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(
-              equalTo(true)
-            )
+            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(equalTo(true))
+          },
+          test("successfully refresh more existing indices") {
+            for {
+              _   <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
+              res <- Executor.execute(ElasticRequest.refresh(MultiIndex.names(index, createIndexTestName)))
+            } yield assert(res)(equalTo(true))
+          },
+          test("successfully refresh all indices") {
+            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPattern("_all"))))(equalTo(true))
           },
           test("return false if index does not exists") {
             assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
               equalTo(false)
             )
           }
-        ),
+        ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
         suite("retrieving document by IDs")(
           test("find documents by ids") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

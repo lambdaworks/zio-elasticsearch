@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.IndexSelector.IndexNameSyntax
 import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.executor.response.BulkResponse
 import zio.elasticsearch.highlights.Highlights
@@ -211,19 +212,19 @@ object ElasticRequest {
    * @return
    *   an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
    */
-  final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
-    GetById(index = index, id = id, refresh = None, routing = None)
+  final def getById[I: IndexSelector](index: I, id: DocumentId): GetByIdRequest =
+    GetById(index = index.selectorString, id = id, refresh = None, routing = None)
 
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
    *
-   * @param name
-   *   the name of the index to be refreshed
+   * @param index
+   *   the name of the index or more indices to be refreshed
    * @return
    *   an instance of [[RefreshRequest]] that represents refresh operation to be performed.
    */
-  final def refresh(name: IndexName): RefreshRequest =
-    Refresh(name = name)
+  final def refresh[I: IndexSelector](index: I): RefreshRequest =
+    Refresh(index = index.selectorString)
 
   /**
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
@@ -235,11 +236,11 @@ object ElasticRequest {
    * @return
    *   an instance of [[SearchRequest]] that represents search operation to be performed.
    */
-  final def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
+  final def search[I: IndexSelector](index: I, query: ElasticQuery[_]): SearchRequest =
     Search(
       excluded = Chunk(),
       included = Chunk(),
-      index = index,
+      index = index.selectorString,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -261,8 +262,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be performed.
    */
-  final def search(
-    index: IndexName,
+  final def search[I: IndexSelector](
+    index: I,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation
   ): SearchAndAggregateRequest =
@@ -270,7 +271,7 @@ object ElasticRequest {
       aggregation = aggregation,
       excluded = Chunk(),
       included = Chunk(),
-      index = index,
+      index = index.selectorString,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -569,7 +570,7 @@ object ElasticRequest {
       with HasRouting[GetByIdRequest]
 
   private[elasticsearch] final case class GetById(
-    index: IndexName,
+    index: String,
     id: DocumentId,
     refresh: Option[Boolean],
     routing: Option[Routing]
@@ -583,7 +584,7 @@ object ElasticRequest {
 
   sealed trait RefreshRequest extends ElasticRequest[Boolean]
 
-  private[elasticsearch] final case class Refresh(name: IndexName) extends RefreshRequest
+  private[elasticsearch] final case class Refresh(index: String) extends RefreshRequest
 
   sealed trait SearchRequest
       extends ElasticRequest[SearchResult]
@@ -611,7 +612,7 @@ object ElasticRequest {
   private[elasticsearch] final case class Search(
     excluded: Chunk[String],
     included: Chunk[String],
-    index: IndexName,
+    index: String,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
     from: Option[Int],
@@ -717,7 +718,7 @@ object ElasticRequest {
     aggregation: ElasticAggregation,
     excluded: Chunk[String],
     included: Chunk[String],
-    index: IndexName,
+    index: String,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
     from: Option[Int],

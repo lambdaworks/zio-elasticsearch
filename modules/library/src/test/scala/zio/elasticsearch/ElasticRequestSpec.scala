@@ -5,6 +5,7 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticSort.sortBy
+import zio.elasticsearch.IndexSelector.IndexNameSyntax
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.highlights.{HighlightField, Highlights}
@@ -251,19 +252,25 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val getByIdRequestWithRouting   = getById(index = Index, id = DocId).routing(RoutingValue)
           val getByIdRequestWithAllParams = getById(index = Index, id = DocId).refreshTrue.routing(RoutingValue)
 
-          assert(getByIdRequest)(equalTo(GetById(index = Index, id = DocId, refresh = None, routing = None))) && assert(
+          assert(getByIdRequest)(
+            equalTo(GetById(index = Index.selectorString, id = DocId, refresh = None, routing = None))
+          ) && assert(
             getByIdRequestWithRefresh
           )(
-            equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = None))
+            equalTo(GetById(index = Index.selectorString, id = DocId, refresh = Some(true), routing = None))
           ) && assert(getByIdRequestWithRouting)(
-            equalTo(GetById(index = Index, id = DocId, refresh = None, routing = Some(RoutingValue)))
+            equalTo(GetById(index = Index.selectorString, id = DocId, refresh = None, routing = Some(RoutingValue)))
           ) && assert(getByIdRequestWithAllParams)(
-            equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
+            equalTo(
+              GetById(index = Index.selectorString, id = DocId, refresh = Some(true), routing = Some(RoutingValue))
+            )
           )
         },
         test("refresh") {
-          val refreshRequest = refresh(Index)
-          assert(refreshRequest)(equalTo(Refresh(Index)))
+          val refreshRequest        = refresh(Index)
+          val refreshWithMultiIndex = refresh(Indices)
+          assert(refreshRequest)(equalTo(Refresh(Index.selectorString))) &&
+          assert(refreshWithMultiIndex)(equalTo(Refresh(Indices.selectorString)))
         },
         test("search") {
           val searchRequest         = search(index = Index, query = Query)
@@ -291,7 +298,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -306,7 +313,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -331,7 +338,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -346,7 +353,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = Some(5),
@@ -361,7 +368,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -378,7 +385,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -393,7 +400,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -408,7 +415,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -423,7 +430,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -481,7 +488,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -497,7 +504,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -523,7 +530,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -539,7 +546,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = Some(5),
@@ -555,7 +562,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -573,7 +580,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -589,7 +596,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -605,7 +612,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -621,7 +628,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                index = Index.selectorString,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -1642,6 +1649,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
   private val DocId            = DocumentId("documentid")
   private val Index            = IndexName("index")
   private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)
+  private val Indices          = MultiIndex.names(Index, IndexName("index2"))
   private val Query            = ElasticQuery.range(TestDocument.intField).gte(10)
   private val RoutingValue     = Routing("routing")
   private val Script1          = Script("doc['intField'].value * params['factor']").params("factor" -> 2)
