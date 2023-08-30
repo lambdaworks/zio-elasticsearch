@@ -12,7 +12,7 @@ import zio.elasticsearch.ElasticRequest.getById
 // this import is required for using `IndexName` and `DocumentId`
 import zio.elasticsearch._
 
-val request: ExistsRequest = getById(index = IndexName("index"), id = DocumentId("111"))
+val request: GetByIdRequest = getById(index = IndexName("index"), id = DocumentId("111"))
 ```
 
 If you want to change the `refresh`, you can use `refresh`, `refreshFalse` or `refreshTrue` method:
