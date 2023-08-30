@@ -49,12 +49,8 @@ trait IndexPatternNewType {
       IndexPatternValidator.validate(pattern)
 
     protected inline def validateInline(inline pattern: String) =
-    ${
-      IndexNameValidator.validateInlineImpl('pattern)}
-
-    def All: IndexPattern = this("_all")
+      ${ IndexPatternValidator.validateInlineImpl('pattern) }
   }
-
   type IndexPattern = IndexPattern.Type
 }
 

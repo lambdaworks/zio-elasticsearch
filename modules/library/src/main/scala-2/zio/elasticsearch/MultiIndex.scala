@@ -92,10 +92,8 @@ trait IndexPatternNewType {
         )
       }
     }
-    def All: IndexPattern = this("_all")
   }
   type IndexPattern = IndexPattern.Type
-
 }
 
 final case class MultiIndex private (indices: Chunk[String]) { self =>

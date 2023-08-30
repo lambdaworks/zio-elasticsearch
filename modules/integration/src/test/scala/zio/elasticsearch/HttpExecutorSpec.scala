@@ -695,7 +695,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             } yield assert(res)(equalTo(true))
           },
           test("successfully refresh all indices") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPattern.All)))(equalTo(true))
+            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPatternAll)))(equalTo(true))
           },
           test("return false if index does not exists") {
             assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
