@@ -41,6 +41,7 @@ trait IndexPatternNewtype {
         )
       }
     }
+    def All: IndexPattern = IndexPattern("_all")
   }
   type IndexPattern = IndexPattern.Type
 }

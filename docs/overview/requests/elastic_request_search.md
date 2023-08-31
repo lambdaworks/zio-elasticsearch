@@ -106,7 +106,7 @@ val request1WithSort: SearchRequest = search(index = IndexName("index"), query =
 val request2WithSort: SearchAndAggregateRequest = search(index = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).sort(sortBy("intField").missing(First))
 ```
 
-If you want to create `Search` request with `IndexPattern`, you can do that in the following manner:
+If you want to create `Search` request with `IndexPattern`, do the following:
 ```scala
 val requestWithIndexPattern: SearchRequest = search(index = IndexPattern("index*"), query = matchAll)
 ```
