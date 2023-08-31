@@ -686,21 +686,19 @@ object HttpExecutorSpec extends IntegrationSpec {
         ),
         suite("refresh index")(
           test("successfully refresh existing index") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(equalTo(true))
+            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(isTrue)
           },
           test("successfully refresh more existing indices") {
             for {
               _   <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
               res <- Executor.execute(ElasticRequest.refresh(MultiIndex.names(index, createIndexTestName)))
-            } yield assert(res)(equalTo(true))
+            } yield assert(res)(isTrue)
           },
           test("successfully refresh all indices") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPatternAll)))(equalTo(true))
+            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPatternAll)))(isTrue)
           },
           test("return false if index does not exists") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
-              equalTo(false)
-            )
+            assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(isFalse)
           }
         ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
         suite("retrieving document by IDs")(
@@ -990,12 +988,14 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _       <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                  document = firstDocument.copy(stringField = s"this is test")
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  firstDocumentCopy = firstDocument.copy(stringField = s"this is test")
                   _ <-
                     Executor.execute(
-                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document).refreshTrue
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
+                        .refreshTrue
                     )
                   secondDocumentCopy = secondDocument.copy(stringField = s"this is test")
                   _ <- Executor.execute(
@@ -1007,7 +1007,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(IndexPattern("search-index*"), query))
                            .documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(document)) && assert(res)(Assertion.contains(secondDocumentCopy))
+                } yield assert(res)(Assertion.contains(firstDocumentCopy)) && assert(res)(
+                  Assertion.contains(secondDocumentCopy)
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1041,12 +1043,14 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _       <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                  document = firstDocument.copy(stringField = s"this is test")
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  firstDocumentCopy = firstDocument.copy(stringField = s"this is test")
                   _ <-
                     Executor.execute(
-                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document).refreshTrue
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
+                        .refreshTrue
                     )
                   secondDocumentCopy = secondDocument.copy(stringField = s"this is test")
                   _ <- Executor.execute(
@@ -1056,13 +1060,15 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   query = matchPhrase(
                             field = TestDocument.stringField,
-                            value = document.stringField
+                            value = firstDocumentCopy.stringField
                           )
 
                   res <- Executor
                            .execute(ElasticRequest.search(MultiIndex.names(firstSearchIndex, secondSearchIndex), query))
                            .documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(document)) && assert(res)(Assertion.contains(secondDocumentCopy))
+                } yield assert(res)(Assertion.contains(firstDocumentCopy)) && assert(res)(
+                  Assertion.contains(secondDocumentCopy)
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

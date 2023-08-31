@@ -26,35 +26,29 @@ trait IndexSelector[A] {
 object IndexSelector {
 
   implicit object IndexNameSelector extends IndexSelector[IndexName] {
-    def toSelector(name: IndexName): String = IndexName.unwrap(name)
+    def toSelector(name: IndexName): String =
+      IndexName.unwrap(name)
   }
 
   implicit object IndexPatternSelector extends IndexSelector[IndexPattern] {
-    def toSelector(pattern: IndexPattern): String = IndexPattern.unwrap(pattern)
+    def toSelector(pattern: IndexPattern): String =
+      IndexPattern.unwrap(pattern)
   }
 
   implicit object MultiIndexSelector extends IndexSelector[MultiIndex] {
-    def toSelector(multi: MultiIndex): String = multi.indices.mkString(",")
+    def toSelector(multi: MultiIndex): String =
+      multi.indices.mkString(",")
   }
 
   implicit class IndexNameSyntax[A](a: A)(implicit IS: IndexSelector[A]) {
-    def toSelector: String = IS.toSelector(a)
+    def toSelector: String =
+      IS.toSelector(a)
   }
 
 }
 
-trait IndexPatternNewType {
-  object IndexPattern extends NewtypeCustom[String] {
-    protected def validate(pattern: String) =
-      IndexPatternValidator.validate(pattern)
+final case class MultiIndex private[elasticsearch] (indices: Chunk[String]) { self =>
 
-    protected inline def validateInline(inline pattern: String) =
-      ${ IndexPatternValidator.validateInlineImpl('pattern) }
-  }
-  type IndexPattern = IndexPattern.Type
-}
-
-final case class MultiIndex private (indices: Chunk[String]) { self =>
   def names(name: IndexName, names: IndexName*): MultiIndex =
     self.copy(indices = indices ++ Chunk.fromIterable(name.toString +: names.map(IndexName.unwrap)))
 
@@ -64,8 +58,9 @@ final case class MultiIndex private (indices: Chunk[String]) { self =>
 
 object MultiIndex {
   def names(name: IndexName, names: IndexName*): MultiIndex =
-    new MultiIndex(Chunk.fromIterable(name.toString +: names.map(IndexName.unwrap)))
+    MultiIndex(Chunk.fromIterable(name.toString +: names.map(IndexName.unwrap)))
 
   def patterns(pattern: IndexPattern, patterns: IndexPattern*): MultiIndex =
-    new MultiIndex(Chunk.fromIterable(pattern.toString +: patterns.map(IndexPattern.unwrap)))
+    MultiIndex(Chunk.fromIterable(pattern.toString +: patterns.map(IndexPattern.unwrap)))
 }
+

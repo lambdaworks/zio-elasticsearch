@@ -253,16 +253,16 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val getByIdRequestWithAllParams = getById(index = Index, id = DocId).refreshTrue.routing(RoutingValue)
 
           assert(getByIdRequest)(
-            equalTo(GetById(index = Index.toSelector, id = DocId, refresh = None, routing = None))
+            equalTo(GetById(index = Index, id = DocId, refresh = None, routing = None))
           ) && assert(
             getByIdRequestWithRefresh
           )(
-            equalTo(GetById(index = Index.toSelector, id = DocId, refresh = Some(true), routing = None))
+            equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = None))
           ) && assert(getByIdRequestWithRouting)(
-            equalTo(GetById(index = Index.toSelector, id = DocId, refresh = None, routing = Some(RoutingValue)))
+            equalTo(GetById(index = Index, id = DocId, refresh = None, routing = Some(RoutingValue)))
           ) && assert(getByIdRequestWithAllParams)(
             equalTo(
-              GetById(index = Index.toSelector, id = DocId, refresh = Some(true), routing = Some(RoutingValue))
+              GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue))
             )
           )
         },

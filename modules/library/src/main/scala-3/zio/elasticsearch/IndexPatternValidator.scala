@@ -47,7 +47,7 @@ object IndexPatternValidator
              |   - Cannot start with +.
              |   - Cannot be `.` or `..`.
              |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
-             |   - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
+             |   - Patterns starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
              |""".stripMargin
         )
       )

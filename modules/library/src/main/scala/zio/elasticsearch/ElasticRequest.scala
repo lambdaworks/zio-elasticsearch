@@ -212,8 +212,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
    */
-  final def getById[I: IndexSelector](index: I, id: DocumentId): GetByIdRequest =
-    GetById(index = index.toSelector, id = id, refresh = None, routing = None)
+  final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
+    GetById(index = index, id = id, refresh = None, routing = None)
 
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
@@ -230,7 +230,7 @@ object ElasticRequest {
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
    *
    * @param index
-   *   the name of the index to search in
+   *   the name of the index or more indices to search in
    * @param query
    *   the [[ElasticQuery]] object representing the search query to execute
    * @return
@@ -570,7 +570,7 @@ object ElasticRequest {
       with HasRouting[GetByIdRequest]
 
   private[elasticsearch] final case class GetById(
-    index: String,
+    index: IndexName,
     id: DocumentId,
     refresh: Option[Boolean],
     routing: Option[Routing]

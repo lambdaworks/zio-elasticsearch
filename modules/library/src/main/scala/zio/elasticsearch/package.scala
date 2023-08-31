@@ -20,7 +20,7 @@ import zio.elasticsearch.result._
 import zio.prelude.Newtype
 import zio.schema.Schema
 
-package object elasticsearch extends IndexNameNewtype with IndexPatternNewType with RoutingNewtype {
+package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype with RoutingNewtype {
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
 
