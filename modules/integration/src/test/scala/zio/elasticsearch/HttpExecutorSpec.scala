@@ -373,7 +373,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               selector = firstSearchIndex,
+                               selectors = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -409,7 +409,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res <- Executor
                          .execute(
                            ElasticRequest
-                             .search(selector = firstSearchIndex, query = query, aggregation = aggregation)
+                             .search(selectors = firstSearchIndex, query = query, aggregation = aggregation)
                              .size(10)
                              .sort(
                                sortBy(TestDocument.intField).order(Asc)
@@ -419,7 +419,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res2 <- Executor
                           .execute(
                             ElasticRequest
-                              .search(selector = firstSearchIndex, query = query, aggregation = aggregation)
+                              .search(selectors = firstSearchIndex, query = query, aggregation = aggregation)
                               .searchAfter(sa.get)
                               .size(10)
                               .sort(
@@ -459,7 +459,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               selector = firstSearchIndex,
+                               selectors = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -507,7 +507,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               selector = firstSearchIndex,
+                               selectors = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
