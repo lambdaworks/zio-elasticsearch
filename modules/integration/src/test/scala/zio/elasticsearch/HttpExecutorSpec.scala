@@ -373,7 +373,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               index = firstSearchIndex,
+                               selector = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -409,7 +409,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res <- Executor
                          .execute(
                            ElasticRequest
-                             .search(index = firstSearchIndex, query = query, aggregation = aggregation)
+                             .search(selector = firstSearchIndex, query = query, aggregation = aggregation)
                              .size(10)
                              .sort(
                                sortBy(TestDocument.intField).order(Asc)
@@ -419,7 +419,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res2 <- Executor
                           .execute(
                             ElasticRequest
-                              .search(index = firstSearchIndex, query = query, aggregation = aggregation)
+                              .search(selector = firstSearchIndex, query = query, aggregation = aggregation)
                               .searchAfter(sa.get)
                               .size(10)
                               .sort(
@@ -459,7 +459,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               index = firstSearchIndex,
+                               selector = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -507,7 +507,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               index = firstSearchIndex,
+                               selector = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -990,14 +990,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                  firstDocumentCopy = firstDocument.copy(stringField = s"this is test")
+                  firstDocumentCopy = firstDocument.copy(stringField = "this is test")
                   _ <-
                     Executor.execute(
                       ElasticRequest
                         .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
                         .refreshTrue
                     )
-                  secondDocumentCopy = secondDocument.copy(stringField = s"this is test")
+                  secondDocumentCopy = secondDocument.copy(stringField = "this is test")
                   _ <- Executor.execute(
                          ElasticRequest
                            .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
@@ -1045,14 +1045,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
-                  firstDocumentCopy = firstDocument.copy(stringField = s"this is test")
+                  firstDocumentCopy = firstDocument.copy(stringField = "this is test")
                   _ <-
                     Executor.execute(
                       ElasticRequest
                         .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
                         .refreshTrue
                     )
-                  secondDocumentCopy = secondDocument.copy(stringField = s"this is test")
+                  secondDocumentCopy = secondDocument.copy(stringField = "this is test")
                   _ <- Executor.execute(
                          ElasticRequest
                            .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)

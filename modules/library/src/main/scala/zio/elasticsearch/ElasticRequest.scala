@@ -223,8 +223,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[RefreshRequest]] that represents refresh operation to be performed.
    */
-  final def refresh[I: IndexSelector](index: I): RefreshRequest =
-    Refresh(index = index.toSelector)
+  final def refresh[I: IndexSelector](selector: I): RefreshRequest =
+    Refresh(selector = selector.toSelector)
 
   /**
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
@@ -236,11 +236,11 @@ object ElasticRequest {
    * @return
    *   an instance of [[SearchRequest]] that represents search operation to be performed.
    */
-  final def search[I: IndexSelector](index: I, query: ElasticQuery[_]): SearchRequest =
+  final def search[I: IndexSelector](selector: I, query: ElasticQuery[_]): SearchRequest =
     Search(
       excluded = Chunk(),
       included = Chunk(),
-      index = index.toSelector,
+      selector = selector.toSelector,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -263,7 +263,7 @@ object ElasticRequest {
    *   an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be performed.
    */
   final def search[I: IndexSelector](
-    index: I,
+    selector: I,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation
   ): SearchAndAggregateRequest =
@@ -271,7 +271,7 @@ object ElasticRequest {
       aggregation = aggregation,
       excluded = Chunk(),
       included = Chunk(),
-      index = index.toSelector,
+      selector = selector.toSelector,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -584,7 +584,7 @@ object ElasticRequest {
 
   sealed trait RefreshRequest extends ElasticRequest[Boolean]
 
-  private[elasticsearch] final case class Refresh(index: String) extends RefreshRequest
+  private[elasticsearch] final case class Refresh(selector: String) extends RefreshRequest
 
   sealed trait SearchRequest
       extends ElasticRequest[SearchResult]
@@ -612,7 +612,7 @@ object ElasticRequest {
   private[elasticsearch] final case class Search(
     excluded: Chunk[String],
     included: Chunk[String],
-    index: String,
+    selector: String,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
     from: Option[Int],
@@ -626,7 +626,7 @@ object ElasticRequest {
         aggregation = aggregation,
         excluded = excluded,
         included = included,
-        index = index,
+        selector = selector,
         query = query,
         sortBy = sortBy,
         from = from,
@@ -718,7 +718,7 @@ object ElasticRequest {
     aggregation: ElasticAggregation,
     excluded: Chunk[String],
     included: Chunk[String],
-    index: String,
+    selector: String,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
     from: Option[Int],
