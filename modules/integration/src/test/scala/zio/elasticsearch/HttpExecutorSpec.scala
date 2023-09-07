@@ -67,9 +67,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   aggregation = avgAggregation(name = "aggregationDouble", field = TestDocument.doubleField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .asAvgAggregation("aggregationDouble")
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asAvgAggregation("aggregationDouble")
                 } yield assert(aggsRes.head.value)(equalTo(15.0))
             }
           } @@ around(
@@ -91,8 +92,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = cardinalityAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
 
                   cardinalityAgg <- aggsRes.asCardinalityAggregation("aggregationInt")
                 } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2)))
@@ -117,9 +119,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = maxAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
                 } yield assert(aggsRes.head)(equalTo(expectedResponse))
             }
           } @@ around(
@@ -141,9 +144,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = minAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .asMinAggregation("aggregationInt")
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asMinAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(23.0))
             }
           } @@ around(
@@ -166,14 +170,83 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   aggregation =
                     percentilesAggregation(name = "aggregationInt", field = TestDocument.intField).percents(25, 50, 90)
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asPercentilesAggregation("aggregationInt")
+                } yield assert(aggsRes.head.values.size)(equalTo(3))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using percentiles aggregation with multi index") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  aggregation =
+                    percentilesAggregation(name = "aggregationInt", field = TestDocument.intField).percents(25, 50, 90)
                   aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .execute(
+                                 ElasticRequest.aggregate(
+                                   selectors = MultiIndex.names(firstSearchIndex, secondSearchIndex),
+                                   aggregation = aggregation
+                                 )
+                               )
                                .asPercentilesAggregation("aggregationInt")
                 } yield assert(aggsRes.head.values.size)(equalTo(3))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
+          test("aggregate using percentiles aggregation with index pattern") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  aggregation =
+                    percentilesAggregation(name = "aggregationInt", field = TestDocument.intField).percents(25, 50, 90)
+                  aggsRes <- Executor
+                               .execute(
+                                 ElasticRequest.aggregate(
+                                   selectors = IndexPatternAll,
+                                   aggregation = aggregation
+                                 )
+                               )
+                               .asPercentilesAggregation("aggregationInt")
+                } yield assert(aggsRes.head.values.size)(equalTo(3))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("aggregate using percentiles aggregation as sub aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
@@ -191,9 +264,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(name = "first", field = TestDocument.stringField.keyword)
                       .withSubAgg(percentilesAggregation(name = "second", field = TestSubDocument.intField))
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
             }
           } @@ around(
@@ -215,9 +289,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = sumAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .asSumAggregation("aggregationInt")
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asSumAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(223.0))
             }
           } @@ around(
@@ -239,9 +314,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   aggregation =
                     termsAggregation(name = "aggregationString", field = TestDocument.stringField.keyword)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
             }
           } @@ around(
@@ -271,7 +347,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
-                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                                   .aggregate(selectors = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
@@ -303,7 +379,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
-                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                                   .aggregate(selectors = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
@@ -341,7 +417,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
-                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                                   .aggregate(selectors = firstSearchIndex, aggregation = aggregation)
                                )
                   agg <- aggsRes.asTermsAggregation("aggregationString")
                 } yield assert(agg.map(_.buckets.size))(isSome(equalTo(1)))

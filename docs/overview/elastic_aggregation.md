@@ -86,11 +86,11 @@ Now, after describing an aggregation, you can pass it to the `aggregate`/`search
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticQuery._
 
-ElasticRequest.aggregate(index = IndexName("index"), aggregation = termsAggregation(name = "termsAggregation", field = "name.first_name.keyword"))
-ElasticRequest.search(IndexName("index"), query = matchAll, aggregation = termsAggregation(name = "termsAggregation", field = "name.first_name.keyword"))
+ElasticRequest.aggregate(selectors = IndexName("index"), aggregation = termsAggregation(name = "termsAggregation", field = "name.first_name.keyword"))
+ElasticRequest.search(selectors = IndexName("index"), query = matchAll, aggregation = termsAggregation(name = "termsAggregation", field = "name.first_name.keyword"))
 
 // type-safe methods
-ElasticRequest.aggregate(index = IndexName("index"), aggregation = termsAggregation(name = "termsAggregation", field = User.name / Name.firstName.keyword))
-ElasticRequest.search(index = IndexName("index"), query = matchAll, aggregation = termsAggregation(name = "termsAggregation", field = User.name / Name.firstName.keyword))
+ElasticRequest.aggregate(selectors = IndexName("index"), aggregation = termsAggregation(name = "termsAggregation", field = User.name / Name.firstName.keyword))
+ElasticRequest.search(selectors = IndexName("index"), query = matchAll, aggregation = termsAggregation(name = "termsAggregation", field = User.name / Name.firstName.keyword))
 
 ```

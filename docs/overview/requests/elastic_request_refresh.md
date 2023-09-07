@@ -20,12 +20,12 @@ val request: RefreshRequest = refresh(selectors = IndexName("index"))
 
 If you want to refresh more indices, you can use `refresh` method this way:
 ```scala
-val request: RefreshRequest = refresh(selectors = MultiIndex.names(IndexName("index1"), IndexName("index2")))
+val requestWithMultiIndex: RefreshRequest = refresh(selectors = MultiIndex.names(IndexName("index1"), IndexName("index2")))
 ```
 
 If you want to refresh all indices, you can use `refresh` method with `IndexPattern` this way:
 ```scala
-val request: RefreshRequest = refresh(selectors = IndexPattern("_all"))
+val requestWithIndexPattern: RefreshRequest = refresh(selectors = IndexPattern("_all"))
 ```
 
 You can find more information about `Refresh` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/indices-refresh.html).

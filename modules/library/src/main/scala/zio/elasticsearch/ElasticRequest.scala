@@ -47,15 +47,15 @@ object ElasticRequest {
   /**
    * Constructs an instance of [[AggregateRequest]] using the specified parameters.
    *
-   * @param index
-   *   the name of the Elasticsearch index to aggregate on
+   * @param selectors
+   *   the name of the index or more indices to be refreshed
    * @param aggregation
    *   the desired [[ElasticAggregation]] to perform
    * @return
    *   an instance of [[AggregateRequest]] that represents the aggregation to be performed.
    */
-  final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
-    Aggregate(index = index, aggregation = aggregation)
+  final def aggregate[I: IndexSelector](selectors: I, aggregation: ElasticAggregation): AggregateRequest =
+    Aggregate(selectors = selectors.toSelector, aggregation = aggregation)
 
   /**
    * Constructs an instance of [[BulkRequest]] using the specified requests.
@@ -371,7 +371,7 @@ object ElasticRequest {
 
   sealed trait AggregateRequest extends ElasticRequest[AggregateResult]
 
-  private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
+  private[elasticsearch] final case class Aggregate(selectors: String, aggregation: ElasticAggregation)
       extends AggregateRequest {
     private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }

@@ -111,4 +111,9 @@ If you want to create `Search` request with `IndexPattern`, do the following:
 val requestWithIndexPattern: SearchRequest = search(selectors = IndexPattern("index*"), query = matchAll)
 ```
 
+If you want to create `Search` request with `MultiIndex`, do the following:
+```scala
+val requestWithMultiIndex: SearchRequest = search(selectors = MultiIndex.names(IndexName("index1"), IndexName("index2")), query = matchAll)
+```
+
 You can find more information about `Search` and `SearchAndAggregate` requests [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-search.html).

@@ -115,7 +115,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeAggregate(r: Aggregate): Task[AggregateResult] =
     sendRequestWithCustomResponse(
       baseRequest
-        .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
+        .post(uri"${esConfig.uri}/${r.selectors}/$Search?typed_keys")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.toJson)

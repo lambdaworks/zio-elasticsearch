@@ -26,9 +26,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     suite("ElasticRequest")(
       suite("constructing")(
         test("aggregate") {
-          val aggregateRequest = aggregate(index = Index, aggregation = MaxAggregation)
+          val aggregateRequest = aggregate(selectors = Index, aggregation = MaxAggregation)
 
-          assert(aggregateRequest)(equalTo(Aggregate(index = Index, aggregation = MaxAggregation)))
+          assert(aggregateRequest)(equalTo(Aggregate(selectors = Index.toSelector, aggregation = MaxAggregation)))
         },
         test("bulk") {
           val bulkRequest = bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2))
