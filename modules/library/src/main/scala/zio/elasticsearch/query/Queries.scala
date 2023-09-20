@@ -138,6 +138,7 @@ private[elasticsearch] final case class Bool[S](
   boost: Option[Double],
   minimumShouldMatch: Option[Int]
 ) extends BoolQuery[S] { self =>
+
   def boost(value: Double): BoolQuery[S] =
     self.copy(boost = Some(value))
 
@@ -202,6 +203,7 @@ private[elasticsearch] final case class ConstantScore[S](query: ElasticQuery[S],
 sealed trait ExistsQuery[S] extends ElasticQuery[S] with HasBoost[ExistsQuery[S]]
 
 private[elasticsearch] final case class Exists[S](field: String, boost: Option[Double]) extends ExistsQuery[S] { self =>
+
   def boost(value: Double): ExistsQuery[S] =
     self.copy(boost = Some(value))
 
@@ -538,8 +540,8 @@ private[elasticsearch] final case class HasParent[S](
   ignoreUnmapped: Option[Boolean],
   innerHitsField: Option[InnerHits],
   score: Option[Boolean]
-) extends HasParentQuery[S] {
-  self =>
+) extends HasParentQuery[S] { self =>
+
   def boost(value: Double): HasParentQuery[S] =
     self.copy(boost = Some(value))
 
@@ -570,6 +572,7 @@ private[elasticsearch] final case class HasParent[S](
 sealed trait MatchQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
+
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("match" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
 }
@@ -577,6 +580,7 @@ private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: Str
 sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
 
 private[elasticsearch] final case class MatchAll(boost: Option[Double]) extends MatchAllQuery { self =>
+
   def boost(value: Double): MatchAllQuery =
     self.copy(boost = Some(value))
 
@@ -609,6 +613,7 @@ sealed trait MatchPhraseQuery[S] extends ElasticQuery[S] with HasBoost[MatchPhra
 
 private[elasticsearch] final case class MatchPhrase[S](field: String, value: String, boost: Option[Double])
     extends MatchPhraseQuery[S] { self =>
+
   def boost(value: Double): MatchPhraseQuery[S] =
     self.copy(boost = Some(value))
 
@@ -732,6 +737,7 @@ private[elasticsearch] final case class Nested[S](
   innerHitsField: Option[InnerHits],
   scoreMode: Option[ScoreMode]
 ) extends NestedQuery[S] { self =>
+
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
@@ -756,31 +762,43 @@ private[elasticsearch] final case class Nested[S](
 }
 
 sealed trait LowerBound {
+
   private[elasticsearch] def toJson: Option[(String, Json)]
 }
 
 private[elasticsearch] final case class GreaterThan[A: ElasticPrimitive](value: A) extends LowerBound {
-  private[elasticsearch] def toJson: Option[(String, Json)] = Some("gt" -> value.toJson)
+
+  private[elasticsearch] def toJson: Option[(String, Json)] =
+    Some("gt" -> value.toJson)
 }
 
 private[elasticsearch] final case class GreaterThanOrEqualTo[A: ElasticPrimitive](value: A) extends LowerBound {
-  private[elasticsearch] def toJson: Option[(String, Json)] = Some("gte" -> value.toJson)
+
+  private[elasticsearch] def toJson: Option[(String, Json)] =
+    Some("gte" -> value.toJson)
 }
 
 sealed trait UpperBound {
+
   private[elasticsearch] def toJson: Option[(String, Json)]
 }
 
 private[elasticsearch] final case class LessThan[A: ElasticPrimitive](value: A) extends UpperBound {
-  private[elasticsearch] def toJson: Option[(String, Json)] = Some("lt" -> value.toJson)
+
+  private[elasticsearch] def toJson: Option[(String, Json)] =
+    Some("lt" -> value.toJson)
 }
 
 private[elasticsearch] final case class LessThanOrEqualTo[A: ElasticPrimitive](value: A) extends UpperBound {
-  private[elasticsearch] def toJson: Option[(String, Json)] = Some("lte" -> value.toJson)
+
+  private[elasticsearch] def toJson: Option[(String, Json)] =
+    Some("lte" -> value.toJson)
 }
 
 private[elasticsearch] case object Unbounded extends LowerBound with UpperBound {
-  private[elasticsearch] def toJson: Option[(String, Json)] = None
+
+  private[elasticsearch] def toJson: Option[(String, Json)] =
+    None
 }
 
 sealed trait PrefixQuery[S] extends ElasticQuery[S] with HasCaseInsensitive[PrefixQuery[S]]
@@ -871,6 +889,7 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   boost: Option[Double],
   format: Option[String]
 ) extends RangeQuery[S, A, LB, UB] { self =>
+
   def boost(value: Double): RangeQuery[S, A, LB, UB] =
     self.copy(boost = Some(value))
 
@@ -944,6 +963,7 @@ sealed trait ScriptQuery extends ElasticQuery[Any] with HasBoost[ScriptQuery]
 
 private[elasticsearch] final case class Script(script: zio.elasticsearch.script.Script, boost: Option[Double])
     extends ScriptQuery { self =>
+
   def boost(value: Double): ScriptQuery =
     self.copy(boost = Some(value))
 
@@ -959,6 +979,7 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
 ) extends TermQuery[S] { self =>
+
   def boost(value: Double): TermQuery[S] =
     self.copy(boost = Some(value))
 
@@ -980,6 +1001,7 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   values: Chunk[A],
   boost: Option[Double]
 ) extends TermsQuery[S] { self =>
+
   def boost(value: Double): TermsQuery[S] =
     self.copy(boost = Some(value))
 
@@ -1001,6 +1023,7 @@ private[elasticsearch] final case class Wildcard[S](
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
 ) extends WildcardQuery[S] { self =>
+
   def boost(value: Double): WildcardQuery[S] =
     self.copy(boost = Some(value))
 
@@ -1018,6 +1041,7 @@ private[elasticsearch] final case class Wildcard[S](
 sealed trait IdsQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends IdsQuery[S] { self =>
+
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
 }

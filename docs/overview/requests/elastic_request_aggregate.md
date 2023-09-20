@@ -9,7 +9,7 @@ To create a `Aggregate` request do the following:
 ```scala
 import zio.elasticsearch.ElasticRequest.AggregateRequest
 import zio.elasticsearch.ElasticRequest.aggregate
-// this import is required for using `IndexName, IndexPattern, MultiIndex`
+// this import is required for using `IndexName`, `IndexPattern` and `MultiIndex`
 import zio.elasticsearch._
 import zio.elasticsearch.ElasticAggregation._
 

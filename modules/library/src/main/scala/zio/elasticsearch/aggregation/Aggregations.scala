@@ -35,6 +35,7 @@ sealed trait AvgAggregation extends SingleElasticAggregation with HasMissing[Avg
 
 private[elasticsearch] final case class Avg(name: String, field: String, missing: Option[Double])
     extends AvgAggregation { self =>
+
   def missing(value: Double): AvgAggregation =
     self.copy(missing = Some(value))
 
@@ -96,6 +97,7 @@ private[elasticsearch] final case class BucketSort(
   from: Option[Int],
   size: Option[Int]
 ) extends BucketSortAggregation { self =>
+
   def from(value: Int): BucketSortAggregation =
     self.copy(from = Some(value))
 
@@ -127,6 +129,7 @@ sealed trait CardinalityAggregation
 
 private[elasticsearch] final case class Cardinality(name: String, field: String, missing: Option[Double])
     extends CardinalityAggregation { self =>
+
   def missing(value: Double): CardinalityAggregation =
     self.copy(missing = Some(value))
 
@@ -144,6 +147,7 @@ sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[Max
 
 private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])
     extends MaxAggregation { self =>
+
   def missing(value: Double): MaxAggregation =
     self.copy(missing = Some(value))
 
@@ -161,6 +165,7 @@ sealed trait MinAggregation extends SingleElasticAggregation with HasMissing[Min
 
 private[elasticsearch] final case class Min(name: String, field: String, missing: Option[Double])
     extends MinAggregation { self =>
+
   def missing(value: Double): MinAggregation =
     self.copy(missing = Some(value))
 
@@ -200,6 +205,7 @@ sealed trait MultipleAggregations extends ElasticAggregation with WithAgg {
 
 private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElasticAggregation])
     extends MultipleAggregations { self =>
+
   def aggregations(aggregations: SingleElasticAggregation*): MultipleAggregations =
     self.copy(aggregations = self.aggregations ++ aggregations)
 
@@ -256,6 +262,7 @@ sealed trait SumAggregation extends SingleElasticAggregation with HasMissing[Sum
 
 private[elasticsearch] final case class Sum(name: String, field: String, missing: Option[Double])
     extends SumAggregation { self =>
+
   def missing(value: Double): SumAggregation =
     self.copy(missing = Some(value))
 
@@ -283,6 +290,7 @@ private[elasticsearch] final case class Terms(
   subAggregations: Chunk[SingleElasticAggregation],
   size: Option[Int]
 ) extends TermsAggregation { self =>
+
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
     self.copy(order = self.order ++ (order +: orders))
 

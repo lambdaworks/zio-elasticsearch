@@ -698,6 +698,7 @@ private[elasticsearch] final case class ScriptScoreFunction[S](
 
 private[elasticsearch] final case class WeightFunction[S](weight: Double, filter: Option[ElasticQuery[S]])
     extends FunctionScoreFunction[S] { self =>
+
   def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any] =
     WeightFunction(weight = self.weight, filter = Some(filter))
 

@@ -116,6 +116,7 @@ object Highlights {
 }
 
 private[elasticsearch] final case class HighlightField(field: String, config: HighlightConfig = Map.empty) {
+
   def toStringJsonPair(fieldPath: Option[String]): (String, Obj) =
     fieldPath.map(_ + "." + field).getOrElse(field) -> Obj(Chunk.fromIterable(config))
 

@@ -20,22 +20,27 @@ sealed trait SortMode
 
 object SortMode {
   case object Avg extends SortMode {
-    override def toString: String = "avg"
+    override def toString: String =
+      "avg"
   }
 
   case object Max extends SortMode {
-    override def toString: String = "max"
+    override def toString: String =
+      "max"
   }
 
   case object Median extends SortMode {
-    override def toString: String = "median"
+    override def toString: String =
+      "median"
   }
 
   case object Min extends SortMode {
-    override def toString: String = "min"
+    override def toString: String =
+      "min"
   }
 
   case object Sum extends SortMode {
-    override def toString: String = "sum"
+    override def toString: String =
+      "sum"
   }
 }

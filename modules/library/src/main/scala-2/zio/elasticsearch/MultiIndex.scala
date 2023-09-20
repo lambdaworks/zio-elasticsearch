@@ -46,7 +46,7 @@ object IndexSelector {
 
 }
 
-final case class MultiIndex private[elasticsearch] (indices: Chunk[String]) { self =>
+private[elasticsearch] final case class MultiIndex private[elasticsearch] (indices: Chunk[String]) { self =>
 
   def names(name: IndexName, names: IndexName*): MultiIndex =
     self.copy(indices = indices ++ Chunk.fromIterable(name.toString +: names.map(IndexName.unwrap)))

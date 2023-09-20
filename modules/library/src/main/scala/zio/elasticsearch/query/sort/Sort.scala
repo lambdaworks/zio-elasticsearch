@@ -112,6 +112,7 @@ private[elasticsearch] final case class SortByFieldOptions(
   order: Option[SortOrder],
   unmappedType: Option[String]
 ) extends SortByField { self =>
+
   def format(value: String): SortByField =
     self.copy(format = Some(value))
 
@@ -152,6 +153,7 @@ private[elasticsearch] final case class SortByScriptOptions(
   mode: Option[SortMode],
   order: Option[SortOrder]
 ) extends SortByScript { self =>
+
   def mode(value: SortMode): SortByScript =
     self.copy(mode = Some(value))
 

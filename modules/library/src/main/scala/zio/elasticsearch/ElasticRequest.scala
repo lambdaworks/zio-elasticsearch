@@ -48,7 +48,7 @@ object ElasticRequest {
    * Constructs an instance of [[AggregateRequest]] using the specified parameters.
    *
    * @param selectors
-   *   the name of the index or more indices to be refreshed
+   *   the name of the index or more indices to aggregate on
    * @param aggregation
    *   the desired [[ElasticAggregation]] to perform
    * @return
@@ -128,26 +128,26 @@ object ElasticRequest {
   /**
    * Constructs an instance of [[CreateIndexRequest]] used for creating an empty index.
    *
-   * @param name
+   * @param index
    *   the name of the index to be created
    * @return
    *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
    */
-  final def createIndex(name: IndexName): CreateIndexRequest =
-    CreateIndex(name = name, definition = None)
+  final def createIndex(index: IndexName): CreateIndexRequest =
+    CreateIndex(index = index, definition = None)
 
   /**
    * Constructs an instance of [[CreateIndexRequest]] used for creating an index with a specified definition.
    *
-   * @param name
+   * @param index
    *   the name of the index to be created
    * @param definition
    *   the settings for the index
    * @return
    *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
    */
-  final def createIndex(name: IndexName, definition: String): CreateIndexRequest =
-    CreateIndex(name = name, definition = Some(definition))
+  final def createIndex(index: IndexName, definition: String): CreateIndexRequest =
+    CreateIndex(index = index, definition = Some(definition))
 
   /**
    * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document from the specified index by specified
@@ -180,13 +180,13 @@ object ElasticRequest {
   /**
    * Constructs an instance of [[DeleteIndexRequest]] used for deleting an index by specified name.
    *
-   * @param name
+   * @param index
    *   the name of the index to be deleted
    * @return
    *   an instance of [[DeleteIndexRequest]] that represents delete index operation to be performed.
    */
-  final def deleteIndex(name: IndexName): DeleteIndexRequest =
-    DeleteIndex(name = name)
+  final def deleteIndex(index: IndexName): DeleteIndexRequest =
+    DeleteIndex(index = index)
 
   /**
    * Constructs an instance of [[ExistsRequest]] used for checking whether document exists.
@@ -373,6 +373,7 @@ object ElasticRequest {
 
   private[elasticsearch] final case class Aggregate(selectors: String, aggregation: ElasticAggregation)
       extends AggregateRequest {
+
     private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }
 
@@ -387,6 +388,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends BulkRequest { self =>
+
     def refresh(value: Boolean): BulkRequest =
       self.copy(refresh = Some(value))
 
@@ -430,6 +432,7 @@ object ElasticRequest {
     query: Option[ElasticQuery[_]],
     routing: Option[Routing]
   ) extends CountRequest { self =>
+
     def routing(value: Routing): CountRequest =
       self.copy(routing = Some(value))
 
@@ -447,6 +450,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateRequest { self =>
+
     def refresh(value: Boolean): CreateRequest =
       self.copy(refresh = Some(value))
 
@@ -469,6 +473,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateWithIdRequest { self =>
+
     def refresh(value: Boolean): CreateWithIdRequest =
       self.copy(refresh = Some(value))
 
@@ -482,9 +487,10 @@ object ElasticRequest {
   sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome]
 
   private[elasticsearch] final case class CreateIndex(
-    name: IndexName,
+    index: IndexName,
     definition: Option[String]
   ) extends CreateIndexRequest {
+
     private[elasticsearch] def toJson: String = definition.getOrElse("")
   }
 
@@ -500,6 +506,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends CreateOrUpdateRequest { self =>
+
     def refresh(value: Boolean): CreateOrUpdateRequest =
       self.copy(refresh = Some(value))
 
@@ -521,6 +528,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends DeleteByIdRequest { self =>
+
     def refresh(value: Boolean): DeleteByIdRequest =
       self.copy(refresh = Some(value))
 
@@ -539,6 +547,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends DeleteByQueryRequest { self =>
+
     def refresh(value: Boolean): DeleteByQueryRequest =
       self.copy(refresh = Some(value))
 
@@ -551,7 +560,7 @@ object ElasticRequest {
 
   sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
 
-  private[elasticsearch] final case class DeleteIndex(name: IndexName) extends DeleteIndexRequest
+  private[elasticsearch] final case class DeleteIndex(index: IndexName) extends DeleteIndexRequest
 
   sealed trait ExistsRequest extends ElasticRequest[Boolean] with HasRouting[ExistsRequest]
 
@@ -560,6 +569,7 @@ object ElasticRequest {
     id: DocumentId,
     routing: Option[Routing]
   ) extends ExistsRequest { self =>
+
     def routing(value: Routing): ExistsRequest =
       self.copy(routing = Some(value))
   }
@@ -575,6 +585,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends GetByIdRequest { self =>
+
     def refresh(value: Boolean): GetByIdRequest =
       self.copy(refresh = Some(value))
 
@@ -621,6 +632,7 @@ object ElasticRequest {
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchRequest { self =>
+
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
       SearchAndAggregate(
         aggregation = aggregation,
@@ -727,6 +739,7 @@ object ElasticRequest {
     searchAfter: Option[Json],
     size: Option[Int]
   ) extends SearchAndAggregateRequest { self =>
+
     def excludes[S](field: Field[S, _], fields: Field[S, _]*): SearchAndAggregateRequest =
       self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
 
@@ -824,6 +837,7 @@ object ElasticRequest {
     script: Option[Script],
     upsert: Option[Document]
   ) extends UpdateRequest { self =>
+
     def orCreate[A: Schema](doc: A): UpdateRequest =
       self.copy(upsert = Some(Document.from(doc)))
 
@@ -869,6 +883,7 @@ object ElasticRequest {
     refresh: Option[Boolean],
     routing: Option[Routing]
   ) extends UpdateByQueryRequest { self =>
+
     def conflicts(value: UpdateConflicts): UpdateByQueryRequest =
       self.copy(conflicts = Some(value))
 

@@ -17,6 +17,7 @@
 package zio.elasticsearch
 
 final case class StreamConfig(searchAfter: Boolean, keepAlive: String, pageSize: Option[Int] = None) { self =>
+
   def withPageSize(n: Int): StreamConfig = self.copy(pageSize = Some(n))
 
   def keepAliveFor(s: String): StreamConfig = self.copy(keepAlive = s)

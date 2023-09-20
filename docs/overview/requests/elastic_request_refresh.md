@@ -9,7 +9,7 @@ In order to use the `Refresh` request import the following:
 ```scala
 import zio.elasticsearch.ElasticRequest.RefreshRequest
 import zio.elasticsearch.ElasticRequest.refresh
-// this import is required for using `IndexName, IndexPattern, MultiIndex`
+// this import is required for using `IndexName`, `IndexPattern` and `MultiIndex`
 import zio.elasticsearch._
 ```
 

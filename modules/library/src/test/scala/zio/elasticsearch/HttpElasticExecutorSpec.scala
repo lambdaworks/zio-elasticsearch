@@ -102,7 +102,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(executorCreateDocumentId)(equalTo(Created))
       },
       test("createIndex") {
-        val executorCreateIndex = Executor.execute(ElasticRequest.createIndex(name = index))
+        val executorCreateIndex = Executor.execute(ElasticRequest.createIndex(index = index))
 
         val mapping =
           """
@@ -125,7 +125,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             |}
             |""".stripMargin
         val executorCreateIndexMapping =
-          Executor.execute(ElasticRequest.createIndex(name = index, definition = mapping))
+          Executor.execute(ElasticRequest.createIndex(index = index, definition = mapping))
 
         assertZIO(executorCreateIndex)(equalTo(Created)) &&
         assertZIO(executorCreateIndexMapping)(equalTo(Created))
@@ -150,7 +150,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(executorDeleteByQuery)(equalTo(Deleted))
       },
       test("deleteIndex") {
-        val executorDeleteIndex = Executor.execute(ElasticRequest.deleteIndex(name = index))
+        val executorDeleteIndex = Executor.execute(ElasticRequest.deleteIndex(index = index))
 
         assertZIO(executorDeleteIndex)(equalTo(Deleted))
       },

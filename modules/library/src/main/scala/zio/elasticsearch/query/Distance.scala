@@ -17,44 +17,88 @@
 package zio.elasticsearch.query
 
 final case class Distance(distanceValue: Double, distanceUnit: DistanceUnit) {
-  override def toString: String = s"$distanceValue$distanceUnit"
+
+  override def toString: String =
+    s"$distanceValue$distanceUnit"
 }
 
-sealed trait DistanceUnit {
-  def symbol: String
-  override def toString: String = symbol
-}
-
+sealed trait DistanceUnit
 object DistanceUnit {
-  case object Centimeters   extends DistanceUnit { def symbol: String = "cm"  }
-  case object Feet          extends DistanceUnit { def symbol: String = "ft"  }
-  case object Inches        extends DistanceUnit { def symbol: String = "in"  }
-  case object Kilometers    extends DistanceUnit { def symbol: String = "km"  }
-  case object Miles         extends DistanceUnit { def symbol: String = "mi"  }
-  case object Meters        extends DistanceUnit { def symbol: String = "m"   }
-  case object Millimeters   extends DistanceUnit { def symbol: String = "mm"  }
-  case object NauticalMiles extends DistanceUnit { def symbol: String = "nmi" }
-  case object Yards         extends DistanceUnit { def symbol: String = "yd"  }
+  case object Centimeters extends DistanceUnit {
+    override def toString: String =
+      "cm"
+  }
+
+  case object Feet extends DistanceUnit {
+    override def toString: String =
+      "ft"
+  }
+
+  case object Inches extends DistanceUnit {
+    override def toString: String = "in"
+  }
+
+  case object Kilometers extends DistanceUnit {
+    override def toString: String =
+      "km"
+  }
+
+  case object Miles extends DistanceUnit {
+    override def toString =
+      "mi"
+  }
+
+  case object Meters extends DistanceUnit {
+    override def toString: String =
+      "m"
+  }
+
+  case object Millimeters extends DistanceUnit {
+    override def toString: String =
+      "mm"
+  }
+
+  case object NauticalMiles extends DistanceUnit {
+    override def toString: String =
+      "nmi"
+  }
+
+  case object Yards extends DistanceUnit {
+    override def toString: String =
+      "yd"
+  }
+
 }
 
-sealed trait DistanceType {
-  def value: String
-  override def toString: String = value
-}
+sealed trait DistanceType
 
 object DistanceType {
-  case object Arc   extends DistanceType { def value: String = "arc"   }
-  case object Plane extends DistanceType { def value: String = "plane" }
+  case object Arc extends DistanceType {
+    override def toString: String =
+      "arc"
+  }
+
+  case object Plane extends DistanceType {
+    override def toString: String =
+      "plane"
+  }
 
 }
 
-sealed trait ValidationMethod {
-  def value: String
-  override def toString: String = value
-}
+sealed trait ValidationMethod
 
 object ValidationMethod {
-  case object Coerce          extends ValidationMethod { def value: String = "COERCE"           }
-  case object IgnoreMalformed extends ValidationMethod { def value: String = "IGNORE_MALFORMED" }
-  case object Strict          extends ValidationMethod { def value: String = "STRICT"           }
+  case object Coerce extends ValidationMethod {
+    override def toString: String =
+      "COERCE"
+  }
+
+  case object IgnoreMalformed extends ValidationMethod {
+    override def toString: String =
+      "IGNORE_MALFORMED"
+  }
+
+  case object Strict extends ValidationMethod {
+    override def toString: String = "STRICT"
+  }
 }

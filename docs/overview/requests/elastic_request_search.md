@@ -13,7 +13,7 @@ To create a `Search` request do the following:
 ```scala
 import zio.elasticsearch.ElasticRequest.SearchRequest
 import zio.elasticsearch.ElasticRequest.search
-// this import is required for using `IndexName, IndexPattern, MultiIndex`
+// this import is required for using `IndexName`, `IndexPattern` and `MultiIndex`
 import zio.elasticsearch._
 import zio.elasticsearch.ElasticQuery._
 

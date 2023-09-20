@@ -32,6 +32,7 @@ final case class Item(
   private val innerHits: Map[String, Chunk[Hit]] = Map.empty,
   sort: Option[Json] = None
 ) {
+
   def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
 
   lazy val highlights: Option[Map[String, Chunk[String]]] = highlight.flatMap { json =>
