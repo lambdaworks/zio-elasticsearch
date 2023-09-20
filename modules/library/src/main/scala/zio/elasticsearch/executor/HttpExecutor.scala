@@ -500,7 +500,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .contentType(ApplicationJson)
         .body(r.toJson)
     ).flatMap { response =>
-g      response.code match {
+      response.code match {
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
