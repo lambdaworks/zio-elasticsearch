@@ -95,7 +95,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         if (config.searchAfter) {
           ZStream.paginateChunkZIO[Any, Throwable, Item, (String, Option[Json])](("", None)) {
             case ("", _) =>
-              executeCreatePointInTime(r.index, config)
+              executeCreatePointInTime(r.selectors, config)
             case (pitId, searchAfter) =>
               executeSearchAfterRequest(r = r, pitId = pitId, config = config, searchAfter = searchAfter)
           }
@@ -115,7 +115,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeAggregate(r: Aggregate): Task[AggregateResult] =
     sendRequestWithCustomResponse(
       baseRequest
-        .post(uri"${esConfig.uri}/${r.index}/$Search?typed_keys")
+        .post(uri"${esConfig.uri}/${r.selectors}/$Search?typed_keys")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.toJson)
@@ -250,7 +250,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   }
 
   private def executeCreatePointInTime(
-    index: IndexName,
+    index: String,
     config: StreamConfig
   ): Task[(Chunk[Item], Option[(String, Option[Json])])] =
     sendRequestWithCustomResponse(
@@ -373,7 +373,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
 
   private def executeRefresh(r: Refresh): Task[Boolean] =
-    sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.name}/$Refresh")).flatMap { response =>
+    sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.selectors}/$Refresh")).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(true)
         case HttpNotFound => ZIO.succeed(false)
@@ -384,7 +384,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       baseRequest
-        .post(uri"${esConfig.uri}/${r.index}/$Search".withParams(getQueryParams(Chunk(("routing", r.routing)))))
+        .post(uri"${esConfig.uri}/${r.selectors}/$Search".withParams(getQueryParams(Chunk(("routing", r.routing)))))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.toJson)
@@ -492,7 +492,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequestWithCustomResponse(
       baseRequest
         .post(
-          uri"${esConfig.uri}/${r.index}/$Search?typed_keys"
+          uri"${esConfig.uri}/${r.selectors}/$Search?typed_keys"
             .withParams(getQueryParams(Chunk(("routing", r.routing))))
             .addQuerySegment(QuerySegment.Value("typed_keys"))
         )
@@ -524,7 +524,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     sendRequestWithCustomResponse(
       baseRequest
         .post(
-          uri"${esConfig.uri}/${r.index}/$Search".withParams(
+          uri"${esConfig.uri}/${r.selectors}/$Search".withParams(
             getQueryParams(Chunk((Scroll, Some(config.keepAlive)), ("routing", r.routing)))
           )
         )

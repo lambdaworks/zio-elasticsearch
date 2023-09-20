@@ -54,6 +54,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val refreshFailIndex: IndexName = IndexName("refresh-fail")
 
+  val IndexPatternAll: IndexPattern = IndexPattern("_all")
+
   val prepareElasticsearchIndexForTests: TestAspect[Nothing, Any, Throwable, Any] = beforeAll((for {
     _ <- Executor.execute(ElasticRequest.createIndex(index))
     _ <- Executor.execute(ElasticRequest.deleteByQuery(index, matchAll).refreshTrue)

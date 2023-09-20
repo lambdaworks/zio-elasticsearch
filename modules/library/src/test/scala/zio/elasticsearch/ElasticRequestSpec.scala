@@ -5,6 +5,7 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch.ElasticSort.sortBy
+import zio.elasticsearch.IndexSelector.IndexNameSyntax
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.highlights.{HighlightField, Highlights}
@@ -25,9 +26,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     suite("ElasticRequest")(
       suite("constructing")(
         test("aggregate") {
-          val aggregateRequest = aggregate(index = Index, aggregation = MaxAggregation)
+          val aggregateRequest = aggregate(selectors = Index, aggregation = MaxAggregation)
 
-          assert(aggregateRequest)(equalTo(Aggregate(index = Index, aggregation = MaxAggregation)))
+          assert(aggregateRequest)(equalTo(Aggregate(selectors = Index.toSelector, aggregation = MaxAggregation)))
         },
         test("bulk") {
           val bulkRequest = bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2))
@@ -251,32 +252,38 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val getByIdRequestWithRouting   = getById(index = Index, id = DocId).routing(RoutingValue)
           val getByIdRequestWithAllParams = getById(index = Index, id = DocId).refreshTrue.routing(RoutingValue)
 
-          assert(getByIdRequest)(equalTo(GetById(index = Index, id = DocId, refresh = None, routing = None))) && assert(
+          assert(getByIdRequest)(
+            equalTo(GetById(index = Index, id = DocId, refresh = None, routing = None))
+          ) && assert(
             getByIdRequestWithRefresh
           )(
             equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = None))
           ) && assert(getByIdRequestWithRouting)(
             equalTo(GetById(index = Index, id = DocId, refresh = None, routing = Some(RoutingValue)))
           ) && assert(getByIdRequestWithAllParams)(
-            equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
+            equalTo(
+              GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue))
+            )
           )
         },
         test("refresh") {
-          val refreshRequest = refresh(Index)
-          assert(refreshRequest)(equalTo(Refresh(Index)))
+          val refreshRequest        = refresh(Index)
+          val refreshWithMultiIndex = refresh(Indices)
+          assert(refreshRequest)(equalTo(Refresh(Index.toSelector))) &&
+          assert(refreshWithMultiIndex)(equalTo(Refresh(Indices.toSelector)))
         },
         test("search") {
-          val searchRequest         = search(index = Index, query = Query)
-          val searchRequestWithSort = search(index = Index, query = Query).sort(sortBy(TestDocument.intField))
+          val searchRequest         = search(selectors = Index, query = Query)
+          val searchRequestWithSort = search(selectors = Index, query = Query).sort(sortBy(TestDocument.intField))
           val searchRequestWithSourceFiltering =
-            search(index = Index, query = Query).includes("stringField", "doubleField").excludes("booleanField")
-          val searchRequestWithFrom = search(index = Index, query = Query).from(5)
+            search(selectors = Index, query = Query).includes("stringField", "doubleField").excludes("booleanField")
+          val searchRequestWithFrom = search(selectors = Index, query = Query).from(5)
           val searchRequestWithHighlights =
-            search(index = Index, query = Query).highlights(highlight(TestDocument.intField))
-          val searchRequestWithRouting     = search(index = Index, query = Query).routing(RoutingValue)
-          val searchRequestWithSearchAfter = search(index = Index, query = Query).searchAfter(Arr(Str("12345")))
-          val searchRequestWithSize        = search(index = Index, query = Query).size(5)
-          val searchRequestWithAllParams = search(index = Index, query = Query)
+            search(selectors = Index, query = Query).highlights(highlight(TestDocument.intField))
+          val searchRequestWithRouting     = search(selectors = Index, query = Query).routing(RoutingValue)
+          val searchRequestWithSearchAfter = search(selectors = Index, query = Query).searchAfter(Arr(Str("12345")))
+          val searchRequestWithSize        = search(selectors = Index, query = Query).size(5)
+          val searchRequestWithAllParams = search(selectors = Index, query = Query)
             .sort(sortBy("intField"))
             .includes("stringField", "doubleField")
             .excludes("booleanField")
@@ -291,7 +298,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -306,7 +313,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -331,7 +338,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -346,7 +353,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = Some(5),
@@ -361,7 +368,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -378,7 +385,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -393,7 +400,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -408,7 +415,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -423,7 +430,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               Search(
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -448,24 +455,26 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("search and aggregate") {
-          val searchAndAggRequest = search(index = Index, query = Query, aggregation = MaxAggregation)
+          val searchAndAggRequest = search(selectors = Index, query = Query, aggregation = MaxAggregation)
           val searchAndAggRequestWithSort =
-            search(index = Index, query = Query, aggregation = MaxAggregation).sort(sortBy(TestDocument.intField))
+            search(selectors = Index, query = Query, aggregation = MaxAggregation).sort(sortBy(TestDocument.intField))
           val searchAndAggRequestWithSourceFiltering =
-            search(index = Index, query = Query, aggregation = MaxAggregation)
+            search(selectors = Index, query = Query, aggregation = MaxAggregation)
               .includes("stringField", "doubleField")
               .excludes("booleanField")
-          val searchAndAggRequestWithFrom = search(index = Index, query = Query, aggregation = MaxAggregation).from(5)
+          val searchAndAggRequestWithFrom =
+            search(selectors = Index, query = Query, aggregation = MaxAggregation).from(5)
           val searchAndAggRequestWithHighlights =
-            search(index = Index, query = Query, aggregation = MaxAggregation).highlights(
+            search(selectors = Index, query = Query, aggregation = MaxAggregation).highlights(
               highlight(TestDocument.intField)
             )
           val searchAndAggRequestWithRouting =
-            search(index = Index, query = Query, aggregation = MaxAggregation).routing(RoutingValue)
+            search(selectors = Index, query = Query, aggregation = MaxAggregation).routing(RoutingValue)
           val searchAndAggRequestWithSearchAfter =
-            search(index = Index, query = Query, aggregation = MaxAggregation).searchAfter(Arr(Str("12345")))
-          val searchAndAggRequestWithSize = search(index = Index, query = Query, aggregation = MaxAggregation).size(5)
-          val searchAndAggRequestWithAllParams = search(index = Index, query = Query, aggregation = MaxAggregation)
+            search(selectors = Index, query = Query, aggregation = MaxAggregation).searchAfter(Arr(Str("12345")))
+          val searchAndAggRequestWithSize =
+            search(selectors = Index, query = Query, aggregation = MaxAggregation).size(5)
+          val searchAndAggRequestWithAllParams = search(selectors = Index, query = Query, aggregation = MaxAggregation)
             .sort(sortBy("intField"))
             .includes("stringField", "doubleField")
             .excludes("booleanField")
@@ -481,7 +490,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -497,7 +506,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -523,7 +532,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -539,7 +548,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = Some(5),
@@ -555,7 +564,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -573,7 +582,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -589,7 +598,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -605,7 +614,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk(),
                 included = Chunk(),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk.empty,
                 from = None,
@@ -621,7 +630,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                 aggregation = MaxAggregation,
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "doubleField"),
-                index = Index,
+                selectors = Index.toSelector,
                 query = Query,
                 sortBy = Chunk(
                   SortByFieldOptions(
@@ -1323,19 +1332,20 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
         },
         test("search and aggregate") {
-          val jsonRequest = search(index = Index, query = Query, aggregation = TermsAggregation) match {
+          val jsonRequest = search(selectors = Index, query = Query, aggregation = TermsAggregation) match {
             case r: SearchAndAggregate => r.toJson
           }
           val jsonRequestWithFrom =
-            search(index = Index, query = Query, aggregation = TermsAggregation).from(10) match {
+            search(selectors = Index, query = Query, aggregation = TermsAggregation).from(10) match {
               case r: SearchAndAggregate => r.toJson
             }
-          val jsonRequestWithSortAndHighlights = search(index = Index, query = Query, aggregation = TermsAggregation)
-            .sort(sortBy(TestDocument.intField).missing(First))
-            .highlights(highlight(TestDocument.intField)) match {
-            case r: SearchAndAggregate => r.toJson
-          }
-          val jsonRequestWithAllParams = search(index = Index, query = Query)
+          val jsonRequestWithSortAndHighlights =
+            search(selectors = Index, query = Query, aggregation = TermsAggregation)
+              .sort(sortBy(TestDocument.intField).missing(First))
+              .highlights(highlight(TestDocument.intField)) match {
+              case r: SearchAndAggregate => r.toJson
+            }
+          val jsonRequestWithAllParams = search(selectors = Index, query = Query)
             .aggregate(TermsAggregation)
             .from(10)
             .size(20)
@@ -1642,6 +1652,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
   private val DocId            = DocumentId("documentid")
   private val Index            = IndexName("index")
   private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)
+  private val Indices          = MultiIndex.names(Index, IndexName("index2"))
   private val Query            = ElasticQuery.range(TestDocument.intField).gte(10)
   private val RoutingValue     = Routing("routing")
   private val Script1          = Script("doc['intField'].value * params['factor']").params("factor" -> 2)

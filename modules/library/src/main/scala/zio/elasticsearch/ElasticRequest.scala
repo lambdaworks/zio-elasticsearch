@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.IndexSelector.IndexNameSyntax
 import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.executor.response.BulkResponse
 import zio.elasticsearch.highlights.Highlights
@@ -46,15 +47,15 @@ object ElasticRequest {
   /**
    * Constructs an instance of [[AggregateRequest]] using the specified parameters.
    *
-   * @param index
-   *   the name of the Elasticsearch index to aggregate on
+   * @param selectors
+   *   the name of the index or more indices to be refreshed
    * @param aggregation
    *   the desired [[ElasticAggregation]] to perform
    * @return
    *   an instance of [[AggregateRequest]] that represents the aggregation to be performed.
    */
-  final def aggregate(index: IndexName, aggregation: ElasticAggregation): AggregateRequest =
-    Aggregate(index = index, aggregation = aggregation)
+  final def aggregate[I: IndexSelector](selectors: I, aggregation: ElasticAggregation): AggregateRequest =
+    Aggregate(selectors = selectors.toSelector, aggregation = aggregation)
 
   /**
    * Constructs an instance of [[BulkRequest]] using the specified requests.
@@ -217,29 +218,29 @@ object ElasticRequest {
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
    *
-   * @param name
-   *   the name of the index to be refreshed
+   * @param selectors
+   *   the name of the index or more indices to be refreshed
    * @return
    *   an instance of [[RefreshRequest]] that represents refresh operation to be performed.
    */
-  final def refresh(name: IndexName): RefreshRequest =
-    Refresh(name = name)
+  final def refresh[I: IndexSelector](selectors: I): RefreshRequest =
+    Refresh(selectors = selectors.toSelector)
 
   /**
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
    *
-   * @param index
-   *   the name of the index to search in
+   * @param selectors
+   *   the name of the index or more indices to search in
    * @param query
    *   the [[ElasticQuery]] object representing the search query to execute
    * @return
    *   an instance of [[SearchRequest]] that represents search operation to be performed.
    */
-  final def search(index: IndexName, query: ElasticQuery[_]): SearchRequest =
+  final def search[I: IndexSelector](selectors: I, query: ElasticQuery[_]): SearchRequest =
     Search(
       excluded = Chunk(),
       included = Chunk(),
-      index = index,
+      selectors = selectors.toSelector,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -252,8 +253,8 @@ object ElasticRequest {
   /**
    * Constructs an instance of [[SearchAndAggregateRequest]] using the specified parameters.
    *
-   * @param index
-   *   the name of the index to search and aggregate in
+   * @param selectors
+   *   the name of the index or more indices to search and aggregate in
    * @param query
    *   an [[ElasticQuery]] object for querying documents
    * @param aggregation
@@ -261,8 +262,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[SearchAndAggregateRequest]] that represents search and aggregate operations to be performed.
    */
-  final def search(
-    index: IndexName,
+  final def search[I: IndexSelector](
+    selectors: I,
     query: ElasticQuery[_],
     aggregation: ElasticAggregation
   ): SearchAndAggregateRequest =
@@ -270,7 +271,7 @@ object ElasticRequest {
       aggregation = aggregation,
       excluded = Chunk(),
       included = Chunk(),
-      index = index,
+      selectors = selectors.toSelector,
       query = query,
       sortBy = Chunk.empty,
       from = None,
@@ -370,7 +371,7 @@ object ElasticRequest {
 
   sealed trait AggregateRequest extends ElasticRequest[AggregateResult]
 
-  private[elasticsearch] final case class Aggregate(index: IndexName, aggregation: ElasticAggregation)
+  private[elasticsearch] final case class Aggregate(selectors: String, aggregation: ElasticAggregation)
       extends AggregateRequest {
     private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }
@@ -583,7 +584,7 @@ object ElasticRequest {
 
   sealed trait RefreshRequest extends ElasticRequest[Boolean]
 
-  private[elasticsearch] final case class Refresh(name: IndexName) extends RefreshRequest
+  private[elasticsearch] final case class Refresh(selectors: String) extends RefreshRequest
 
   sealed trait SearchRequest
       extends ElasticRequest[SearchResult]
@@ -611,7 +612,7 @@ object ElasticRequest {
   private[elasticsearch] final case class Search(
     excluded: Chunk[String],
     included: Chunk[String],
-    index: IndexName,
+    selectors: String,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
     from: Option[Int],
@@ -625,7 +626,7 @@ object ElasticRequest {
         aggregation = aggregation,
         excluded = excluded,
         included = included,
-        index = index,
+        selectors = selectors,
         query = query,
         sortBy = sortBy,
         from = from,
@@ -717,7 +718,7 @@ object ElasticRequest {
     aggregation: ElasticAggregation,
     excluded: Chunk[String],
     included: Chunk[String],
-    index: IndexName,
+    selectors: String,
     query: ElasticQuery[_],
     sortBy: Chunk[Sort],
     from: Option[Int],

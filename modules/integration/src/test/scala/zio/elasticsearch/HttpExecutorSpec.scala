@@ -68,9 +68,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   aggregation = avgAggregation(name = "aggregationDouble", field = TestDocument.doubleField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .asAvgAggregation("aggregationDouble")
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asAvgAggregation("aggregationDouble")
                 } yield assert(aggsRes.head.value)(equalTo(15.0))
             }
           } @@ around(
@@ -92,8 +93,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = cardinalityAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
 
                   cardinalityAgg <- aggsRes.asCardinalityAggregation("aggregationInt")
                 } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2)))
@@ -118,9 +120,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = maxAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
                 } yield assert(aggsRes.head)(equalTo(expectedResponse))
             }
           } @@ around(
@@ -142,9 +145,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = minAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .asMinAggregation("aggregationInt")
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asMinAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(23.0))
             }
           } @@ around(
@@ -167,14 +171,83 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   aggregation =
                     percentilesAggregation(name = "aggregationInt", field = TestDocument.intField).percents(25, 50, 90)
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asPercentilesAggregation("aggregationInt")
+                } yield assert(aggsRes.head.values.size)(equalTo(3))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using percentiles aggregation with multi index") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  aggregation =
+                    percentilesAggregation(name = "aggregationInt", field = TestDocument.intField).percents(25, 50, 90)
                   aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
+                               .execute(
+                                 ElasticRequest.aggregate(
+                                   selectors = MultiIndex.names(firstSearchIndex, secondSearchIndex),
+                                   aggregation = aggregation
+                                 )
+                               )
                                .asPercentilesAggregation("aggregationInt")
                 } yield assert(aggsRes.head.values.size)(equalTo(3))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
+          test("aggregate using percentiles aggregation with index pattern") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocument)
+                           .refreshTrue
+                       )
+                  aggregation =
+                    percentilesAggregation(name = "aggregationInt", field = TestDocument.intField).percents(25, 50, 90)
+                  aggsRes <- Executor
+                               .execute(
+                                 ElasticRequest.aggregate(
+                                   selectors = IndexPatternAll,
+                                   aggregation = aggregation
+                                 )
+                               )
+                               .asPercentilesAggregation("aggregationInt")
+                } yield assert(aggsRes.head.values.size)(equalTo(3))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("aggregate using percentiles aggregation as sub aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
@@ -192,9 +265,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggregation =
                     termsAggregation(name = "first", field = TestDocument.stringField.keyword)
                       .withSubAgg(percentilesAggregation(name = "second", field = TestSubDocument.intField))
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
             }
           } @@ around(
@@ -216,9 +290,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = sumAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .asSumAggregation("aggregationInt")
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asSumAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(223.0))
             }
           } @@ around(
@@ -240,9 +315,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   aggregation =
                     termsAggregation(name = "aggregationString", field = TestDocument.stringField.keyword)
-                  aggsRes <- Executor
-                               .execute(ElasticRequest.aggregate(index = firstSearchIndex, aggregation = aggregation))
-                               .aggregations
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
             }
           } @@ around(
@@ -272,7 +348,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
-                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                                   .aggregate(selectors = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
@@ -304,7 +380,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
-                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                                   .aggregate(selectors = firstSearchIndex, aggregation = aggregation)
                                )
                                .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
@@ -342,7 +418,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggsRes <- Executor
                                .execute(
                                  ElasticRequest
-                                   .aggregate(index = firstSearchIndex, aggregation = aggregation)
+                                   .aggregate(selectors = firstSearchIndex, aggregation = aggregation)
                                )
                   agg <- aggsRes.asTermsAggregation("aggregationString")
                 } yield assert(agg.map(_.buckets.size))(isSome(equalTo(1)))
@@ -374,7 +450,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               index = firstSearchIndex,
+                               selectors = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -410,7 +486,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res <- Executor
                          .execute(
                            ElasticRequest
-                             .search(index = firstSearchIndex, query = query, aggregation = aggregation)
+                             .search(selectors = firstSearchIndex, query = query, aggregation = aggregation)
                              .size(10)
                              .sort(
                                sortBy(TestDocument.intField).order(Asc)
@@ -420,7 +496,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 res2 <- Executor
                           .execute(
                             ElasticRequest
-                              .search(index = firstSearchIndex, query = query, aggregation = aggregation)
+                              .search(selectors = firstSearchIndex, query = query, aggregation = aggregation)
                               .searchAfter(sa.get)
                               .size(10)
                               .sort(
@@ -460,7 +536,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               index = firstSearchIndex,
+                               selectors = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -508,7 +584,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
-                               index = firstSearchIndex,
+                               selectors = firstSearchIndex,
                                query = query,
                                aggregation = aggregation
                              )
@@ -687,16 +763,21 @@ object HttpExecutorSpec extends IntegrationSpec {
         ),
         suite("refresh index")(
           test("successfully refresh existing index") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(
-              equalTo(true)
-            )
+            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(isTrue)
+          },
+          test("successfully refresh more existing indices") {
+            for {
+              _   <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
+              res <- Executor.execute(ElasticRequest.refresh(MultiIndex.names(index, createIndexTestName)))
+            } yield assert(res)(isTrue)
+          },
+          test("successfully refresh all indices") {
+            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPatternAll)))(isTrue)
           },
           test("return false if index does not exists") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(
-              equalTo(false)
-            )
+            assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(isFalse)
           }
-        ),
+        ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
         suite("retrieving document by IDs")(
           test("find documents by ids") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
@@ -1006,6 +1087,40 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document using a match all query with index pattern") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  firstDocumentCopy = firstDocument.copy(stringField = "this is test")
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
+                        .refreshTrue
+                    )
+                  secondDocumentCopy = secondDocument.copy(stringField = "this is test")
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
+                           .refreshTrue
+                       )
+                  query = matchAll
+                  res <- Executor
+                           .execute(ElasticRequest.search(IndexPattern("search-index*"), query))
+                           .documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(firstDocumentCopy)) && assert(res)(
+                  Assertion.contains(secondDocumentCopy)
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+          ),
           test("search for a document using a match boolean prefix query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
@@ -1026,6 +1141,44 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using a match phrase query with multi index") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                  firstDocumentCopy = firstDocument.copy(stringField = "this is test")
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
+                        .refreshTrue
+                    )
+                  secondDocumentCopy = secondDocument.copy(stringField = "this is test")
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
+                           .refreshTrue
+                       )
+                  query = matchPhrase(
+                            field = TestDocument.stringField,
+                            value = firstDocumentCopy.stringField
+                          )
+
+                  res <- Executor
+                           .execute(ElasticRequest.search(MultiIndex.names(firstSearchIndex, secondSearchIndex), query))
+                           .documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(firstDocumentCopy)) && assert(res)(
+                  Assertion.contains(secondDocumentCopy)
+                )
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ) @@ around(
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
           test("search for a document using a match phrase query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
