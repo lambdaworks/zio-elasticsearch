@@ -28,6 +28,7 @@ final case class Script private[elasticsearch] (
   private val lang: Option[ScriptLang]
 ) extends HasLang[Script]
     with HasParams[Script] { self =>
+
   def lang(value: ScriptLang): Script =
     self.copy(lang = Some(value))
 

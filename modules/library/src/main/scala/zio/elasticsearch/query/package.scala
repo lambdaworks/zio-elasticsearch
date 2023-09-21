@@ -19,5 +19,4 @@ package zio.elasticsearch
 package object query {
 
   type GeoHash = GeoHash.Type
-
 }

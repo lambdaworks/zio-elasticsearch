@@ -71,6 +71,7 @@ private[elasticsearch] sealed trait DocumentResult[F[_]] {
 final class AggregateResult private[elasticsearch] (
   private val aggs: Map[String, AggregationResult]
 ) extends ResultWithAggregation {
+
   def aggregation(name: String): Task[Option[AggregationResult]] =
     ZIO.succeed(aggs.get(name))
 
@@ -79,6 +80,7 @@ final class AggregateResult private[elasticsearch] (
 }
 
 final class GetResult private[elasticsearch] (private val doc: Option[Item]) extends DocumentResult[Option] {
+
   def documentAs[A: Schema]: IO[DecodingException, Option[A]] =
     ZIO
       .fromEither(doc match {
@@ -96,6 +98,7 @@ final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[Chunk] {
+
   def documentAs[A: Schema]: IO[DecodingException, Chunk[A]] =
     ZIO.fromEither {
       ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
@@ -122,6 +125,7 @@ final class SearchAndAggregateResult private[elasticsearch] (
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[Chunk]
     with ResultWithAggregation {
+
   def aggregation(name: String): Task[Option[AggregationResult]] =
     ZIO.succeed(aggs.get(name))
 

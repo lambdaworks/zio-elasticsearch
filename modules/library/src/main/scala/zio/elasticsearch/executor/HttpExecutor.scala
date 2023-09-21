@@ -226,7 +226,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   private def executeCreateIndex(r: CreateIndex): Task[CreationOutcome] =
     sendRequest(
       baseRequest
-        .put(uri"${esConfig.uri}/${r.name}")
+        .put(uri"${esConfig.uri}/${r.index}")
         .contentType(ApplicationJson)
         .body(r.toJson)
     ).flatMap { response =>
@@ -304,7 +304,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   }
 
   private def executeDeleteIndex(r: DeleteIndex): Task[DeletionOutcome] =
-    sendRequest(baseRequest.delete(uri"${esConfig.uri}/${r.name}")).flatMap { response =>
+    sendRequest(baseRequest.delete(uri"${esConfig.uri}/${r.index}")).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)
         case HttpNotFound => ZIO.succeed(DeletionOutcome.NotFound)

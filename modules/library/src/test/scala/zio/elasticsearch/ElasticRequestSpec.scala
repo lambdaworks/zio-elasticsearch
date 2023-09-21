@@ -196,10 +196,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("createIndex") {
           val createIndexRequest               = createIndex(Index)
-          val createIndexRequestWithDefinition = createIndex(name = Index, definition = "definition")
+          val createIndexRequestWithDefinition = createIndex(index = Index, definition = "definition")
 
-          assert(createIndexRequest)(equalTo(CreateIndex(name = Index, definition = None))) &&
-          assert(createIndexRequestWithDefinition)(equalTo(CreateIndex(name = Index, definition = Some("definition"))))
+          assert(createIndexRequest)(equalTo(CreateIndex(index = Index, definition = None))) &&
+          assert(createIndexRequestWithDefinition)(equalTo(CreateIndex(index = Index, definition = Some("definition"))))
         },
         test("deleteById") {
           val deleteByIdRequest              = deleteById(index = Index, id = DocId)
@@ -252,18 +252,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val getByIdRequestWithRouting   = getById(index = Index, id = DocId).routing(RoutingValue)
           val getByIdRequestWithAllParams = getById(index = Index, id = DocId).refreshTrue.routing(RoutingValue)
 
-          assert(getByIdRequest)(
-            equalTo(GetById(index = Index, id = DocId, refresh = None, routing = None))
-          ) && assert(
-            getByIdRequestWithRefresh
-          )(
+          assert(getByIdRequest)(equalTo(GetById(index = Index, id = DocId, refresh = None, routing = None))) &&
+          assert(getByIdRequestWithRefresh)(
             equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = None))
           ) && assert(getByIdRequestWithRouting)(
             equalTo(GetById(index = Index, id = DocId, refresh = None, routing = Some(RoutingValue)))
           ) && assert(getByIdRequestWithAllParams)(
-            equalTo(
-              GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue))
-            )
+            equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
           )
         },
         test("refresh") {
@@ -1095,7 +1090,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val jsonRequest = createIndex(Index) match {
             case r: CreateIndex => r.toJson
           }
-          val jsonRequestWithDefinition = createIndex(name = Index, definition = definition) match {
+          val jsonRequestWithDefinition = createIndex(index = Index, definition = definition) match {
             case r: CreateIndex => r.toJson
           }
 
