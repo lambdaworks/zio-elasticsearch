@@ -19,7 +19,11 @@ package zio.elasticsearch.query.sort
 sealed trait SourceType
 
 object SourceType {
-  case object NumberType extends SourceType { override def toString: String = "number" }
+  case object NumberType extends SourceType {
+    override def toString: String = "number"
+  }
 
-  case object StringType extends SourceType { override def toString: String = "string" }
+  case object StringType extends SourceType {
+    override def toString: String = "string"
+  }
 }

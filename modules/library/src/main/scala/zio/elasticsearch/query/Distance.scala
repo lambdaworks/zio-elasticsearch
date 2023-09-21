@@ -40,7 +40,7 @@ object DistanceUnit {
   }
 
   case object Miles extends DistanceUnit {
-    override def toString = "mi"
+    override def toString: String = "mi"
   }
 
   case object Meters extends DistanceUnit {
