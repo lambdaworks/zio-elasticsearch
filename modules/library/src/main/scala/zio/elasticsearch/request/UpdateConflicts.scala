@@ -19,7 +19,11 @@ package zio.elasticsearch.request
 sealed abstract class UpdateConflicts
 
 object UpdateConflicts {
-  case object Abort extends UpdateConflicts { override def toString: String = "abort" }
+  case object Abort extends UpdateConflicts {
+    override def toString: String = "abort"
+  }
 
-  case object Proceed extends UpdateConflicts { override def toString: String = "proceed" }
+  case object Proceed extends UpdateConflicts {
+    override def toString: String = "proceed"
+  }
 }

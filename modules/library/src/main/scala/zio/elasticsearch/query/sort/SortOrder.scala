@@ -19,7 +19,11 @@ package zio.elasticsearch.query.sort
 sealed trait SortOrder
 
 object SortOrder {
-  case object Asc extends SortOrder { override def toString: String = "asc" }
+  case object Asc extends SortOrder {
+    override def toString: String = "asc"
+  }
 
-  case object Desc extends SortOrder { override def toString: String = "desc" }
+  case object Desc extends SortOrder {
+    override def toString: String = "desc"
+  }
 }

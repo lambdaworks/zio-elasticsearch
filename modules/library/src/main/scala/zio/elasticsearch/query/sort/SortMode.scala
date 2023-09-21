@@ -19,13 +19,23 @@ package zio.elasticsearch.query.sort
 sealed trait SortMode
 
 object SortMode {
-  case object Avg extends SortMode { override def toString: String = "avg" }
+  case object Avg extends SortMode {
+    override def toString: String = "avg"
+  }
 
-  case object Max extends SortMode { override def toString: String = "max" }
+  case object Max extends SortMode {
+    override def toString: String = "max"
+  }
 
-  case object Median extends SortMode { override def toString: String = "median" }
+  case object Median extends SortMode {
+    override def toString: String = "median"
+  }
 
-  case object Min extends SortMode { override def toString: String = "min" }
+  case object Min extends SortMode {
+    override def toString: String = "min"
+  }
 
-  case object Sum extends SortMode { override def toString: String = "sum" }
+  case object Sum extends SortMode {
+    override def toString: String = "sum"
+  }
 }
