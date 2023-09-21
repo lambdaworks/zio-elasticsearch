@@ -19,28 +19,16 @@ package zio.elasticsearch.query
 sealed trait MultiMatchType
 
 object MultiMatchType {
-  case object BestFields extends MultiMatchType {
-    override def toString: String = "best_fields"
-  }
+  case object BestFields extends MultiMatchType { override def toString: String = "best_fields" }
 
-  case object BoolPrefix extends MultiMatchType {
-    override def toString: String = "bool_prefix"
-  }
+  case object BoolPrefix extends MultiMatchType { override def toString: String = "bool_prefix" }
 
-  case object CrossFields extends MultiMatchType {
-    override def toString: String = "cross_fields"
-  }
+  case object CrossFields extends MultiMatchType { override def toString: String = "cross_fields" }
 
-  case object MostFields extends MultiMatchType {
-    override def toString: String = "most_fields"
-  }
+  case object MostFields extends MultiMatchType { override def toString: String = "most_fields" }
 
-  case object Phrase extends MultiMatchType {
-    override def toString: String = "phrase_fields"
-  }
+  case object Phrase extends MultiMatchType { override def toString: String = "phrase_fields" }
 
-  case object PhrasePrefix extends MultiMatchType {
-    override def toString: String = "phrase_prefix"
-  }
+  case object PhrasePrefix extends MultiMatchType { override def toString: String = "phrase_prefix" }
 
 }
