@@ -63,4 +63,3 @@ object MultiIndex {
   def patterns(pattern: IndexPattern, patterns: IndexPattern*): MultiIndex =
     MultiIndex(Chunk.fromIterable(pattern.toString +: patterns.map(IndexPattern.unwrap)))
 }
-
