@@ -1010,6 +1010,30 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document which changes a character using a fuzzy query") {
+            checkOnce(genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument).refreshTrue
+                    )
+                  query = ElasticQuery.fuzzy(
+                            field = TestDocument.stringField.keyword,
+                            value = firstDocument.stringField.substring(1)
+                          )
+                  res <- Executor
+                           .execute(ElasticRequest.search(firstSearchIndex, query))
+                           .documentAs[TestDocument]
+                } yield {
+                  assert(res)(Assertion.contains(firstDocument))
+                }
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document which contains a term using a wildcard query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
