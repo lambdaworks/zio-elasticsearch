@@ -23,12 +23,12 @@ val query: FuzzyQuery = fuzzy(field = Document.name, value = "test")
 
 If you want to change the `fuzziness`, you can use `fuzziness` method:
 ```scala
-val queryWithCaseFuzzinessAuto: FuzzyQuery = fuzzy(field = Document.name, value = "test").fuzziness("AUTO")
+val queryWithFuzzinessAuto: FuzzyQuery = fuzzy(field = Document.name, value = "test").fuzziness("AUTO")
 ```
 
 If you want to change the `maxExpansions`, you can use `maxExpansions` method:
 ```scala
-val queryWithCaseMaxExpansions: FuzzyQuery = fuzzy(field = Document.name, value = "test").maxExpansions(50)
+val queryWithMaxExpansions: FuzzyQuery = fuzzy(field = Document.name, value = "test").maxExpansions(50)
 ```
 
 If you want to change the `prefixLength`, you can use `prefixLength` method:

@@ -583,11 +583,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("fuzzy") {
-          val query                      = fuzzy("stringField", "test")
-          val queryTs                    = fuzzy(TestDocument.stringField, "test")
-          val queryWithCaseFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
-          val queryWithCaseMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
-          val queryWithPrefixLength      = fuzzy(TestDocument.stringField, "test").prefixLength(3)
+          val query                  = fuzzy("stringField", "test")
+          val queryTs                = fuzzy(TestDocument.stringField, "test")
+          val queryWithFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
+          val queryWithMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
+          val queryWithPrefixLength  = fuzzy(TestDocument.stringField, "test").prefixLength(3)
           val queryWithAllParameters =
             fuzzy(TestDocument.stringField, "test").prefixLength(3).fuzziness("AUTO").maxExpansions(50)
           val queryWithSuffix = fuzzy(TestDocument.stringField.raw, "test")
@@ -614,7 +614,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               )
             )
           ) &&
-          assert(queryWithCaseFuzzinessAuto)(
+          assert(queryWithFuzzinessAuto)(
             equalTo(
               Fuzzy[TestDocument](
                 field = "stringField",
@@ -625,7 +625,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               )
             )
           ) &&
-          assert(queryWithCaseMaxExpansions)(
+          assert(queryWithMaxExpansions)(
             equalTo(
               Fuzzy[TestDocument](
                 field = "stringField",
@@ -2278,11 +2278,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTsWithBoost.toJson(fieldPath = None))(equalTo(expectedTsWithBoost.toJson))
         },
         test("fuzzy") {
-          val query                      = fuzzy("stringField", "test")
-          val queryTs                    = fuzzy(TestDocument.stringField, "test")
-          val queryWithCaseFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
-          val queryWithCaseMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
-          val queryWithPrefixLength      = fuzzy(TestDocument.stringField, "test").prefixLength(3)
+          val query                  = fuzzy("stringField", "test")
+          val queryTs                = fuzzy(TestDocument.stringField, "test")
+          val queryWithFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
+          val queryWithMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
+          val queryWithPrefixLength  = fuzzy(TestDocument.stringField, "test").prefixLength(3)
           val queryWithAllParameters =
             fuzzy(TestDocument.stringField, "test").prefixLength(3).fuzziness("AUTO").maxExpansions(50)
           val queryWithSuffix = fuzzy(TestDocument.stringField.raw, "test")
@@ -2298,7 +2298,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedWithCaseFuzzinessAuto =
+          val expectedWithFuzzinessAuto =
             """
               |{
               |  "fuzzy": {
@@ -2310,7 +2310,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedWithCaseMaxExpansions =
+          val expectedWithMaxExpansions =
             """
               |{
               |  "fuzzy": {
@@ -2361,8 +2361,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
-          assert(queryWithCaseFuzzinessAuto.toJson(fieldPath = None))(equalTo(expectedWithCaseFuzzinessAuto.toJson)) &&
-          assert(queryWithCaseMaxExpansions.toJson(fieldPath = None))(equalTo(expectedWithCaseMaxExpansions.toJson)) &&
+          assert(queryWithFuzzinessAuto.toJson(fieldPath = None))(equalTo(expectedWithFuzzinessAuto.toJson)) &&
+          assert(queryWithMaxExpansions.toJson(fieldPath = None))(equalTo(expectedWithMaxExpansions.toJson)) &&
           assert(queryWithPrefixLength.toJson(fieldPath = None))(equalTo(expectedWithPrefixLength.toJson)) &&
           assert(queryWithAllParameters.toJson(fieldPath = None))(equalTo(expectedWithAllParameters.toJson)) &&
           assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson))
