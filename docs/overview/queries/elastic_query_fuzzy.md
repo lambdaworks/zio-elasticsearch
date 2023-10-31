@@ -3,7 +3,7 @@ id: elastic_query_fuzzy
 title: "Fuzzy Query"
 ---
 
-The `Fuzzy` query returns documents that contain terms similar to the search term, as measured by a Levenshtein edit distance.
+The `Fuzzy` query returns documents that contain terms similar to the search term, as measured by a [Levenshtein edit distance](https://en.wikipedia.org/wiki/Levenshtein_distance).
 
 In order to use the `Fuzzy` query import the following:
 ```scala

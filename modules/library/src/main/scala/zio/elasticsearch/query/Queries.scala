@@ -354,34 +354,34 @@ sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
 
   /**
    * Sets the `fuzziness` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fuzziness` value refers to
-   * the ability to find results that are similar to, but not exactly the same as, the search term or query
+   * the ability to find results that are similar to, but not exactly the same as, the search term or query.
    *
    * @param value
-   *   the [[String]] value to represent the 'fuzziness' field
+   *   the text value to represent the 'fuzziness' field
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `fuzziness` value set.
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fuzziness` parameter.
    */
   def fuzziness(value: String): FuzzyQuery[S]
 
   /**
    * Sets the `maxExpansions` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `maxExpansions` value
-   * defines the maximum number of terms the fuzzy query will match before halting the search
+   * defines the maximum number of terms the fuzzy query will match before halting the search.
    *
    * @param value
-   *   the whole number value for `maxExpansions` parameter
+   *   the positive whole number value for `maxExpansions` parameter
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `maxExpansions` value set.
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `maxExpansions` parameter.
    */
   def maxExpansions(value: Int): FuzzyQuery[S]
 
   /**
    * Sets the `prefixLength` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `prefixLength` value
-   * refers to the number of beginning characters left unchanged when creating expansions
+   * refers to the number of beginning characters left unchanged when creating expansions.
    *
    * @param value
-   *   the whole number value for `prefixLength` parameter
+   *   the positive whole number value for `prefixLength` parameter
    * @return
-   *   a new instance of the [[zio.elasticsearch.query.ElasticQuery]] with the `prefixLength` value set.
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `prefixLength` parameter.
    */
   def prefixLength(value: Int): FuzzyQuery[S]
 }

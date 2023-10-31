@@ -588,7 +588,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithCaseFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
           val queryWithCaseMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
           val queryWithPrefixLength      = fuzzy(TestDocument.stringField, "test").prefixLength(3)
-          val queryWithSuffix            = fuzzy(TestDocument.stringField.raw, "test")
+          val queryWithAllParameters =
+            fuzzy(TestDocument.stringField, "test").prefixLength(3).fuzziness("AUTO").maxExpansions(50)
+          val queryWithSuffix = fuzzy(TestDocument.stringField.raw, "test")
 
           assert(query)(
             equalTo(
@@ -653,6 +655,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 fuzziness = None,
                 maxExpansions = None,
                 prefixLength = None
+              )
+            )
+          ) &&
+          assert(queryWithAllParameters)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField",
+                value = "test",
+                fuzziness = Some("AUTO"),
+                maxExpansions = Some(50),
+                prefixLength = Some(3)
               )
             )
           )
@@ -2270,7 +2283,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithCaseFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
           val queryWithCaseMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
           val queryWithPrefixLength      = fuzzy(TestDocument.stringField, "test").prefixLength(3)
-          val queryWithSuffix            = fuzzy(TestDocument.stringField.raw, "test")
+          val queryWithAllParameters =
+            fuzzy(TestDocument.stringField, "test").prefixLength(3).fuzziness("AUTO").maxExpansions(50)
+          val queryWithSuffix = fuzzy(TestDocument.stringField.raw, "test")
 
           val expected =
             """
@@ -2319,6 +2334,20 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithAllParameters =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "fuzziness": "AUTO",
+              |      "max_expansions": 50,
+              |      "prefix_length": 3
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           val expectedWithSuffix =
             """
               |{
@@ -2335,6 +2364,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithCaseFuzzinessAuto.toJson(fieldPath = None))(equalTo(expectedWithCaseFuzzinessAuto.toJson)) &&
           assert(queryWithCaseMaxExpansions.toJson(fieldPath = None))(equalTo(expectedWithCaseMaxExpansions.toJson)) &&
           assert(queryWithPrefixLength.toJson(fieldPath = None))(equalTo(expectedWithPrefixLength.toJson)) &&
+          assert(queryWithAllParameters.toJson(fieldPath = None))(equalTo(expectedWithAllParameters.toJson)) &&
           assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson))
         },
         test("functionScore") {

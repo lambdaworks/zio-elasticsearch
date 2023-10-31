@@ -1010,7 +1010,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document which changes a character using a fuzzy query") {
+          test("search for a document using a fuzzy query") {
             checkOnce(genDocumentId, genTestDocument) { (firstDocumentId, firstDocument) =>
               for {
                 _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
