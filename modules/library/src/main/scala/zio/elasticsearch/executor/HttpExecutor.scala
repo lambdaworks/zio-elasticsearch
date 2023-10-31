@@ -122,12 +122,15 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
+          println(response.body)
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value =>
+            value => {
               ZIO.succeed(new AggregateResult(value.aggs.map { case (key, response) =>
                 (key, toResult(response))
               }))
+            }
+
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -601,7 +604,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         UnauthorizedException
       case _ =>
         new ElasticException(
-          s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+        s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
         )
     }
 

@@ -148,7 +148,39 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           ) && assert(aggregationWithSigma)(
             equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = Some(3.0)))
           ) && assert(aggregationWithMissingAndSigma)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0)))
+            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0))))
+        },
+        test("filter") {
+          val aggregation      = filterAggregation("aggregation", "testField")
+          val aggregationTs    = filterAggregation("aggregation", TestSubDocument.stringField)
+          val aggregationTsRaw = filterAggregation("aggregation", TestSubDocument.stringField.raw)
+
+          assert(aggregation)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                field = "testField",
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                field = "stringField",
+                subAggregations = Chunk.empty,
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                field = "stringField.raw",
+                subAggregations = Chunk.empty,
+              )
+            )
           )
         },
         test("max") {
@@ -824,6 +856,63 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
           assert(aggregationWithSigma.toJson)(equalTo(expectedWithSigma.toJson)) &&
           assert(aggregationWithMissingAndSigma.toJson)(equalTo(expectedWithMissingAndSigma.toJson))
+        },
+        test("filter") {
+          val aggregation = filterAggregation("aggregation", "testField")
+          val aggregationTs = filterAggregation("aggregation", TestDocument.stringField)
+          val aggregationWithSubAggregation = filterAggregation("aggregation", TestDocument.stringField).withSubAgg(
+            minAggregation("subAggregation", TestDocument.intField)
+          )
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "filter": {
+              |      "term": {
+              |         "type" : "testField"
+              |       }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "filter": {
+              |      "term": {
+              |         "type" : "stringField"
+              |       }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSubAggregation =
+            """
+              |{
+              |  "aggregation": {
+              |    "filter": {
+              |      "term": {
+              |         "type" : "stringField"
+              |       }
+              |    },
+              |     "aggs": {
+              |       "subAggregation": {
+              |         "min": {
+              |           "field": "intField"
+              |         }
+              |       }
+              |     }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+            assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+            assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")

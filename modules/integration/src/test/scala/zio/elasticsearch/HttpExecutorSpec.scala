@@ -146,6 +146,34 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("aggregate using filter aggregation") {
+            val expectedResponse = ("aggregation", MaxAggregationResult(value = 5.0))
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(stringField = "test", intField = 5))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(stringField = "test1", intField = 7))
+                       )
+                  aggregation =
+                    filterAggregation(name = "aggregation", field = "test").withSubAgg(
+                      maxAggregation("subAggregation", TestDocument.intField)
+                    )
+
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
+
+                } yield assert(aggsRes.head)(equalTo(expectedResponse))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using max aggregation") {
             val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

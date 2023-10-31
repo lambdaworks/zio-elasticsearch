@@ -97,3 +97,26 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
 final case class ValueCountAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
 
 final case class WeightedAvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+
+final case class FilterAggregationResult private[elasticsearch] (
+  docCount: Int,
+  buckets: Chunk[FilterAggregationBucketResult]
+) extends AggregationResult
+
+final case class FilterAggregationBucketResult private[elasticsearch] (
+  docCount: Int,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationResult {
+
+  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+    subAggregations.get(aggName) match {
+      case Some(aggRes) =>
+        Try(aggRes.asInstanceOf[A]) match {
+          case Failure(_)   => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+          case Success(agg) => Right(Some(agg))
+        }
+      case None =>
+        Right(None)
+    }
+
+}

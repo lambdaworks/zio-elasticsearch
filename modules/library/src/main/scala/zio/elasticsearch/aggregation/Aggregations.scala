@@ -186,6 +186,30 @@ private[elasticsearch] final case class ExtendedStats(
   }
 }
 
+sealed trait FilterAggregation extends SingleElasticAggregation with WithSubAgg[FilterAggregation] with WithAgg
+
+private[elasticsearch] final case class Filter(
+  name: String,
+  field: String,
+  subAggregations: Chunk[SingleElasticAggregation]
+) extends FilterAggregation { self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  def withSubAgg(aggregation: SingleElasticAggregation): FilterAggregation =
+    self.copy(subAggregations = aggregation +: subAggregations)
+
+  val subAggsJson =
+    if (self.subAggregations.nonEmpty)
+      Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
+    else
+      Obj()
+
+  private[elasticsearch] def toJson: Json =
+    Obj(name -> (Obj("filter" -> Obj("term" -> Obj("type" -> self.field.toJson))) merge subAggsJson))
+}
+
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
 
 private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])
