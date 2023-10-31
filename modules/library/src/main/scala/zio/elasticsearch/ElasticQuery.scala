@@ -204,6 +204,38 @@ object ElasticQuery {
     )
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.FuzzyQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.FuzzyQuery]] returns documents that contain terms similar to the search term, as measured
+   * by a Levenshtein edit distance.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param value
+   *   text value that will be used for the query
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FuzzyQuery]] that represents the fuzzy query to be performed.
+   */
+  final def fuzzy[S](field: Field[S, String], value: String): FuzzyQuery[S] =
+    Fuzzy(field = field.toString, value = value, fuzziness = None, maxExpansions = None, prefixLength = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.FuzzyQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.FuzzyQuery]] returns documents that contain terms similar to the search term, as measured
+   * by a Levenshtein edit distance.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param value
+   *   text value that will be used for the query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FuzzyQuery]] that represents the fuzzy query to be performed.
+   */
+  final def fuzzy(field: String, value: String): FuzzyQuery[Any] =
+    Fuzzy(field = field, value = value, fuzziness = None, maxExpansions = None, prefixLength = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
@@ -958,4 +990,5 @@ object ElasticQuery {
    */
   final def wildcard(field: String, value: String): WildcardQuery[Any] =
     Wildcard(field = field, value = value, boost = None, caseInsensitive = None)
+
 }

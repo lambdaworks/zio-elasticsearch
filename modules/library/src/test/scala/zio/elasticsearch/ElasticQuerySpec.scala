@@ -582,6 +582,94 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("fuzzy") {
+          val query                  = fuzzy("stringField", "test")
+          val queryTs                = fuzzy(TestDocument.stringField, "test")
+          val queryWithFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
+          val queryWithMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
+          val queryWithPrefixLength  = fuzzy(TestDocument.stringField, "test").prefixLength(3)
+          val queryWithAllParameters =
+            fuzzy(TestDocument.stringField, "test").prefixLength(3).fuzziness("AUTO").maxExpansions(50)
+          val queryWithSuffix = fuzzy(TestDocument.stringField.raw, "test")
+
+          assert(query)(
+            equalTo(
+              Fuzzy[Any](
+                field = "stringField",
+                value = "test",
+                fuzziness = None,
+                maxExpansions = None,
+                prefixLength = None
+              )
+            )
+          ) &&
+          assert(queryTs)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField",
+                value = "test",
+                fuzziness = None,
+                maxExpansions = None,
+                prefixLength = None
+              )
+            )
+          ) &&
+          assert(queryWithFuzzinessAuto)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField",
+                value = "test",
+                fuzziness = Some("AUTO"),
+                maxExpansions = None,
+                prefixLength = None
+              )
+            )
+          ) &&
+          assert(queryWithMaxExpansions)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField",
+                value = "test",
+                fuzziness = None,
+                maxExpansions = Some(50),
+                prefixLength = None
+              )
+            )
+          ) &&
+          assert(queryWithPrefixLength)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField",
+                value = "test",
+                fuzziness = None,
+                maxExpansions = None,
+                prefixLength = Some(3)
+              )
+            )
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField.raw",
+                value = "test",
+                fuzziness = None,
+                maxExpansions = None,
+                prefixLength = None
+              )
+            )
+          ) &&
+          assert(queryWithAllParameters)(
+            equalTo(
+              Fuzzy[TestDocument](
+                field = "stringField",
+                value = "test",
+                fuzziness = Some("AUTO"),
+                maxExpansions = Some(50),
+                prefixLength = Some(3)
+              )
+            )
+          )
+        },
         test("geoDistance") {
           val queryWithHash =
             geoDistance(TestDocument.geoPointField, GeoHash("drm3btev3e86"), Distance(200, Kilometers))
@@ -2188,6 +2276,96 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryTsWithBoost.toJson(fieldPath = None))(equalTo(expectedTsWithBoost.toJson))
+        },
+        test("fuzzy") {
+          val query                  = fuzzy("stringField", "test")
+          val queryTs                = fuzzy(TestDocument.stringField, "test")
+          val queryWithFuzzinessAuto = fuzzy(TestDocument.stringField, "test").fuzziness("AUTO")
+          val queryWithMaxExpansions = fuzzy(TestDocument.stringField, "test").maxExpansions(50)
+          val queryWithPrefixLength  = fuzzy(TestDocument.stringField, "test").prefixLength(3)
+          val queryWithAllParameters =
+            fuzzy(TestDocument.stringField, "test").prefixLength(3).fuzziness("AUTO").maxExpansions(50)
+          val queryWithSuffix = fuzzy(TestDocument.stringField.raw, "test")
+
+          val expected =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField": {
+              |      "value": "test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFuzzinessAuto =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "fuzziness": "AUTO"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMaxExpansions =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "max_expansions": 50
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithPrefixLength =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "prefix_length": 3
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParameters =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField": {
+              |      "value": "test",
+              |      "fuzziness": "AUTO",
+              |      "max_expansions": 50,
+              |      "prefix_length": 3
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSuffix =
+            """
+              |{
+              |  "fuzzy": {
+              |    "stringField.raw": {
+              |      "value": "test"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithFuzzinessAuto.toJson(fieldPath = None))(equalTo(expectedWithFuzzinessAuto.toJson)) &&
+          assert(queryWithMaxExpansions.toJson(fieldPath = None))(equalTo(expectedWithMaxExpansions.toJson)) &&
+          assert(queryWithPrefixLength.toJson(fieldPath = None))(equalTo(expectedWithPrefixLength.toJson)) &&
+          assert(queryWithAllParameters.toJson(fieldPath = None))(equalTo(expectedWithAllParameters.toJson)) &&
+          assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson))
         },
         test("functionScore") {
           val query = functionScore(

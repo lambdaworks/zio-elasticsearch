@@ -350,6 +350,67 @@ private[elasticsearch] final case class FunctionScore[S](
     )
 }
 
+sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * Sets the `fuzziness` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fuzziness` value refers to
+   * the ability to find results that are similar to, but not exactly the same as, the search term or query.
+   *
+   * @param value
+   *   the text value to represent the 'fuzziness' field
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fuzziness` parameter.
+   */
+  def fuzziness(value: String): FuzzyQuery[S]
+
+  /**
+   * Sets the `maxExpansions` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `maxExpansions` value
+   * defines the maximum number of terms the fuzzy query will match before halting the search.
+   *
+   * @param value
+   *   the positive whole number value for `maxExpansions` parameter
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `maxExpansions` parameter.
+   */
+  def maxExpansions(value: Int): FuzzyQuery[S]
+
+  /**
+   * Sets the `prefixLength` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `prefixLength` value
+   * refers to the number of beginning characters left unchanged when creating expansions.
+   *
+   * @param value
+   *   the positive whole number value for `prefixLength` parameter
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `prefixLength` parameter.
+   */
+  def prefixLength(value: Int): FuzzyQuery[S]
+}
+
+private[elasticsearch] final case class Fuzzy[S](
+  field: String,
+  value: String,
+  fuzziness: Option[String],
+  maxExpansions: Option[Int],
+  prefixLength: Option[Int]
+) extends FuzzyQuery[S] { self =>
+
+  def fuzziness(value: String): FuzzyQuery[S] =
+    self.copy(fuzziness = Some(value))
+
+  def maxExpansions(value: Int): FuzzyQuery[S] =
+    self.copy(maxExpansions = Some(value))
+
+  def prefixLength(value: Int): FuzzyQuery[S] =
+    self.copy(prefixLength = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val fuzzyFields = Some("value" -> value.toJson) ++ fuzziness.map("fuzziness" -> _.toJson) ++ maxExpansions.map(
+      "max_expansions" -> _.toJson
+    ) ++ prefixLength.map("prefix_length" -> _.toJson)
+    Obj("fuzzy" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(fuzzyFields))))
+  }
+}
+
 sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
 
   /**
