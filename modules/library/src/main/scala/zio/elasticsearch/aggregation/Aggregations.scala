@@ -200,12 +200,11 @@ private[elasticsearch] final case class Filter(
   def withSubAgg(aggregation: SingleElasticAggregation): FilterAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
 
-  val subAggsJson =
+  val subAggsJson: Obj =
     if (self.subAggregations.nonEmpty)
       Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
     else
       Obj()
-
   private[elasticsearch] def toJson: Json =
     Obj(name -> (Obj("filter" -> Obj("term" -> Obj("type" -> self.field.toJson))) merge subAggsJson))
 }

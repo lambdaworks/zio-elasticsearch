@@ -130,7 +130,6 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 (key, toResult(response))
               }))
             }
-
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -604,7 +603,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         UnauthorizedException
       case _ =>
         new ElasticException(
-        s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
+          s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
         )
     }
 

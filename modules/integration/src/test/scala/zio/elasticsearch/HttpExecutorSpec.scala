@@ -152,11 +152,19 @@ object HttpExecutorSpec extends IntegrationSpec {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
                   _ <- Executor.execute(
-                         ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(stringField = "test", intField = 5))
+                         ElasticRequest.upsert[TestDocument](
+                           firstSearchIndex,
+                           firstDocumentId,
+                           firstDocument.copy(stringField = "test", intField = 5)
+                         )
                        )
                   _ <- Executor.execute(
                          ElasticRequest
-                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(stringField = "test1", intField = 7))
+                           .upsert[TestDocument](
+                             firstSearchIndex,
+                             secondDocumentId,
+                             secondDocument.copy(stringField = "test1", intField = 7)
+                           )
                        )
                   aggregation =
                     filterAggregation(name = "aggregation", field = "test").withSubAgg(

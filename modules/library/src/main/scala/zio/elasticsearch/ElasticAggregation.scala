@@ -113,32 +113,32 @@ object ElasticAggregation {
   final def cardinalityAggregation(name: String, field: String): CardinalityAggregation =
     Cardinality(name = name, field = field, missing = None)
 
-  //Scala doc
+  // Scala doc
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
    *
    * @param name
-   * aggregation name
+   *   aggregation name
    * @param field
-   * the type-safe field for which max aggregation will be executed
+   *   the type-safe field for which max aggregation will be executed
    * @tparam A
-   * expected number type
+   *   expected number type
    * @return
-   * an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
    */
   final def filterAggregation(name: String, field: Field[_, String]): FilterAggregation =
     Filter(name = name, field = field.toString, subAggregations = Chunk.empty)
 
-  //Scala doc
+  // Scala doc
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
    *
    * @param name
-   * aggregation name
+   *   aggregation name
    * @param field
-   * the field for which max aggregation will be executed
+   *   the field for which max aggregation will be executed
    * @return
-   * an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
+   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
    */
   final def filterAggregation(name: String, field: String): FilterAggregation =
     Filter(name = name, field = field, subAggregations = Chunk.empty)

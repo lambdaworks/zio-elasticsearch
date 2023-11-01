@@ -169,7 +169,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Filter(
                 name = "aggregation",
                 field = "stringField",
-                subAggregations = Chunk.empty,
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -178,7 +178,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Filter(
                 name = "aggregation",
                 field = "stringField.raw",
-                subAggregations = Chunk.empty,
+                subAggregations = Chunk.empty
               )
             )
           )
@@ -858,7 +858,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissingAndSigma.toJson)(equalTo(expectedWithMissingAndSigma.toJson))
         },
         test("filter") {
-          val aggregation = filterAggregation("aggregation", "testField")
+          val aggregation   = filterAggregation("aggregation", "testField")
           val aggregationTs = filterAggregation("aggregation", TestDocument.stringField)
           val aggregationWithSubAggregation = filterAggregation("aggregation", TestDocument.stringField).withSubAgg(
             minAggregation("subAggregation", TestDocument.intField)
@@ -911,8 +911,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
-            assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
-            assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")
