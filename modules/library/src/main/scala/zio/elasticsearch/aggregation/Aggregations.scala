@@ -289,7 +289,8 @@ private[elasticsearch] final case class Terms(
   order: Chunk[AggregationOrder],
   subAggregations: Chunk[SingleElasticAggregation],
   size: Option[Int]
-) extends TermsAggregation { self =>
+) extends TermsAggregation {
+  self =>
 
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
     self.copy(order = self.order ++ (order +: orders))
@@ -326,4 +327,16 @@ private[elasticsearch] final case class Terms(
 
     Obj(name -> (Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson))
   }
+}
+
+sealed trait ValueCountAggregation extends SingleElasticAggregation with WithAgg
+
+private[elasticsearch] final case class ValueCount(name: String, field: String) extends ValueCountAggregation {
+  self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json =
+    Obj(name -> Obj("value_count" -> Obj("field" -> field.toJson)))
 }

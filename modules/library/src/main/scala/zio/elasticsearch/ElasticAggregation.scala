@@ -294,4 +294,34 @@ object ElasticAggregation {
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
     Terms(name = name, field = field, order = Chunk.empty, subAggregations = Chunk.empty, size = None)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which value count aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] that represents value count aggregation to
+   *   be performed.
+   */
+  final def valueCountAggregation(name: String, field: Field[_, String]): ValueCountAggregation =
+    ValueCount(name = name, field = field.toString)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which value count aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] that represents value count aggregation to
+   *   be performed.
+   */
+  final def valueCountAggregation(name: String, field: String): ValueCountAggregation =
+    ValueCount(name = name, field = field)
+
 }

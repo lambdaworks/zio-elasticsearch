@@ -426,6 +426,15 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               )
             )
           )
+        },
+        test("valueCount") {
+          val aggregation      = valueCountAggregation("aggregation", "testField")
+          val aggregationTs    = valueCountAggregation("aggregation", TestDocument.stringField)
+          val aggregationTsRaw = valueCountAggregation("aggregation", TestDocument.stringField.raw)
+
+          assert(aggregation)(equalTo(ValueCount(name = "aggregation", field = "testField"))) &&
+          assert(aggregationTs)(equalTo(ValueCount(name = "aggregation", field = "stringField"))) &&
+          assert(aggregationTsRaw)(equalTo(ValueCount(name = "aggregation", field = "stringField.raw")))
         }
       ),
       suite("encoding as JSON")(
@@ -1045,6 +1054,35 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithOrder.toJson)(equalTo(expectedWithOrder.toJson)) &&
           assert(aggregationWithSize.toJson)(equalTo(expectedWithSize.toJson)) &&
           assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("valueCount") {
+          val aggregation   = valueCountAggregation("aggregation", "testField")
+          val aggregationTs = valueCountAggregation("aggregation", TestDocument.stringField)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "value_count": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "value_count": {
+              |      "field": "stringField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson))
         }
       )
     )

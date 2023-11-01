@@ -60,3 +60,5 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
         Right(None)
     }
 }
+
+final case class ValueCountAggregationResult private[elasticsearch] (value: Int) extends AggregationResult

@@ -426,6 +426,42 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using value count aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](
+                          firstSearchIndex,
+                          firstDocumentId,
+                          firstDocument.copy(stringField = "test")
+                        )
+                    )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](
+                          firstSearchIndex,
+                          secondDocumentId,
+                          secondDocument.copy(stringField = "test")
+                        )
+                        .refreshTrue
+                    )
+                  aggregation = valueCountAggregation("aggregation", TestDocument.stringField.keyword)
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asValueCountAggregation("aggregation")
+
+                } yield assert(aggsRes.head.value)(equalTo(2))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ),
         suite("search with aggregation")(

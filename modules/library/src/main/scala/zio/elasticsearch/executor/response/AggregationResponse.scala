@@ -55,6 +55,8 @@ object AggregationResponse {
             )
           )
         )
+      case ValueCountAggregationResponse(value) =>
+        ValueCountAggregationResult(value)
     }
 }
 
@@ -199,4 +201,11 @@ private[elasticsearch] object TermsAggregationBucket {
         case Right(decoded) => decoded
       }
   }
+}
+
+private[elasticsearch] final case class ValueCountAggregationResponse(value: Int) extends AggregationResponse
+
+private[elasticsearch] object ValueCountAggregationResponse {
+  implicit val decoder: JsonDecoder[ValueCountAggregationResponse] =
+    DeriveJsonDecoder.gen[ValueCountAggregationResponse]
 }
