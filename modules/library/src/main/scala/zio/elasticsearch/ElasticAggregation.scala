@@ -307,7 +307,7 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] that represents value count aggregation to
    *   be performed.
    */
-  final def valueCountAggregation(name: String, field: Field[_, String]): ValueCountAggregation =
+  final def valueCountAggregation(name: String, field: Field[_, Any]): ValueCountAggregation =
     ValueCount(name = name, field = field.toString)
 
   /**

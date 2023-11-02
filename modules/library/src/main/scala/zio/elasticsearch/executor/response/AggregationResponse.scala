@@ -164,6 +164,8 @@ private[elasticsearch] object TermsAggregationBucket {
                     .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
                 )
               )
+            case str if str.contains("value_count#") =>
+              Some(field -> ValueCountAggregationResponse(value = objFields("value").unsafeAs[Int]))
           }
       }
     }.toMap
@@ -189,6 +191,8 @@ private[elasticsearch] object TermsAggregationBucket {
             (field.split("#")(1), data.asInstanceOf[SumAggregationResponse])
           case str if str.contains("terms#") =>
             (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
+          case str if str.contains("value_count#") =>
+            (field.split("#")(1), data.asInstanceOf[ValueCountAggregationResponse])
         }
     }
 

@@ -289,8 +289,7 @@ private[elasticsearch] final case class Terms(
   order: Chunk[AggregationOrder],
   subAggregations: Chunk[SingleElasticAggregation],
   size: Option[Int]
-) extends TermsAggregation {
-  self =>
+) extends TermsAggregation { self =>
 
   def orderBy(order: AggregationOrder, orders: AggregationOrder*): TermsAggregation =
     self.copy(order = self.order ++ (order +: orders))
@@ -331,8 +330,7 @@ private[elasticsearch] final case class Terms(
 
 sealed trait ValueCountAggregation extends SingleElasticAggregation with WithAgg
 
-private[elasticsearch] final case class ValueCount(name: String, field: String) extends ValueCountAggregation {
-  self =>
+private[elasticsearch] final case class ValueCount(name: String, field: String) extends ValueCountAggregation { self =>
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)

@@ -62,6 +62,9 @@ private[elasticsearch] sealed trait ResultWithAggregation {
 
   def asTermsAggregation(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
     aggregationAs[TermsAggregationResult](name)
+
+  def asValueCountAggregation(name: String): IO[DecodingException, Option[ValueCountAggregationResult]] =
+    aggregationAs[ValueCountAggregationResult](name)
 }
 
 private[elasticsearch] sealed trait DocumentResult[F[_]] {
