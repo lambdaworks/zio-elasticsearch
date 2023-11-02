@@ -451,11 +451,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                         )
                         .refreshTrue
                     )
-                  aggregation = valueCountAggregation("aggregation", TestDocument.stringField.keyword)
+                  aggregation = valueCountAggregation("aggregationString", TestDocument.stringField.keyword)
                   aggsRes <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
-                      .asValueCountAggregation("aggregation")
+                      .asValueCountAggregation("aggregationString")
 
                 } yield assert(aggsRes.head.value)(equalTo(2))
             }

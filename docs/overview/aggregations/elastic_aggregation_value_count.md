@@ -7,7 +7,7 @@ The `Value count` aggregation is a single-value metrics aggregation that calcula
 
 In order to use the `Value count` aggregation import the following:
 ```scala
-import zio.elasticsearch.aggregation.valueCountAggregation
+import zio.elasticsearch.aggregation.ValueCountAggregation
 import zio.elasticsearch.ElasticAggregation.valueCountAggregation
 ```
 
@@ -23,7 +23,7 @@ val aggregation: ValueCountAggregation = valueCountAggregation(name = "valueCoun
 
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
-val multipleAggregations: MultipleAggregations = valueCountAggregation(name = "valueCountAggregation1", field = Document.stringField).withAgg(valueCountAggregation(name = "valueCountAggregation2", field = Document.stringField))
+val multipleAggregations: MultipleAggregations = valueCountAggregation(name = "valueCountAggregation1", field = Document.stringField).withAgg(valueCountAggregation(name = "valueCountAggregation2", field = Document.intField))
 ```
 
 You can find more information about `Value count` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-valuecount-aggregation.html#search-aggregations-metrics-valuecount-aggregation).
