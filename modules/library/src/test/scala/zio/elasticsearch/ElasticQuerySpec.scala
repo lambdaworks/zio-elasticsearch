@@ -3906,6 +3906,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |""".stripMargin
 
           val expectedStringTs =
+
             """
               |{
               |  "terms_set": {
