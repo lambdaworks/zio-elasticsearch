@@ -960,6 +960,20 @@ object ElasticQuery {
     Terms(field = field, values = Chunk.fromIterable(values), boost = None)
 
   /**
+//Scala doc
+   */
+  final def termsSet[S, A: ElasticPrimitive](field: Field[S, A], values: A*): TermsSetQuery[S] = {
+    println(field)
+    println(values)
+    TermsSet(field = field.toString, values = Chunk.fromIterable(values), minimumShouldMatch = None)
+  }
+  /**
+//Scala doc
+   */
+  final def termsSet[A: ElasticPrimitive](field: String, values: A*): TermsSetQuery[Any] =
+    TermsSet(field = field, values = Chunk.fromIterable(values), minimumShouldMatch = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
    * [[zio.elasticsearch.query.WildcardQuery]] is used for matching documents containing a value that matches a provided
    * pattern value.

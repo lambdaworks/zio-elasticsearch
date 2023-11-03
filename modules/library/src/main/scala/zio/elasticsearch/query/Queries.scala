@@ -1073,6 +1073,28 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   }
 }
 
+sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasMinimumShouldMatch[TermsSetQuery[S]]
+
+private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
+  field: String,
+  values: Chunk[A],
+  minimumShouldMatch: Option[Int]
+) extends TermsSetQuery[S] { self =>
+
+  def minimumShouldMatch(value: Int): TermsSetQuery[S] =
+    self.copy(minimumShouldMatch = Some(value))
+
+  println(field)
+  println(values)
+  println(minimumShouldMatch)
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val termsSetFields =
+      Some("terms" -> Arr(values.map(_.toJson))) ++ minimumShouldMatch.map("minimum_should_match_field" -> _.toJson)
+    Obj("terms_set" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termsSetFields))))
+  }
+
+}
+
 sealed trait WildcardQuery[S]
     extends ElasticQuery[S]
     with HasBoost[WildcardQuery[S]]

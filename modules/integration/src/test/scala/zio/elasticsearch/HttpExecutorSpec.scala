@@ -1415,6 +1415,35 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document using a terms set query ttt") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+//                  firstDocumentUpdated = firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test")
+//                  secondDocumentUpdated =
+//                    secondDocument.copy(stringField = s"this is ${secondDocument.stringField} another test")
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(booleanField = true))
+                  )
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(booleanField = true))
+                  )
+                  _ <- Executor.execute(
+                    ElasticRequest
+                      .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument.copy(booleanField = false))
+                      .refreshTrue
+                  )
+                  query = termsSet(TestDocument.booleanField, true, false).minimumShouldMatch(1)
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(hasSameElements(List(true, false)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document using nested query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
