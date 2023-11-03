@@ -327,3 +327,14 @@ private[elasticsearch] final case class Terms(
     Obj(name -> (Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson))
   }
 }
+
+sealed trait ValueCountAggregation extends SingleElasticAggregation with WithAgg
+
+private[elasticsearch] final case class ValueCount(name: String, field: String) extends ValueCountAggregation { self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json =
+    Obj(name -> Obj("value_count" -> Obj("field" -> field.toJson)))
+}

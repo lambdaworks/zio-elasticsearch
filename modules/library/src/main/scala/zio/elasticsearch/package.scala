@@ -155,6 +155,18 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      */
     def asTermsAggregation(name: String): RIO[R, Option[TermsAggregationResult]] =
       aggregationAs[TermsAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.ValueCountAggregationResult]].
+     */
+    def asValueCountAggregation(name: String): RIO[R, Option[ValueCountAggregationResult]] =
+      aggregationAs[ValueCountAggregationResult](name)
   }
 
   final implicit class ZIODocumentOps[R, F[_]](zio: RIO[R, DocumentResult[F]]) {

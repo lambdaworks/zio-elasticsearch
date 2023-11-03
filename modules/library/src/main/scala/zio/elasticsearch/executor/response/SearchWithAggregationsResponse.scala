@@ -88,6 +88,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       CardinalityAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("terms#") =>
                       TermsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("value_count#") =>
+                      ValueCountAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                   }
                 )
               }

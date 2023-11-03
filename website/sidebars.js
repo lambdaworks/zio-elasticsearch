@@ -51,8 +51,9 @@ module.exports = {
                     'overview/aggregations/elastic_aggregation_min',
                     'overview/aggregations/elastic_aggregation_missing',
                     'overview/aggregations/elastic_aggregation_percentiles',
-                    'overview/aggregations/elastic_aggregation_terms',
                     'overview/aggregations/elastic_aggregation_sum',
+                    'overview/aggregations/elastic_aggregation_terms',
+                    'overview/aggregations/elastic_aggregation_value_count',
                 ],
             },
             {
