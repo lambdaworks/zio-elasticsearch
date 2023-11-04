@@ -936,7 +936,7 @@ object ElasticQuery {
    * @tparam A
    *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
-   *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
+   *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the terms query to be performed.
    */
   final def terms[S, A: ElasticPrimitive](field: Field[S, A], values: A*): TermsQuery[S] =
     Terms(field = field.toString, values = Chunk.fromIterable(values), boost = None)
@@ -954,24 +954,134 @@ object ElasticQuery {
    * @tparam A
    *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @return
-   *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the term query to be performed.
+   *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the terms query to be performed.
    */
   final def terms[A: ElasticPrimitive](field: String, values: A*): TermsQuery[Any] =
     Terms(field = field, values = Chunk.fromIterable(values), boost = None)
 
   /**
-//Scala doc
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.TermsSetQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.TermsSetQuery]] is used for matching documents that contain the minimum amount of exact
+   * terms in a provided field. The terms set query is the same as [[zio.elasticsearch.query.TermsQuery]], except you
+   * can define the number of matching terms required to return a document.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param terms
+   *   a list of terms that should be find in the provided field
+   * @param minimumShouldMatchField
+   *   the number of matching terms required to return a document
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.TermsSetQuery]] that represents the terms set query to be performed.
    */
-  final def termsSet[S, A: ElasticPrimitive](field: Field[S, A], values: A*): TermsSetQuery[S] = {
-    println(field)
-    println(values)
-    TermsSet(field = field.toString, values = Chunk.fromIterable(values), minimumShouldMatch = None)
-  }
+  final def termsSet[S, A: ElasticPrimitive](
+    field: Field[S, A],
+    minimumShouldMatchField: String,
+    terms: A*
+  ): TermsSetQuery[S] =
+    TermsSet(
+      field = field.toString,
+      terms = Chunk.fromIterable(terms),
+      minimumShouldMatchField = Some(minimumShouldMatchField),
+      minimumShouldMatchScript = None,
+      boost = None
+    )
+
   /**
-//Scala doc
+   * Constructs an instance of [[zio.elasticsearch.query.TermsSetQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.TermsSetQuery]] is used for matching documents that contain the minimum amount of exact
+   * terms in a provided field. The terms set query is the same as [[zio.elasticsearch.query.TermsQuery]], except you
+   * can define the number of matching terms required to return a document.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param terms
+   *   a list of terms that should be find in the provided field
+   * @param minimumShouldMatchField
+   *   the number of matching terms required to return a document
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @return
+   *   an instance of [[zio.elasticsearch.query.TermsSetQuery]] that represents the terms set query to be performed.
    */
-  final def termsSet[A: ElasticPrimitive](field: String, values: A*): TermsSetQuery[Any] =
-    TermsSet(field = field, values = Chunk.fromIterable(values), minimumShouldMatch = None)
+  final def termsSet[A: ElasticPrimitive](
+    field: String,
+    minimumShouldMatchField: String,
+    terms: A*
+  ): TermsSetQuery[Any] =
+    TermsSet(
+      field = field,
+      terms = Chunk.fromIterable(terms),
+      minimumShouldMatchField = Some(minimumShouldMatchField),
+      minimumShouldMatchScript = None,
+      boost = None
+    )
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.TermsSetQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.TermsSetQuery]] is used for matching documents that contain the minimum amount of exact
+   * terms in a provided field. The terms set query is the same as [[zio.elasticsearch.query.TermsQuery]], except you
+   * can define the number of matching terms required to return a document.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param terms
+   *   a list of terms that should be find in the provided field
+   * @param minimumShouldMatchScript
+   *   custom script containing the number of matching terms required to return a document
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.TermsSetQuery]] that represents the terms set query to be performed.
+   */
+  final def termsSetScript[S, A: ElasticPrimitive](
+    field: Field[S, A],
+    minimumShouldMatchScript: zio.elasticsearch.script.Script,
+    terms: A*
+  ): TermsSetQuery[S] =
+    TermsSet(
+      field = field.toString,
+      terms = Chunk.fromIterable(terms),
+      minimumShouldMatchField = None,
+      minimumShouldMatchScript = Some(minimumShouldMatchScript),
+      boost = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.TermsSetQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.TermsSetQuery]] is used for matching documents that contain the minimum amount of exact
+   * terms in a provided field. The terms set query is the same as [[zio.elasticsearch.query.TermsQuery]], except you
+   * can define the number of matching terms required to return a document.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param terms
+   *   a list of terms that should be find in the provided field
+   * @param minimumShouldMatchScript
+   *   custom script containing the number of matching terms required to return a document
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @return
+   *   an instance of [[zio.elasticsearch.query.TermsSetQuery]] that represents the terms set query to be performed.
+   */
+  final def termsSetScript[A: ElasticPrimitive](
+    field: String,
+    minimumShouldMatchScript: zio.elasticsearch.script.Script,
+    terms: A*
+  ): TermsSetQuery[Any] =
+    TermsSet(
+      field = field,
+      terms = Chunk.fromIterable(terms),
+      minimumShouldMatchField = None,
+      minimumShouldMatchScript = Some(minimumShouldMatchScript),
+      boost = None
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.

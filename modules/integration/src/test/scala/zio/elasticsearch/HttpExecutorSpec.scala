@@ -1415,30 +1415,75 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a terms set query ttt") {
+          test("search for a document using a terms set query with minimumShouldMatchField") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-//                  firstDocumentUpdated = firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test")
-//                  secondDocumentUpdated =
-//                    secondDocument.copy(stringField = s"this is ${secondDocument.stringField} another test")
-                  _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(booleanField = true))
-                  )
-                  _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(booleanField = true))
-                  )
-                  _ <- Executor.execute(
-                    ElasticRequest
-                      .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument.copy(booleanField = false))
-                      .refreshTrue
-                  )
-                  query = termsSet(TestDocument.booleanField, true, false).minimumShouldMatch(1)
+                  firstDocumentUpdated =
+                    firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test", intField = 1)
+                  secondDocumentUpdated =
+                    secondDocument.copy(
+                      stringField = s"this is ${secondDocument.stringField} another test",
+                      intField = 1
+                    )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .bulk(
+                          ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentUpdated),
+                          ElasticRequest
+                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated),
+                          ElasticRequest
+                            .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument)
+                        )
+                        .refreshTrue
+                    )
+                  query = termsSet(
+                            field = TestDocument.stringField,
+                            minimumShouldMatchField = "intField",
+                            terms = secondDocument.stringField.toLowerCase,
+                            firstDocument.stringField.toLowerCase
+                          )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(hasSameElements(List(true, false)))
+                } yield assert(res)(hasSameElements(Chunk(firstDocumentUpdated, secondDocumentUpdated)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using a terms set query with minimumShouldMatchScript") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated =
+                    firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test", intField = 1)
+                  secondDocumentUpdated =
+                    secondDocument.copy(
+                      stringField = s"this is ${secondDocument.stringField} another test",
+                      intField = 1
+                    )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .bulk(
+                          ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentUpdated),
+                          ElasticRequest
+                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated),
+                          ElasticRequest
+                            .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument)
+                        )
+                        .refreshTrue
+                    )
+                  query = termsSetScript(
+                            field = TestDocument.stringField,
+                            minimumShouldMatchScript = Script("doc['intField'].value"),
+                            terms = secondDocument.stringField.toLowerCase,
+                            firstDocument.stringField.toLowerCase
+                          )
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(hasSameElements(Chunk(firstDocumentUpdated, secondDocumentUpdated)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1499,7 +1544,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using should without satisfying minimumShouldMatch condition") {
+          test("search for a document using script query") {
             checkN(4)(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1579,7 +1624,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using script query") {
+          test("search for a document using should without satisfying minimumShouldMatch condition") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {

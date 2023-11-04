@@ -353,13 +353,13 @@ private[elasticsearch] final case class FunctionScore[S](
 sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
 
   /**
-   * Sets the `fuzziness` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fuzziness` value refers to
-   * the ability to find results that are similar to, but not exactly the same as, the search term or query.
+   * Sets the `fuzziness` parameter for the [[zio.elasticsearch.query.FuzzyQuery]]. The `fuzziness` value refers to the
+   * ability to find results that are similar to, but not exactly the same as, the search term or query.
    *
    * @param value
    *   the text value to represent the 'fuzziness' field
    * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fuzziness` parameter.
+   *   an instance of the [[zio.elasticsearch.query.FuzzyQuery]] enriched with the `fuzziness` parameter.
    */
   def fuzziness(value: String): FuzzyQuery[S]
 
@@ -1073,26 +1073,58 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   }
 }
 
-sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasMinimumShouldMatch[TermsSetQuery[S]]
+sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasBoost[TermsSetQuery[S]] {
+
+  /**
+   * Sets the `minimumShouldMatchScript` parameter for the [[zio.elasticsearch.query.TermsSetQuery]]. The
+   * `minimumShouldMatchScript` value is a custom script containing the number of matching terms required to return a
+   * document.
+   *
+   * @param value
+   *   the text value to represent the 'minimumShouldMatchScript' field
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.TermsSetQuery]] enriched with the `minimumShouldMatchScript`
+   *   parameter.
+   */
+  def minimumShouldMatchScript(value: zio.elasticsearch.script.Script): TermsSetQuery[S]
+
+  /**
+   * Sets the `minimumShouldMatchField` parameter for the [[zio.elasticsearch.query.TermsSetQuery]]. The
+   * `minimumShouldMatchField` value represents the number of matching terms required to return a document.
+   *
+   * @param value
+   *   the text value to represent the 'minimumShouldMatchField' field
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.TermsSetQuery]] enriched with the `minimumShouldMatchField`
+   *   parameter.
+   */
+  def minimumShouldMatchField(value: String): TermsSetQuery[S]
+}
 
 private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
   field: String,
-  values: Chunk[A],
-  minimumShouldMatch: Option[Int]
+  terms: Chunk[A],
+  minimumShouldMatchField: Option[String],
+  minimumShouldMatchScript: Option[zio.elasticsearch.script.Script],
+  boost: Option[Double]
 ) extends TermsSetQuery[S] { self =>
 
-  def minimumShouldMatch(value: Int): TermsSetQuery[S] =
-    self.copy(minimumShouldMatch = Some(value))
+  def minimumShouldMatchField(value: String): TermsSetQuery[S] =
+    self.copy(minimumShouldMatchField = Some(value))
 
-  println(field)
-  println(values)
-  println(minimumShouldMatch)
+  def minimumShouldMatchScript(value: zio.elasticsearch.script.Script): TermsSetQuery[S] =
+    self.copy(minimumShouldMatchScript = Some(value))
+
+  def boost(value: Double): TermsSetQuery[S] =
+    self.copy(boost = Some(value))
+
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termsSetFields =
-      Some("terms" -> Arr(values.map(_.toJson))) ++ minimumShouldMatch.map("minimum_should_match_field" -> _.toJson)
+      Some("terms" -> Arr(terms.map(_.toJson))) ++ minimumShouldMatchField.map(
+        "minimum_should_match_field" -> _.toJson
+      ) ++ minimumShouldMatchScript.map("minimum_should_match_script" -> _.toJson) ++ boost.map("boost" -> _.toJson)
     Obj("terms_set" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termsSetFields))))
   }
-
 }
 
 sealed trait WildcardQuery[S]

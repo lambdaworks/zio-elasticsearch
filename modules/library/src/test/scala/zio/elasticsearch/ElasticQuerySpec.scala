@@ -1652,37 +1652,58 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               Terms[TestDocument, String](field = "stringField", values = Chunk("a", "b", "c"), boost = Some(10.21))
             )
           )
-        }
-        ,
+        },
         test("termsSet") {
-          val queryString                 = termsSet("stringField", "a", "b", "c")
-          val queryBool                   = termsSet("booleanField", true, false)
-          val queryInt                    = termsSet("intField", 1, 2, 3)
-          val queryStringTs               = termsSet(TestDocument.stringField, "a", "b", "c")
-          val queryBoolTs                 = termsSet(TestDocument.booleanField, true, false)
-          val queryIntTs                  = termsSet(TestDocument.intField, 1, 2, 3)
-          val queryWithSuffix             = termsSet(TestDocument.stringField.keyword, "a", "b", "c")
-          val queryWithMinimumShouldMatch = termsSet(TestDocument.stringField, "a", "b", "c").minimumShouldMatch(1)
+          val queryString     = termsSet("stringField", "required_matches", "a", "b", "c")
+          val queryBool       = termsSet("booleanField", "required_matches", true, false)
+          val queryInt        = termsSet("intField", "required_matches", 1, 2, 3)
+          val queryStringTs   = termsSet(TestDocument.stringField, "required_matches", "a", "b", "c")
+          val queryBoolTs     = termsSet(TestDocument.booleanField, "required_matches", true, false)
+          val queryIntTs      = termsSet(TestDocument.intField, "required_matches", 1, 2, 3)
+          val queryWithSuffix = termsSet(TestDocument.stringField.keyword, "required_matches", "a", "b", "c")
+          val queryWithBoost  = termsSet("intField", "required_matches", 1, 2, 3).boost(10.0)
 
           assert(queryString)(
             equalTo(
-              TermsSet[Any, String](field = "stringField", values = Chunk("a", "b", "c"), minimumShouldMatch = None)
+              TermsSet[Any, String](
+                field = "stringField",
+                terms = Chunk("a", "b", "c"),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
+              )
             )
           ) &&
           assert(queryBool)(
             equalTo(
-              TermsSet[Any, Boolean](field = "booleanField", values = Chunk(true, false), minimumShouldMatch = None)
+              TermsSet[Any, Boolean](
+                field = "booleanField",
+                terms = Chunk(true, false),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
+              )
             )
           ) &&
           assert(queryInt)(
-            equalTo(TermsSet[Any, Int](field = "intField", values = Chunk(1, 2, 3), minimumShouldMatch = None))
+            equalTo(
+              TermsSet[Any, Int](
+                field = "intField",
+                terms = Chunk(1, 2, 3),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
+              )
+            )
           ) &&
           assert(queryStringTs)(
             equalTo(
               TermsSet[TestDocument, String](
                 field = "stringField",
-                values = Chunk("a", "b", "c"),
-                minimumShouldMatch = None
+                terms = Chunk("a", "b", "c"),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
               )
             )
           ) &&
@@ -1690,29 +1711,143 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(
               TermsSet[TestDocument, Boolean](
                 field = "booleanField",
-                values = Chunk(true, false),
-                minimumShouldMatch = None
+                terms = Chunk(true, false),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
               )
             )
           ) &&
           assert(queryIntTs)(
-            equalTo(TermsSet[TestDocument, Int](field = "intField", values = Chunk(1, 2, 3), minimumShouldMatch = None))
+            equalTo(
+              TermsSet[TestDocument, Int](
+                field = "intField",
+                terms = Chunk(1, 2, 3),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
+              )
+            )
           ) &&
           assert(queryWithSuffix)(
             equalTo(
               TermsSet[TestDocument, String](
                 field = "stringField.keyword",
-                values = Chunk("a", "b", "c"),
-                minimumShouldMatch = None
+                terms = Chunk("a", "b", "c"),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = None
               )
             )
           ) &&
-          assert(queryWithMinimumShouldMatch)(
+          assert(queryWithBoost)(
+            equalTo(
+              TermsSet[Any, Int](
+                field = "intField",
+                terms = Chunk(1, 2, 3),
+                minimumShouldMatchField = Some("required_matches"),
+                minimumShouldMatchScript = None,
+                boost = Some(10.0)
+              )
+            )
+          )
+        },
+        test("termsSetScript") {
+          val queryString   = termsSetScript("stringField", Script("doc['intField'].value"), "a", "b", "c")
+          val queryBool     = termsSetScript("booleanField", Script("doc['intField'].value"), true, false)
+          val queryInt      = termsSetScript("intField", Script("doc['intField'].value"), 1, 2, 3)
+          val queryStringTs = termsSetScript(TestDocument.stringField, Script("doc['intField'].value"), "a", "b", "c")
+          val queryBoolTs   = termsSetScript(TestDocument.booleanField, Script("doc['intField'].value"), true, false)
+          val queryIntTs    = termsSetScript(TestDocument.intField, Script("doc['intField'].value"), 1, 2, 3)
+          val queryWithSuffix =
+            termsSetScript(TestDocument.stringField.keyword, Script("doc['intField'].value"), "a", "b", "c")
+          val queryWithBoost = termsSetScript("intField", Script("doc['intField'].value"), 1, 2, 3).boost(10.0)
+
+          assert(queryString)(
+            equalTo(
+              TermsSet[Any, String](
+                field = "stringField",
+                terms = Chunk("a", "b", "c"),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryBool)(
+            equalTo(
+              TermsSet[Any, Boolean](
+                field = "booleanField",
+                terms = Chunk(true, false),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryInt)(
+            equalTo(
+              TermsSet[Any, Int](
+                field = "intField",
+                terms = Chunk(1, 2, 3),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryStringTs)(
             equalTo(
               TermsSet[TestDocument, String](
                 field = "stringField",
-                values = Chunk("a", "b", "c"),
-                minimumShouldMatch = Some(1)
+                terms = Chunk("a", "b", "c"),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryBoolTs)(
+            equalTo(
+              TermsSet[TestDocument, Boolean](
+                field = "booleanField",
+                terms = Chunk(true, false),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryIntTs)(
+            equalTo(
+              TermsSet[TestDocument, Int](
+                field = "intField",
+                terms = Chunk(1, 2, 3),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryWithSuffix)(
+            equalTo(
+              TermsSet[TestDocument, String](
+                field = "stringField.keyword",
+                terms = Chunk("a", "b", "c"),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = None
+              )
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              TermsSet[Any, Int](
+                field = "intField",
+                terms = Chunk(1, 2, 3),
+                minimumShouldMatchField = None,
+                minimumShouldMatchScript = Some(Script("doc['intField'].value")),
+                boost = Some(10.0)
               )
             )
           )
@@ -3726,17 +3861,19 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
         },
         test("termsSet") {
-          val queryString                 = termsSet(TestDocument.stringField, "a", "b", "c")
-          val queryBool                   = termsSet(TestDocument.booleanField, true, false)
-          val queryInt                    = termsSet(TestDocument.intField, 1, 2, 3, 4)
-          val queryWithMinimumShouldMatch = termsSet(TestDocument.stringField, "a", "b", "c").minimumShouldMatch(1)
+          val queryString = termsSet(TestDocument.stringField, "required_matches", "a", "b", "c")
+          val queryBool   = termsSet(TestDocument.booleanField, "required_matches", true, false)
+          val queryInt    = termsSet(TestDocument.intField, "required_matches", 1, 2, 3, 4)
+          val queryWithBoost = termsSet(TestDocument.stringField, "required_matches", "a", "b", "c")
+            .boost(10.0)
 
           val expectedString =
             """
               |{
               |  "terms_set": {
               |    "stringField": {
-              |      "terms": [ "a", "b", "c" ]
+              |      "terms": [ "a", "b", "c" ],
+              |      "minimum_should_match_field": "required_matches"
               |     }
               |  }
               |}
@@ -3747,7 +3884,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |{
               |  "terms_set": {
               |    "booleanField": {
-              |     "terms": [ true, false ]
+              |     "terms": [ true, false ],
+              |      "minimum_should_match_field": "required_matches"
               |    }
               |  }
               |}
@@ -3758,19 +3896,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |{
               |  "terms_set": {
               |    "intField": {
-              |     "terms": [ 1, 2, 3, 4 ]
+              |     "terms": [ 1, 2, 3, 4 ],
+              |     "minimum_should_match_field": "required_matches"
               |    }
               |  }
               |}
               |""".stripMargin
 
-          val expectedWithMinimumShouldMatch =
+          val expectedWithBoost =
             """
               |{
               |  "terms_set": {
               |    "stringField": {
               |      "terms": [ "a", "b", "c" ],
-              |      "minimum_should_match_field": 1
+              |      "minimum_should_match_field": "required_matches",
+              |       "boost": 10.0
               |    }
               |  }
               |}
@@ -3779,7 +3919,78 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryString.toJson(fieldPath = None))(equalTo(expectedString.toJson)) &&
           assert(queryBool.toJson(fieldPath = None))(equalTo(expectedBool.toJson)) &&
           assert(queryInt.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
-          assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(equalTo(expectedWithMinimumShouldMatch.toJson))
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
+
+        },
+        test("termsSetScript") {
+          val queryString = termsSetScript(TestDocument.stringField, Script("doc['intField'].value"), "a", "b", "c")
+          val queryBool   = termsSetScript(TestDocument.booleanField, Script("doc['intField'].value"), true, false)
+          val queryInt    = termsSetScript(TestDocument.intField, Script("doc['intField'].value"), 1, 2, 3, 4)
+          val queryWithBoost = termsSetScript(TestDocument.intField, Script("doc['intField'].value"), 1, 2, 3, 4)
+            .boost(10.0)
+
+          val expectedString =
+            """
+              |{
+              |  "terms_set": {
+              |    "stringField": {
+              |      "terms": [ "a", "b", "c" ],
+              |      "minimum_should_match_script": {
+              |          "source": "doc['intField'].value"
+              |        }
+              |     }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedBool =
+            """
+              |{
+              |  "terms_set": {
+              |    "booleanField": {
+              |     "terms": [ true, false ],
+              |      "minimum_should_match_script": {
+              |          "source": "doc['intField'].value"
+              |        }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedInt =
+            """
+              |{
+              |  "terms_set": {
+              |    "intField": {
+              |     "terms": [ 1, 2, 3, 4 ],
+              |     "minimum_should_match_script": {
+              |          "source": "doc['intField'].value"
+              |        }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "terms_set": {
+              |    "intField": {
+              |      "terms": [ 1, 2, 3, 4 ],
+              |      "minimum_should_match_script": {
+              |          "source": "doc['intField'].value"
+              |        },
+              |       "boost": 10.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(queryString.toJson(fieldPath = None))(equalTo(expectedString.toJson)) &&
+          assert(queryBool.toJson(fieldPath = None))(equalTo(expectedBool.toJson)) &&
+          assert(queryInt.toJson(fieldPath = None))(equalTo(expectedInt.toJson)) &&
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
+
         },
         test("wildcard") {
           val query                    = wildcard(TestDocument.stringField, "[a-zA-Z]+")
