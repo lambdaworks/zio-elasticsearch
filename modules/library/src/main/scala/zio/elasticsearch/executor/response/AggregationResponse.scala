@@ -68,17 +68,12 @@ object AggregationResponse {
             lowerSampling = stdDeviationBoundsResponse.lowerSampling
           )
         )
-      case FilterAggregationResponse(docCount, buckets) =>
+      case FilterAggregationResponse(docCount, subAggregations) =>
         FilterAggregationResult(
           docCount = docCount,
-          buckets = buckets.map(b =>
-            FilterAggregationBucketResult(
-              docCount = b.docCount,
-              subAggregations = b.subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
-                (key, toResult(response))
-              })
-            )
-          )
+          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
+            (key, toResult(response))
+          })
         )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
@@ -222,22 +217,11 @@ private[elasticsearch] sealed trait AggregationBucket
 private[elasticsearch] final case class FilterAggregationResponse(
   @jsonField("doc_count")
   docCount: Int,
-  buckets: Chunk[FilterAggregationBucket]
+  subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationResponse
 
 private[elasticsearch] object FilterAggregationResponse {
-  implicit val decoder: JsonDecoder[FilterAggregationResponse] =
-    DeriveJsonDecoder.gen[FilterAggregationResponse]
-}
-
-private[elasticsearch] final case class FilterAggregationBucket(
-  @jsonField("doc_count")
-  docCount: Int,
-  subAggregations: Option[Map[String, AggregationResponse]] = None
-) extends AggregationBucket
-
-private[elasticsearch] object FilterAggregationBucket {
-  implicit val decoder: JsonDecoder[FilterAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
+  implicit val decoder: JsonDecoder[FilterAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val allFields = fields.flatMap { case (field, data) =>
       field match {
         case "doc_count" =>
@@ -251,14 +235,7 @@ private[elasticsearch] object FilterAggregationBucket {
             case str if str.contains("cardinality#") =>
               Some(field -> CardinalityAggregationResponse(value = objFields("value").unsafeAs[Int]))
             case str if str.contains("filter#") =>
-              Some(
-                field -> FilterAggregationResponse(
-                  docCount = objFields("doc_count").unsafeAs[Int],
-                  buckets = objFields("buckets")
-                    .unsafeAs[Chunk[Json]]
-                    .map(_.unsafeAs[FilterAggregationBucket](FilterAggregationBucket.decoder))
-                )
-              )
+              Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
             case str if str.contains("max#") =>
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("min#") =>
@@ -308,7 +285,7 @@ private[elasticsearch] object FilterAggregationBucket {
         }
     }
 
-    Right(FilterAggregationBucket.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
+    Right(FilterAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
   }
 
   final implicit class JsonDecoderOps(json: Json) {
@@ -378,14 +355,8 @@ private[elasticsearch] object TermsAggregationBucket {
                 )
               )
             case str if str.contains("filter#") =>
-              Some(
-                field -> FilterAggregationResponse(
-                  docCount = objFields("doc_count_error_upper_bound").unsafeAs[Int],
-                  buckets = objFields("buckets")
-                    .unsafeAs[Chunk[Json]]
-                    .map(_.unsafeAs[FilterAggregationBucket](FilterAggregationBucket.decoder))
-                )
-              )
+              Some(field -> "")
+//              Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationBucket.decoder))
             case str if str.contains("max#") =>
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("min#") =>

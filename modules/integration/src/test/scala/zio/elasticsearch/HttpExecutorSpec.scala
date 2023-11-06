@@ -33,7 +33,7 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{Item, MaxAggregationResult, UpdateByQueryResult}
+import zio.elasticsearch.result.{FilterAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -164,10 +164,12 @@ object HttpExecutorSpec extends IntegrationSpec {
                              firstSearchIndex,
                              secondDocumentId,
                              secondDocument.copy(stringField = "test1", intField = 7)
-                           )
+                           ).refreshTrue
                        )
+                  query = term(TestDocument.stringField, "test")
+
                   aggregation =
-                    filterAggregation(name = "aggregation", field = "test").withSubAgg(
+                    filterAggregation(name = "aggregation", query).withSubAgg(
                       maxAggregation("subAggregation", TestDocument.intField)
                     )
 

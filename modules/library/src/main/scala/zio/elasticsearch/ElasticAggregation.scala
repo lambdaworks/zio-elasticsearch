@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.aggregation._
+import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script
 
 object ElasticAggregation {
@@ -114,34 +115,12 @@ object ElasticAggregation {
     Cardinality(name = name, field = field, missing = None)
 
   // Scala doc
-  /**
-   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param field
-   *   the type-safe field for which max aggregation will be executed
-   * @tparam A
-   *   expected number type
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
-   */
-  final def filterAggregation(name: String, field: Field[_, String]): FilterAggregation =
-    Filter(name = name, field = field.toString, subAggregations = Chunk.empty)
-
-  // Scala doc
-  /**
-   * Constructs an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param field
-   *   the field for which max aggregation will be executed
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
-   */
-  final def filterAggregation(name: String, field: String): FilterAggregation =
-    Filter(name = name, field = field, subAggregations = Chunk.empty)
+  final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation = {
+    Filter(name = name, query = query, subAggregations = Chunk.empty)
+  }
+//  // Scala doc
+//  final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
+//    Filter(name = name, query = query, subAggregations = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified

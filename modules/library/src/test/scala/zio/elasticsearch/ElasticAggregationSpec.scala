@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
+import zio.elasticsearch.ElasticQuery.term
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
@@ -151,16 +152,17 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0))))
         },
         test("filter") {
-          val aggregation      = filterAggregation("aggregation", "testField")
-          val aggregationTs    = filterAggregation("aggregation", TestSubDocument.stringField)
-          val aggregationTsRaw = filterAggregation("aggregation", TestSubDocument.stringField.raw)
+          val query              = term(TestDocument.stringField, "test")
+          val aggregation      = filterAggregation("aggregation", query)
+          val aggregationTs    = filterAggregation("aggregation", query)
+          val aggregationTsRaw = filterAggregation("aggregation", query)
 
           assert(aggregation)(
             equalTo(
               Filter(
                 name = "aggregation",
-                field = "testField",
-                subAggregations = Chunk.empty
+                subAggregations = Chunk.empty,
+                query = query
               )
             )
           ) &&
@@ -168,8 +170,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               Filter(
                 name = "aggregation",
-                field = "stringField",
-                subAggregations = Chunk.empty
+                subAggregations = Chunk.empty,
+                query = query
               )
             )
           ) &&
@@ -177,8 +179,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               Filter(
                 name = "aggregation",
-                field = "stringField.raw",
-                subAggregations = Chunk.empty
+                subAggregations = Chunk.empty,
+                query = query
               )
             )
           )
@@ -858,9 +860,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissingAndSigma.toJson)(equalTo(expectedWithMissingAndSigma.toJson))
         },
         test("filter") {
-          val aggregation   = filterAggregation("aggregation", "testField")
-          val aggregationTs = filterAggregation("aggregation", TestDocument.stringField)
-          val aggregationWithSubAggregation = filterAggregation("aggregation", TestDocument.stringField).withSubAgg(
+          val query              = term(TestDocument.stringField, "test")
+          val aggregation   = filterAggregation("aggregation", query)
+          val aggregationTs = filterAggregation("aggregation", query)
+          val aggregationWithSubAggregation = filterAggregation("aggregation", query).withSubAgg(
             minAggregation("subAggregation", TestDocument.intField)
           )
 
@@ -870,7 +873,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "filter": {
               |      "term": {
-              |         "type" : "testField"
+              |        "stringField": {
+              |          "value": "test"
+              |         }
               |       }
               |    }
               |  }
@@ -883,7 +888,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "filter": {
               |      "term": {
-              |         "type" : "stringField"
+              |        "stringField": {
+              |          "value": "test"
+              |         }
               |       }
               |    }
               |  }
@@ -896,7 +903,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "filter": {
               |      "term": {
-              |         "type" : "stringField"
+              |        "stringField": {
+              |          "value": "test"
+              |         }
               |       }
               |    },
               |     "aggs": {

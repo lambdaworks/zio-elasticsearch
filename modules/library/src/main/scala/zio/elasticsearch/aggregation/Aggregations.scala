@@ -20,6 +20,7 @@ import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.options._
+import zio.elasticsearch.query.{ElasticQuery, TermQuery}
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
@@ -190,7 +191,7 @@ sealed trait FilterAggregation extends SingleElasticAggregation with WithSubAgg[
 
 private[elasticsearch] final case class Filter(
   name: String,
-  field: String,
+  query: ElasticQuery[_],
   subAggregations: Chunk[SingleElasticAggregation]
 ) extends FilterAggregation { self =>
 
@@ -200,13 +201,15 @@ private[elasticsearch] final case class Filter(
   def withSubAgg(aggregation: SingleElasticAggregation): FilterAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
 
-  val subAggsJson: Obj =
-    if (self.subAggregations.nonEmpty)
-      Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
-    else
-      Obj()
-  private[elasticsearch] def toJson: Json =
-    Obj(name -> (Obj("filter" -> Obj("term" -> Obj("type" -> self.field.toJson))) merge subAggsJson))
+  private[elasticsearch] def toJson: Json = {
+    val subAggsJson: Obj =
+      if (self.subAggregations.nonEmpty)
+        Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
+      else
+        Obj()
+
+    Obj(name -> (Obj("filter" -> query.toJson(fieldPath = None)) merge subAggsJson))
+  }
 }
 
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg

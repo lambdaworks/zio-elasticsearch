@@ -100,11 +100,6 @@ final case class WeightedAvgAggregationResult private[elasticsearch] (value: Dou
 
 final case class FilterAggregationResult private[elasticsearch] (
   docCount: Int,
-  buckets: Chunk[FilterAggregationBucketResult]
-) extends AggregationResult
-
-final case class FilterAggregationBucketResult private[elasticsearch] (
-  docCount: Int,
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
