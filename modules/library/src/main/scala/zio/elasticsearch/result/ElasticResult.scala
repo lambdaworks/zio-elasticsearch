@@ -33,7 +33,7 @@ private[elasticsearch] sealed trait ResultWithAggregation {
       .map {
         case Some(aggRes) =>
           Try(aggRes.asInstanceOf[A]) match {
-            case Failure(_) => Left(DecodingException(s"Aggregation with name $name was not of type you provided."))
+            case Failure(_)   => Left(DecodingException(s"Aggregation with name $name was not of type you provided."))
             case Success(agg) => Right(Some(agg))
           }
         case None => Right(None)
