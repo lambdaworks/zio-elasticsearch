@@ -211,6 +211,16 @@ private[elasticsearch] object FilterAggregationResponse {
               Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
             case str if str.contains("percentiles#") =>
               Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
+            case str if str.contains("stats#") =>
+              Some(
+                field -> StatsAggregationResponse(
+                  count = objFields("count").unsafeAs[Int],
+                  min = objFields("min").unsafeAs[Double],
+                  max = objFields("max").unsafeAs[Double],
+                  avg = objFields("avg").unsafeAs[Double],
+                  sum = objFields("sum").unsafeAs[Double]
+                )
+              )
             case str if str.contains("sum#") =>
               Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
@@ -223,7 +233,10 @@ private[elasticsearch] object FilterAggregationResponse {
                     .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
                 )
               )
+            case str if str.contains("value_count#") =>
+              Some(field -> ValueCountAggregationResponse(value = objFields("value").unsafeAs[Int]))
           }
+
       }
     }.toMap
 
@@ -245,10 +258,14 @@ private[elasticsearch] object FilterAggregationResponse {
             (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
           case str if str.contains("percentiles#") =>
             (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
+          case str if str.contains("stats#") =>
+            (field.split("#")(1), data.asInstanceOf[StatsAggregationResponse])
           case str if str.contains("sum#") =>
             (field.split("#")(1), data.asInstanceOf[SumAggregationResponse])
           case str if str.contains("terms#") =>
             (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
+          case str if str.contains("value_count#") =>
+            (field.split("#")(1), data.asInstanceOf[ValueCountAggregationResponse])
         }
     }
 
@@ -409,7 +426,7 @@ private[elasticsearch] object TermsAggregationBucket {
           case str if str.contains("extended_stats#") =>
             (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
           case str if str.contains("filter#") =>
-            (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
+            (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
           case str if str.contains("max#") =>
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
           case str if str.contains("min#") =>
