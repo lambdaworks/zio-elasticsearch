@@ -275,6 +275,40 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("aggregate using stats aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 7))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 6))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, thirdDocumentId, thirdDocument.copy(intField = 10))
+                           .refreshTrue
+                       )
+                  aggregation = statsAggregation(name = "aggregation", field = TestDocument.intField)
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asStatsAggregation("aggregation")
+                } yield assert(aggsRes.head.count)(equalTo(3)) &&
+                  assert(aggsRes.head.min)(equalTo(6.0)) &&
+                  assert(aggsRes.head.max)(equalTo(10.0)) &&
+                  assert(aggsRes.head.avg)(equalTo(7.666666666666667)) &&
+                  assert(aggsRes.head.sum)(equalTo(23.0))
+
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using sum aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

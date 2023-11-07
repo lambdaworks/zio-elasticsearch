@@ -239,6 +239,35 @@ object ElasticAggregation {
     Percentiles(name = name, field = field, percents = Chunk.empty, missing = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   the name of the aggregation
+   * @param field
+   *   the type-safe field for which stats aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.StatsAggregation]] that represents stats aggregation to be
+   *   performed.
+   */
+  final def statsAggregation[A: Numeric](name: String, field: Field[_, A]): StatsAggregation =
+    Stats(name = name, field = field.toString, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   the name of the aggregation
+   * @param field
+   *   the field for which stats aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.StatsAggregation]] that represents stats aggregation to be
+   *   performed.
+   */
+  final def statsAggregation(name: String, field: String): StatsAggregation =
+    Stats(name = name, field = field, missing = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
    *
    * @param name

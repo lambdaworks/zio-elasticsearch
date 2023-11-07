@@ -39,6 +39,8 @@ object AggregationResponse {
         MissingAggregationResult(value)
       case PercentilesAggregationResponse(values) =>
         PercentilesAggregationResult(values)
+      case StatsAggregationResponse(count, min, max, avg, sum) =>
+        StatsAggregationResult(count, min, max, avg, sum)
       case SumAggregationResponse(value) =>
         SumAggregationResult(value)
       case TermsAggregationResponse(docErrorCount, sumOtherDocCount, buckets) =>
@@ -100,6 +102,18 @@ private[elasticsearch] object PercentilesAggregationResponse {
     DeriveJsonDecoder.gen[PercentilesAggregationResponse]
 }
 
+private[elasticsearch] final case class StatsAggregationResponse(
+  count: Int,
+  min: Double,
+  max: Double,
+  avg: Double,
+  sum: Double
+) extends AggregationResponse
+
+private[elasticsearch] object StatsAggregationResponse {
+  implicit val decoder: JsonDecoder[StatsAggregationResponse] = DeriveJsonDecoder.gen[StatsAggregationResponse]
+}
+
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
 
 private[elasticsearch] object SumAggregationResponse {
@@ -152,6 +166,16 @@ private[elasticsearch] object TermsAggregationBucket {
               Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
             case str if str.contains("percentiles#") =>
               Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
+            case str if str.contains("stats#") =>
+              Some(
+                field -> StatsAggregationResponse(
+                  count = objFields("count").unsafeAs[Int],
+                  min = objFields("min").unsafeAs[Double],
+                  max = objFields("max").unsafeAs[Double],
+                  avg = objFields("avg").unsafeAs[Double],
+                  sum = objFields("sum").unsafeAs[Double]
+                )
+              )
             case str if str.contains("sum#") =>
               Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
@@ -187,6 +211,8 @@ private[elasticsearch] object TermsAggregationBucket {
             (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
           case str if str.contains("percentiles#") =>
             (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
+          case str if str.contains("stats#") =>
+            (field.split("#")(1), data.asInstanceOf[StatsAggregationResponse])
           case str if str.contains("sum#") =>
             (field.split("#")(1), data.asInstanceOf[SumAggregationResponse])
           case str if str.contains("terms#") =>

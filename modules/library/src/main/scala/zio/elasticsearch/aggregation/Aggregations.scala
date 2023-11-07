@@ -258,6 +258,24 @@ private[elasticsearch] final case class Percentiles(
   }
 }
 
+sealed trait StatsAggregation extends SingleElasticAggregation with HasMissing[StatsAggregation] with WithAgg
+
+private[elasticsearch] final case class Stats(name: String, field: String, missing: Option[Double])
+    extends StatsAggregation { self =>
+
+  def missing(value: Double): StatsAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(name -> Obj("stats" -> (Obj("field" -> field.toJson) merge missingJson)))
+  }
+}
+
 sealed trait SumAggregation extends SingleElasticAggregation with HasMissing[SumAggregation] with WithAgg
 
 private[elasticsearch] final case class Sum(name: String, field: String, missing: Option[Double])

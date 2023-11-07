@@ -35,6 +35,14 @@ final case class MissingAggregationResult private[elasticsearch] (docCount: Int)
 final case class PercentilesAggregationResult private[elasticsearch] (values: Map[String, Double])
     extends AggregationResult
 
+final case class StatsAggregationResult private[elasticsearch] (
+  count: Int,
+  min: Double,
+  max: Double,
+  avg: Double,
+  sum: Double
+) extends AggregationResult
+
 final case class SumAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class TermsAggregationResult private[elasticsearch] (
