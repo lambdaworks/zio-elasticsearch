@@ -52,8 +52,8 @@ lazy val library =
         "dev.zio"                       %% "zio-schema"      % "0.4.15",
         "dev.zio"                       %% "zio-schema-json" % "0.4.15",
         "org.apache.commons"             % "commons-lang3"   % "3.13.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.18" % Test,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.18" % Test
+        "dev.zio"                       %% "zio-test"        % "2.0.19" % Test,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.0.19" % Test
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
@@ -77,7 +77,7 @@ lazy val example =
       crossScalaVersions := List(Scala213),
       publish / skip     := true,
       libraryDependencies ++= List(
-        "dev.zio" %% "zio"                 % "2.0.18",
+        "dev.zio" %% "zio"                 % "2.0.19",
         "dev.zio" %% "zio-config"          % "3.0.7",
         "dev.zio" %% "zio-config-magnolia" % "3.0.7",
         "dev.zio" %% "zio-config-typesafe" % "3.0.7",
