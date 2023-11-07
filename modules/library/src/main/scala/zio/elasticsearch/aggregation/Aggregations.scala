@@ -20,7 +20,7 @@ import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.aggregation.options._
-import zio.elasticsearch.query.{ElasticQuery, TermQuery}
+import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json

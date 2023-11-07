@@ -147,15 +147,29 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("aggregate using filter aggregation") {
-            val expectedResponse = ("aggregation", MaxAggregationResult(value = 5.0))
-            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
-              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+            val expectedResponse = (
+              "aggregation",
+              FilterAggregationResult(
+                docCount = 2,
+                subAggregations = Map(
+                  "subAggregation" -> MaxAggregationResult(value = 5.0)
+                )
+              )
+            )
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
+                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated = firstDocument.copy(stringField = "test", intField = 7)
+                  secondDocumentUpdated =
+                    secondDocument.copy(stringField = "filterAggregation", intField = 3)
+                  thirdDocumentUpdated =
+                    thirdDocument.copy(stringField = "filterAggregation", intField = 5)
                   _ <- Executor.execute(
                          ElasticRequest.upsert[TestDocument](
                            firstSearchIndex,
                            firstDocumentId,
-                           firstDocument.copy(stringField = "test", intField = 5)
+                           firstDocumentUpdated
                          )
                        )
                   _ <- Executor.execute(
@@ -163,13 +177,22 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](
                              firstSearchIndex,
                              secondDocumentId,
-                             secondDocument.copy(stringField = "test1", intField = 7)
-                           ).refreshTrue
+                             secondDocumentUpdated
+                           )
                        )
-                  query = term(TestDocument.stringField, "test")
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](
+                             firstSearchIndex,
+                             thirdDocumentId,
+                             thirdDocumentUpdated
+                           )
+                           .refreshTrue
+                       )
+                  query = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
 
                   aggregation =
-                    filterAggregation(name = "aggregation", query).withSubAgg(
+                    filterAggregation(name = "aggregation", query = query).withSubAgg(
                       maxAggregation("subAggregation", TestDocument.intField)
                     )
 

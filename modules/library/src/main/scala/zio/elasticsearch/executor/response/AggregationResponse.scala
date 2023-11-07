@@ -71,9 +71,11 @@ object AggregationResponse {
       case FilterAggregationResponse(docCount, subAggregations) =>
         FilterAggregationResult(
           docCount = docCount,
-          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
-            (key, toResult(response))
-          })
+          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(a =>
+            a.map { case (key, response) =>
+              (key, toResult(response))
+            }
+          )
         )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
@@ -149,33 +151,6 @@ private[elasticsearch] object ExtendedStatsAggregationResponse {
     DeriveJsonDecoder.gen[ExtendedStatsAggregationResponse]
 }
 
-private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
-
-private[elasticsearch] object MaxAggregationResponse {
-  implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
-}
-
-private[elasticsearch] final case class MinAggregationResponse(value: Double) extends AggregationResponse
-
-private[elasticsearch] object MinAggregationResponse {
-  implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
-}
-
-private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Int)
-    extends AggregationResponse
-
-private[elasticsearch] object MissingAggregationResponse {
-  implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
-}
-
-private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Double])
-    extends AggregationResponse
-
-private[elasticsearch] object PercentilesAggregationResponse {
-  implicit val decoder: JsonDecoder[PercentilesAggregationResponse] =
-    DeriveJsonDecoder.gen[PercentilesAggregationResponse]
-}
-
 private[elasticsearch] final case class StatsAggregationResponse(
   count: Int,
   min: Double,
@@ -205,14 +180,6 @@ private[elasticsearch] object StdDeviationBoundsResponse {
   implicit val decoder: JsonDecoder[StdDeviationBoundsResponse] =
     DeriveJsonDecoder.gen[StdDeviationBoundsResponse]
 }
-
-private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
-
-private[elasticsearch] object SumAggregationResponse {
-  implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
-}
-
-private[elasticsearch] sealed trait AggregationBucket
 
 private[elasticsearch] final case class FilterAggregationResponse(
   @jsonField("doc_count")
@@ -269,7 +236,7 @@ private[elasticsearch] object FilterAggregationResponse {
           case str if str.contains("cardinality#") =>
             (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
           case str if str.contains("filter#") =>
-            (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
+            (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
           case str if str.contains("max#") =>
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
           case str if str.contains("min#") =>
@@ -296,6 +263,42 @@ private[elasticsearch] object FilterAggregationResponse {
   }
 
 }
+
+private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object MaxAggregationResponse {
+  implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
+}
+
+private[elasticsearch] final case class MinAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object MinAggregationResponse {
+  implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
+}
+
+private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Int)
+    extends AggregationResponse
+
+private[elasticsearch] object MissingAggregationResponse {
+  implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
+}
+
+private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Double])
+    extends AggregationResponse
+
+private[elasticsearch] object PercentilesAggregationResponse {
+  implicit val decoder: JsonDecoder[PercentilesAggregationResponse] =
+    DeriveJsonDecoder.gen[PercentilesAggregationResponse]
+}
+
+private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object SumAggregationResponse {
+  implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
+
+}
+
+private[elasticsearch] sealed trait AggregationBucket
 
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
@@ -355,8 +358,7 @@ private[elasticsearch] object TermsAggregationBucket {
                 )
               )
             case str if str.contains("filter#") =>
-              Some(field -> "")
-//              Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationBucket.decoder))
+              Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
             case str if str.contains("max#") =>
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("min#") =>

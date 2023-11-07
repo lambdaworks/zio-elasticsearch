@@ -49,6 +49,7 @@ module.exports = {
                     'overview/aggregations/elastic_aggregation_bucket_sort',
                     'overview/aggregations/elastic_aggregation_cardinality',
                     'overview/aggregations/elastic_aggregation_extended_stats',
+                    'overview/aggregations/elastic_aggregation_filter',
                     'overview/aggregations/elastic_aggregation_max',
                     'overview/aggregations/elastic_aggregation_min',
                     'overview/aggregations/elastic_aggregation_missing',

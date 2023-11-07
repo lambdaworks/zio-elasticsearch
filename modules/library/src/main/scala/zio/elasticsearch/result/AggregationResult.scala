@@ -18,8 +18,6 @@ package zio.elasticsearch.result
 
 import zio.Chunk
 
-import scala.util.{Failure, Success, Try}
-
 sealed trait AggregationResult
 
 final case class AvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
@@ -41,6 +39,26 @@ final case class ExtendedStatsAggregationResult private[elasticsearch] (
   stdDeviationSampling: Double,
   stdDeviationBoundsResult: StdDeviationBoundsResult
 ) extends AggregationResult
+
+final case class FilterAggregationResult private[elasticsearch] (
+  docCount: Int,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationResult {
+
+  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+    subAggregations.get(aggName) match {
+      case Some(aggRes) =>
+        aggRes match {
+          case agg: A =>
+            Right(Some(agg))
+          case _ =>
+            Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+        }
+      case None =>
+        Right(None)
+    }
+
+}
 
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
@@ -98,20 +116,3 @@ final case class ValueCountAggregationResult private[elasticsearch] (value: Int)
 
 final case class WeightedAvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
-final case class FilterAggregationResult private[elasticsearch] (
-  docCount: Int,
-  subAggregations: Map[String, AggregationResult]
-) extends AggregationResult {
-
-  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
-    subAggregations.get(aggName) match {
-      case Some(aggRes) =>
-        Try(aggRes.asInstanceOf[A]) match {
-          case Failure(_)   => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
-          case Success(agg) => Right(Some(agg))
-        }
-      case None =>
-        Right(None)
-    }
-
-}
