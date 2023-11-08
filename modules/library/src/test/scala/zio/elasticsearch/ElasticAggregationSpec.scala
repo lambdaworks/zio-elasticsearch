@@ -448,6 +448,88 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation)(equalTo(ValueCount(name = "aggregation", field = "testField"))) &&
           assert(aggregationTs)(equalTo(ValueCount(name = "aggregation", field = "stringField"))) &&
           assert(aggregationTsRaw)(equalTo(ValueCount(name = "aggregation", field = "stringField.raw")))
+        },
+        test("weightedAvg") {
+          val aggregation   = weightedAvgAggregation("aggregation", "valueField", "weightField")
+          val aggregationTs = weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField)
+          val aggregationTsRaw =
+            weightedAvgAggregation("aggregation", TestDocument.stringField.raw, TestDocument.intField.raw)
+          val aggregationWithValueMissing =
+            weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).valueMissing(2.0)
+          val aggregationWithWeightMissing =
+            weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).weightMissing(3.0)
+          val aggregationWithBothMissing = weightedAvgAggregation(
+            "aggregation",
+            TestDocument.stringField,
+            TestDocument.intField
+          ).valueMissing(4.0).weightMissing(5.0)
+
+          assert(aggregation)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "valueField",
+                valueMissing = None,
+                weightField = "weightField",
+                weightMissing = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "stringField",
+                valueMissing = None,
+                weightField = "intField",
+                weightMissing = None
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "stringField.raw",
+                valueMissing = None,
+                weightField = "intField.raw",
+                weightMissing = None
+              )
+            )
+          ) &&
+          assert(aggregationWithValueMissing)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "stringField",
+                valueMissing = Some(2.0),
+                weightField = "intField",
+                weightMissing = None
+              )
+            )
+          ) &&
+          assert(aggregationWithWeightMissing)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "stringField",
+                valueMissing = None,
+                weightField = "intField",
+                weightMissing = Some(3.0)
+              )
+            )
+          ) &&
+          assert(aggregationWithBothMissing)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "stringField",
+                valueMissing = Some(4.0),
+                weightField = "intField",
+                weightMissing = Some(5.0)
+              )
+            )
+          )
         }
       ),
       suite("encoding as JSON")(
@@ -1139,6 +1221,109 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
 
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson))
+        },
+        test("weightedAvg") {
+          val aggregation   = weightedAvgAggregation("aggregation", "valueField", "weightField")
+          val aggregationTs = weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.stringField)
+          val aggregationWithValueMissing =
+            weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).valueMissing(2.0)
+          val aggregationWithWeightMissing =
+            weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).weightMissing(3.0)
+          val aggregationWithBothMissing = weightedAvgAggregation(
+            "aggregation",
+            TestDocument.stringField,
+            TestDocument.intField
+          ).valueMissing(4.0).weightMissing(5.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "weighted_avg": {
+              |      "value": {
+              |       "field": "valueField"
+              |      },
+              |      "weight": {
+              |       "field": "weightField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "weighted_avg": {
+              |      "value": {
+              |       "field": "stringField"
+              |      },
+              |      "weight": {
+              |       "field": "stringField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithValueMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "weighted_avg": {
+              |      "value": {
+              |       "field": "stringField",
+              |       "missing": 2.0
+              |      },
+              |      "weight": {
+              |       "field": "intField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithWeightMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "weighted_avg": {
+              |      "value": {
+              |       "field": "stringField"
+              |      },
+              |      "weight": {
+              |       "field": "intField",
+              |       "missing": 3.0
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBothMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "weighted_avg": {
+              |      "value": {
+              |       "field": "stringField",
+              |       "missing": 4.0
+              |      },
+              |      "weight": {
+              |       "field": "intField",
+              |       "missing": 5.0
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithValueMissing.toJson)(equalTo(expectedWithValueMissing.toJson)) &&
+          assert(aggregationWithWeightMissing.toJson)(equalTo(expectedWithWeightMissing.toJson)) &&
+          assert(aggregationWithBothMissing.toJson)(equalTo(expectedWithBothMissing.toJson))
         }
       )
     )

@@ -356,3 +356,65 @@ private[elasticsearch] final case class ValueCount(name: String, field: String) 
   private[elasticsearch] def toJson: Json =
     Obj(name -> Obj("value_count" -> Obj("field" -> field.toJson)))
 }
+
+sealed trait WeightedAvgAggregation extends SingleElasticAggregation with WithAgg {
+
+  /**
+   * Sets the `valueMissing` parameter for the [[zio.elasticsearch.aggregation.WeightedAvgAggregation]].
+   * The`valueMissing` parameter provides a value to use when a document is missing the value field that the aggregation
+   * is running on.
+   *
+   * @param value
+   *   the value to use for missing documents
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] enriched with the `valueMissing`
+   *   parameter.
+   */
+  def valueMissing(value: Double): WeightedAvgAggregation
+
+  /**
+   * Sets the `weightMissing` parameter for the [[zio.elasticsearch.aggregation.WeightedAvgAggregation]].
+   * The`weightMissing` parameter provides a value to use when a document is missing the weight field that the
+   * aggregation is running on.
+   *
+   * @param value
+   *   the value to use for missing documents
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] enriched with the `weightMissing`
+   *   parameter.
+   */
+  def weightMissing(value: Double): WeightedAvgAggregation
+}
+
+private[elasticsearch] final case class WeightedAvg(
+  name: String,
+  valueField: String,
+  valueMissing: Option[Double],
+  weightField: String,
+  weightMissing: Option[Double]
+) extends WeightedAvgAggregation { self =>
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  def valueMissing(value: Double): WeightedAvgAggregation =
+    self.copy(valueMissing = Some(value))
+
+  def weightMissing(value: Double): WeightedAvgAggregation =
+    self.copy(weightMissing = Some(value))
+
+  private[elasticsearch] def toJson: Json = {
+
+    val valueMissingJson: Json  = valueMissing.fold(Obj())(m => Obj("missing" -> m.toJson))
+    val weightMissingJson: Json = weightMissing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(
+      name -> Obj(
+        "weighted_avg" -> (Obj("value" -> (Obj("field" -> valueField.toJson) merge valueMissingJson)) merge (Obj(
+          "weight" -> (Obj("field" -> weightField.toJson) merge weightMissingJson)
+        )))
+      )
+    )
+
+  }
+}

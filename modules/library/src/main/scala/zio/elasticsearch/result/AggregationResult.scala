@@ -70,3 +70,5 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
 }
 
 final case class ValueCountAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
+
+final case class WeightedAvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
