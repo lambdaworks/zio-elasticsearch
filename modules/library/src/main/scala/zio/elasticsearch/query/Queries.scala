@@ -1073,33 +1073,7 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   }
 }
 
-sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasBoost[TermsSetQuery[S]] {
-
-  /**
-   * Sets the `minimumShouldMatchField` parameter for the [[zio.elasticsearch.query.TermsSetQuery]]. The
-   * `minimumShouldMatchField` represents the number of matching terms required to return a document.
-   *
-   * @param value
-   *   the text value to represent the 'minimumShouldMatchField' field
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.TermsSetQuery]] enriched with the `minimumShouldMatchField`
-   *   parameter.
-   */
-  def minimumShouldMatchField(value: String): TermsSetQuery[S]
-
-  /**
-   * Sets the `minimumShouldMatchScript` parameter for the [[zio.elasticsearch.query.TermsSetQuery]]. The
-   * `minimumShouldMatchScript` is a custom script containing the number of matching terms required to return a
-   * document.
-   *
-   * @param value
-   *   the script to represent the 'minimumShouldMatchScript' field
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.TermsSetQuery]] enriched with the `minimumShouldMatchScript`
-   *   parameter.
-   */
-  def minimumShouldMatchScript(value: zio.elasticsearch.script.Script): TermsSetQuery[S]
-}
+sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasBoost[TermsSetQuery[S]]
 
 private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
   field: String,
@@ -1111,12 +1085,6 @@ private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
 
   def boost(value: Double): TermsSetQuery[S] =
     self.copy(boost = Some(value))
-
-  def minimumShouldMatchField(value: String): TermsSetQuery[S] =
-    self.copy(minimumShouldMatchField = Some(value))
-
-  def minimumShouldMatchScript(value: zio.elasticsearch.script.Script): TermsSetQuery[S] =
-    self.copy(minimumShouldMatchScript = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termsSetFields =
