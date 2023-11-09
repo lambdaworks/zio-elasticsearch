@@ -931,10 +931,10 @@ object ElasticQuery {
    *   the type-safe field for which query is specified for
    * @param values
    *   a list of terms that should be find in the provided field
-   * @tparam S
-   *   document for which field query is executed
    * @tparam A
    *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @tparam S
+   *   document for which field query is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.TermsQuery]] that represents the terms query to be performed.
    */
@@ -970,7 +970,7 @@ object ElasticQuery {
    * @param terms
    *   a list of terms that should be find in the provided field
    * @param minimumShouldMatchField
-   *   the number of matching terms required to return a document
+   *   the type-safe field representing the number of matching terms required to return a document
    * @tparam A
    *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
    * @tparam S
@@ -980,13 +980,13 @@ object ElasticQuery {
    */
   final def termsSet[S, A: ElasticPrimitive](
     field: Field[S, A],
-    minimumShouldMatchField: String,
+    minimumShouldMatchField: Field[S, _],
     terms: A*
   ): TermsSetQuery[S] =
     TermsSet(
       field = field.toString,
       terms = Chunk.fromIterable(terms),
-      minimumShouldMatchField = Some(minimumShouldMatchField),
+      minimumShouldMatchField = Some(minimumShouldMatchField.toString),
       minimumShouldMatchScript = None,
       boost = None
     )
@@ -1042,7 +1042,7 @@ object ElasticQuery {
    */
   final def termsSetScript[S, A: ElasticPrimitive](
     field: Field[S, A],
-    minimumShouldMatchScript: zio.elasticsearch.script.Script,
+    minimumShouldMatchScript: Script,
     terms: A*
   ): TermsSetQuery[S] =
     TermsSet(
@@ -1072,7 +1072,7 @@ object ElasticQuery {
    */
   final def termsSetScript[A: ElasticPrimitive](
     field: String,
-    minimumShouldMatchScript: zio.elasticsearch.script.Script,
+    minimumShouldMatchScript: Script,
     terms: A*
   ): TermsSetQuery[Any] =
     TermsSet(

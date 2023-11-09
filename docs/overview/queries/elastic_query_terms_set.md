@@ -3,7 +3,7 @@ id: elastic_query_terms_set
 title: "Terms Set Query"
 ---
 
-The `TermsSet` query returns documents that contain the minimum amount of exact terms in a provided field. The terms set query is the same as [[zio.elasticsearch.query.TermsQuery]], except you can define the number of matching terms required to return a document.
+The `TermsSet` query returns documents that contain the minimum amount of exact terms in a provided field. The Terms set query is the same as [[zio.elasticsearch.query.TermsQuery]], except you can define the number of matching terms required to return a document.
 
 In order to use the `TermsSet` query import the following:
 ```scala
@@ -18,16 +18,20 @@ val query: TermsSetQuery = termsSet(field = "stringField", minimumShouldMatchFie
 
 You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `TermsSet` query with defined `minimumShouldMatchField` using the `termsSet` method this way:
 ```scala
-val query: TermsSetQuery = termsSet(field = Document.name, minimumShouldMatchField = "intField", terms = 1, 2, 3)
+val query: TermsSetQuery = termsSet(field = Document.name, minimumShouldMatchField = Document.field, terms = "a", "b", "c")
 ```
 
 You can create a `TermsSet` query with defined `minimumShouldMatchScript` using the `termsSetScript` method this way:
 ```scala
-val query: TermsSetQuery = termsSetScript(field = "stringField", minimumShouldMatchScript = Script("doc['intField'].value"), terms = 1, 2, 3)
+import zio.elasticsearch.script.Script
+
+val query: TermsSetQuery = termsSetScript(field = "stringField", minimumShouldMatchScript = Script("doc['intField'].value"), terms = "a", "b", "c")
 ```
 
 You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `TermsSet` query with defined `minimumShouldMatchScript` using the `termsSetScript` method this way:
 ```scala
+import zio.elasticsearch.script.Script
+
 val query: TermsSetQuery = termsSetScript(field = Document.name, minimumShouldMatchScript = Script("doc['intField'].value"), terms = "a", "b", "c")
 ```
 
