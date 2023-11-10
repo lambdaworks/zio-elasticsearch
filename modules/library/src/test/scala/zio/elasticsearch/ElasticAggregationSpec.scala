@@ -458,7 +458,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).valueMissing(2.0)
           val aggregationWithWeightMissing =
             weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).weightMissing(3.0)
-          val aggregationWithBothMissing = weightedAvgAggregation(
+          val aggregationWithValueAndWeightMissing = weightedAvgAggregation(
             "aggregation",
             TestDocument.stringField,
             TestDocument.intField
@@ -519,7 +519,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               )
             )
           ) &&
-          assert(aggregationWithBothMissing)(
+          assert(aggregationWithValueAndWeightMissing)(
             equalTo(
               WeightedAvg(
                 name = "aggregation",
@@ -1229,7 +1229,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).valueMissing(2.0)
           val aggregationWithWeightMissing =
             weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).weightMissing(3.0)
-          val aggregationWithBothMissing = weightedAvgAggregation(
+          val aggregationWithValueAndWeightMissing = weightedAvgAggregation(
             "aggregation",
             TestDocument.stringField,
             TestDocument.intField
@@ -1301,7 +1301,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedWithBothMissing =
+          val expectedWithValueAndWeightMissing =
             """
               |{
               |  "aggregation": {
@@ -1323,7 +1323,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithValueMissing.toJson)(equalTo(expectedWithValueMissing.toJson)) &&
           assert(aggregationWithWeightMissing.toJson)(equalTo(expectedWithWeightMissing.toJson)) &&
-          assert(aggregationWithBothMissing.toJson)(equalTo(expectedWithBothMissing.toJson))
+          assert(aggregationWithValueAndWeightMissing.toJson)(equalTo(expectedWithValueAndWeightMissing.toJson))
         }
       )
     )

@@ -389,13 +389,10 @@ sealed trait WeightedAvgAggregation extends SingleElasticAggregation with WithAg
 private[elasticsearch] final case class WeightedAvg(
   name: String,
   valueField: String,
-  valueMissing: Option[Double],
   weightField: String,
+  valueMissing: Option[Double],
   weightMissing: Option[Double]
 ) extends WeightedAvgAggregation { self =>
-
-  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
-    multipleAggregations.aggregations(self, agg)
 
   def valueMissing(value: Double): WeightedAvgAggregation =
     self.copy(valueMissing = Some(value))
@@ -403,8 +400,10 @@ private[elasticsearch] final case class WeightedAvg(
   def weightMissing(value: Double): WeightedAvgAggregation =
     self.copy(weightMissing = Some(value))
 
-  private[elasticsearch] def toJson: Json = {
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
 
+  private[elasticsearch] def toJson: Json = {
     val valueMissingJson: Json  = valueMissing.fold(Obj())(m => Obj("missing" -> m.toJson))
     val weightMissingJson: Json = weightMissing.fold(Obj())(m => Obj("missing" -> m.toJson))
 
@@ -415,6 +414,5 @@ private[elasticsearch] final case class WeightedAvg(
         )))
       )
     )
-
   }
 }

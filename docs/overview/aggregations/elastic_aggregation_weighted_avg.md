@@ -23,22 +23,22 @@ val aggregation: WeightedAvgAggregation = weightedAvgAggregation(name = "weighte
 
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
-val multipleAggregations: MultipleAggregations = weightedAvgAggregation(name = "weightedAvgAggregation", valueField = Document.intField, weightField = Document.doubleField).withAgg(weightedAvgAggregation(name = "weightedAvgAggregation", valueField = Document.doubleField, weightField = Document.intField))
+val multipleAggregations: MultipleAggregations = weightedAvgAggregation(name = "weightedAvgAggregation", valueField = Document.intField, weightField = Document.doubleField).withAgg(weightedAvgAggregation(name = "weightedAvgAggregation2", valueField = Document.doubleField, weightField = Document.intField))
 ```
 
 If you want to change the `valueMissing`, you can use `valueMissing` method:
 ```scala
-val aggregationWithMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).valueMissing(10.0)
+val aggregationWithValueMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).valueMissing(10.0)
 ```
 
 If you want to change the `weightMissing`, you can use `weightMissing` method:
 ```scala
-val aggregationWithMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).weightMissing(5.0)
+val aggregationWithWeightMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).weightMissing(5.0)
 ```
 
 If you want to change the `weightMissing` and `valueMissing`, you can use `weightMissing` and `valueMissing` methods:
 ```scala
-val aggregationWithMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).weightMissing(10.0).valueMissing(5.0)
+val aggregationWithValueAndWeightMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).weightMissing(10.0).valueMissing(5.0)
 ```
 
 You can find more information about `Weighted Avg` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-weight-avg-aggregation.html).

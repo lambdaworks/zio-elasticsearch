@@ -72,7 +72,9 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
               res.fields.map { case (field, data) =>
                 ZValidation.fromEither(
                   (field: @unchecked) match {
-                    case str if str.contains("avg#") && !str.contains("weighted_avg#") =>
+                    case str if str.contains("weighted_avg#") =>
+                      WeightedAvgAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("avg#") =>
                       AvgAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("max#") =>
                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
@@ -92,8 +94,6 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       TermsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("value_count#") =>
                       ValueCountAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("weighted_avg#") =>
-                      WeightedAvgAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                   }
                 )
               }

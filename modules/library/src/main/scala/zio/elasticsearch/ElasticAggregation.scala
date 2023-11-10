@@ -360,9 +360,9 @@ object ElasticAggregation {
    * @param name
    *   aggregation name
    * @param valueField
-   *   the type-safe field for value for which weighted avg aggregation will be executed
+   *   the type-safe field that represents value for which weighted avg aggregation will be executed
    * @param weightField
-   *   the type-safe field for weight for which weighted avg aggregation will be executed
+   *   the type-safe field that represents weight for which weighted avg aggregation will be executed
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] that represents weighted avg aggregation
    *   to be performed.
@@ -375,8 +375,8 @@ object ElasticAggregation {
     WeightedAvg(
       name = name,
       valueField = valueField.toString,
-      valueMissing = None,
       weightField = weightField.toString,
+      valueMissing = None,
       weightMissing = None
     )
 
@@ -386,9 +386,9 @@ object ElasticAggregation {
    * @param name
    *   aggregation name
    * @param valueField
-   *   the field for value for which weighted avg aggregation will be executed
+   *   the field that represents value for which weighted avg aggregation will be executed
    * @param weightField
-   *   the field for weight for which weighted avg aggregation will be executed
+   *   the field that represents weight for which weighted avg aggregation will be executed
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] that represents weighted avg aggregation
    *   to be performed.
@@ -397,8 +397,8 @@ object ElasticAggregation {
     WeightedAvg(
       name = name,
       valueField = valueField,
-      valueMissing = None,
       weightField = weightField,
+      valueMissing = None,
       weightMissing = None
     )
 
