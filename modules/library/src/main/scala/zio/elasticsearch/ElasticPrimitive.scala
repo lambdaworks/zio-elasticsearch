@@ -39,6 +39,10 @@ object ElasticPrimitive {
     def toJson(value: Double): Json = Num(value)
   }
 
+  implicit object ElasticFloat extends ElasticPrimitive[Float] {
+    def toJson(value: Float): Json = Num(value)
+  }
+
   implicit object ElasticInt extends ElasticPrimitive[Int] {
     def toJson(value: Int): Json = Num(value)
   }

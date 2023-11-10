@@ -416,6 +416,29 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("disjunctionMax") {
+          val query               = disjunctionMax(Chunk(exists("existsField"), ids("1", "2", "3")))
+          val queryWithTieBreaker = disjunctionMax(Chunk(exists("existsField"), ids("1", "2", "3"))).tieBreaker(0.5f)
+
+          assert(query)(
+            equalTo(
+              DisjunctionMax[Any](
+                queries =
+                  Chunk(Exists[Any](field = "existsField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
+                tieBreaker = None
+              )
+            )
+          ) &&
+          assert(queryWithTieBreaker)(
+            equalTo(
+              DisjunctionMax[Any](
+                queries =
+                  Chunk(Exists[Any](field = "existsField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
+                tieBreaker = Some(0.5f)
+              )
+            )
+          )
+        },
         test("exists") {
           val query          = exists("testField")
           val queryTs        = exists(TestDocument.intField)
@@ -2506,6 +2529,39 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
           assert(queryWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+        },
+        test("disjunctionMax") {
+          val query = disjunctionMax(queries = Chunk(exists("existsField"), ids("1", "2", "3")))
+          val queryWithTieBreaker =
+            disjunctionMax(queries = Chunk(exists("existsField"), ids("1", "2", "3"))).tieBreaker(0.5f)
+
+          val expected =
+            """
+              |{
+              |  "dis_max": {
+              |     "queries": [
+              |       { "exists": { "field": "existsField" } },
+              |       { "ids": { "values": ["1", "2", "3"] } }
+              |     ]
+              |   }
+              |}
+              |""".stripMargin
+
+          val expectedWithTieBreaker =
+            """
+              |{
+              |  "dis_max": {
+              |     "queries": [
+              |       { "exists": { "field": "existsField" } },
+              |       { "ids": { "values": ["1", "2", "3"] } }
+              |     ],
+              |     "tie_breaker": 0.5
+              |   }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithTieBreaker.toJson(fieldPath = None))(equalTo(expectedWithTieBreaker.toJson))
         },
         test("exists") {
           val query            = exists("testField")

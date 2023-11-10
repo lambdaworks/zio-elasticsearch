@@ -16,6 +16,7 @@ module.exports = {
                     'overview/elastic_query',
                     'overview/queries/elastic_query_bool',
                     'overview/queries/elastic_query_constant_score',
+                    'overview/queries/elastic_query_disjunction_max',
                     'overview/queries/elastic_query_exists',
                     'overview/queries/elastic_query_function_score',
                     'overview/queries/elastic_query_fuzzy',

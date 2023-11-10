@@ -200,6 +200,71 @@ private[elasticsearch] final case class ConstantScore[S](query: ElasticQuery[S],
     )
 }
 
+sealed trait DisjunctionMaxQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * Adds specified queries to the [[zio.elasticsearch.query.DisjunctionMaxQuery]]. Returned documents must match one or
+   * more of these queries.
+   *
+   * @param allQueries
+   *   the queries to be added
+   * @tparam S1
+   *   the type of the sub-queries, for which an implicit [[zio.schema.Schema]] is required
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.DisjunctionMaxQuery]] with queries added.
+   */
+  def queries[S1 <: S: Schema](allQueries: ElasticQuery[S1]*): DisjunctionMaxQuery[S1]
+
+  /**
+   * Adds specified queries to the [[zio.elasticsearch.query.DisjunctionMaxQuery]]. Returned documents must match one or
+   * more of these queries.
+   *
+   * @param allQueries
+   *   the queries to be added
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.DisjunctionMaxQuery]] with queries added.
+   */
+  def queries(allQueries: ElasticQuery[Any]*): DisjunctionMaxQuery[S]
+
+  /**
+   * Sets the `tieBreaker` parameter for the [[zio.elasticsearch.query.DisjunctionMaxQuery]]. The `tieBreaker` value is
+   * a floating-point factor between 0 and 1.0 that is used to give more weight to documents that match multiple query
+   * clauses. Default is 0 (which means only the highest score counts).
+   *
+   * @param value
+   *   a number to set `tieBreaker` parameter to
+   * @return
+   *   a new instance of the [[zio.elasticsearch.query.DisjunctionMaxQuery]] with the `tieBreaker` value set.
+   */
+  def tieBreaker(value: Float): DisjunctionMaxQuery[S]
+}
+
+private[elasticsearch] final case class DisjunctionMax[S](
+  queries: Chunk[ElasticQuery[S]],
+  tieBreaker: Option[Float]
+) extends DisjunctionMaxQuery[S] { self =>
+
+  def tieBreaker(value: Float): DisjunctionMaxQuery[S] =
+    self.copy(tieBreaker = Some(value))
+
+  def queries[S1 <: S: Schema](allQueries: ElasticQuery[S1]*): DisjunctionMaxQuery[S1] =
+    self.copy(queries = queries ++ allQueries)
+
+  def queries(allQueries: ElasticQuery[Any]*): DisjunctionMaxQuery[S] =
+    self.copy(queries = queries ++ allQueries)
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val disMaxFields =
+      Chunk(
+        Some("queries" -> Arr(queries.map(_.toJson(fieldPath)))),
+        tieBreaker.map("tie_breaker" -> _.toJson)
+      ).collect { case Some(obj) => obj }
+
+    Obj("dis_max" -> Obj(disMaxFields))
+
+  }
+}
+
 sealed trait ExistsQuery[S] extends ElasticQuery[S] with HasBoost[ExistsQuery[S]]
 
 private[elasticsearch] final case class Exists[S](field: String, boost: Option[Double]) extends ExistsQuery[S] { self =>
