@@ -37,8 +37,8 @@ val query: TermsSetQuery = termsSetScript(field = Document.name, minimumShouldMa
 
 If you want to change the `boost`, you can use `boost` method:
 ```scala
-val queryWithBoost: TermsSetQuery = termsSet(field = "booleanField", minimumShouldMatchField = "intField", terms = true, false).boost(2.0)
-val queryWithBoost: TermsSetQuery = termsSetScript(field = "booleanField", minimumShouldMatchScript = Script("doc['intField'].value"), terms = true, false).boost(2.0)
+val queryWithBoostAndMinimumShouldMatchField: TermsSetQuery = termsSet(field = "booleanField", minimumShouldMatchField = "intField", terms = true, false).boost(2.0)
+val queryWithBoostAndMinimumShouldMatchScript: TermsSetQuery = termsSetScript(field = "booleanField", minimumShouldMatchScript = Script("doc['intField'].value"), terms = true, false).boost(2.0)
 ```
 
 You can find more information about `TermsSet` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-terms-set-query.html).
