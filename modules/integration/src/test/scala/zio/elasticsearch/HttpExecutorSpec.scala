@@ -496,6 +496,45 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using weighted avg aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](
+                          firstSearchIndex,
+                          firstDocumentId,
+                          firstDocument.copy(doubleField = 5, intField = 2)
+                        )
+                    )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](
+                          firstSearchIndex,
+                          secondDocumentId,
+                          secondDocument.copy(doubleField = 10, intField = 3)
+                        )
+                        .refreshTrue
+                    )
+                  aggregation = weightedAvgAggregation(
+                                  name = "weightedAggregation",
+                                  valueField = TestDocument.doubleField,
+                                  weightField = TestDocument.intField
+                                )
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asWeightedAvgAggregation("weightedAggregation")
+                } yield assert(aggsRes.head.value)(equalTo(8.0))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ),
         suite("search with aggregation")(

@@ -59,6 +59,8 @@ object AggregationResponse {
         )
       case ValueCountAggregationResponse(value) =>
         ValueCountAggregationResult(value)
+      case WeightedAvgAggregationResponse(value) =>
+        WeightedAvgAggregationResult(value)
     }
 }
 
@@ -118,7 +120,6 @@ private[elasticsearch] final case class SumAggregationResponse(value: Double) ex
 
 private[elasticsearch] object SumAggregationResponse {
   implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
-
 }
 
 private[elasticsearch] final case class TermsAggregationResponse(
@@ -154,6 +155,8 @@ private[elasticsearch] object TermsAggregationBucket {
           val objFields = data.unsafeAs[Obj].fields.toMap
 
           (field: @unchecked) match {
+            case str if str.contains("weighted_avg#") =>
+              Some(field -> WeightedAvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("avg#") =>
               Some(field -> AvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("cardinality#") =>
@@ -199,6 +202,8 @@ private[elasticsearch] object TermsAggregationBucket {
     val subAggs = allFields.collect {
       case (field, data) if field != "key" && field != "doc_count" =>
         (field: @unchecked) match {
+          case str if str.contains("weighted_avg#") =>
+            (field.split("#")(1), data.asInstanceOf[WeightedAvgAggregationResponse])
           case str if str.contains("avg#") =>
             (field.split("#")(1), data.asInstanceOf[AvgAggregationResponse])
           case str if str.contains("cardinality#") =>
@@ -238,4 +243,11 @@ private[elasticsearch] final case class ValueCountAggregationResponse(value: Int
 private[elasticsearch] object ValueCountAggregationResponse {
   implicit val decoder: JsonDecoder[ValueCountAggregationResponse] =
     DeriveJsonDecoder.gen[ValueCountAggregationResponse]
+}
+
+private[elasticsearch] final case class WeightedAvgAggregationResponse(value: Double) extends AggregationResponse
+
+private[elasticsearch] object WeightedAvgAggregationResponse {
+  implicit val decoder: JsonDecoder[WeightedAvgAggregationResponse] =
+    DeriveJsonDecoder.gen[WeightedAvgAggregationResponse]
 }

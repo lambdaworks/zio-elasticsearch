@@ -353,4 +353,53 @@ object ElasticAggregation {
   final def valueCountAggregation(name: String, field: String): ValueCountAggregation =
     ValueCount(name = name, field = field)
 
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param valueField
+   *   the type-safe field that represents value for which weighted avg aggregation will be executed
+   * @param weightField
+   *   the type-safe field that represents weight for which weighted avg aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] that represents weighted avg aggregation
+   *   to be performed.
+   */
+  final def weightedAvgAggregation(
+    name: String,
+    valueField: Field[_, Any],
+    weightField: Field[_, Any]
+  ): WeightedAvgAggregation =
+    WeightedAvg(
+      name = name,
+      valueField = valueField.toString,
+      weightField = weightField.toString,
+      valueMissing = None,
+      weightMissing = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param valueField
+   *   the field that represents value for which weighted avg aggregation will be executed
+   * @param weightField
+   *   the field that represents weight for which weighted avg aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] that represents weighted avg aggregation
+   *   to be performed.
+   */
+  final def weightedAvgAggregation(name: String, valueField: String, weightField: String): WeightedAvgAggregation =
+    WeightedAvg(
+      name = name,
+      valueField = valueField,
+      weightField = weightField,
+      valueMissing = None,
+      weightMissing = None
+    )
+
 }
