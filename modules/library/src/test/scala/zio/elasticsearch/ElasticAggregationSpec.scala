@@ -128,6 +128,29 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(Cardinality(name = "aggregation", field = "intField", missing = Some(20)))
           )
         },
+        test("extendedStats") {
+          val aggregation            = extendedStatsAggregation("aggregation", "testField")
+          val aggregationTs          = extendedStatsAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw       = extendedStatsAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing = extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationWithSigma   = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
+          val aggregationWithMissingAndSigma =
+            extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0).sigma(3.0)
+
+          assert(aggregation)(
+            equalTo(ExtendedStats(name = "aggregation", field = "testField", missing = None, sigma = None))
+          ) && assert(aggregationTs)(
+            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = None))
+          ) && assert(aggregationTsRaw)(
+            equalTo(ExtendedStats(name = "aggregation", field = "intField.raw", missing = None, sigma = None))
+          ) && assert(aggregationWithMissing)(
+            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = None))
+          ) && assert(aggregationWithSigma)(
+            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = Some(3.0)))
+          ) && assert(aggregationWithMissingAndSigma)(
+            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0)))
+          )
+        },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")
           val aggregationTs          = maxAggregation("aggregation", TestSubDocument.intField)
@@ -728,6 +751,79 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
+        test("extendedStats") {
+          val aggregation            = extendedStatsAggregation("aggregation", "testField")
+          val aggregationTs          = extendedStatsAggregation("aggregation", TestSubDocument.intField)
+          val aggregationWithMissing = extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationWithSigma   = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
+          val aggregationWithMissingAndSigma =
+            extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0).sigma(3.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "extended_stats": {
+              |      "field": "testField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "extended_stats": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "extended_stats": {
+              |      "field": "intField",
+              |      "missing": 20.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSigma =
+            """
+              |{
+              |  "aggregation": {
+              |    "extended_stats": {
+              |      "field": "intField",
+              |       "sigma": 3.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissingAndSigma =
+            """
+              |{
+              |  "aggregation": {
+              |    "extended_stats": {
+              |      "field": "intField",
+              |       "missing": 20.0,
+              |       "sigma": 3.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
+          assert(aggregationWithSigma.toJson)(equalTo(expectedWithSigma.toJson)) &&
+          assert(aggregationWithMissingAndSigma.toJson)(equalTo(expectedWithMissingAndSigma.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")

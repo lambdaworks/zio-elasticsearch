@@ -114,6 +114,38 @@ object ElasticAggregation {
     Cardinality(name = name, field = field, missing = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which extended stats aggregation will be executed
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] that represents extended stats
+   *   aggregation to be performed.
+   */
+  final def extendedStatsAggregation[A: Numeric](name: String, field: Field[_, A]): ExtendedStatsAggregation =
+    ExtendedStats(name = name, field = field.toString, missing = None, sigma = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which extended stats aggregation will be executed
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] that represents extended stats
+   *   aggregation to be performed.
+   */
+  final def extendedStatsAggregation(name: String, field: String): ExtendedStatsAggregation =
+    ExtendedStats(name = name, field = field, missing = None, sigma = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
    *
    * @param name
@@ -246,6 +278,8 @@ object ElasticAggregation {
    *   the name of the aggregation
    * @param field
    *   the type-safe field for which stats aggregation will be executed
+   * @tparam A
+   *   expected number type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.StatsAggregation]] that represents stats aggregation to be
    *   performed.

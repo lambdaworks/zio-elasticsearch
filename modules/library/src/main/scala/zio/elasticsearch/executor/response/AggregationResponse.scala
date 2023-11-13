@@ -31,6 +31,36 @@ object AggregationResponse {
         AvgAggregationResult(value)
       case CardinalityAggregationResponse(value) =>
         CardinalityAggregationResult(value)
+      case ExtendedStatsAggregationResponse(
+            count,
+            min,
+            max,
+            avg,
+            sum,
+            sumOfSquares,
+            variance,
+            variancePopulation,
+            varianceSampling,
+            stdDeviation,
+            stdDeviationPopulation,
+            stdDeviationSampling,
+            stdDeviationBounds
+          ) =>
+        ExtendedStatsAggregationResult(
+          count,
+          min,
+          max,
+          avg,
+          sum,
+          sumOfSquares,
+          variance,
+          variancePopulation,
+          varianceSampling,
+          stdDeviation,
+          stdDeviationPopulation,
+          stdDeviationSampling,
+          stdDeviationBounds
+        )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>
@@ -75,6 +105,38 @@ private[elasticsearch] final case class CardinalityAggregationResponse(value: In
 private[elasticsearch] object CardinalityAggregationResponse {
   implicit val decoder: JsonDecoder[CardinalityAggregationResponse] =
     DeriveJsonDecoder.gen[CardinalityAggregationResponse]
+}
+
+case class StdDeviationBounds private[elasticsearch] (
+  upper: Double,
+  lower: Double,
+  upper_population: Double,
+  lower_population: Double,
+  upper_sampling: Double,
+  lower_sampling: Double
+)
+
+private[elasticsearch] final case class ExtendedStatsAggregationResponse(
+  count: Int,
+  min: Double,
+  max: Double,
+  avg: Double,
+  sum: Double,
+  sum_of_squares: Double,
+  variance: Double,
+  variance_population: Double,
+  variance_sampling: Double,
+  std_deviation: Double,
+  std_deviation_population: Double,
+  std_deviation_sampling: Double,
+  std_deviation_bounds: StdDeviationBounds
+) extends AggregationResponse
+
+private[elasticsearch] object ExtendedStatsAggregationResponse {
+  implicit val boundsDecoder: JsonDecoder[StdDeviationBounds] =
+    DeriveJsonDecoder.gen[StdDeviationBounds]
+  implicit val decoder: JsonDecoder[ExtendedStatsAggregationResponse] =
+    DeriveJsonDecoder.gen[ExtendedStatsAggregationResponse]
 }
 
 private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
@@ -161,6 +223,26 @@ private[elasticsearch] object TermsAggregationBucket {
               Some(field -> AvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("cardinality#") =>
               Some(field -> CardinalityAggregationResponse(value = objFields("value").unsafeAs[Int]))
+            case str if str.contains("extended_stats#") =>
+              Some(
+                field -> ExtendedStatsAggregationResponse(
+                  count = objFields("count").unsafeAs[Int],
+                  min = objFields("min").unsafeAs[Double],
+                  max = objFields("max").unsafeAs[Double],
+                  avg = objFields("avg").unsafeAs[Double],
+                  sum = objFields("sum").unsafeAs[Double],
+                  sum_of_squares = objFields("sum_of_squares").unsafeAs[Double],
+                  variance = objFields("variance").unsafeAs[Double],
+                  variance_population = objFields("variance_population").unsafeAs[Double],
+                  variance_sampling = objFields("variance_sampling").unsafeAs[Double],
+                  std_deviation = objFields("std_deviation").unsafeAs[Double],
+                  std_deviation_population = objFields("std_deviation_population").unsafeAs[Double],
+                  std_deviation_sampling = objFields("std_deviation_sampling").unsafeAs[Double],
+                  std_deviation_bounds = objFields("std_deviation_sampling").unsafeAs[StdDeviationBounds](
+                    ExtendedStatsAggregationResponse.boundsDecoder
+                  )
+                )
+              )
             case str if str.contains("max#") =>
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("min#") =>
@@ -208,6 +290,8 @@ private[elasticsearch] object TermsAggregationBucket {
             (field.split("#")(1), data.asInstanceOf[AvgAggregationResponse])
           case str if str.contains("cardinality#") =>
             (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
+          case str if str.contains("extended_stats#") =>
+            (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
           case str if str.contains("max#") =>
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
           case str if str.contains("min#") =>

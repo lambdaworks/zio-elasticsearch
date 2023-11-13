@@ -104,6 +104,48 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("aggregate using extended stats aggregation ttt") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 100))
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 50))
+                           .refreshTrue
+                       )
+                  aggregation = extendedStatsAggregation(name = "aggregation", field = TestDocument.intField).sigma(3)
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asExtendedStatsAggregation("aggregation")
+                } yield assert(aggsRes.head.count)(equalTo(2)) &&
+                  assert(aggsRes.head.min)(equalTo(50.0)) &&
+                  assert(aggsRes.head.max)(equalTo(100.0)) &&
+                  assert(aggsRes.head.avg)(equalTo(75.0)) &&
+                  assert(aggsRes.head.sum)(equalTo(150.0)) &&
+                  assert(aggsRes.head.sumOfSquares)(equalTo(12500.0)) &&
+                  assert(aggsRes.head.variance)(equalTo(625.0)) &&
+                  assert(aggsRes.head.variancePopulation)(equalTo(625.0)) &&
+                  assert(aggsRes.head.varianceSampling)(equalTo(1250.0)) &&
+                  assert(aggsRes.head.stdDeviation)(equalTo(25.0)) &&
+                  assert(aggsRes.head.stdDeviationPopulation)(equalTo(25.0)) &&
+                  assert(aggsRes.head.stdDeviationSampling)(equalTo(35.35533905932738)) &&
+                  assert(aggsRes.head.stdDeviationBounds.upper)(equalTo(150.0)) &&
+                  assert(aggsRes.head.stdDeviationBounds.lower)(equalTo(0.0)) &&
+                  assert(aggsRes.head.stdDeviationBounds.upper_population)(equalTo(150.0)) &&
+                  assert(aggsRes.head.stdDeviationBounds.lower_population)(equalTo(0.0)) &&
+                  assert(aggsRes.head.stdDeviationBounds.upper_sampling)(equalTo(181.06601717798213)) &&
+                  assert(aggsRes.head.stdDeviationBounds.lower_sampling)(equalTo(-31.066017177982133))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("aggregate using max aggregation") {
             val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {

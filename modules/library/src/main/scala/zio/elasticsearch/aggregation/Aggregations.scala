@@ -143,6 +143,48 @@ private[elasticsearch] final case class Cardinality(name: String, field: String,
   }
 }
 
+sealed trait ExtendedStatsAggregation
+    extends SingleElasticAggregation
+    with HasMissing[ExtendedStatsAggregation]
+    with WithAgg {
+
+  /**
+   * Sets the `sigma` parameter for the [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]]. The`sigma` parameter
+   * controls how many standard deviations plus/minus from the mean should std_deviation_bounds object display
+   *
+   * @param value
+   *   the value to use for sigma parameter
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `sigma` parameter.
+   */
+  def sigma(value: Double): ExtendedStatsAggregation
+}
+
+private[elasticsearch] final case class ExtendedStats(
+  name: String,
+  field: String,
+  missing: Option[Double],
+  sigma: Option[Double]
+) extends ExtendedStatsAggregation { self =>
+
+  def missing(value: Double): ExtendedStatsAggregation =
+    self.copy(missing = Some(value))
+
+  def sigma(value: Double): ExtendedStatsAggregation =
+    self.copy(sigma = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    val sigmaJson: Json = sigma.fold(Obj())(m => Obj("sigma" -> m.toJson))
+
+    Obj(name -> Obj("extended_stats" -> (Obj("field" -> field.toJson) merge missingJson merge sigmaJson)))
+  }
+}
+
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
 
 private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])
