@@ -1161,16 +1161,16 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a disjunction max query ttt") {
+          test("search for a document using a disjunction max query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   firstDocumentUpdated =
-                    firstDocument.copy(stringField = s"this is a ${firstDocument.stringField} test.")
+                    firstDocument.copy(stringField = s"This is a ${firstDocument.stringField} test.")
                   secondDocumentUpdated =
                     secondDocument.copy(stringField =
-                      s"this is not a ${firstDocument.stringField} test. It is a ${secondDocument.stringField} test, but not ${firstDocument.stringField}"
+                      s"This is a ${secondDocument.stringField} test. It should be in the list before ${firstDocument.stringField}, because it has higher relevance score than ${firstDocument.stringField}"
                     )
                   _ <- Executor.execute(
                          ElasticRequest
