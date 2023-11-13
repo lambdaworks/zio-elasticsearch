@@ -986,9 +986,9 @@ object ElasticQuery {
     TermsSet(
       field = field.toString,
       terms = Chunk.fromIterable(terms),
+      boost = None,
       minimumShouldMatchField = Some(minimumShouldMatchField.toString),
-      minimumShouldMatchScript = None,
-      boost = None
+      minimumShouldMatchScript = None
     )
 
   /**
@@ -1016,9 +1016,9 @@ object ElasticQuery {
     TermsSet(
       field = field,
       terms = Chunk.fromIterable(terms),
+      boost = None,
       minimumShouldMatchField = Some(minimumShouldMatchField),
-      minimumShouldMatchScript = None,
-      boost = None
+      minimumShouldMatchScript = None
     )
 
   /**
@@ -1048,9 +1048,9 @@ object ElasticQuery {
     TermsSet(
       field = field.toString,
       terms = Chunk.fromIterable(terms),
+      boost = None,
       minimumShouldMatchField = None,
-      minimumShouldMatchScript = Some(minimumShouldMatchScript),
-      boost = None
+      minimumShouldMatchScript = Some(minimumShouldMatchScript)
     )
 
   /**
@@ -1078,9 +1078,9 @@ object ElasticQuery {
     TermsSet(
       field = field,
       terms = Chunk.fromIterable(terms),
+      boost = None,
       minimumShouldMatchField = None,
-      minimumShouldMatchScript = Some(minimumShouldMatchScript),
-      boost = None
+      minimumShouldMatchScript = Some(minimumShouldMatchScript)
     )
 
   /**

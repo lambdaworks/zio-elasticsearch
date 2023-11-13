@@ -18,7 +18,7 @@ val query: TermsSetQuery = termsSet(field = "stringField", minimumShouldMatchFie
 
 You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `TermsSet` query with defined `minimumShouldMatchField` using the `termsSet` method this way:
 ```scala
-val query: TermsSetQuery = termsSet(field = Document.name, minimumShouldMatchField = Document.field, terms = "a", "b", "c")
+val query: TermsSetQuery = termsSet(field = Document.name, minimumShouldMatchField = Document.intField, terms = "a", "b", "c")
 ```
 
 You can create a `TermsSet` query with defined `minimumShouldMatchScript` using the `termsSetScript` method this way:

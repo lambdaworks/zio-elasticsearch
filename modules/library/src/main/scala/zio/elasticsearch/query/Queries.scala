@@ -1078,9 +1078,9 @@ sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasBoost[TermsSetQuer
 private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
   field: String,
   terms: Chunk[A],
+  boost: Option[Double],
   minimumShouldMatchField: Option[String],
-  minimumShouldMatchScript: Option[zio.elasticsearch.script.Script],
-  boost: Option[Double]
+  minimumShouldMatchScript: Option[zio.elasticsearch.script.Script]
 ) extends TermsSetQuery[S] { self =>
 
   def boost(value: Double): TermsSetQuery[S] =
