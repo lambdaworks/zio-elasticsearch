@@ -417,14 +417,24 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("disjunctionMax") {
-          val query               = disjunctionMax(Chunk(exists("existsField"), ids("1", "2", "3")))
-          val queryWithTieBreaker = disjunctionMax(Chunk(exists("existsField"), ids("1", "2", "3"))).tieBreaker(0.5f)
+          val query               = disjunctionMax(exists("existsField"), ids("1", "2", "3"))
+          val queryTs             = disjunctionMax(exists(TestDocument.stringField), ids("1", "2", "3"))
+          val queryWithTieBreaker = disjunctionMax(exists("existsField"), ids("1", "2", "3")).tieBreaker(0.5f)
 
           assert(query)(
             equalTo(
               DisjunctionMax[Any](
-                queries =
-                  Chunk(Exists[Any](field = "existsField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
+                query = Exists[Any](field = "existsField", boost = None),
+                queries = Chunk(Ids[Any](values = Chunk("1", "2", "3"))),
+                tieBreaker = None
+              )
+            )
+          ) &&
+          assert(queryTs)(
+            equalTo(
+              DisjunctionMax[TestDocument](
+                query = Exists[Any](field = "stringField", boost = None),
+                queries = Chunk(Ids[Any](values = Chunk("1", "2", "3"))),
                 tieBreaker = None
               )
             )
@@ -432,8 +442,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithTieBreaker)(
             equalTo(
               DisjunctionMax[Any](
-                queries =
-                  Chunk(Exists[Any](field = "existsField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
+                query = Exists[Any](field = "existsField", boost = None),
+                queries = Chunk(Ids[Any](values = Chunk("1", "2", "3"))),
                 tieBreaker = Some(0.5f)
               )
             )
@@ -2531,9 +2541,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("disjunctionMax") {
-          val query = disjunctionMax(queries = Chunk(exists("existsField"), ids("1", "2", "3")))
+          val query   = disjunctionMax(exists("existsField"), ids("1", "2", "3"))
+          val queryTs = disjunctionMax(exists(TestDocument.stringField), ids("1", "2", "3"))
           val queryWithTieBreaker =
-            disjunctionMax(queries = Chunk(exists("existsField"), ids("1", "2", "3"))).tieBreaker(0.5f)
+            disjunctionMax(exists("existsField"), ids("1", "2", "3")).tieBreaker(0.5f)
 
           val expected =
             """
@@ -2541,6 +2552,18 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |  "dis_max": {
               |     "queries": [
               |       { "exists": { "field": "existsField" } },
+              |       { "ids": { "values": ["1", "2", "3"] } }
+              |     ]
+              |   }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "dis_max": {
+              |     "queries": [
+              |       { "exists": { "field": "stringField" } },
               |       { "ids": { "values": ["1", "2", "3"] } }
               |     ]
               |   }
@@ -2561,6 +2584,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryWithTieBreaker.toJson(fieldPath = None))(equalTo(expectedWithTieBreaker.toJson))
         },
         test("exists") {

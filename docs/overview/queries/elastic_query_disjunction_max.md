@@ -13,13 +13,12 @@ import zio.elasticsearch.ElasticQuery.disjunctionMax
 
 You can create a `Disjunction max` query using the `disjunctionMax` method this way:
 ```scala
-val query: DisjunctionMaxQuery = disjunctionMax(queries = Chunk(term(field = "stringField", value = "test"), exists( field = "intField")))
+val query: DisjunctionMaxQuery = disjunctionMax(term(field = "stringField", value = "test"), exists(field = "intField"))
 ```
 
 If you want to change the `tieBreaker`, you can use `tieBreaker` method:
 ```scala
-val queryWithPrefixLength: DisjunctionMaxQuery = disjunctionMax(queries = Chunk(exists("existsField"), ids("1", "2", "3"))).tieBreaker(0.5f)
+val queryWithTieBreaker: DisjunctionMaxQuery = disjunctionMax(exists(field = "existsField"), ids(values = "1", "2", "3")).tieBreaker(0.5f)
 ```
 
 You can find more information about `Disjunction max` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-dis-max-query.html).
-

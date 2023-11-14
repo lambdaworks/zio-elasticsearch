@@ -90,28 +90,32 @@ object ElasticQuery {
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.DisjunctionMax]] using the specified parameters.
    *
+   * @param query
+   *   a mandatory query to be wrapped inside of disjunction max query
    * @param queries
-   *   the type-safe [[ElasticQuery]] objects to be wrapped inside of disjunction max query
+   *   the rest of the queries to be wrapped inside of disjunction max query
    * @tparam S
    *   document for which field query is executed. An implicit `Schema` instance must be in scope
    * @return
    *   an instance of [[zio.elasticsearch.query.DisjunctionMax]] that represents the `disjunction max` query to be
    *   performed.
    */
-  final def disjunctionMax[S: Schema](queries: Chunk[ElasticQuery[S]]): DisjunctionMaxQuery[S] =
-    DisjunctionMax[S](queries = queries, tieBreaker = None)
+  final def disjunctionMax[S: Schema](query: ElasticQuery[S], queries: ElasticQuery[S]*): DisjunctionMaxQuery[S] =
+    DisjunctionMax[S](query = query, queries = Chunk.fromIterable(queries), tieBreaker = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.DisjunctionMax]] using the specified parameters.
    *
+   * @param query
+   *   a mandatory query to be wrapped inside of disjunction max query
    * @param queries
-   *   the [[ElasticQuery]] objects to be wrapped inside of disjunction max query
+   *   the rest of the queries to be wrapped inside of disjunction max query
    * @return
    *   an instance of [[zio.elasticsearch.query.DisjunctionMax]] that represents the `disjunction max` query to be
    *   performed.
    */
-  final def disjunctionMax(queries: Chunk[ElasticQuery[Any]]): DisjunctionMaxQuery[Any] =
-    DisjunctionMax[Any](queries = queries, tieBreaker = None)
+  final def disjunctionMax(query: ElasticQuery[Any], queries: ElasticQuery[Any]*): DisjunctionMaxQuery[Any] =
+    DisjunctionMax[Any](query = query, queries = Chunk.fromIterable(queries), tieBreaker = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.ExistsQuery]], that checks existence of the field,

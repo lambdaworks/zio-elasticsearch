@@ -1183,15 +1183,13 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   query = disjunctionMax(
-                            Chunk(
-                              term(
-                                field = TestDocument.stringField,
-                                value = firstDocument.stringField.toLowerCase
-                              ),
-                              matchPhrase(
-                                field = TestDocument.stringField,
-                                value = secondDocument.stringField
-                              )
+                            term(
+                              field = TestDocument.stringField,
+                              value = firstDocument.stringField.toLowerCase
+                            ),
+                            matchPhrase(
+                              field = TestDocument.stringField,
+                              value = secondDocument.stringField
                             )
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]

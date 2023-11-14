@@ -58,6 +58,7 @@ module.exports = {
                     'overview/aggregations/elastic_aggregation_sum',
                     'overview/aggregations/elastic_aggregation_terms',
                     'overview/aggregations/elastic_aggregation_value_count',
+                    'overview/aggregations/elastic_aggregation_weighted_avg',
                 ],
             },
             {

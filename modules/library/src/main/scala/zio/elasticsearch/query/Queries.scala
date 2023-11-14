@@ -216,6 +216,7 @@ sealed trait DisjunctionMaxQuery[S] extends ElasticQuery[S] {
 }
 
 private[elasticsearch] final case class DisjunctionMax[S](
+  query: ElasticQuery[S],
   queries: Chunk[ElasticQuery[S]],
   tieBreaker: Option[Float]
 ) extends DisjunctionMaxQuery[S] { self =>
@@ -224,14 +225,13 @@ private[elasticsearch] final case class DisjunctionMax[S](
     self.copy(tieBreaker = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val allQueries = query +: queries
     val disMaxFields =
       Chunk(
-        Some("queries" -> Arr(queries.map(_.toJson(fieldPath)))),
+        Some("queries" -> Arr(allQueries.map(_.toJson(fieldPath)))),
         tieBreaker.map("tie_breaker" -> _.toJson)
       ).collect { case Some(obj) => obj }
-
     Obj("dis_max" -> Obj(disMaxFields))
-
   }
 }
 
