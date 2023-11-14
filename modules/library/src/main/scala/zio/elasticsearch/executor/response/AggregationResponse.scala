@@ -185,6 +185,8 @@ private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
           val objFields = data.unsafeAs[Obj].fields.toMap
 
           (field: @unchecked) match {
+            case str if str.contains("weighted_avg#") =>
+              Some(field -> WeightedAvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("avg#") =>
               Some(field -> AvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("cardinality#") =>
@@ -223,6 +225,8 @@ private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
     val subAggs = allFields.collect {
       case (field, data) if field != "doc_count" =>
         (field: @unchecked) match {
+          case str if str.contains("weighted_avg#") =>
+            (field.split("#")(1), data.asInstanceOf[WeightedAvgAggregationResponse])
           case str if str.contains("avg#") =>
             (field.split("#")(1), data.asInstanceOf[AvgAggregationResponse])
           case str if str.contains("cardinality#") =>
@@ -386,7 +390,7 @@ private[elasticsearch] object TermsAggregationBucket extends JsonDecoderOps {
             case str if str.contains("sum#") =>
               Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
-              Some(field -> Some(field -> data.unsafeAs[TermsAggregationResponse](TermsAggregationResponse.decoder)))
+              Some(field -> data.unsafeAs[TermsAggregationResponse](TermsAggregationResponse.decoder))
             case str if str.contains("value_count#") =>
               Some(field -> ValueCountAggregationResponse(value = objFields("value").unsafeAs[Int]))
           }

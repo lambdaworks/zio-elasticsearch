@@ -102,9 +102,11 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
   def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
       case Some(aggRes) =>
-        Try(aggRes.asInstanceOf[A]) match {
-          case Failure(_)   => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
-          case Success(agg) => Right(Some(agg))
+        aggRes match {
+          case agg: A =>
+            Right(Some(agg))
+          case _ =>
+            Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
         }
       case None =>
         Right(None)
