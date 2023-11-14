@@ -34,6 +34,7 @@ module.exports = {
                     'overview/queries/elastic_query_regexp',
                     'overview/queries/elastic_query_term',
                     'overview/queries/elastic_query_terms',
+                    'overview/queries/elastic_query_terms_set',
                     'overview/queries/elastic_query_wildcard',
                     'overview/queries/elastic_query_ids',
                 ],

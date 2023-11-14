@@ -353,13 +353,13 @@ private[elasticsearch] final case class FunctionScore[S](
 sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
 
   /**
-   * Sets the `fuzziness` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fuzziness` value refers to
-   * the ability to find results that are similar to, but not exactly the same as, the search term or query.
+   * Sets the `fuzziness` parameter for the [[zio.elasticsearch.query.FuzzyQuery]]. The `fuzziness` value refers to the
+   * ability to find results that are similar to, but not exactly the same as, the search term or query.
    *
    * @param value
    *   the text value to represent the 'fuzziness' field
    * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fuzziness` parameter.
+   *   an instance of the [[zio.elasticsearch.query.FuzzyQuery]] enriched with the `fuzziness` parameter.
    */
   def fuzziness(value: String): FuzzyQuery[S]
 
@@ -1070,6 +1070,28 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
     val termsFields =
       Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(_.toJson))) ++ boost.map("boost" -> _.toJson)
     Obj("terms" -> Obj(Chunk.fromIterable(termsFields)))
+  }
+}
+
+sealed trait TermsSetQuery[S] extends ElasticQuery[S] with HasBoost[TermsSetQuery[S]]
+
+private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
+  field: String,
+  terms: Chunk[A],
+  boost: Option[Double],
+  minimumShouldMatchField: Option[String],
+  minimumShouldMatchScript: Option[zio.elasticsearch.script.Script]
+) extends TermsSetQuery[S] { self =>
+
+  def boost(value: Double): TermsSetQuery[S] =
+    self.copy(boost = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val termsSetFields =
+      Some("terms" -> Arr(terms.map(_.toJson))) ++ minimumShouldMatchField.map(
+        "minimum_should_match_field" -> _.toJson
+      ) ++ minimumShouldMatchScript.map("minimum_should_match_script" -> _.toJson) ++ boost.map("boost" -> _.toJson)
+    Obj("terms_set" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termsSetFields))))
   }
 }
 
