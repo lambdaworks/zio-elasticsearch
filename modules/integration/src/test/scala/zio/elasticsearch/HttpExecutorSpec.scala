@@ -1016,6 +1016,43 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ),
         suite("searching for documents")(
+          test("search for a document using a constant boosting query ttt") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated =
+                    firstDocument.copy(stringField = s"this is a ${firstDocument.stringField} test", intField = 7)
+                  secondDocumentUpdated =
+                    secondDocument.copy(
+                      stringField = s"this is another ${secondDocument.stringField} test",
+                      intField = 5
+                    )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentUpdated)
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated)
+                           .refreshTrue
+                       )
+                  query = boost(
+                            negativeBoost = 0.1f,
+                            negativeQuery =
+                              term(field = TestDocument.stringField, value = firstDocument.stringField.toLowerCase),
+                            positiveQuery = matchPhrase(
+                              field = TestDocument.stringField,
+                              value = "test"
+                            )
+                          )
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield (assert(res)(equalTo(Chunk(secondDocumentUpdated, firstDocumentUpdated))))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document using a constant score query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

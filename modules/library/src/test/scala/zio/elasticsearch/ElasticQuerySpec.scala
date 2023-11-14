@@ -334,6 +334,28 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           }
         ),
+        test("boost") {
+          val query   = boost(0.5f, exists("testField"), terms("booleanField", true, false))
+          val queryTs = boost(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+
+          assert(query)(
+            equalTo(
+              Boost[Any](
+                negativeBoost = 0.5f,
+                negativeQuery = exists("testField"),
+                positiveQuery = terms("booleanField", true, false)
+              )
+            )
+          ) && assert(queryTs)(
+            equalTo(
+              Boost[TestDocument](
+                negativeBoost = 0.5f,
+                negativeQuery = exists(TestDocument.stringField),
+                positiveQuery = terms(TestDocument.booleanField, true, false)
+              )
+            )
+          )
+        },
         test("constantScore") {
           val query          = constantScore(terms("stringField", "a", "b", "c"))
           val queryTs        = constantScore(terms(TestDocument.stringField, "a", "b", "c"))
@@ -2446,6 +2468,32 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
           }
         ),
+        test("boost") {
+          val query   = boost(0.5f, exists("stringField"), terms("booleanField", true, false))
+          val queryTs = boost(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+
+          val expected =
+            """
+              |{
+              |  "boosting": {
+              |    "positive": {
+              |      "terms": {
+              |       "booleanField": [ true, false ]
+              |       }
+              |    },
+              |    "negative": {
+              |      "exists": {
+              |       "field": "stringField"
+              |      }
+              |    },
+              |    "negative_boost": 0.5
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
+        },
         test("constantScore") {
           val query          = constantScore(matchPhrase("stringField", "test"))
           val queryTs        = constantScore(matchPhrase(TestDocument.stringField, "test"))

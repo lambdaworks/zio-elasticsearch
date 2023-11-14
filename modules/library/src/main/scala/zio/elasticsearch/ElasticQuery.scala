@@ -26,6 +26,48 @@ import zio.schema.Schema
 object ElasticQuery {
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.BoostQuery]] with queries that must satisfy the
+   * criteria using the specified parameters.
+   *
+   * @param negativeBoost
+   *   the query that decreases the relevance score of matching documents.
+   * @param negativeQuery
+   *   the query that decreases the relevance score of matching documents.
+   * @param positiveQuery
+   *   the query that must be satisfied.
+   * @tparam S
+   *   document for which field query is executed. An implicit `Schema` instance must be in scope.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.BoostQuery]] that represents the boost query to be performed.
+   */
+  final def boost[S: Schema](
+    negativeBoost: Float,
+    negativeQuery: ElasticQuery[S],
+    positiveQuery: ElasticQuery[S]
+  ): BoostQuery[S] =
+    Boost(negativeBoost = negativeBoost, negativeQuery = negativeQuery, positiveQuery = positiveQuery)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.BoostQuery]] with queries that must satisfy the criteria using
+   * the specified parameters.
+   *
+   * @param negativeBoost
+   *   the query that decreases the relevance score of matching documents.
+   * @param negativeQuery
+   *   the query that decreases the relevance score of matching documents.
+   * @param positiveQuery
+   *   the query that must be satisfied.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.BoostQuery]] that represents the boost query to be performed.
+   */
+  final def boost(
+    negativeBoost: Float,
+    negativeQuery: ElasticQuery[Any],
+    positiveQuery: ElasticQuery[Any]
+  ): BoostQuery[Any] =
+    Boost(negativeBoost = negativeBoost, negativeQuery = negativeQuery, positiveQuery = positiveQuery)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.ConstantScoreQuery]] with a specified query.
    * [[zio.elasticsearch.query.ConstantScoreQuery]] wraps a filter query and returns every matching document with a
    * relevance score equal to the boost parameter value.
