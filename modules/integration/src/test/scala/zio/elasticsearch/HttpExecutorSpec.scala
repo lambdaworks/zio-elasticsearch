@@ -146,8 +146,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using filter aggregation") {
-            val expectedResponse = (
+          test("aggregate using filter aggregation with max aggregation as a sub aggregation") {
+            val expectedResult = (
               "aggregation",
               FilterAggregationResult(
                 docCount = 2,
@@ -201,7 +201,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .aggregations
 
-                } yield assert(aggsRes.head)(equalTo(expectedResponse))
+                } yield assert(aggsRes.head)(equalTo(expectedResult))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

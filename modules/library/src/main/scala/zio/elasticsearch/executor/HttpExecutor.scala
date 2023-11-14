@@ -124,11 +124,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value => {
+            value =>
               ZIO.succeed(new AggregateResult(value.aggs.map { case (key, response) =>
                 (key, toResult(response))
               }))
-            }
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))

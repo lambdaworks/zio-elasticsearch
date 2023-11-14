@@ -187,7 +187,7 @@ private[elasticsearch] final case class ExtendedStats(
   }
 }
 
-sealed trait FilterAggregation extends SingleElasticAggregation with WithSubAgg[FilterAggregation] with WithAgg
+sealed trait FilterAggregation extends SingleElasticAggregation with WithAgg with WithSubAgg[FilterAggregation]
 
 private[elasticsearch] final case class Filter(
   name: String,

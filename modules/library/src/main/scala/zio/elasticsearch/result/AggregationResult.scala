@@ -57,7 +57,6 @@ final case class FilterAggregationResult private[elasticsearch] (
       case None =>
         Right(None)
     }
-
 }
 
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult

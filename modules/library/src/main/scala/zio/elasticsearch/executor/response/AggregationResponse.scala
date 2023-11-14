@@ -22,6 +22,8 @@ import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
+private[elasticsearch] sealed trait AggregationBucket
+
 sealed trait AggregationResponse
 
 object AggregationResponse {
@@ -71,11 +73,9 @@ object AggregationResponse {
       case FilterAggregationResponse(docCount, subAggregations) =>
         FilterAggregationResult(
           docCount = docCount,
-          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(a =>
-            a.map { case (key, response) =>
-              (key, toResult(response))
-            }
-          )
+          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
+            (key, toResult(response))
+          })
         )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
@@ -151,18 +151,6 @@ private[elasticsearch] object ExtendedStatsAggregationResponse {
     DeriveJsonDecoder.gen[ExtendedStatsAggregationResponse]
 }
 
-private[elasticsearch] final case class StatsAggregationResponse(
-  count: Int,
-  min: Double,
-  max: Double,
-  avg: Double,
-  sum: Double
-) extends AggregationResponse
-
-private[elasticsearch] object StatsAggregationResponse {
-  implicit val decoder: JsonDecoder[StatsAggregationResponse] = DeriveJsonDecoder.gen[StatsAggregationResponse]
-}
-
 private[elasticsearch] case class StdDeviationBoundsResponse(
   upper: Double,
   lower: Double,
@@ -187,7 +175,7 @@ private[elasticsearch] final case class FilterAggregationResponse(
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationResponse
 
-private[elasticsearch] object FilterAggregationResponse {
+private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
   implicit val decoder: JsonDecoder[FilterAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val allFields = fields.flatMap { case (field, data) =>
       field match {
@@ -224,19 +212,10 @@ private[elasticsearch] object FilterAggregationResponse {
             case str if str.contains("sum#") =>
               Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
-              Some(
-                field -> TermsAggregationResponse(
-                  docErrorCount = objFields("doc_count_error_upper_bound").unsafeAs[Int],
-                  sumOtherDocCount = objFields("sum_other_doc_count").unsafeAs[Int],
-                  buckets = objFields("buckets")
-                    .unsafeAs[Chunk[Json]]
-                    .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
-                )
-              )
+              Some(field -> data.unsafeAs[TermsAggregationResponse](TermsAggregationResponse.decoder))
             case str if str.contains("value_count#") =>
               Some(field -> ValueCountAggregationResponse(value = objFields("value").unsafeAs[Int]))
           }
-
       }
     }.toMap
 
@@ -268,17 +247,17 @@ private[elasticsearch] object FilterAggregationResponse {
             (field.split("#")(1), data.asInstanceOf[ValueCountAggregationResponse])
         }
     }
-
     Right(FilterAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
   }
+}
 
-  final implicit class JsonDecoderOps(json: Json) {
+private[elasticsearch] sealed trait JsonDecoderOps {
+  implicit class JsonDecoderOps(json: Json) {
     def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
       (json.as[A]: @unchecked) match {
         case Right(decoded) => decoded
       }
   }
-
 }
 
 private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
@@ -308,14 +287,24 @@ private[elasticsearch] object PercentilesAggregationResponse {
     DeriveJsonDecoder.gen[PercentilesAggregationResponse]
 }
 
+private[elasticsearch] final case class StatsAggregationResponse(
+  count: Int,
+  min: Double,
+  max: Double,
+  avg: Double,
+  sum: Double
+) extends AggregationResponse
+
+private[elasticsearch] object StatsAggregationResponse {
+  implicit val decoder: JsonDecoder[StatsAggregationResponse] = DeriveJsonDecoder.gen[StatsAggregationResponse]
+}
+
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
 
 private[elasticsearch] object SumAggregationResponse {
   implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
 
 }
-
-private[elasticsearch] sealed trait AggregationBucket
 
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
@@ -336,7 +325,7 @@ private[elasticsearch] final case class TermsAggregationBucket(
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationBucket
 
-private[elasticsearch] object TermsAggregationBucket {
+private[elasticsearch] object TermsAggregationBucket extends JsonDecoderOps {
   implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val allFields = fields.flatMap { case (field, data) =>
       field match {
@@ -397,15 +386,7 @@ private[elasticsearch] object TermsAggregationBucket {
             case str if str.contains("sum#") =>
               Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("terms#") =>
-              Some(
-                field -> TermsAggregationResponse(
-                  docErrorCount = objFields("doc_count_error_upper_bound").unsafeAs[Int],
-                  sumOtherDocCount = objFields("sum_other_doc_count").unsafeAs[Int],
-                  buckets = objFields("buckets")
-                    .unsafeAs[Chunk[Json]]
-                    .map(_.unsafeAs[TermsAggregationBucket](TermsAggregationBucket.decoder))
-                )
-              )
+              Some(field -> Some(field -> data.unsafeAs[TermsAggregationResponse](TermsAggregationResponse.decoder)))
             case str if str.contains("value_count#") =>
               Some(field -> ValueCountAggregationResponse(value = objFields("value").unsafeAs[Int]))
           }
@@ -445,15 +426,7 @@ private[elasticsearch] object TermsAggregationBucket {
             (field.split("#")(1), data.asInstanceOf[ValueCountAggregationResponse])
         }
     }
-
     Right(TermsAggregationBucket.apply(key, docCount, Option(subAggs).filter(_.nonEmpty)))
-  }
-
-  final implicit class JsonDecoderOps(json: Json) {
-    def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
-      (json.as[A]: @unchecked) match {
-        case Right(decoded) => decoded
-      }
   }
 }
 

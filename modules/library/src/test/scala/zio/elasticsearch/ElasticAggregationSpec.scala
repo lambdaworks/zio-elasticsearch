@@ -157,15 +157,15 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSubAggregation =
             filterAggregation("aggregation", query).withSubAgg(minAggregation("subAggregation", TestDocument.intField))
           val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
-            .withSubAgg(minAggregation("minSubAggregation", TestDocument.intField))
             .withSubAgg(maxAggregation("maxSubAggregation", TestDocument.intField))
+            .withSubAgg(minAggregation("minSubAggregation", TestDocument.intField))
 
           assert(aggregation)(
             equalTo(
               Filter(
                 name = "aggregation",
-                subAggregations = Chunk.empty,
-                query = query
+                query = query,
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -173,8 +173,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               Filter(
                 name = "aggregation",
-                subAggregations = Chunk(minAggregation("subAggregation", TestDocument.intField)),
-                query = query
+                query = query,
+                subAggregations = Chunk(minAggregation("subAggregation", TestDocument.intField))
               )
             )
           ) &&
@@ -182,11 +182,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               Filter(
                 name = "aggregation",
+                query = query,
                 subAggregations = Chunk(
-                  maxAggregation("maxSubAggregation", TestDocument.intField),
-                  minAggregation("minSubAggregation", TestDocument.intField)
-                ),
-                query = query
+                  minAggregation("minSubAggregation", TestDocument.intField),
+                  maxAggregation("maxSubAggregation", TestDocument.intField)
+                )
               )
             )
           )
@@ -871,8 +871,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSubAggregation =
             filterAggregation("aggregation", query).withSubAgg(minAggregation("subAggregation", TestDocument.intField))
           val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
-            .withSubAgg(minAggregation("minSubAggregation", TestDocument.intField))
             .withSubAgg(maxAggregation("maxSubAggregation", TestDocument.intField))
+            .withSubAgg(minAggregation("minSubAggregation", TestDocument.intField))
 
           val expected =
             """

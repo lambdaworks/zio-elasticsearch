@@ -13,16 +13,23 @@ import zio.elasticsearch.ElasticAggregation.filterAggregation
 
 You can create a `Filter` aggregation using the `filterAggregation` method in the following manner:
 ```scala
+import zio.elasticsearch.ElasticQuery.term
+
 val aggregation: FilterAggregation = filterAggregation(name = "filterAggregation", query = term(field = Document.stringField, value = "test"))
 ```
 
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
+import zio.elasticsearch.ElasticQuery.term
+
 val multipleAggregations: MultipleAggregations = filterAggregation(name = "filterAggregation", query = term(field = Document.stringField, value = "test")).withAgg(maxAggregation(name = "maxAggregation", field = Document.doubleField))
 ```
 
 If you want to add another sub-aggregation, you can use `withSubAgg` method:
 ```scala
+import zio.elasticsearch.ElasticQuery.term
+import zio.elasticsearch.ElasticAggregation.maxAggregation
+
 val aggregationWithSubAgg: FilterAggregation = filterAggregation(name = "filterAggregation", query = term(field = Document.stringField, value = "test")).withSubAgg(maxAggregation(name = "maxAggregation", field = Document.intField))
 ```
 
