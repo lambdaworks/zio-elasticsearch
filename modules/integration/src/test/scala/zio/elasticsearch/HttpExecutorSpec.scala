@@ -190,12 +190,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
-
                   aggregation =
                     filterAggregation(name = "aggregation", query = query).withSubAgg(
                       maxAggregation("subAggregation", TestDocument.intField)
                     )
-
                   aggsRes <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))

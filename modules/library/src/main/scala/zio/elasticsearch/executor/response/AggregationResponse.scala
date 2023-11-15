@@ -307,7 +307,6 @@ private[elasticsearch] final case class SumAggregationResponse(value: Double) ex
 
 private[elasticsearch] object SumAggregationResponse {
   implicit val decoder: JsonDecoder[SumAggregationResponse] = DeriveJsonDecoder.gen[SumAggregationResponse]
-
 }
 
 private[elasticsearch] final case class TermsAggregationResponse(
