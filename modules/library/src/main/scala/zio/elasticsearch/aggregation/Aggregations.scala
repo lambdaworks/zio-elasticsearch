@@ -285,6 +285,37 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
     aggregations.map(_.toJson).reduce(_ merge _)
 }
 
+sealed trait PercentileRanksAggregation
+    extends SingleElasticAggregation
+    with HasMissing[PercentileRanksAggregation]
+    with WithAgg
+
+private[elasticsearch] final case class PercentileRanks(
+  field: String,
+  name: String,
+  values: Chunk[Int],
+  missing: Option[Double]
+) extends PercentileRanksAggregation { self =>
+
+  def missing(value: Double): PercentileRanksAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(
+      name -> Obj(
+        "percentile_ranks" -> ((Obj("field" -> field.toJson) merge Obj(
+          "values" -> Arr(values.map(_.toJson))
+        )) merge missingJson)
+      )
+    )
+  }
+}
+
 sealed trait PercentilesAggregation
     extends SingleElasticAggregation
     with HasMissing[PercentilesAggregation]

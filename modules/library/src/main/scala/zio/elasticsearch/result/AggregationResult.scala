@@ -65,6 +65,9 @@ final case class MinAggregationResult private[elasticsearch] (value: Double) ext
 
 final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
 
+final case class PercentileRanksAggregationResult private[elasticsearch] (values: Map[String, Double])
+    extends AggregationResult
+
 final case class PercentilesAggregationResult private[elasticsearch] (values: Map[String, Double])
     extends AggregationResult
 

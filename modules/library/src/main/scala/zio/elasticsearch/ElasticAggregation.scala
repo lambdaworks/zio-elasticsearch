@@ -255,6 +255,42 @@ object ElasticAggregation {
     Multiple(aggregations = Chunk.empty)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] using the specified
+   * parameters.
+   *
+   * @param field
+   *   the type-safe field for which stats aggregation will be executed
+   * @param name
+   *   the name of the aggregation
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] that represents percentile ranks
+   *   aggregation to be performed.
+   */
+  final def percentileRanksAggregation[A: Numeric](
+    field: Field[_, A],
+    name: String,
+    values: Int*
+  ): PercentileRanksAggregation =
+    PercentileRanks(field = field.toString, name = name, values = Chunk.fromIterable(values), missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] using the specified
+   * parameters.
+   *
+   * @param field
+   *   the field for which stats aggregation will be executed
+   * @param name
+   *   the name of the aggregation
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] that represents percentile ranks
+   *   aggregation to be performed.
+   */
+  final def percentileRanksAggregation(field: String, name: String, values: Int*): PercentileRanksAggregation =
+    PercentileRanks(field = field, name = name, values = Chunk.fromIterable(values), missing = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified
    * parameters.
    *
