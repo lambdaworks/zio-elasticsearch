@@ -47,25 +47,25 @@ object AggregationResponse {
             stdDeviationBoundsResponse
           ) =>
         ExtendedStatsAggregationResult(
-          count,
-          min,
-          max,
-          avg,
-          sum,
-          sumOfSquares,
-          variance,
-          variancePopulation,
-          varianceSampling,
-          stdDeviation,
-          stdDeviationPopulation,
-          stdDeviationSampling,
+          count = count,
+          min = min,
+          max = max,
+          avg = avg,
+          sum = sum,
+          sumOfSquares = sumOfSquares,
+          variance = variance,
+          variancePopulation = variancePopulation,
+          varianceSampling = varianceSampling,
+          stdDeviation = stdDeviation,
+          stdDeviationPopulation = stdDeviationPopulation,
+          stdDeviationSampling = stdDeviationSampling,
           StdDeviationBoundsResult(
-            stdDeviationBoundsResponse.upper,
-            stdDeviationBoundsResponse.lower,
-            stdDeviationBoundsResponse.upperPopulation,
-            stdDeviationBoundsResponse.lowerPopulation,
-            stdDeviationBoundsResponse.upperSampling,
-            stdDeviationBoundsResponse.lowerSampling
+            upper = stdDeviationBoundsResponse.upper,
+            lower = stdDeviationBoundsResponse.lower,
+            upperPopulation = stdDeviationBoundsResponse.upperPopulation,
+            lowerPopulation = stdDeviationBoundsResponse.lowerPopulation,
+            upperSampling = stdDeviationBoundsResponse.upperSampling,
+            lowerSampling = stdDeviationBoundsResponse.lowerSampling
           )
         )
       case MaxAggregationResponse(value) =>
