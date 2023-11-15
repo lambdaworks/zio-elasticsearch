@@ -26,6 +26,22 @@ final case class AvgAggregationResult private[elasticsearch] (value: Double) ext
 
 final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
 
+final case class ExtendedStatsAggregationResult private[elasticsearch] (
+  count: Int,
+  min: Double,
+  max: Double,
+  avg: Double,
+  sum: Double,
+  sumOfSquares: Double,
+  variance: Double,
+  variancePopulation: Double,
+  varianceSampling: Double,
+  stdDeviation: Double,
+  stdDeviationPopulation: Double,
+  stdDeviationSampling: Double,
+  stdDeviationBoundsResult: StdDeviationBoundsResult
+) extends AggregationResult
+
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
@@ -41,6 +57,15 @@ final case class StatsAggregationResult private[elasticsearch] (
   max: Double,
   avg: Double,
   sum: Double
+) extends AggregationResult
+
+private[elasticsearch] case class StdDeviationBoundsResult(
+  upper: Double,
+  lower: Double,
+  upperPopulation: Double,
+  lowerPopulation: Double,
+  upperSampling: Double,
+  lowerSampling: Double
 ) extends AggregationResult
 
 final case class SumAggregationResult private[elasticsearch] (value: Double) extends AggregationResult

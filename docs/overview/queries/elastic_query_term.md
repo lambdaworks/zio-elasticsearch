@@ -13,7 +13,7 @@ import zio.elasticsearch.ElasticQuery._
 
 You can create a `Term` query using the `term` method this way:
 ```scala
-val query: TermQuery = term(field = Document.name, value = "test")
+val query: TermQuery = term(field = "stringField", value = "test")
 ```
 
 You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Term` query using the `term` method this way:

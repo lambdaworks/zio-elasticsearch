@@ -48,6 +48,9 @@ private[elasticsearch] sealed trait ResultWithAggregation {
   def asCardinalityAggregation(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
     aggregationAs[CardinalityAggregationResult](name)
 
+  def asExtendedStatsAggregation(name: String): IO[DecodingException, Option[ExtendedStatsAggregationResult]] =
+    aggregationAs[ExtendedStatsAggregationResult](name)
+
   def asMaxAggregation(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
     aggregationAs[MaxAggregationResult](name)
 

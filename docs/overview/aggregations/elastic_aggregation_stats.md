@@ -3,7 +3,7 @@ id: elastic_aggregation_stats
 title: "Stats Aggregation"
 ---
 
-The `Stats` aggregation is a multi-value metrics aggregation that provides statistical information (count, sum, min, max, and average of a field) over numeric values extracted from the aggregated documents.
+The `Stats` aggregation is a multi-value metrics aggregation that provides statistical information (count, sum, min, max and average of a field) over numeric values extracted from the aggregated documents.
 
 In order to use the `Stats` aggregation import the following:
 ```scala
