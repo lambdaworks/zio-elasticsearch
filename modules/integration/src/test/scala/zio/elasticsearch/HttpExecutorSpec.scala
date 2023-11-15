@@ -104,7 +104,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using extended stats aggregation ttt") {
+          test("aggregate using extended stats aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -135,12 +135,12 @@ object HttpExecutorSpec extends IntegrationSpec {
                   assert(aggsRes.head.stdDeviation)(equalTo(25.0)) &&
                   assert(aggsRes.head.stdDeviationPopulation)(equalTo(25.0)) &&
                   assert(aggsRes.head.stdDeviationSampling)(equalTo(35.35533905932738)) &&
-                  assert(aggsRes.head.stdDeviationBounds.upper)(equalTo(150.0)) &&
-                  assert(aggsRes.head.stdDeviationBounds.lower)(equalTo(0.0)) &&
-                  assert(aggsRes.head.stdDeviationBounds.upper_population)(equalTo(150.0)) &&
-                  assert(aggsRes.head.stdDeviationBounds.lower_population)(equalTo(0.0)) &&
-                  assert(aggsRes.head.stdDeviationBounds.upper_sampling)(equalTo(181.06601717798213)) &&
-                  assert(aggsRes.head.stdDeviationBounds.lower_sampling)(equalTo(-31.066017177982133))
+                  assert(aggsRes.head.stdDeviationBoundsResult.upper)(equalTo(150.0)) &&
+                  assert(aggsRes.head.stdDeviationBoundsResult.lower)(equalTo(0.0)) &&
+                  assert(aggsRes.head.stdDeviationBoundsResult.upperPopulation)(equalTo(150.0)) &&
+                  assert(aggsRes.head.stdDeviationBoundsResult.lowerPopulation)(equalTo(0.0)) &&
+                  assert(aggsRes.head.stdDeviationBoundsResult.upperSampling)(equalTo(181.06601717798213)) &&
+                  assert(aggsRes.head.stdDeviationBoundsResult.lowerSampling)(equalTo(-31.066017177982133))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

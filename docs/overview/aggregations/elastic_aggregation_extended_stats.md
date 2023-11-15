@@ -35,7 +35,7 @@ val aggregationWithSigma: ExtendedStatsAggregation = extendedStatsAggregation(na
 
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
-val multipleAggregations: MultipleAggregations = extendedStatsAggregation(name = "extendedStatsAggregation", field = Document.intField).withAgg(extendedStatsAggregation(name = "extendedStatsAggregation2", field = Document.doubleField))
+val multipleAggregations: MultipleAggregations = extendedStatsAggregation(name = "extendedStatsAggregation1", field = Document.intField).withAgg(extendedStatsAggregation(name = "extendedStatsAggregation2", field = Document.doubleField))
 ```
 
 You can find more information about `Extended stats` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-extendedstats-aggregation.html#search-aggregations-metrics-extendedstats-aggregation).

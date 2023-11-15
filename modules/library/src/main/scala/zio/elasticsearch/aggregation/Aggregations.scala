@@ -150,12 +150,13 @@ sealed trait ExtendedStatsAggregation
 
   /**
    * Sets the `sigma` parameter for the [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]]. The`sigma` parameter
-   * controls how many standard deviations plus/minus from the mean should std_deviation_bounds object display
+   * controls how many standard deviations plus/minus from the mean should std_deviation_bounds object display.
    *
    * @param value
    *   the value to use for sigma parameter
    * @return
-   *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `sigma` parameter.
+   *   an instance of the [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] enriched with the `sigma`
+   *   parameter.
    */
   def sigma(value: Double): ExtendedStatsAggregation
 }

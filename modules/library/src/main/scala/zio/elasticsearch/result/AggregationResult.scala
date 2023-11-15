@@ -17,7 +17,6 @@
 package zio.elasticsearch.result
 
 import zio.Chunk
-import zio.elasticsearch.executor.response.StdDeviationBounds
 
 import scala.util.{Failure, Success, Try}
 
@@ -26,6 +25,15 @@ sealed trait AggregationResult
 final case class AvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
+
+private[elasticsearch] case class StdDeviationBoundsResult(
+  upper: Double,
+  lower: Double,
+  upperPopulation: Double,
+  lowerPopulation: Double,
+  upperSampling: Double,
+  lowerSampling: Double
+) extends AggregationResult
 
 final case class ExtendedStatsAggregationResult private[elasticsearch] (
   count: Int,
@@ -40,7 +48,7 @@ final case class ExtendedStatsAggregationResult private[elasticsearch] (
   stdDeviation: Double,
   stdDeviationPopulation: Double,
   stdDeviationSampling: Double,
-  stdDeviationBounds: StdDeviationBounds
+  stdDeviationBoundsResult: StdDeviationBoundsResult
 ) extends AggregationResult
 
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult

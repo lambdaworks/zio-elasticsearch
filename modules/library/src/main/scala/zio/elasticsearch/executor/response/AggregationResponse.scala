@@ -44,7 +44,7 @@ object AggregationResponse {
             stdDeviation,
             stdDeviationPopulation,
             stdDeviationSampling,
-            stdDeviationBounds
+            stdDeviationBoundsResponse
           ) =>
         ExtendedStatsAggregationResult(
           count,
@@ -59,7 +59,14 @@ object AggregationResponse {
           stdDeviation,
           stdDeviationPopulation,
           stdDeviationSampling,
-          stdDeviationBounds
+          StdDeviationBoundsResult(
+            stdDeviationBoundsResponse.upper,
+            stdDeviationBoundsResponse.lower,
+            stdDeviationBoundsResponse.upperPopulation,
+            stdDeviationBoundsResponse.lowerPopulation,
+            stdDeviationBoundsResponse.upperSampling,
+            stdDeviationBoundsResponse.lowerSampling
+          )
         )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
@@ -107,34 +114,30 @@ private[elasticsearch] object CardinalityAggregationResponse {
     DeriveJsonDecoder.gen[CardinalityAggregationResponse]
 }
 
-case class StdDeviationBounds private[elasticsearch] (
-  upper: Double,
-  lower: Double,
-  upper_population: Double,
-  lower_population: Double,
-  upper_sampling: Double,
-  lower_sampling: Double
-)
-
 private[elasticsearch] final case class ExtendedStatsAggregationResponse(
   count: Int,
   min: Double,
   max: Double,
   avg: Double,
   sum: Double,
-  sum_of_squares: Double,
+  @jsonField("sum_of_squares")
+  sumOfSquares: Double,
   variance: Double,
-  variance_population: Double,
-  variance_sampling: Double,
-  std_deviation: Double,
-  std_deviation_population: Double,
-  std_deviation_sampling: Double,
-  std_deviation_bounds: StdDeviationBounds
+  @jsonField("variance_population")
+  variancePopulation: Double,
+  @jsonField("variance_sampling")
+  varianceSampling: Double,
+  @jsonField("std_deviation")
+  stdDeviation: Double,
+  @jsonField("std_deviation_population")
+  stdDeviationPopulation: Double,
+  @jsonField("std_deviation_sampling")
+  stdDeviationSampling: Double,
+  @jsonField("std_deviation_bounds")
+  stdDeviationBoundsResponse: StdDeviationBoundsResponse
 ) extends AggregationResponse
 
 private[elasticsearch] object ExtendedStatsAggregationResponse {
-  implicit val boundsDecoder: JsonDecoder[StdDeviationBounds] =
-    DeriveJsonDecoder.gen[StdDeviationBounds]
   implicit val decoder: JsonDecoder[ExtendedStatsAggregationResponse] =
     DeriveJsonDecoder.gen[ExtendedStatsAggregationResponse]
 }
@@ -176,6 +179,24 @@ private[elasticsearch] final case class StatsAggregationResponse(
 
 private[elasticsearch] object StatsAggregationResponse {
   implicit val decoder: JsonDecoder[StatsAggregationResponse] = DeriveJsonDecoder.gen[StatsAggregationResponse]
+}
+
+private[elasticsearch] case class StdDeviationBoundsResponse(
+  upper: Double,
+  lower: Double,
+  @jsonField("upper_population")
+  upperPopulation: Double,
+  @jsonField("lower_population")
+  lowerPopulation: Double,
+  @jsonField("upper_sampling")
+  upperSampling: Double,
+  @jsonField("lower_sampling")
+  lowerSampling: Double
+) extends AggregationResponse
+
+private[elasticsearch] object StdDeviationBoundsResponse {
+  implicit val decoder: JsonDecoder[StdDeviationBoundsResponse] =
+    DeriveJsonDecoder.gen[StdDeviationBoundsResponse]
 }
 
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
@@ -231,15 +252,15 @@ private[elasticsearch] object TermsAggregationBucket {
                   max = objFields("max").unsafeAs[Double],
                   avg = objFields("avg").unsafeAs[Double],
                   sum = objFields("sum").unsafeAs[Double],
-                  sum_of_squares = objFields("sum_of_squares").unsafeAs[Double],
+                  sumOfSquares = objFields("sum_of_squares").unsafeAs[Double],
                   variance = objFields("variance").unsafeAs[Double],
-                  variance_population = objFields("variance_population").unsafeAs[Double],
-                  variance_sampling = objFields("variance_sampling").unsafeAs[Double],
-                  std_deviation = objFields("std_deviation").unsafeAs[Double],
-                  std_deviation_population = objFields("std_deviation_population").unsafeAs[Double],
-                  std_deviation_sampling = objFields("std_deviation_sampling").unsafeAs[Double],
-                  std_deviation_bounds = objFields("std_deviation_sampling").unsafeAs[StdDeviationBounds](
-                    ExtendedStatsAggregationResponse.boundsDecoder
+                  variancePopulation = objFields("variance_population").unsafeAs[Double],
+                  varianceSampling = objFields("variance_sampling").unsafeAs[Double],
+                  stdDeviation = objFields("std_deviation").unsafeAs[Double],
+                  stdDeviationPopulation = objFields("std_deviation_population").unsafeAs[Double],
+                  stdDeviationSampling = objFields("std_deviation_sampling").unsafeAs[Double],
+                  stdDeviationBoundsResponse = objFields("std_deviation_sampling").unsafeAs[StdDeviationBoundsResponse](
+                    StdDeviationBoundsResponse.decoder
                   )
                 )
               )
