@@ -481,7 +481,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation =
-                    termsAggregation(name = "aggregationString", field = TestDocument.stringField.keyword)
+                    termsAggregation(name = "aggregationString", field = TestDocument.stringField.keyword).withSubAgg(
+                      maxAggregation("subAggregation", TestDocument.intField)
+                    )
                   aggsRes <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
