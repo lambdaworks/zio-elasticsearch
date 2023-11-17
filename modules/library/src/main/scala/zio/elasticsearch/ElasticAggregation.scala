@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.aggregation._
+import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script
 
 object ElasticAggregation {
@@ -112,6 +113,20 @@ object ElasticAggregation {
    */
   final def cardinalityAggregation(name: String, field: String): CardinalityAggregation =
     Cardinality(name = name, field = field, missing = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param query
+   *   a query which the documents must match
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] that represents filter aggregation to be
+   *   performed.
+   */
+  final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
+    Filter(name = name, query = query, subAggregations = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified

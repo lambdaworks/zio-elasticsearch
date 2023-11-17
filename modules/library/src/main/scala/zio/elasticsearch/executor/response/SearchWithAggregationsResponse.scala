@@ -80,6 +80,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       CardinalityAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("extended_stats#") =>
                       ExtendedStatsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("filter#") =>
+                      FilterAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("max#") =>
                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("min#") =>

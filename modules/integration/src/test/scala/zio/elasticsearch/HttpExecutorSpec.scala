@@ -33,7 +33,7 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{Item, MaxAggregationResult, UpdateByQueryResult}
+import zio.elasticsearch.result.{FilterAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -141,6 +141,65 @@ object HttpExecutorSpec extends IntegrationSpec {
                   assert(aggsRes.head.stdDeviationBoundsResult.lowerPopulation)(equalTo(0.0)) &&
                   assert(aggsRes.head.stdDeviationBoundsResult.upperSampling)(equalTo(181.06601717798213)) &&
                   assert(aggsRes.head.stdDeviationBoundsResult.lowerSampling)(equalTo(-31.066017177982133))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using filter aggregation with max aggregation as a sub aggregation") {
+            val expectedResult = (
+              "aggregation",
+              FilterAggregationResult(
+                docCount = 2,
+                subAggregations = Map(
+                  "subAggregation" -> MaxAggregationResult(value = 5.0)
+                )
+              )
+            )
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated = firstDocument.copy(stringField = "test", intField = 7)
+                  secondDocumentUpdated =
+                    secondDocument.copy(stringField = "filterAggregation", intField = 3)
+                  thirdDocumentUpdated =
+                    thirdDocument.copy(stringField = "filterAggregation", intField = 5)
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](
+                           firstSearchIndex,
+                           firstDocumentId,
+                           firstDocumentUpdated
+                         )
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](
+                             firstSearchIndex,
+                             secondDocumentId,
+                             secondDocumentUpdated
+                           )
+                       )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](
+                             firstSearchIndex,
+                             thirdDocumentId,
+                             thirdDocumentUpdated
+                           )
+                           .refreshTrue
+                       )
+                  query = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
+                  aggregation =
+                    filterAggregation(name = "aggregation", query = query).withSubAgg(
+                      maxAggregation("subAggregation", TestDocument.intField)
+                    )
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
+
+                } yield assert(aggsRes.head)(equalTo(expectedResult))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

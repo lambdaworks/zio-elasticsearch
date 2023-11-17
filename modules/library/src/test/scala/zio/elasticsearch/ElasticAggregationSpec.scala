@@ -2,6 +2,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
+import zio.elasticsearch.ElasticQuery.term
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
@@ -149,6 +150,46 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = Some(3.0)))
           ) && assert(aggregationWithMissingAndSigma)(
             equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0)))
+          )
+        },
+        test("filter") {
+          val query       = term(TestDocument.stringField, "test")
+          val aggregation = filterAggregation("aggregation", query)
+          val aggregationWithSubAggregation =
+            filterAggregation("aggregation", query).withSubAgg(minAggregation("subAggregation", TestDocument.intField))
+          val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
+            .withSubAgg(maxAggregation("maxSubAggregation", TestDocument.intField))
+            .withSubAgg(minAggregation("minSubAggregation", TestDocument.doubleField))
+
+          assert(aggregation)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                query = query,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithSubAggregation)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                query = query,
+                subAggregations = Chunk(minAggregation("subAggregation", TestDocument.intField))
+              )
+            )
+          ) &&
+          assert(aggregationWithMultipleSubAggregations)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                query = query,
+                subAggregations = Chunk(
+                  minAggregation("minSubAggregation", TestDocument.doubleField),
+                  maxAggregation("maxSubAggregation", TestDocument.intField)
+                )
+              )
+            )
           )
         },
         test("max") {
@@ -824,6 +865,83 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
           assert(aggregationWithSigma.toJson)(equalTo(expectedWithSigma.toJson)) &&
           assert(aggregationWithMissingAndSigma.toJson)(equalTo(expectedWithMissingAndSigma.toJson))
+        },
+        test("filter") {
+          val query       = term(TestDocument.stringField, "test")
+          val aggregation = filterAggregation("aggregation", query)
+          val aggregationWithSubAggregation =
+            filterAggregation("aggregation", query).withSubAgg(minAggregation("subAggregation", TestDocument.intField))
+          val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
+            .withSubAgg(maxAggregation("maxSubAggregation", TestDocument.intField))
+            .withSubAgg(minAggregation("minSubAggregation", TestDocument.doubleField))
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "filter": {
+              |      "term": {
+              |        "stringField": {
+              |          "value": "test"
+              |         }
+              |       }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSubAggregation =
+            """
+              |{
+              |  "aggregation": {
+              |    "filter": {
+              |      "term": {
+              |        "stringField": {
+              |          "value": "test"
+              |         }
+              |       }
+              |    },
+              |     "aggs": {
+              |       "subAggregation": {
+              |         "min": {
+              |           "field": "intField"
+              |         }
+              |       }
+              |     }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMultipleSubAggregations =
+            """
+              |{
+              |  "aggregation": {
+              |    "filter": {
+              |      "term": {
+              |        "stringField": {
+              |          "value": "test"
+              |         }
+              |       }
+              |    },
+              |     "aggs": {
+              |       "maxSubAggregation": {
+              |         "max": {
+              |           "field": "intField"
+              |         }
+              |       },
+              |       "minSubAggregation": {
+              |         "min": {
+              |           "field": "doubleField"
+              |         }
+              |       }
+              |     }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
+          assert(aggregationWithMultipleSubAggregations.toJson)(equalTo(expectedWithMultipleSubAggregations.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")
