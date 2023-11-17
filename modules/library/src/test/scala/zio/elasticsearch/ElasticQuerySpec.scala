@@ -334,13 +334,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           }
         ),
-        test("boost") {
-          val query   = boost(0.5f, exists("testField"), terms("booleanField", true, false))
-          val queryTs = boost(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+        test("boosting") {
+          val query   = boosting(0.5f, exists("testField"), terms("booleanField", true, false))
+          val queryTs = boosting(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
 
           assert(query)(
             equalTo(
-              Boost[Any](
+              Boosting[Any](
                 negativeBoost = 0.5f,
                 negativeQuery = exists("testField"),
                 positiveQuery = terms("booleanField", true, false)
@@ -348,7 +348,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           ) && assert(queryTs)(
             equalTo(
-              Boost[TestDocument](
+              Boosting[TestDocument](
                 negativeBoost = 0.5f,
                 negativeQuery = exists(TestDocument.stringField),
                 positiveQuery = terms(TestDocument.booleanField, true, false)
@@ -2468,9 +2468,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
           }
         ),
-        test("boost") {
-          val query   = boost(0.5f, exists("stringField"), terms("booleanField", true, false))
-          val queryTs = boost(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+        test("boosting") {
+          val query   = boosting(0.5f, exists("stringField"), terms("booleanField", true, false))
+          val queryTs = boosting(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
 
           val expected =
             """
