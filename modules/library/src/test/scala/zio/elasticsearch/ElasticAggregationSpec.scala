@@ -149,7 +149,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           ) && assert(aggregationWithSigma)(
             equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = Some(3.0)))
           ) && assert(aggregationWithMissingAndSigma)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0))))
+            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0)))
+          )
         },
         test("filter") {
           val query       = term(TestDocument.stringField, "test")
