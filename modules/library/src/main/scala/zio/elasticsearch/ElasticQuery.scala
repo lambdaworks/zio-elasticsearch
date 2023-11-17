@@ -99,7 +99,7 @@ object ElasticQuery {
    *   performed.
    */
   final def disjunctionMax[S: Schema](query: ElasticQuery[S], queries: ElasticQuery[S]*): DisjunctionMaxQuery[S] =
-    DisjunctionMax[S](queries = Chunk.fromIterable(queries).prepended(query), tieBreaker = None)
+    DisjunctionMax[S](queries = query +: Chunk.fromIterable(queries), tieBreaker = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.DisjunctionMax]] using the specified parameters.
@@ -111,7 +111,7 @@ object ElasticQuery {
    *   performed.
    */
   final def disjunctionMax(query: ElasticQuery[Any], queries: ElasticQuery[Any]*): DisjunctionMaxQuery[Any] =
-    DisjunctionMax[Any](queries = Chunk.fromIterable(queries).prepended(query), tieBreaker = None)
+    DisjunctionMax[Any](queries = query +: Chunk.fromIterable(queries), tieBreaker = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.ExistsQuery]], that checks existence of the field,
