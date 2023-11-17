@@ -88,6 +88,32 @@ object ElasticQuery {
     Wildcard(field = field, value = s"*$value*", boost = None, caseInsensitive = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.DisjunctionMax]] using the specified parameters.
+   *
+   * @param queries
+   *   the rest of the queries to be wrapped inside of disjunction max query
+   * @tparam S
+   *   document for which field query is executed. An implicit `Schema` instance must be in scope
+   * @return
+   *   an instance of [[zio.elasticsearch.query.DisjunctionMax]] that represents the `disjunction max` query to be
+   *   performed.
+   */
+  final def disjunctionMax[S: Schema](query: ElasticQuery[S], queries: ElasticQuery[S]*): DisjunctionMaxQuery[S] =
+    DisjunctionMax[S](queries = query +: Chunk.fromIterable(queries), tieBreaker = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.DisjunctionMax]] using the specified parameters.
+   *
+   * @param queries
+   *   the rest of the queries to be wrapped inside of disjunction max query
+   * @return
+   *   an instance of [[zio.elasticsearch.query.DisjunctionMax]] that represents the `disjunction max` query to be
+   *   performed.
+   */
+  final def disjunctionMax(query: ElasticQuery[Any], queries: ElasticQuery[Any]*): DisjunctionMaxQuery[Any] =
+    DisjunctionMax[Any](queries = query +: Chunk.fromIterable(queries), tieBreaker = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.ExistsQuery]], that checks existence of the field,
    * using the specified parameters.
    *
@@ -215,7 +241,7 @@ object ElasticQuery {
    * @tparam S
    *   document for which field query is executed
    * @return
-   *   an instance of [[zio.elasticsearch.query.FuzzyQuery]] that represents the fuzzy query to be performed.
+   *   an instance of [[zio.elasticsearch.query.FuzzyQuery]] that represents the `fuzzy` query to be performed.
    */
   final def fuzzy[S](field: Field[S, String], value: String): FuzzyQuery[S] =
     Fuzzy(field = field.toString, value = value, fuzziness = None, maxExpansions = None, prefixLength = None)
@@ -230,7 +256,7 @@ object ElasticQuery {
    * @param value
    *   text value that will be used for the query
    * @return
-   *   an instance of [[zio.elasticsearch.query.FuzzyQuery]] that represents the fuzzy query to be performed.
+   *   an instance of [[zio.elasticsearch.query.FuzzyQuery]] that represents the `fuzzy` query to be performed.
    */
   final def fuzzy(field: String, value: String): FuzzyQuery[Any] =
     Fuzzy(field = field, value = value, fuzziness = None, maxExpansions = None, prefixLength = None)

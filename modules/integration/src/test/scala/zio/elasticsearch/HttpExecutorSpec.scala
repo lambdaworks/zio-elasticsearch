@@ -1161,6 +1161,44 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document using a disjunction max query") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated =
+                    firstDocument.copy(stringField = s"This is a ${firstDocument.stringField} test.")
+                  secondDocumentUpdated =
+                    secondDocument.copy(stringField =
+                      s"This is a ${secondDocument.stringField} test. It should be in the list before ${firstDocument.stringField}, because it has higher relevance score than ${firstDocument.stringField}"
+                    )
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentUpdated)
+                       )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated)
+                        .refreshTrue
+                    )
+                  query = disjunctionMax(
+                            term(
+                              field = TestDocument.stringField,
+                              value = firstDocument.stringField.toLowerCase
+                            ),
+                            matchPhrase(
+                              field = TestDocument.stringField,
+                              value = secondDocument.stringField
+                            )
+                          )
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(equalTo(Chunk(secondDocumentUpdated, firstDocumentUpdated)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document using a fuzzy query") {
             checkOnce(genDocumentId, genTestDocument) { (firstDocumentId, firstDocument) =>
               for {
