@@ -151,24 +151,6 @@ private[elasticsearch] object ExtendedStatsAggregationResponse {
     DeriveJsonDecoder.gen[ExtendedStatsAggregationResponse]
 }
 
-private[elasticsearch] case class StdDeviationBoundsResponse(
-  upper: Double,
-  lower: Double,
-  @jsonField("upper_population")
-  upperPopulation: Double,
-  @jsonField("lower_population")
-  lowerPopulation: Double,
-  @jsonField("upper_sampling")
-  upperSampling: Double,
-  @jsonField("lower_sampling")
-  lowerSampling: Double
-) extends AggregationResponse
-
-private[elasticsearch] object StdDeviationBoundsResponse {
-  implicit val decoder: JsonDecoder[StdDeviationBoundsResponse] =
-    DeriveJsonDecoder.gen[StdDeviationBoundsResponse]
-}
-
 private[elasticsearch] final case class FilterAggregationResponse(
   @jsonField("doc_count")
   docCount: Int,
@@ -301,6 +283,24 @@ private[elasticsearch] final case class StatsAggregationResponse(
 
 private[elasticsearch] object StatsAggregationResponse {
   implicit val decoder: JsonDecoder[StatsAggregationResponse] = DeriveJsonDecoder.gen[StatsAggregationResponse]
+}
+
+private[elasticsearch] case class StdDeviationBoundsResponse(
+  upper: Double,
+  lower: Double,
+  @jsonField("upper_population")
+  upperPopulation: Double,
+  @jsonField("lower_population")
+  lowerPopulation: Double,
+  @jsonField("upper_sampling")
+  upperSampling: Double,
+  @jsonField("lower_sampling")
+  lowerSampling: Double
+) extends AggregationResponse
+
+private[elasticsearch] object StdDeviationBoundsResponse {
+  implicit val decoder: JsonDecoder[StdDeviationBoundsResponse] =
+    DeriveJsonDecoder.gen[StdDeviationBoundsResponse]
 }
 
 private[elasticsearch] final case class SumAggregationResponse(value: Double) extends AggregationResponse
