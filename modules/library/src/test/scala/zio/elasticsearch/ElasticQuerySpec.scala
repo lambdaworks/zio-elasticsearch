@@ -424,8 +424,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query)(
             equalTo(
               DisjunctionMax[Any](
-                query = Exists[Any](field = "existsField", boost = None),
-                queries = Chunk(Ids[Any](values = Chunk("1", "2", "3"))),
+                queries =
+                  Chunk(Exists[Any](field = "existsField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
                 tieBreaker = None
               )
             )
@@ -433,8 +433,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTs)(
             equalTo(
               DisjunctionMax[TestDocument](
-                query = Exists[Any](field = "stringField", boost = None),
-                queries = Chunk(Ids[Any](values = Chunk("1", "2", "3"))),
+                queries =
+                  Chunk(Exists[Any](field = "stringField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
                 tieBreaker = None
               )
             )
@@ -442,8 +442,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithTieBreaker)(
             equalTo(
               DisjunctionMax[Any](
-                query = Exists[Any](field = "existsField", boost = None),
-                queries = Chunk(Ids[Any](values = Chunk("1", "2", "3"))),
+                queries =
+                  Chunk(Exists[Any](field = "existsField", boost = None), Ids[Any](values = Chunk("1", "2", "3"))),
                 tieBreaker = Some(0.5f)
               )
             )
