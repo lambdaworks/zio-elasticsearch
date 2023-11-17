@@ -173,6 +173,26 @@ private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
               Some(field -> AvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("cardinality#") =>
               Some(field -> CardinalityAggregationResponse(value = objFields("value").unsafeAs[Int]))
+            case str if str.contains("extended_stats#") =>
+              Some(
+                field -> ExtendedStatsAggregationResponse(
+                  count = objFields("count").unsafeAs[Int],
+                  min = objFields("min").unsafeAs[Double],
+                  max = objFields("max").unsafeAs[Double],
+                  avg = objFields("avg").unsafeAs[Double],
+                  sum = objFields("sum").unsafeAs[Double],
+                  sumOfSquares = objFields("sum_of_squares").unsafeAs[Double],
+                  variance = objFields("variance").unsafeAs[Double],
+                  variancePopulation = objFields("variance_population").unsafeAs[Double],
+                  varianceSampling = objFields("variance_sampling").unsafeAs[Double],
+                  stdDeviation = objFields("std_deviation").unsafeAs[Double],
+                  stdDeviationPopulation = objFields("std_deviation_population").unsafeAs[Double],
+                  stdDeviationSampling = objFields("std_deviation_sampling").unsafeAs[Double],
+                  stdDeviationBoundsResponse = objFields("std_deviation_sampling").unsafeAs[StdDeviationBoundsResponse](
+                    StdDeviationBoundsResponse.decoder
+                  )
+                )
+              )
             case str if str.contains("filter#") =>
               Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
             case str if str.contains("max#") =>
@@ -213,6 +233,8 @@ private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
             (field.split("#")(1), data.asInstanceOf[AvgAggregationResponse])
           case str if str.contains("cardinality#") =>
             (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
+          case str if str.contains("extended_stats#") =>
+            (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
           case str if str.contains("filter#") =>
             (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
           case str if str.contains("max#") =>
