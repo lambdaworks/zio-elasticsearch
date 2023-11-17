@@ -48,8 +48,8 @@ object ElasticQuery {
     Boosting(negativeBoost = negativeBoost, negativeQuery = negativeQuery, positiveQuery = positiveQuery)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.query.BoostingQuery]] with queries that must satisfy the criteria using
-   * the specified parameters.
+   * Constructs an instance of [[zio.elasticsearch.query.BoostingQuery]] with queries that must satisfy the criteria
+   * using the specified parameters.
    *
    * @param negativeBoost
    *   the number between 0 and 1.0 used to decrease the relevance score of documents matching the negative query

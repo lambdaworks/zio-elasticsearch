@@ -1016,7 +1016,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ),
         suite("searching for documents")(
-          test("search for a document using a constant boosting query ttt") {
+          test("search for a document using a boosting query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1037,7 +1037,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated)
                            .refreshTrue
                        )
-                  query = boost(
+                  query = boosting(
                             negativeBoost = 0.1f,
                             negativeQuery =
                               term(field = TestDocument.stringField, value = firstDocument.stringField.toLowerCase),
