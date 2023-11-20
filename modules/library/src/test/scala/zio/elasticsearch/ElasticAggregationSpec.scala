@@ -293,17 +293,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
 
           assert(aggregation)(
-            equalTo(PercentileRanks(name = "aggregation", field = "testField", values = Chunk(5, 6), missing = None))
+            equalTo(
+              PercentileRanks(name = "aggregation", field = "testField", values = Chunk(5.0, 6.0), missing = None)
+            )
           ) &&
           assert(aggregationTs)(
-            equalTo(PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5, 6), missing = None))
+            equalTo(PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5.0, 6.0), missing = None))
           ) &&
           assert(aggregationTsRaw)(
-            equalTo(PercentileRanks(name = "aggregation", field = "intField.raw", values = Chunk(5, 6), missing = None))
+            equalTo(
+              PercentileRanks(name = "aggregation", field = "intField.raw", values = Chunk(5.0, 6.0), missing = None)
+            )
           ) &&
           assert(aggregationWithMissing)(
             equalTo(
-              PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5, 6), missing = Some(20.0))
+              PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5.0, 6.0), missing = Some(20.0))
             )
           )
         },
@@ -1155,7 +1159,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "percentile_ranks": {
               |      "field": "testField",
-              |      "values": [5, 6]
+              |      "values": [5.0, 6.0]
               |    }
               |  }
               |}
@@ -1167,7 +1171,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "percentile_ranks": {
               |      "field": "intField",
-              |      "values": [5, 6]
+              |      "values": [5.0, 6.0]
               |    }
               |  }
               |}
@@ -1179,7 +1183,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "percentile_ranks": {
               |      "field": "intField",
-              |      "values": [5, 6],
+              |      "values": [5.0, 6.0],
               |      "missing": 20.0
               |    }
               |  }

@@ -293,7 +293,7 @@ sealed trait PercentileRanksAggregation
 private[elasticsearch] final case class PercentileRanks(
   name: String,
   field: String,
-  values: Chunk[Int],
+  values: Chunk[Double],
   missing: Option[Double]
 ) extends PercentileRanksAggregation { self =>
 

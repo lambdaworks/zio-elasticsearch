@@ -275,10 +275,17 @@ object ElasticAggregation {
   final def percentileRanksAggregation[A: Numeric](
     name: String,
     field: Field[_, A],
-    value: Int,
-    values: Int*
+    value: A,
+    values: A*
   ): PercentileRanksAggregation =
-    PercentileRanks(name = name, field = field.toString, values = value +: Chunk.fromIterable(values), missing = None)
+    PercentileRanks(
+      name = name,
+      field = field.toString,
+      values = Chunk.fromIterable(
+        implicitly[Numeric[A]].toDouble(value) +: values.map(v => implicitly[Numeric[A]].toDouble(v))
+      ),
+      missing = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] using the specified
@@ -296,13 +303,20 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] that represents percentile ranks
    *   aggregation to be performed.
    */
-  final def percentileRanksAggregation(
+  final def percentileRanksAggregation[A: Numeric](
     name: String,
     field: String,
-    value: Int,
-    values: Int*
+    value: A,
+    values: A*
   ): PercentileRanksAggregation =
-    PercentileRanks(name = name, field = field, values = value +: Chunk.fromIterable(values), missing = None)
+    PercentileRanks(
+      name = name,
+      field = field,
+      values = Chunk.fromIterable(
+        implicitly[Numeric[A]].toDouble(value) +: values.map(v => implicitly[Numeric[A]].toDouble(v))
+      ),
+      missing = None
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified
