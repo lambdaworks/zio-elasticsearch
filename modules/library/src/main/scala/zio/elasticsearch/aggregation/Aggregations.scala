@@ -285,6 +285,37 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
     aggregations.map(_.toJson).reduce(_ merge _)
 }
 
+sealed trait PercentileRanksAggregation
+    extends SingleElasticAggregation
+    with HasMissing[PercentileRanksAggregation]
+    with WithAgg
+
+private[elasticsearch] final case class PercentileRanks(
+  name: String,
+  field: String,
+  values: Chunk[BigDecimal],
+  missing: Option[Double]
+) extends PercentileRanksAggregation { self =>
+
+  def missing(value: Double): PercentileRanksAggregation =
+    self.copy(missing = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
+
+    Obj(
+      name -> Obj(
+        "percentile_ranks" -> ((Obj("field" -> field.toJson) merge Obj(
+          "values" -> Arr(values.map(_.toJson))
+        )) merge missingJson)
+      )
+    )
+  }
+}
+
 sealed trait PercentilesAggregation
     extends SingleElasticAggregation
     with HasMissing[PercentilesAggregation]
@@ -294,7 +325,7 @@ sealed trait PercentilesAggregation
    * Sets the `percents` parameter for the [[zio.elasticsearch.aggregation.PercentilesAggregation]].
    *
    * @param percents
-   *   a array of percentiles to be calculated for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
+   *   an array of percentiles to be calculated for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
    * @return
    *   an instance of the [[zio.elasticsearch.aggregation.PercentilesAggregation]] enriched with the `percents`
    *   parameter.

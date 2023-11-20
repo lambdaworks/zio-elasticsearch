@@ -285,6 +285,32 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("percentileRanks") {
+          val aggregation      = percentileRanksAggregation("aggregation", "testField", 5, 6)
+          val aggregationTs    = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
+          val aggregationTsRaw = percentileRanksAggregation("aggregation", TestSubDocument.intField.raw, 5, 6)
+          val aggregationWithMissing =
+            percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
+
+          assert(aggregation)(
+            equalTo(
+              PercentileRanks(name = "aggregation", field = "testField", values = Chunk(5.0, 6.0), missing = None)
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5.0, 6.0), missing = None))
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              PercentileRanks(name = "aggregation", field = "intField.raw", values = Chunk(5.0, 6.0), missing = None)
+            )
+          ) &&
+          assert(aggregationWithMissing)(
+            equalTo(
+              PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5.0, 6.0), missing = Some(20.0))
+            )
+          )
+        },
         test("percentiles") {
           val aggregation            = percentilesAggregation("aggregation", "testField")
           val aggregationTs          = percentilesAggregation("aggregation", TestSubDocument.intField)
@@ -1120,6 +1146,53 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
 
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
+        },
+        test("percentileRanks") {
+          val aggregation   = percentileRanksAggregation("aggregation", "testField", 5, 6)
+          val aggregationTs = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
+          val aggregationWithMissing =
+            percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "percentile_ranks": {
+              |      "field": "testField",
+              |      "values": [5, 6]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "percentile_ranks": {
+              |      "field": "intField",
+              |      "values": [5, 6]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "percentile_ranks": {
+              |      "field": "intField",
+              |      "values": [5, 6],
+              |      "missing": 20.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("percentiles") {
           val aggregation   = percentilesAggregation("aggregation", "testField")

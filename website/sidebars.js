@@ -55,6 +55,7 @@ module.exports = {
                     'overview/aggregations/elastic_aggregation_max',
                     'overview/aggregations/elastic_aggregation_min',
                     'overview/aggregations/elastic_aggregation_missing',
+                    'overview/aggregations/elastic_aggregation_percentile_ranks',
                     'overview/aggregations/elastic_aggregation_percentiles',
                     'overview/aggregations/elastic_aggregation_stats',
                     'overview/aggregations/elastic_aggregation_sum',

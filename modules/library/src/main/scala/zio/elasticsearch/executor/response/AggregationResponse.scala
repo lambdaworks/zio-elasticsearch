@@ -83,6 +83,8 @@ object AggregationResponse {
         MinAggregationResult(value)
       case MissingAggregationResponse(value) =>
         MissingAggregationResult(value)
+      case PercentileRanksAggregationResponse(values) =>
+        PercentileRanksAggregationResult(values)
       case PercentilesAggregationResponse(values) =>
         PercentilesAggregationResult(values)
       case StatsAggregationResponse(count, min, max, avg, sum) =>
@@ -201,6 +203,10 @@ private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
               Some(field -> MinAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("missing#") =>
               Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
+            case str if str.contains("percentile_ranks#") =>
+              Some(
+                field -> PercentileRanksAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]])
+              )
             case str if str.contains("percentiles#") =>
               Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
             case str if str.contains("stats#") =>
@@ -243,6 +249,8 @@ private[elasticsearch] object FilterAggregationResponse extends JsonDecoderOps {
             (field.split("#")(1), data.asInstanceOf[MinAggregationResponse])
           case str if str.contains("missing#") =>
             (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
+          case str if str.contains("percentile_ranks#") =>
+            (field.split("#")(1), data.asInstanceOf[PercentileRanksAggregationResponse])
           case str if str.contains("percentiles#") =>
             (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
           case str if str.contains("stats#") =>
@@ -285,6 +293,14 @@ private[elasticsearch] final case class MissingAggregationResponse(@jsonField("d
 
 private[elasticsearch] object MissingAggregationResponse {
   implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
+}
+
+private[elasticsearch] final case class PercentileRanksAggregationResponse(values: Map[String, Double])
+    extends AggregationResponse
+
+private[elasticsearch] object PercentileRanksAggregationResponse {
+  implicit val decoder: JsonDecoder[PercentileRanksAggregationResponse] =
+    DeriveJsonDecoder.gen[PercentileRanksAggregationResponse]
 }
 
 private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Double])
@@ -396,6 +412,10 @@ private[elasticsearch] object TermsAggregationBucket extends JsonDecoderOps {
               Some(field -> MinAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("missing#") =>
               Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
+            case str if str.contains("percentile_ranks#") =>
+              Some(
+                field -> PercentileRanksAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]])
+              )
             case str if str.contains("percentiles#") =>
               Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
             case str if str.contains("stats#") =>
@@ -439,6 +459,8 @@ private[elasticsearch] object TermsAggregationBucket extends JsonDecoderOps {
             (field.split("#")(1), data.asInstanceOf[MinAggregationResponse])
           case str if str.contains("missing#") =>
             (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
+          case str if str.contains("percentile_ranks#") =>
+            (field.split("#")(1), data.asInstanceOf[PercentileRanksAggregationResponse])
           case str if str.contains("percentiles#") =>
             (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
           case str if str.contains("stats#") =>
