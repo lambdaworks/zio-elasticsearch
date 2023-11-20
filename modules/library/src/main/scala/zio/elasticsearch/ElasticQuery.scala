@@ -26,6 +26,52 @@ import zio.schema.Schema
 object ElasticQuery {
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.query.BoostingQuery]] with queries that must satisfy the criteria
+   * using the specified parameters. [[zio.elasticsearch.query.BoostingQuery]] returns documents that match the query
+   * marked as positive while reducing the relevance score of documents that also match a query which is marked as
+   * negative query.
+   *
+   * @param negativeBoost
+   *   the number between 0 and 1.0 used to decrease the relevance score of documents matching the negative query
+   * @param negativeQuery
+   *   the query that decreases the relevance score of matching documents
+   * @param positiveQuery
+   *   the query that must be satisfied
+   * @tparam S
+   *   document for which field query is executed. An implicit `Schema` instance must be in scope
+   * @return
+   *   an instance of [[zio.elasticsearch.query.BoostingQuery]] that represents the boost query to be performed.
+   */
+  final def boosting[S: Schema](
+    negativeBoost: Float,
+    negativeQuery: ElasticQuery[S],
+    positiveQuery: ElasticQuery[S]
+  ): BoostingQuery[S] =
+    Boosting(negativeBoost = negativeBoost, negativeQuery = negativeQuery, positiveQuery = positiveQuery)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.BoostingQuery]] with queries that must satisfy the criteria
+   * using the specified parameters. [[zio.elasticsearch.query.BoostingQuery]] returns documents that match the query
+   * marked as positive while reducing the relevance score of documents that also match a query which is marked as
+   * negative query.
+   *
+   * @param negativeBoost
+   *   the number between 0 and 1.0 used to decrease the relevance score of documents matching the negative query
+   * @param negativeQuery
+   *   the query that decreases the relevance score of matching documents
+   * @param positiveQuery
+   *   the query that must be satisfied
+   * @return
+   *   an instance of [[zio.elasticsearch.query.BoostingQuery]] that represents the boost query to be performed.
+   */
+  final def boosting(
+    negativeBoost: Float,
+    negativeQuery: ElasticQuery[Any],
+    positiveQuery: ElasticQuery[Any]
+  ): BoostingQuery[Any] =
+    Boosting(negativeBoost = negativeBoost, negativeQuery = negativeQuery, positiveQuery = positiveQuery)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.ConstantScoreQuery]] with a specified query.
    * [[zio.elasticsearch.query.ConstantScoreQuery]] wraps a filter query and returns every matching document with a
    * relevance score equal to the boost parameter value.

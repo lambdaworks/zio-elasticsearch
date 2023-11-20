@@ -184,6 +184,24 @@ private[elasticsearch] final case class Bool[S](
   }
 }
 
+sealed trait BoostingQuery[S] extends ElasticQuery[S]
+
+private[elasticsearch] final case class Boosting[S](
+  negativeBoost: Float,
+  negativeQuery: ElasticQuery[S],
+  positiveQuery: ElasticQuery[S]
+) extends BoostingQuery[S] { self =>
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val negativeBoostJson = Obj("negative_boost" -> negativeBoost.toJson)
+    val negativeQueryJson = Obj("negative" -> negativeQuery.toJson(fieldPath))
+    val positiveQueryJson = Obj("positive" -> positiveQuery.toJson(fieldPath))
+    Obj(
+      "boosting" -> (negativeBoostJson merge negativeQueryJson merge positiveQueryJson)
+    )
+  }
+}
+
 sealed trait ConstantScoreQuery[S] extends ElasticQuery[S] with HasBoost[ConstantScoreQuery[S]]
 
 private[elasticsearch] final case class ConstantScore[S](query: ElasticQuery[S], boost: Option[Double])
