@@ -118,7 +118,7 @@ private[elasticsearch] object AvgAggregationResponse {
   implicit val decoder: JsonDecoder[AvgAggregationResponse] = DeriveJsonDecoder.gen[AvgAggregationResponse]
 }
 
-private[elasticsearch] sealed trait BucketDecoder extends JsonDecoderOps {
+private[elasticsearch] sealed trait BucketDecoder {
   implicit class BucketDecoder(fields: Chunk[(String, Json)]) {
     val allFields: Map[String, Any] = fields.flatMap { case (field, data) =>
       field match {
@@ -156,6 +156,8 @@ private[elasticsearch] sealed trait BucketDecoder extends JsonDecoderOps {
                   )
                 )
               )
+            case str if str.contains("filter#") =>
+              Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
             case str if str.contains("max#") =>
               Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
             case str if str.contains("min#") =>
@@ -199,6 +201,8 @@ private[elasticsearch] sealed trait BucketDecoder extends JsonDecoderOps {
             (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
           case str if str.contains("extended_stats#") =>
             (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
+          case str if str.contains("filter#") =>
+            (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
           case str if str.contains("max#") =>
             (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
           case str if str.contains("min#") =>
@@ -219,6 +223,13 @@ private[elasticsearch] sealed trait BucketDecoder extends JsonDecoderOps {
             (field.split("#")(1), data.asInstanceOf[ValueCountAggregationResponse])
         }
     }
+  }
+
+  implicit class JsonDecoderOps(json: Json) {
+    def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
+      (json.as[A]: @unchecked) match {
+        case Right(decoded) => decoded
+      }
   }
 }
 
@@ -270,15 +281,6 @@ private[elasticsearch] object FilterAggregationResponse extends BucketDecoder {
     val subAggs   = BucketDecoder(fields).subAggs
 
     Right(FilterAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
-  }
-}
-
-private[elasticsearch] sealed trait JsonDecoderOps {
-  implicit class JsonDecoderOps(json: Json) {
-    def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
-      (json.as[A]: @unchecked) match {
-        case Right(decoded) => decoded
-      }
   }
 }
 
