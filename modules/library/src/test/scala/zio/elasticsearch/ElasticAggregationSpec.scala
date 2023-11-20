@@ -1159,7 +1159,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "percentile_ranks": {
               |      "field": "testField",
-              |      "values": [5.0, 6.0]
+              |      "values": [5, 6]
               |    }
               |  }
               |}
@@ -1171,7 +1171,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "percentile_ranks": {
               |      "field": "intField",
-              |      "values": [5.0, 6.0]
+              |      "values": [5, 6]
               |    }
               |  }
               |}
@@ -1183,7 +1183,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "percentile_ranks": {
               |      "field": "intField",
-              |      "values": [5.0, 6.0],
+              |      "values": [5, 6],
               |      "missing": 20.0
               |    }
               |  }

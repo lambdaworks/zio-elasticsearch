@@ -275,15 +275,13 @@ object ElasticAggregation {
   final def percentileRanksAggregation[A: Numeric](
     name: String,
     field: Field[_, A],
-    value: A,
-    values: A*
+    value: BigDecimal,
+    values: BigDecimal*
   ): PercentileRanksAggregation =
     PercentileRanks(
       name = name,
       field = field.toString,
-      values = Chunk.fromIterable(
-        implicitly[Numeric[A]].toDouble(value) +: values.map(v => implicitly[Numeric[A]].toDouble(v))
-      ),
+      values = value +: Chunk.fromIterable(values),
       missing = None
     )
 
@@ -303,18 +301,16 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] that represents percentile ranks
    *   aggregation to be performed.
    */
-  final def percentileRanksAggregation[A: Numeric](
+  final def percentileRanksAggregation(
     name: String,
     field: String,
-    value: A,
-    values: A*
+    value: BigDecimal,
+    values: BigDecimal*
   ): PercentileRanksAggregation =
     PercentileRanks(
       name = name,
       field = field,
-      values = Chunk.fromIterable(
-        implicitly[Numeric[A]].toDouble(value) +: values.map(v => implicitly[Numeric[A]].toDouble(v))
-      ),
+      values = value +: Chunk.fromIterable(values),
       missing = None
     )
 
