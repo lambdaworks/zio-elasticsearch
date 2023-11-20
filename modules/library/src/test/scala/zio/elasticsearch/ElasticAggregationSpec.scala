@@ -286,24 +286,24 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("percentileRanks") {
-          val aggregation      = percentileRanksAggregation("testField", "aggregation", 5, 6)
-          val aggregationTs    = percentileRanksAggregation(TestSubDocument.intField, "aggregation", 5, 6)
-          val aggregationTsRaw = percentileRanksAggregation(TestSubDocument.intField.raw, "aggregation", 5, 6)
+          val aggregation      = percentileRanksAggregation("aggregation", "testField", 5, 6)
+          val aggregationTs    = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
+          val aggregationTsRaw = percentileRanksAggregation("aggregation", TestSubDocument.intField.raw, 5, 6)
           val aggregationWithMissing =
-            percentileRanksAggregation(TestSubDocument.intField, "aggregation", 5, 6).missing(20.0)
+            percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
 
           assert(aggregation)(
-            equalTo(PercentileRanks(field = "testField", name = "aggregation", values = Chunk(5, 6), missing = None))
+            equalTo(PercentileRanks(name = "aggregation", field = "testField", values = Chunk(5, 6), missing = None))
           ) &&
           assert(aggregationTs)(
-            equalTo(PercentileRanks(field = "intField", name = "aggregation", values = Chunk(5, 6), missing = None))
+            equalTo(PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5, 6), missing = None))
           ) &&
           assert(aggregationTsRaw)(
-            equalTo(PercentileRanks(field = "intField.raw", name = "aggregation", values = Chunk(5, 6), missing = None))
+            equalTo(PercentileRanks(name = "aggregation", field = "intField.raw", values = Chunk(5, 6), missing = None))
           ) &&
           assert(aggregationWithMissing)(
             equalTo(
-              PercentileRanks(field = "intField", name = "aggregation", values = Chunk(5, 6), missing = Some(20.0))
+              PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5, 6), missing = Some(20.0))
             )
           )
         },
@@ -1144,10 +1144,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("percentileRanks") {
-          val aggregation   = percentileRanksAggregation("testField", "aggregation", 5, 6)
-          val aggregationTs = percentileRanksAggregation(TestSubDocument.intField, "aggregation", 5, 6)
+          val aggregation   = percentileRanksAggregation("aggregation", "testField", 5, 6)
+          val aggregationTs = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
           val aggregationWithMissing =
-            percentileRanksAggregation(TestSubDocument.intField, "aggregation", 5, 6).missing(20.0)
+            percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
 
           val expected =
             """

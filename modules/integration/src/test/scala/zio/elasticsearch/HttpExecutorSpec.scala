@@ -277,7 +277,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation =
-                    percentileRanksAggregation(field = "intField", name = "aggregation", values = 500, 600)
+                    percentileRanksAggregation(name = "aggregation", field = "intField", value = 500, values = 600)
                   aggsRes <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))

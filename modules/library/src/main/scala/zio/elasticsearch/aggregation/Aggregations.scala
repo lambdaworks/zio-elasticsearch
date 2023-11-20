@@ -291,8 +291,8 @@ sealed trait PercentileRanksAggregation
     with WithAgg
 
 private[elasticsearch] final case class PercentileRanks(
-  field: String,
   name: String,
+  field: String,
   values: Chunk[Int],
   missing: Option[Double]
 ) extends PercentileRanksAggregation { self =>
@@ -325,7 +325,7 @@ sealed trait PercentilesAggregation
    * Sets the `percents` parameter for the [[zio.elasticsearch.aggregation.PercentilesAggregation]].
    *
    * @param percents
-   *   a array of percentiles to be calculated for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
+   *   an array of percentiles to be calculated for [[zio.elasticsearch.aggregation.PercentilesAggregation]]
    * @return
    *   an instance of the [[zio.elasticsearch.aggregation.PercentilesAggregation]] enriched with the `percents`
    *   parameter.

@@ -258,10 +258,14 @@ object ElasticAggregation {
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] using the specified
    * parameters.
    *
-   * @param field
-   *   the type-safe field for which stats aggregation will be executed
    * @param name
    *   the name of the aggregation
+   * @param field
+   *   the type-safe field for which percentile ranks aggregation will be executed
+   * @param value
+   *   the first value to be calculated for [[zio.elasticsearch.aggregation.PercentileRanksAggregation]]
+   * @param values
+   *   an array of values to be calculated for [[zio.elasticsearch.aggregation.PercentileRanksAggregation]]
    * @tparam A
    *   expected number type
    * @return
@@ -269,26 +273,36 @@ object ElasticAggregation {
    *   aggregation to be performed.
    */
   final def percentileRanksAggregation[A: Numeric](
-    field: Field[_, A],
     name: String,
+    field: Field[_, A],
+    value: Int,
     values: Int*
   ): PercentileRanksAggregation =
-    PercentileRanks(field = field.toString, name = name, values = Chunk.fromIterable(values), missing = None)
+    PercentileRanks(name = name, field = field.toString, values = value +: Chunk.fromIterable(values), missing = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] using the specified
    * parameters.
    *
-   * @param field
-   *   the field for which stats aggregation will be executed
    * @param name
    *   the name of the aggregation
+   * @param field
+   *   the field for which percentile ranks aggregation will be executed
+   * @param value
+   *   the first value to be calculated for [[zio.elasticsearch.aggregation.PercentileRanksAggregation]]
+   * @param values
+   *   an array of values to be calculated for [[zio.elasticsearch.aggregation.PercentileRanksAggregation]]
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.PercentileRanksAggregation]] that represents percentile ranks
    *   aggregation to be performed.
    */
-  final def percentileRanksAggregation(field: String, name: String, values: Int*): PercentileRanksAggregation =
-    PercentileRanks(field = field, name = name, values = Chunk.fromIterable(values), missing = None)
+  final def percentileRanksAggregation(
+    name: String,
+    field: String,
+    value: Int,
+    values: Int*
+  ): PercentileRanksAggregation =
+    PercentileRanks(name = name, field = field, values = value +: Chunk.fromIterable(values), missing = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified

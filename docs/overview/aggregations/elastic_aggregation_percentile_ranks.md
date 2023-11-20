@@ -33,4 +33,3 @@ val multipleAggregations: MultipleAggregations = percentileRanksAggregation(fiel
 ```
 
 You can find more information about `Percentile ranks` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-rank-aggregation.html).
-
