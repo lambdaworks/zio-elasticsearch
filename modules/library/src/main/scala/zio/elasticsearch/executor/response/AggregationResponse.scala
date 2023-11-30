@@ -118,7 +118,7 @@ private[elasticsearch] object AvgAggregationResponse {
   implicit val decoder: JsonDecoder[AvgAggregationResponse] = DeriveJsonDecoder.gen[AvgAggregationResponse]
 }
 
-case class BucketDecoder(fields: Chunk[(String, Json)]) extends JsonDecoderOps {
+private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) extends JsonDecoderOps {
   val allFields: Map[String, Any] = fields.flatMap { case (field, data) =>
     field match {
       case "key" =>
@@ -267,9 +267,10 @@ private[elasticsearch] final case class FilterAggregationResponse(
 
 private[elasticsearch] object FilterAggregationResponse {
   implicit val decoder: JsonDecoder[FilterAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
-    val allFields = BucketDecoder(fields).allFields
-    val docCount  = allFields("doc_count").asInstanceOf[Int]
-    val subAggs   = BucketDecoder(fields).subAggs
+    val bucketDecoder = BucketDecoder(fields)
+    val allFields     = bucketDecoder.allFields
+    val docCount      = allFields("doc_count").asInstanceOf[Int]
+    val subAggs       = bucketDecoder.subAggs
 
     Right(FilterAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
   }
@@ -376,10 +377,11 @@ private[elasticsearch] final case class TermsAggregationBucket(
 
 private[elasticsearch] object TermsAggregationBucket {
   implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
-    val allFields = BucketDecoder(fields).allFields
-    val key       = allFields("key").asInstanceOf[String]
-    val docCount  = allFields("doc_count").asInstanceOf[Int]
-    val subAggs   = BucketDecoder(fields).subAggs
+    val bucketDecoder = BucketDecoder(fields)
+    val allFields     = bucketDecoder.allFields
+    val docCount      = allFields("doc_count").asInstanceOf[Int]
+    val key           = allFields("key").asInstanceOf[String]
+    val subAggs       = bucketDecoder.subAggs
 
     Right(TermsAggregationBucket.apply(key, docCount, Option(subAggs).filter(_.nonEmpty)))
   }
