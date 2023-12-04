@@ -23,7 +23,7 @@ The following versions are supported:
 To use ZIO Elasticsearch in your project, add the following line to your `build.sbt` file:
 
 ```scala
-libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "0.2.0"
+libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "0.3.0"
 ```
 
 ## Usage
