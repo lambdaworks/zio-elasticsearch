@@ -815,16 +815,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
         },
         test("geoPolygon") {
           val query =
-            geoPolygon("testField", List("40, -70", "30, -80", "20, -90"))
-          val queryString =
-            geoPolygon(TestDocument.stringField, List("drm3btev3e86", "drm3btev3e87"))
+            geoPolygon("testField", Chunk("40, -70", "30, -80", "20, -90"))
+          val queryTs =
+            geoPolygon(TestDocument.stringField, Chunk("drm3btev3e86", "drm3btev3e87"))
           val queryWithName =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).name("name")
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).name("name")
           val queryWithValidationMethod =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).validationMethod(
               IgnoreMalformed
             )
-          val queryWithAllParams = geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
+          val queryWithAllParams = geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90"))
             .validationMethod(IgnoreMalformed)
             .name("name")
 
@@ -832,16 +832,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(
               GeoPolygon[Any](
                 field = "testField",
-                points = List("40, -70", "30, -80", "20, -90"),
+                points = Chunk("40, -70", "30, -80", "20, -90"),
                 queryName = None,
                 validationMethod = None
               )
             )
-          ) && assert(queryString)(
+          ) && assert(queryTs)(
             equalTo(
               GeoPolygon[TestDocument](
                 field = "stringField",
-                points = List("drm3btev3e86", "drm3btev3e87"),
+                points = Chunk("drm3btev3e86", "drm3btev3e87"),
                 queryName = None,
                 validationMethod = None
               )
@@ -850,7 +850,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(
               GeoPolygon[TestDocument](
                 field = "stringField",
-                points = List("40, -70", "30, -80", "20, -90"),
+                points = Chunk("40, -70", "30, -80", "20, -90"),
                 queryName = Some("name"),
                 validationMethod = None
               )
@@ -859,7 +859,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(
               GeoPolygon[TestDocument](
                 field = "stringField",
-                points = List("40, -70", "30, -80", "20, -90"),
+                points = Chunk("40, -70", "30, -80", "20, -90"),
                 queryName = None,
                 validationMethod = Some(IgnoreMalformed)
               )
@@ -868,7 +868,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(
               GeoPolygon[TestDocument](
                 field = "stringField",
-                points = List("40, -70", "30, -80", "20, -90"),
+                points = Chunk("40, -70", "30, -80", "20, -90"),
                 queryName = Some("name"),
                 validationMethod = Some(IgnoreMalformed)
               )
@@ -2974,17 +2974,17 @@ object ElasticQuerySpec extends ZIOSpecDefault {
         },
         test("geoPolygon") {
           val query =
-            geoPolygon("testField", List("40, -70", "30, -80", "20, -90"))
-          val queryString =
-            geoPolygon(TestDocument.stringField, List("drm3btev3e86", "drm3btev3e87"))
+            geoPolygon("testField", Chunk("40, -70", "30, -80", "20, -90"))
+          val queryTs =
+            geoPolygon(TestDocument.stringField, Chunk("drm3btev3e86", "drm3btev3e87"))
           val queryWithName =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).name("name")
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).name("name")
           val queryWithValidationMethod =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90")).validationMethod(
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).validationMethod(
               IgnoreMalformed
             )
           val queryWithAllParams =
-            geoPolygon(TestDocument.stringField, List("40, -70", "30, -80", "20, -90"))
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90"))
               .validationMethod(IgnoreMalformed)
               .name("name")
 
@@ -2999,7 +2999,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          val expectedWithString =
+          val expectedTs =
             """
               |{
               |  "geo_polygon": {
@@ -3048,7 +3048,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
-          assert(queryString.toJson(fieldPath = None))(equalTo(expectedWithString.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
           assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))

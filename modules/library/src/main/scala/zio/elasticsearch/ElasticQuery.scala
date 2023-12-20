@@ -410,13 +410,13 @@ object ElasticQuery {
    *   the type-safe field for which query is specified for
    * @param coordinates
    *   list of longitudes and latitudes of the desired points written as string (e.g. ["40, 31", "25, 31"]) or geo hash
-   *   (e.g. ["drm3btev3e86", "drm3btev3e87"] )
+   *   (e.g. ["drm3btev3e86", "drm3btev3e87"])
    * @tparam S
    *   document for which field query is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] that represents `geo_polygon` query to be performed.
    */
-  final def geoPolygon[S](field: Field[S, _], coordinates: List[String]): GeoPolygonQuery[S] =
+  final def geoPolygon[S](field: Field[S, _], coordinates: Chunk[String]): GeoPolygonQuery[S] =
     GeoPolygon(
       field = field.toString,
       points = coordinates,
@@ -431,11 +431,11 @@ object ElasticQuery {
    *   the field for which query is specified for
    * @param coordinates
    *   list of longitudes and latitudes of the desired points written as string (e.g. ["40, 31", "25, 31"]) or geo hash
-   *   (e.g. ["drm3btev3e86", "drm3btev3e87"] )
+   *   (e.g. ["drm3btev3e86", "drm3btev3e87"])
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] that represents `geo_polygon` query to be performed.
    */
-  final def geoPolygon(field: String, coordinates: List[String]): GeoPolygonQuery[Any] =
+  final def geoPolygon(field: String, coordinates: Chunk[String]): GeoPolygonQuery[Any] =
     GeoPolygon(
       field = field,
       points = coordinates,

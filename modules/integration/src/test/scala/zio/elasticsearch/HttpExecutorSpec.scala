@@ -2708,7 +2708,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                           ElasticRequest.search(
                             geoPolygonIndex,
                             ElasticQuery
-                              .geoPolygon("geoPointField", List("0, 0", "0, 90", "90, 90", "90, 0"))
+                              .geoPolygon("geoPointField", Chunk("0, 0", "0, 90", "90, 90", "90, 0"))
                           )
                         )
                         .documentAs[TestDocument]

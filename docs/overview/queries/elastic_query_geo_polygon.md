@@ -21,7 +21,6 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val query: GeoPolygonQuery = geoPolygon(field = Document.location, List("0, 0", "0, 90", "90, 90", "90, 0"))
 ```
 
-
 If you want to change the `_name`, you can use `name` method:
 ```scala
 val queryWithName: GeoPolygonQuery = geoPolygon(field = "location", coordinates = List("0, 0", "0, 90", "90, 90", "90, 0")).name("name")

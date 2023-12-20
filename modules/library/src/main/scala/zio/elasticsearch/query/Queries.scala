@@ -538,10 +538,10 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
 
   /**
    * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoPolygonQuery]]. Represents the optional name
-   * field to identify the query
+   * field to identify the query.
    *
    * @param value
-   *   the text value to represent the name field
+   *   the text value that represents the name field
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] enriched with the `queryName` parameter.
    */
@@ -565,7 +565,7 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
 
 private[elasticsearch] final case class GeoPolygon[S](
   field: String,
-  points: List[String],
+  points: Chunk[String],
   queryName: Option[String],
   validationMethod: Option[ValidationMethod]
 ) extends GeoPolygonQuery[S] { self =>
