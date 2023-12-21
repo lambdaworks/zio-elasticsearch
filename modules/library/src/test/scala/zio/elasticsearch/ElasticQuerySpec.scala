@@ -813,6 +813,68 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("geoPolygon") {
+          val query =
+            geoPolygon("testField", Chunk("40, -70", "30, -80", "20, -90"))
+          val queryTs =
+            geoPolygon(TestDocument.stringField, Chunk("drm3btev3e86", "drm3btev3e87"))
+          val queryWithName =
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).name("name")
+          val queryWithValidationMethod =
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).validationMethod(
+              IgnoreMalformed
+            )
+          val queryWithAllParams = geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90"))
+            .validationMethod(IgnoreMalformed)
+            .name("name")
+
+          assert(query)(
+            equalTo(
+              GeoPolygon[Any](
+                field = "testField",
+                points = Chunk("40, -70", "30, -80", "20, -90"),
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) && assert(queryTs)(
+            equalTo(
+              GeoPolygon[TestDocument](
+                field = "stringField",
+                points = Chunk("drm3btev3e86", "drm3btev3e87"),
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) && assert(queryWithName)(
+            equalTo(
+              GeoPolygon[TestDocument](
+                field = "stringField",
+                points = Chunk("40, -70", "30, -80", "20, -90"),
+                queryName = Some("name"),
+                validationMethod = None
+              )
+            )
+          ) && assert(queryWithValidationMethod)(
+            equalTo(
+              GeoPolygon[TestDocument](
+                field = "stringField",
+                points = Chunk("40, -70", "30, -80", "20, -90"),
+                queryName = None,
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          ) && assert(queryWithAllParams)(
+            equalTo(
+              GeoPolygon[TestDocument](
+                field = "stringField",
+                points = Chunk("40, -70", "30, -80", "20, -90"),
+                queryName = Some("name"),
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          )
+        },
         test("hasChild") {
           val query                   = hasChild("child", matchAll)
           val queryWithIgnoreUnmapped = hasChild("child", matchAll).ignoreUnmappedTrue
@@ -2906,6 +2968,87 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithHash.toJson(fieldPath = None))(equalTo(expectedWithHash.toJson)) &&
           assert(queryWithPoint.toJson(fieldPath = None))(equalTo(expectedWithDistance.toJson)) &&
           assert(queryWithDistanceType.toJson(fieldPath = None))(equalTo(expectedWithDistanceType.toJson)) &&
+          assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
+          assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+        },
+        test("geoPolygon") {
+          val query =
+            geoPolygon("testField", Chunk("40, -70", "30, -80", "20, -90"))
+          val queryTs =
+            geoPolygon(TestDocument.stringField, Chunk("drm3btev3e86", "drm3btev3e87"))
+          val queryWithName =
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).name("name")
+          val queryWithValidationMethod =
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90")).validationMethod(
+              IgnoreMalformed
+            )
+          val queryWithAllParams =
+            geoPolygon(TestDocument.stringField, Chunk("40, -70", "30, -80", "20, -90"))
+              .validationMethod(IgnoreMalformed)
+              .name("name")
+
+          val expected =
+            """
+              |{
+              |  "geo_polygon": {
+              |    "testField": {
+              |       "points": ["40, -70", "30, -80", "20, -90"]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTs =
+            """
+              |{
+              |  "geo_polygon": {
+              |    "stringField": {
+              |       "points": ["drm3btev3e86", "drm3btev3e87"]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithName =
+            """
+              |{
+              |  "geo_polygon": {
+              |    "_name": "name",
+              |    "stringField": {
+              |       "points": ["40, -70", "30, -80", "20, -90"]
+              |     }
+              |   }
+              |}
+              |""".stripMargin
+
+          val expectedWithValidationMethod =
+            """
+              |{
+              |  "geo_polygon": {
+              |    "validation_method": "IGNORE_MALFORMED",
+              |    "stringField": {
+              |       "points": ["40, -70", "30, -80", "20, -90"]
+              |     }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "geo_polygon": {
+              |    "validation_method": "IGNORE_MALFORMED",
+              |    "_name": "name",
+              |    "stringField": {
+              |       "points": ["40, -70", "30, -80", "20, -90"]
+              |     }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
           assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))

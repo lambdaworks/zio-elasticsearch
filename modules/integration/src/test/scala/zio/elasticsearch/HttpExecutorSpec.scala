@@ -2680,6 +2680,42 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
         ),
+        suite("geo-polygon query")(
+          test("using geo-polygon query") {
+            checkOnce(genTestDocument) { document =>
+              val indexDefinition =
+                """
+                  |{
+                  |  "mappings": {
+                  |      "properties": {
+                  |        "geoPointField": {
+                  |          "type": "geo_point"
+                  |      }
+                  |    }
+                  |  }
+                  |}
+                  |""".stripMargin
+
+              for {
+                _ <- Executor.execute(ElasticRequest.createIndex(geoPolygonIndex, indexDefinition))
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(geoPolygonIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.create[TestDocument](geoPolygonIndex, document).refreshTrue
+                     )
+
+                r1 <- Executor
+                        .execute(
+                          ElasticRequest.search(
+                            geoPolygonIndex,
+                            ElasticQuery
+                              .geoPolygon("geoPointField", Chunk("0, 0", "0, 90", "90, 90", "90, 0"))
+                          )
+                        )
+                        .documentAs[TestDocument]
+              } yield assert(r1)(equalTo(Chunk(document)))
+            }
+          } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoPolygonIndex)).orDie)
+        ),
         suite("search for documents using FunctionScore query")(
           test("using randomScore function") {
             checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>

@@ -534,6 +534,61 @@ private[elasticsearch] final case class GeoDistance[S](
 
 }
 
+sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoPolygonQuery]]. Represents the optional name
+   * field to identify the query.
+   *
+   * @param value
+   *   the text value that represents the name field
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] enriched with the `queryName` parameter.
+   */
+  def name(value: String): GeoPolygonQuery[S]
+
+  /**
+   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoPolygonQuery]]. Defines handling of
+   * incorrect coordinates.
+   *
+   * @param value
+   *   defines how to handle invalid latitude nad longitude:
+   *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
+   *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
+   *     longitude
+   *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] enriched with the `validationMethod` parameter.
+   */
+  def validationMethod(value: ValidationMethod): GeoPolygonQuery[S]
+}
+
+private[elasticsearch] final case class GeoPolygon[S](
+  field: String,
+  points: Chunk[String],
+  queryName: Option[String],
+  validationMethod: Option[ValidationMethod]
+) extends GeoPolygonQuery[S] { self =>
+
+  def name(value: String): GeoPolygonQuery[S] =
+    self.copy(queryName = Some(value))
+
+  def validationMethod(value: ValidationMethod): GeoPolygonQuery[S] =
+    self.copy(validationMethod = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "geo_polygon" -> Obj(
+        Chunk(
+          Some(field -> Obj("points" -> Arr(points.map(Json.Str(_)): _*))),
+          queryName.map("_name" -> _.toJson),
+          validationMethod.map("validation_method" -> _.toString.toJson)
+        ).flatten: _*
+      )
+    )
+
+}
+
 sealed trait HasChildQuery[S]
     extends ElasticQuery[S]
     with HasIgnoreUnmapped[HasChildQuery[S]]
