@@ -22,8 +22,8 @@ import zio.elasticsearch.IndexSelector.IndexNameSyntax
 import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.executor.response.BulkResponse
 import zio.elasticsearch.highlights.Highlights
-import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
+import zio.elasticsearch.query.{ElasticKNNQuery, ElasticQuery}
 import zio.elasticsearch.request._
 import zio.elasticsearch.request.options._
 import zio.elasticsearch.result.{
@@ -248,6 +248,14 @@ object ElasticRequest {
       routing = None,
       searchAfter = None,
       size = None
+    )
+
+  final def kNN[I: IndexSelector](selectors: I, query: ElasticKNNQuery[_]): KNNRequest =
+    KNN(
+      kNN = query,
+      selectors = selectors.toSelector,
+      filter = None,
+      routing = None
     )
 
   /**
@@ -618,6 +626,29 @@ object ElasticRequest {
      *   aggregate operations to be performed.
      */
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest
+  }
+
+  sealed trait KNNRequest extends ElasticRequest[Unit] with HasRouting[KNNRequest] {
+    def filter(value: ElasticQuery[_]): KNNRequest
+  }
+
+  private[elasticsearch] final case class KNN(
+    kNN: ElasticKNNQuery[_],
+    selectors: String,
+    filter: Option[ElasticQuery[_]],
+    routing: Option[Routing]
+  ) extends KNNRequest { self =>
+
+    def filter(value: ElasticQuery[_]): KNNRequest =
+      self.copy(filter = Some(value))
+
+    def routing(value: Routing): KNNRequest =
+      self.copy(routing = Some(value))
+
+    private[elasticsearch] def toJson: Json = {
+      val filterJson: Json = filter.fold(Obj())(f => Obj("filter" -> f.toJson(None)))
+      Obj("knn" -> kNN.toJson) merge filterJson
+    }
   }
 
   private[elasticsearch] final case class Search(

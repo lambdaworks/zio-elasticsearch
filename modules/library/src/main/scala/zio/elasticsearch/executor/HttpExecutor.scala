@@ -79,6 +79,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: DeleteIndex        => executeDeleteIndex(r)
       case r: Exists             => executeExists(r)
       case r: GetById            => executeGetById(r)
+      case r: KNN                => executeKnn(r)
       case r: Refresh            => executeRefresh(r)
       case r: Search             => executeSearch(r)
       case r: SearchAndAggregate => executeSearchAndAggregate(r)
@@ -371,6 +372,25 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
+
+  private def executeKnn(r: KNN): Task[Unit] = {
+    val uri = uri"${esConfig.uri}/${r.selectors}/_knn_search".withParams(
+      getQueryParams(Chunk(("routing", r.routing)))
+    )
+
+    sendRequestWithCustomResponse[GetResponse](
+      baseRequest
+        .post(uri)
+        .response(asJson[GetResponse])
+        .contentType(ApplicationJson)
+        .body(r.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk => ZIO.unit
+        case _      => ZIO.fail(handleFailuresFromCustomResponse(response))
+      }
+    }
+  }
 
   private def executeRefresh(r: Refresh): Task[Boolean] =
     sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.selectors}/$Refresh")).flatMap { response =>

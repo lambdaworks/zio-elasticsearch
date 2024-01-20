@@ -31,6 +31,10 @@ sealed trait ElasticQuery[-S] { self =>
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json
 }
 
+sealed trait ElasticKNNQuery[-S] { self =>
+  private[elasticsearch] def toJson: Json
+}
+
 sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] with HasMinimumShouldMatch[BoolQuery[S]] {
 
   /**
@@ -263,6 +267,17 @@ private[elasticsearch] final case class Exists[S](field: String, boost: Option[D
       "exists" -> (Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson) merge boost.fold(Obj())(b =>
         Obj("boost" -> b.toJson)
       ))
+    )
+}
+
+private[elasticsearch] final case class KNN[S](field: String, k: Int, numCandidates: Int, queryVector: Chunk[Double])
+    extends ElasticKNNQuery[S] {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "field"         -> field.toJson,
+      "query_vector"  -> Arr(queryVector.map(_.toJson)),
+      "k"             -> k.toJson,
+      "numCandidates" -> numCandidates.toJson
     )
 }
 
