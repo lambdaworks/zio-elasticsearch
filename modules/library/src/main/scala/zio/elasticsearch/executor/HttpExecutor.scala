@@ -373,20 +373,22 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeKnn(r: KNN): Task[Unit] = {
+  private def executeKnn(r: KNN): Task[KNNSearchResult] = {
     val uri = uri"${esConfig.uri}/${r.selectors}/_knn_search".withParams(
       getQueryParams(Chunk(("routing", r.routing)))
     )
 
-    sendRequestWithCustomResponse[GetResponse](
+    sendRequestWithCustomResponse[SearchWithAggregationsResponse](
       baseRequest
         .post(uri)
-        .response(asJson[GetResponse])
+        .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(r.toJson)
     ).flatMap { response =>
       response.code match {
-        case HttpOk => ZIO.unit
+        case HttpOk =>
+          println(response.body)
+          ZIO.succeed(new KNNSearchResult())
         case _      => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
