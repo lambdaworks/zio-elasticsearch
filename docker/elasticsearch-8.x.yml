@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   elasticsearch:
-    image: elasticsearch:8.9.1
+    image: elasticsearch:8.12.0
     container_name: zio-elasticsearch-8-test
     ports:
       - "9200:9200"
