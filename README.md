@@ -15,7 +15,7 @@ The library depends on sttp as an HTTP client for executing requests, and other 
 The following versions are supported:
 - Scala: 2.12, 2.13 and 3
 - ZIO: 2
-- Elasticsearch: 7
+- Elasticsearch: 7, 8
 - JVM 11+
 
 ## Installation
