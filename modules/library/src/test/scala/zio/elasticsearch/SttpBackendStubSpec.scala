@@ -220,66 +220,67 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |  }
         |}""".stripMargin,
       StatusCode.Ok
-    ))
-
-    private val knnSearchStub: StubMapping = StubMapping(
-      request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_knn_search",
-      response = Response(
-        """
-          |{
-          |  "took": 5,
-          |  "timed_out": false,
-          |  "_shards": {
-          |    "total": 8,
-          |    "successful": 8,
-          |    "failed": 0
-          |  },
-          |  "hits": {
-          |    "total": {
-          |      "value": 2,
-          |      "relation": "eq"
-          |    },
-          |    "max_score": 0.008547009,
-          |    "hits": [
-          |      {
-          |        "_index": "repositories",
-          |        "_type": "type",
-          |        "_id": "111",
-          |        "_score": 0.008547009,
-          |        "_source": {
-          |          "stringField": "StringField",
-          |          "subDocumentList": [
-          |            {
-          |              "stringField": "StringField",
-          |              "nestedField": {
-          |                "stringField": "StringField",
-          |                "longField": 1
-          |              },
-          |              "intField": 132,
-          |              "intFieldList": []
-          |            }
-          |          ],
-          |          "dateField": "2020-10-11",
-          |          "intField": 10,
-          |          "doubleField": 10.0,
-          |          "booleanField": true,
-          |          "geoPointField": {
-          |            "lat": 1.0,
-          |            "lon": 1.0
-          |          },
-          |          "vectorField": [
-          |            1,
-          |            5,
-          |            -20
-          |          ]
-          |        }
-          |      }
-          |    ]
-          |  }
-          |}""".stripMargin,
-        StatusCode.Ok
-      )
     )
+  )
+
+  private val knnSearchStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_knn_search",
+    response = Response(
+      """
+        |{
+        |  "took": 5,
+        |  "timed_out": false,
+        |  "_shards": {
+        |    "total": 8,
+        |    "successful": 8,
+        |    "failed": 0
+        |  },
+        |  "hits": {
+        |    "total": {
+        |      "value": 2,
+        |      "relation": "eq"
+        |    },
+        |    "max_score": 0.008547009,
+        |    "hits": [
+        |      {
+        |        "_index": "repositories",
+        |        "_type": "type",
+        |        "_id": "111",
+        |        "_score": 0.008547009,
+        |        "_source": {
+        |          "stringField": "StringField",
+        |          "subDocumentList": [
+        |            {
+        |              "stringField": "StringField",
+        |              "nestedField": {
+        |                "stringField": "StringField",
+        |                "longField": 1
+        |              },
+        |              "intField": 132,
+        |              "intFieldList": []
+        |            }
+        |          ],
+        |          "dateField": "2020-10-11",
+        |          "intField": 10,
+        |          "doubleField": 10.0,
+        |          "booleanField": true,
+        |          "geoPointField": {
+        |            "lat": 1.0,
+        |            "lon": 1.0
+        |          },
+        |          "vectorField": [
+        |            1,
+        |            5,
+        |            -20
+        |          ]
+        |        }
+        |      }
+        |    ]
+        |  }
+        |}""".stripMargin,
+      StatusCode.Ok
+    )
+  )
 
   private val refreshRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_refresh",

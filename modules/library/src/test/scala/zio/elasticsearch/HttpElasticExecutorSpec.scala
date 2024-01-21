@@ -179,7 +179,10 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       test("knnSearch") {
         val executorSearch =
           Executor
-            .execute(ElasticRequest.knnSearch(selectors = index, query = kNN(TestDocument.vectorField, 2, 5, Chunk(-5.0, 9.0, -12.0))))
+            .execute(
+              ElasticRequest
+                .knnSearch(selectors = index, query = kNN(TestDocument.vectorField, 2, 5, Chunk(-5.0, 9.0, -12.0)))
+            )
             .documentAs[TestDocument]
         assertZIO(executorSearch)(equalTo(Chunk(doc)))
       },
