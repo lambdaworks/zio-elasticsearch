@@ -1029,9 +1029,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           val expected =
             """|{ "create" : { "_index" : "index", "routing" : "routing" } }
-               |{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0}}
+               |{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}
                |{ "index" : { "_index" : "index", "_id" : "documentid" } }
-               |{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0}}
+               |{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}
                |""".stripMargin
 
           assert(requestBody)(equalTo(expected))
@@ -1079,7 +1079,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |  "geoPointField": {
               |    "lat": 20.0,
               |    "lon": 21.0
-              |  }
+              |  },
+              |  "vectorField": []
               |}
               |""".stripMargin
 
@@ -1102,7 +1103,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |  "geoPointField": {
               |    "lat": 20.0,
               |    "lon": 21.0
-              |  }
+              |  },
+              |  "vectorField": []
               |}
               |""".stripMargin
 
@@ -1326,7 +1328,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |      "doubleField",
               |      "booleanField",
               |      "geoPointField.lat",
-              |      "geoPointField.lon"
+              |      "geoPointField.lon",
+              |      "vectorField"
               |    ]
               |  }
               |}
@@ -1548,7 +1551,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "geoPointField": {
               |      "lat": 20.0,
               |      "lon": 21.0
-              |    }
+              |    },
+              |    "vectorField": []
               |  }
               |}
               |""".stripMargin
@@ -1566,7 +1570,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "geoPointField": {
               |      "lat": 20.0,
               |      "lon": 21.0
-              |    }
+              |    },
+              |    "vectorField": []
               |  },
               |  "upsert": {
               |    "stringField": "stringField2",
@@ -1578,7 +1583,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "geoPointField": {
               |      "lat": 10.0,
               |      "lon": 11.0
-              |    }
+              |    },
+              |    "vectorField": []
               |  }
               |}
               |""".stripMargin
@@ -1667,7 +1673,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "geoPointField": {
               |      "lat": 10.0,
               |      "lon": 11.0
-              |    }
+              |    },
+              |    "vectorField": []
               |  }
               |}
               |""".stripMargin
@@ -1692,7 +1699,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |  "geoPointField": {
               |    "lat": 20.0,
               |    "lon": 21.0
-              |  }
+              |  },
+              |  "vectorField": []
               |}
               |""".stripMargin
 
@@ -1708,7 +1716,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     intField = 5,
     doubleField = 7.0,
     booleanField = true,
-    geoPointField = GeoPoint(20.0, 21.0)
+    geoPointField = GeoPoint(20.0, 21.0),
+    vectorField = List()
   )
   private val Doc2 = TestDocument(
     stringField = "stringField2",
@@ -1717,7 +1726,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     intField = 10,
     doubleField = 17.0,
     booleanField = false,
-    geoPointField = GeoPoint(10.0, 11.0)
+    geoPointField = GeoPoint(10.0, 11.0),
+    vectorField = List()
   )
   private val DocId            = DocumentId("documentid")
   private val Index            = IndexName("index")

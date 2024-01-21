@@ -106,7 +106,17 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
       })
 }
 
-final class KNNSearchResult private[elasticsearch] ()
+final class KNNSearchResult private[elasticsearch] (private val hits: Chunk[Item]) extends DocumentResult[Chunk] {
+
+  def documentAs[A: Schema]: IO[DecodingException, Chunk[A]] =
+    ZIO.fromEither {
+      ZValidation.validateAll(hits.map(item => ZValidation.fromEither(item.documentAs))).toEitherWith { errors =>
+        DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(", ")}")
+      }
+    }
+
+  lazy val items: UIO[Chunk[Item]] = ZIO.succeed(hits)
+}
 
 final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],

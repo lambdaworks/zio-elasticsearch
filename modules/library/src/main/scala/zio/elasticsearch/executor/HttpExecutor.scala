@@ -387,9 +387,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
-          println(response.body)
-          ZIO.succeed(new KNNSearchResult())
-        case _ => ZIO.fail(handleFailuresFromCustomResponse(response))
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value =>
+              ZIO.succeed(new KNNSearchResult(itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort)))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }

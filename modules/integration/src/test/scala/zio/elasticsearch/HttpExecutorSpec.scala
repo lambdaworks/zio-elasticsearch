@@ -1049,6 +1049,61 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ),
+        suite("kNN search")(
+          test("search for top two results") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _                    <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated  = firstDocument.copy(vectorField = List(1, 5, -20))
+                  secondDocumentUpdated = secondDocument.copy(vectorField = List(42, 8, -15))
+                  thirdDocumentUpdated  = thirdDocument.copy(vectorField = List(15, 11, 23))
+                  req1                  = ElasticRequest.create(firstSearchIndex, firstDocumentId, firstDocumentUpdated)
+                  req2                  = ElasticRequest.create(firstSearchIndex, secondDocumentId, secondDocumentUpdated)
+                  req3                  = ElasticRequest.create(firstSearchIndex, thirdDocumentId, thirdDocumentUpdated)
+                  _                    <- Executor.execute(ElasticRequest.bulk(req1, req2, req3).refreshTrue)
+                  query                 = ElasticQuery.kNN(TestDocument.vectorField, 2, 3, Chunk(-5.0, 9.0, -12.0))
+                  res                  <- Executor.execute(ElasticRequest.knnSearch(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield (assert(res)(equalTo(Chunk(firstDocumentUpdated, thirdDocumentUpdated))))
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "vectorField": { "type": "dense_vector", "dims": 3, "similarity": "l2_norm", "index": true } } } }"""
+              )
+            ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for top two results with filters") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+                for {
+                  _                    <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated  = firstDocument.copy(intField = 15, vectorField = List(1, 5, -20))
+                  secondDocumentUpdated = secondDocument.copy(intField = 21, vectorField = List(42, 8, -15))
+                  thirdDocumentUpdated  = thirdDocument.copy(intField = 4, vectorField = List(15, 11, 23))
+                  req1                  = ElasticRequest.create(firstSearchIndex, firstDocumentId, firstDocumentUpdated)
+                  req2                  = ElasticRequest.create(firstSearchIndex, secondDocumentId, secondDocumentUpdated)
+                  req3                  = ElasticRequest.create(firstSearchIndex, thirdDocumentId, thirdDocumentUpdated)
+                  _                    <- Executor.execute(ElasticRequest.bulk(req1, req2, req3).refreshTrue)
+                  query                 = ElasticQuery.kNN(TestDocument.vectorField, 2, 3, Chunk(-5.0, 9.0, -12.0))
+                  filter                = ElasticQuery.range(TestDocument.intField).gt(10)
+                  res <- Executor
+                           .execute(ElasticRequest.knnSearch(firstSearchIndex, query).filter(filter))
+                           .documentAs[TestDocument]
+                } yield (assert(res)(equalTo(Chunk(firstDocumentUpdated, secondDocumentUpdated))))
+            }
+          } @@ around(
+            Executor.execute(
+              ElasticRequest.createIndex(
+                firstSearchIndex,
+                """{ "mappings": { "properties": { "vectorField": { "type": "dense_vector", "dims": 3, "similarity": "l2_norm", "index": true } } } }"""
+              )
+            ),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ) @@ shrinks(0),
         suite("searching for documents")(
           test("search for a document using a boosting query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
