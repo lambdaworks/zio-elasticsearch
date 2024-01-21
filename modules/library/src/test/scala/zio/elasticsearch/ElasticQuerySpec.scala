@@ -1083,7 +1083,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryIntTs    = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
 
           assert(queryString)(
-            equalTo(KNN[Any](field = "stringValue", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+            equalTo(KNN[Any](field = "stringField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
           ) &&
           assert(queryBool)(
             equalTo(KNN[Any](field = "boolField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
@@ -1093,12 +1093,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           ) &&
           assert(queryStringTs)(
             equalTo(
-              KNN[TestDocument](field = "stringValue", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+              KNN[TestDocument](field = "stringField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
             )
           ) &&
           assert(queryBoolTs)(
             equalTo(
-              KNN[TestDocument](field = "boolField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+              KNN[TestDocument](field = "booleanField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
             )
           ) &&
           assert(queryIntTs)(
@@ -3379,7 +3379,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val expectedBool =
             """
               |{
-              |  "field": "boolField",
+              |  "field": "booleanField",
               |  "query_vector": [1.1, 2.2, 3.3],
               |  "k": 5,
               |  "num_candidates": 10
