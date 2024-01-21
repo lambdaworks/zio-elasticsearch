@@ -274,9 +274,9 @@ private[elasticsearch] final case class KNN[S](field: String, k: Int, numCandida
     extends ElasticKNNQuery[S] {
   private[elasticsearch] def toJson: Json =
     Obj(
-      "field"         -> field.toJson,
-      "query_vector"  -> Arr(queryVector.map(_.toJson)),
-      "k"             -> k.toJson,
+      "field"          -> field.toJson,
+      "query_vector"   -> Arr(queryVector.map(_.toJson)),
+      "k"              -> k.toJson,
       "num_candidates" -> numCandidates.toJson
     )
 }

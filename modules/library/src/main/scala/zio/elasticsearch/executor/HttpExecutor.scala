@@ -389,7 +389,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           println(response.body)
           ZIO.succeed(new KNNSearchResult())
-        case _      => ZIO.fail(handleFailuresFromCustomResponse(response))
+        case _ => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
   }

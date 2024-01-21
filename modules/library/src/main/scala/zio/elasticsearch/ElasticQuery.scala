@@ -22,7 +22,6 @@ import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
 import zio.schema.Schema
-import zio.schema.Schema.Field
 
 object ElasticQuery {
 

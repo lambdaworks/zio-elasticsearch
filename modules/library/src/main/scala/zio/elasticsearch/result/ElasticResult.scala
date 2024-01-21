@@ -106,7 +106,7 @@ final class GetResult private[elasticsearch] (private val doc: Option[Item]) ext
       })
 }
 
-final class KNNSearchResult private[elasticsearch]()
+final class KNNSearchResult private[elasticsearch] ()
 
 final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],
