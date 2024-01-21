@@ -261,6 +261,28 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(GetById(index = Index, id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
           )
         },
+        test("knnSearch") {
+          val knnSearchRequest            = knnSearch(selectors = Index, query = KnnQuery)
+          val knnSearchRequestWithFilter  = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query)
+          val knnSearchRequestWithRouting = knnSearch(selectors = Index, query = KnnQuery).routing(RoutingValue)
+          val knnSearchRequestWithAllParams =
+            knnSearch(selectors = Index, query = KnnQuery).filter(query = Query).routing(RoutingValue)
+
+          assert(knnSearchRequest)(
+            equalTo(KNN(knn = KnnQuery, selectors = Index.toSelector, filter = None, routing = None))
+          ) &&
+          assert(knnSearchRequestWithFilter)(
+            equalTo(KNN(knn = KnnQuery, selectors = Index.toSelector, filter = Some(Query), routing = None))
+          ) &&
+          assert(knnSearchRequestWithRouting)(
+            equalTo(KNN(knn = KnnQuery, selectors = Index.toSelector, filter = None, routing = Some(RoutingValue)))
+          ) &&
+          assert(knnSearchRequestWithAllParams)(
+            equalTo(
+              KNN(knn = KnnQuery, selectors = Index.toSelector, filter = Some(Query), routing = Some(RoutingValue))
+            )
+          )
+        },
         test("refresh") {
           val refreshRequest        = refresh(Index)
           val refreshWithMultiIndex = refresh(Indices)
@@ -1097,29 +1119,6 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequest)(equalTo("")) &&
           assert(jsonRequestWithDefinition)(equalTo(definition))
         },
-        test("upsert") {
-          val jsonRequest = upsert(index = Index, id = DocId, doc = Doc1) match {
-            case r: CreateOrUpdate => r.toJson
-          }
-
-          val expected =
-            """
-              |{
-              |  "stringField": "stringField1",
-              |  "subDocumentList": [],
-              |  "dateField": "2020-10-10",
-              |  "intField": 5,
-              |  "doubleField": 7.0,
-              |  "booleanField": true,
-              |  "geoPointField": {
-              |    "lat": 20.0,
-              |    "lon": 21.0
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson))
-        },
         test("deleteByQuery") {
           val jsonRequest = deleteByQuery(index = Index, query = Query) match {
             case r: DeleteByQuery => r.toJson
@@ -1139,6 +1138,49 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(jsonRequest)(equalTo(expected.toJson))
+        },
+        test("knnSearch") {
+          val jsonRequest = knnSearch(selectors = Index, query = KnnQuery) match {
+            case r: ElasticRequest.KNN => r.toJson
+          }
+          val jsonRequestWithFilter = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query) match {
+            case r: ElasticRequest.KNN => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "knn": {
+              |    "field": "stringField",
+              |    "query_vector": [1.1, 3.3],
+              |    "k": 10,
+              |    "num_candidates": 21
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFilter =
+            """
+              |{
+              |  "knn": {
+              |    "field": "stringField",
+              |    "query_vector": [1.1, 3.3],
+              |    "k": 10,
+              |    "num_candidates": 21
+              |  },
+              |  "filter": {
+              |    "range": {
+              |      "intField": {
+              |        "gte": 10
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) && assert(jsonRequestWithFilter)(
+            equalTo(expectedWithFilter.toJson)
+          )
         },
         test("search") {
           val jsonRequest = search(Index, Query) match {
@@ -1475,7 +1517,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequestWithSortAndHighlights)(equalTo(expectedWithSortAndHighlights.toJson)) &&
           assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
         },
-        test("update - doc") {
+        test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
             case r: Update => r.toJson
           }
@@ -1514,53 +1556,6 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "geoPointField": {
               |      "lat": 20.0,
               |      "lon": 21.0
-              |    }
-              |  },
-              |  "upsert": {
-              |    "stringField": "stringField2",
-              |    "subDocumentList": [],
-              |    "dateField": "2022-10-10",
-              |    "intField": 10,
-              |    "doubleField": 17.0,
-              |    "booleanField": false,
-              |    "geoPointField": {
-              |      "lat": 10.0,
-              |      "lon": 11.0
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(jsonRequest)(equalTo(expected.toJson)) &&
-          assert(jsonRequestWithUpsert)(equalTo(expectedWithUpsert.toJson))
-        },
-        test("update - script") {
-          val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
-            case r: Update => r.toJson
-          }
-          val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
-            case r: Update => r.toJson
-          }
-
-          val expected =
-            """
-              |{
-              |  "script": {
-              |    "source": "doc['intField'].value * params['factor']",
-              |    "params": {
-              |      "factor": 2
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithUpsert =
-            """
-              |{
-              |  "script": {
-              |    "source": "doc['intField'].value * params['factor']",
-              |    "params": {
-              |      "factor": 2
               |    }
               |  },
               |  "upsert": {
@@ -1622,6 +1617,76 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(jsonRequest)(equalTo(expected.toJson)) &&
           assert(jsonRequestWithQuery)(equalTo(expectedWithQuery.toJson))
+        },
+        test("updateByScript") {
+          val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
+            case r: Update => r.toJson
+          }
+          val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
+            case r: Update => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "script": {
+              |    "source": "doc['intField'].value * params['factor']",
+              |    "params": {
+              |      "factor": 2
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithUpsert =
+            """
+              |{
+              |  "script": {
+              |    "source": "doc['intField'].value * params['factor']",
+              |    "params": {
+              |      "factor": 2
+              |    }
+              |  },
+              |  "upsert": {
+              |    "stringField": "stringField2",
+              |    "subDocumentList": [],
+              |    "dateField": "2022-10-10",
+              |    "intField": 10,
+              |    "doubleField": 17.0,
+              |    "booleanField": false,
+              |    "geoPointField": {
+              |      "lat": 10.0,
+              |      "lon": 11.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestWithUpsert)(equalTo(expectedWithUpsert.toJson))
+        },
+        test("upsert") {
+          val jsonRequest = upsert(index = Index, id = DocId, doc = Doc1) match {
+            case r: CreateOrUpdate => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "stringField": "stringField1",
+              |  "subDocumentList": [],
+              |  "dateField": "2020-10-10",
+              |  "intField": 5,
+              |  "doubleField": 7.0,
+              |  "booleanField": true,
+              |  "geoPointField": {
+              |    "lat": 20.0,
+              |    "lon": 21.0
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
         }
       )
     )
@@ -1649,6 +1714,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
   private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)
   private val Indices          = MultiIndex.names(Index, IndexName("index2"))
   private val Query            = ElasticQuery.range(TestDocument.intField).gte(10)
+  private val KnnQuery         = ElasticQuery.kNN(TestDocument.stringField, 10, 21, Chunk(1.1, 3.3))
   private val RoutingValue     = Routing("routing")
   private val Script1          = Script("doc['intField'].value * params['factor']").params("factor" -> 2)
   private val TermsAggregation = termsAggregation(name = "aggregation", field = "intField")

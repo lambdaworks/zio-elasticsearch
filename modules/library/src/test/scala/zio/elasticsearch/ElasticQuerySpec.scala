@@ -1074,6 +1074,39 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("kNN") {
+          val queryString   = kNN("stringField", 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryBool     = kNN("boolField", 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryInt      = kNN("intField", 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryStringTs = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryBoolTs   = kNN(TestDocument.booleanField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryIntTs    = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
+
+          assert(queryString)(
+            equalTo(KNN[Any](field = "stringValue", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+          ) &&
+          assert(queryBool)(
+            equalTo(KNN[Any](field = "boolField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+          ) &&
+          assert(queryInt)(
+            equalTo(KNN[Any](field = "intField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+          ) &&
+          assert(queryStringTs)(
+            equalTo(
+              KNN[TestDocument](field = "stringValue", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+            )
+          ) &&
+          assert(queryBoolTs)(
+            equalTo(
+              KNN[TestDocument](field = "boolField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+            )
+          ) &&
+          assert(queryIntTs)(
+            equalTo(
+              KNN[TestDocument](field = "intField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+            )
+          )
+        },
         test("matchAll") {
           val query          = matchAll
           val queryWithBoost = matchAll.boost(3.14)
@@ -3327,6 +3360,45 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
+        },
+        test("kNN") {
+          val queryString = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryBool   = kNN(TestDocument.booleanField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryInt    = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
+
+          val expectedString =
+            """
+              |{
+              |  "field": "stringField",
+              |  "query_vector": [1.1, 2.2, 3.3],
+              |  "k": 5,
+              |  "num_candidates": 10
+              |}
+              |""".stripMargin
+
+          val expectedBool =
+            """
+              |{
+              |  "field": "boolField",
+              |  "query_vector": [1.1, 2.2, 3.3],
+              |  "k": 5,
+              |  "num_candidates": 10
+              |}
+              |""".stripMargin
+
+          val expectedInt =
+            """
+              |{
+              |  "field": "intField",
+              |  "query_vector": [1.1, 2.2, 3.3],
+              |  "k": 5,
+              |  "num_candidates": 10
+              |}
+              |""".stripMargin
+
+          assert(queryString.toJson)(equalTo(expectedString.toJson)) &&
+          assert(queryBool.toJson)(equalTo(expectedBool.toJson)) &&
+          assert(queryInt.toJson)(equalTo(expectedInt.toJson))
         },
         test("matchAll") {
           val query          = matchAll

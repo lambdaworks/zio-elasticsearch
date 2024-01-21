@@ -223,7 +223,7 @@ object ElasticRequest {
    * @param selectors
    *   the name of the index or more indices to search in
    * @param query
-   *   an instance of [[zio.elasticsearch.ElasticKNNQuery]] to run
+   *   an instance of [[zio.elasticsearch.query.ElasticKNNQuery]] to run
    * @return
    *   an instance of [[KNNRequest]] that represents k-nearest neighbour (kNN) operation to be performed.
    */
