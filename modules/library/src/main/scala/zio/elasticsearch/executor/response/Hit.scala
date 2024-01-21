@@ -23,8 +23,6 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 private[elasticsearch] final case class Hit(
   @jsonField("_index")
   index: String,
-  @jsonField("_type")
-  `type`: String,
   @jsonField("_id")
   id: String,
   @jsonField("_score")
