@@ -1075,35 +1075,89 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("kNN") {
-          val queryString   = kNN("stringField", 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryBool     = kNN("boolField", 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryInt      = kNN("intField", 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryStringTs = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryBoolTs   = kNN(TestDocument.booleanField, 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryIntTs    = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryString         = kNN("stringField", 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryBool           = kNN("boolField", 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryInt            = kNN("intField", 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryStringTs       = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryBoolTs         = kNN(TestDocument.booleanField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryIntTs          = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryWithSimilarity = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3)).similarity(3.14)
 
           assert(queryString)(
-            equalTo(KNN[Any](field = "stringField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+            equalTo(
+              KNN[Any](
+                field = "stringField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = None
+              )
+            )
           ) &&
           assert(queryBool)(
-            equalTo(KNN[Any](field = "boolField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+            equalTo(
+              KNN[Any](
+                field = "boolField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = None
+              )
+            )
           ) &&
           assert(queryInt)(
-            equalTo(KNN[Any](field = "intField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3)))
+            equalTo(
+              KNN[Any](
+                field = "intField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = None
+              )
+            )
           ) &&
           assert(queryStringTs)(
             equalTo(
-              KNN[TestDocument](field = "stringField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+              KNN[TestDocument](
+                field = "stringField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = None
+              )
             )
           ) &&
           assert(queryBoolTs)(
             equalTo(
-              KNN[TestDocument](field = "booleanField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+              KNN[TestDocument](
+                field = "booleanField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = None
+              )
             )
           ) &&
           assert(queryIntTs)(
             equalTo(
-              KNN[TestDocument](field = "intField", k = 5, numCandidates = 10, queryVector = Chunk(1.1, 2.2, 3.3))
+              KNN[TestDocument](
+                field = "intField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = None
+              )
+            )
+          ) &&
+          assert(queryWithSimilarity)(
+            equalTo(
+              KNN[TestDocument](
+                field = "stringField",
+                k = 5,
+                numCandidates = 10,
+                queryVector = Chunk(1.1, 2.2, 3.3),
+                similarity = Some(3.14)
+              )
             )
           )
         },
@@ -3362,9 +3416,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("kNN") {
-          val queryString = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryBool   = kNN(TestDocument.booleanField, 5, 10, Chunk(1.1, 2.2, 3.3))
-          val queryInt    = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryString         = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryBool           = kNN(TestDocument.booleanField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryInt            = kNN(TestDocument.intField, 5, 10, Chunk(1.1, 2.2, 3.3))
+          val queryWithSimilarity = kNN(TestDocument.stringField, 5, 10, Chunk(1.1, 2.2, 3.3)).similarity(3.14)
 
           val expectedString =
             """
@@ -3396,9 +3451,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithSimilarity =
+            """
+              |{
+              |  "field": "stringField",
+              |  "query_vector": [1.1, 2.2, 3.3],
+              |  "k": 5,
+              |  "num_candidates": 10,
+              |  "similarity": 3.14
+              |}
+              |""".stripMargin
+
           assert(queryString.toJson)(equalTo(expectedString.toJson)) &&
           assert(queryBool.toJson)(equalTo(expectedBool.toJson)) &&
-          assert(queryInt.toJson)(equalTo(expectedInt.toJson))
+          assert(queryInt.toJson)(equalTo(expectedInt.toJson)) &&
+          assert(queryWithSimilarity.toJson)(equalTo(expectedWithSimilarity.toJson))
         },
         test("matchAll") {
           val query          = matchAll

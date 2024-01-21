@@ -262,9 +262,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("knnSearch") {
-          val knnSearchRequest            = knnSearch(selectors = Index, query = KnnQuery)
-          val knnSearchRequestWithFilter  = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query)
-          val knnSearchRequestWithRouting = knnSearch(selectors = Index, query = KnnQuery).routing(RoutingValue)
+          val knnSearchRequest           = knnSearch(selectors = Index, query = KnnQuery)
+          val knnSearchRequestWithFilter = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query)
+          val knnSearchRequestWithRouting =
+            knnSearch(selectors = Index, query = KnnQuery.similarity(3.14)).routing(RoutingValue)
           val knnSearchRequestWithAllParams =
             knnSearch(selectors = Index, query = KnnQuery).filter(query = Query).routing(RoutingValue)
 
@@ -275,7 +276,14 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(KNN(knn = KnnQuery, selectors = Index.toSelector, filter = Some(Query), routing = None))
           ) &&
           assert(knnSearchRequestWithRouting)(
-            equalTo(KNN(knn = KnnQuery, selectors = Index.toSelector, filter = None, routing = Some(RoutingValue)))
+            equalTo(
+              KNN(
+                knn = KnnQuery.similarity(3.14),
+                selectors = Index.toSelector,
+                filter = None,
+                routing = Some(RoutingValue)
+              )
+            )
           ) &&
           assert(knnSearchRequestWithAllParams)(
             equalTo(
@@ -1143,9 +1151,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val jsonRequest = knnSearch(selectors = Index, query = KnnQuery) match {
             case r: ElasticRequest.KNN => r.toJson
           }
-          val jsonRequestWithFilter = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query) match {
-            case r: ElasticRequest.KNN => r.toJson
-          }
+          val jsonRequestWithFilter =
+            knnSearch(selectors = Index, query = KnnQuery.similarity(3.14)).filter(query = Query) match {
+              case r: ElasticRequest.KNN => r.toJson
+            }
 
           val expected =
             """
@@ -1166,7 +1175,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "field": "stringField",
               |    "query_vector": [1.1, 3.3],
               |    "k": 10,
-              |    "num_candidates": 21
+              |    "num_candidates": 21,
+              |    "similarity": 3.14
               |  },
               |  "filter": {
               |    "range": {

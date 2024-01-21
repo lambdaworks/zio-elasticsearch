@@ -23,7 +23,7 @@ import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.executor.response.BulkResponse
 import zio.elasticsearch.highlights.Highlights
 import zio.elasticsearch.query.sort.Sort
-import zio.elasticsearch.query.{ElasticKNNQuery, ElasticQuery}
+import zio.elasticsearch.query.{ElasticQuery, KNNQuery}
 import zio.elasticsearch.request._
 import zio.elasticsearch.request.options._
 import zio.elasticsearch.result.{
@@ -223,11 +223,11 @@ object ElasticRequest {
    * @param selectors
    *   the name of the index or more indices to search in
    * @param query
-   *   an instance of [[zio.elasticsearch.query.ElasticKNNQuery]] to run
+   *   an instance of [[zio.elasticsearch.query.KNNQuery]] to run
    * @return
    *   an instance of [[KNNRequest]] that represents k-nearest neighbour (kNN) operation to be performed.
    */
-  final def knnSearch[I: IndexSelector](selectors: I, query: ElasticKNNQuery[_]): KNNRequest =
+  final def knnSearch[I: IndexSelector](selectors: I, query: KNNQuery[_]): KNNRequest =
     KNN(knn = query, selectors = selectors.toSelector, filter = None, routing = None)
 
   /**
@@ -624,7 +624,7 @@ object ElasticRequest {
   }
 
   private[elasticsearch] final case class KNN(
-    knn: ElasticKNNQuery[_],
+    knn: KNNQuery[_],
     selectors: String,
     filter: Option[ElasticQuery[_]],
     routing: Option[Routing]
