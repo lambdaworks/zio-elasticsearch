@@ -83,6 +83,7 @@ trait IntegrationSpec extends ZIOSpecDefault {
     doubleField     <- Gen.double(100, 2000)
     booleanField    <- Gen.boolean
     geoPointField   <- genGeoPoint
+    vectorField     <- Gen.listOfN(5)(Gen.int(-10, 10))
   } yield TestDocument(
     stringField = stringField,
     dateField = dateField,
@@ -90,7 +91,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
     intField = intField,
     doubleField = doubleField,
     booleanField = booleanField,
-    geoPointField = geoPointField
+    geoPointField = geoPointField,
+    vectorField = vectorField
   )
 
   def genTestSubDocument: Gen[Any, TestSubDocument] = for {

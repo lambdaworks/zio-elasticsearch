@@ -13,14 +13,16 @@ final case class TestDocument(
   intField: Int,
   doubleField: Double,
   booleanField: Boolean,
-  geoPointField: GeoPoint
+  geoPointField: GeoPoint,
+  vectorField: List[Int]
 )
 
 object TestDocument {
-  implicit val schema
-    : Schema.CaseClass7[String, List[TestSubDocument], LocalDate, Int, Double, Boolean, GeoPoint, TestDocument] =
+  implicit val schema: Schema.CaseClass8[String, List[TestSubDocument], LocalDate, Int, Double, Boolean, GeoPoint, List[
+    Int
+  ], TestDocument] =
     DeriveSchema.gen[TestDocument]
 
-  val (stringField, subDocumentList, dateField, intField, doubleField, booleanField, geoPointField) =
+  val (stringField, subDocumentList, dateField, intField, doubleField, booleanField, geoPointField, vectorField) =
     schema.makeAccessors(FieldAccessorBuilder)
 }

@@ -79,6 +79,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: DeleteIndex        => executeDeleteIndex(r)
       case r: Exists             => executeExists(r)
       case r: GetById            => executeGetById(r)
+      case r: KNN                => executeKnn(r)
       case r: Refresh            => executeRefresh(r)
       case r: Search             => executeSearch(r)
       case r: SearchAndAggregate => executeSearchAndAggregate(r)
@@ -371,6 +372,31 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           ZIO.fail(handleFailuresFromCustomResponse(response))
       }
     }
+
+  private def executeKnn(r: KNN): Task[KNNSearchResult] = {
+    val uri = uri"${esConfig.uri}/${r.selectors}/_knn_search".withParams(
+      getQueryParams(Chunk(("routing", r.routing)))
+    )
+
+    sendRequestWithCustomResponse[SearchWithAggregationsResponse](
+      baseRequest
+        .post(uri)
+        .response(asJson[SearchWithAggregationsResponse])
+        .contentType(ApplicationJson)
+        .body(r.toJson)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value =>
+              ZIO.succeed(new KNNSearchResult(itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort)))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
+      }
+    }
+  }
 
   private def executeRefresh(r: Refresh): Task[Boolean] =
     sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.selectors}/$Refresh")).flatMap { response =>

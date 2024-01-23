@@ -43,7 +43,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       intField = 10,
       doubleField = 10.0,
       booleanField = true,
-      geoPointField = GeoPoint(1.0, 1.0)
+      geoPointField = GeoPoint(1.0, 1.0),
+      vectorField = List(1, 5, -20)
     )
 
   val secondDoc: TestDocument =
@@ -54,7 +55,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       intField = 12,
       doubleField = 12.0,
       booleanField = true,
-      geoPointField = GeoPoint(1.0, 1.0)
+      geoPointField = GeoPoint(1.0, 1.0),
+      vectorField = List()
     )
 
   private val url = "http://localhost:9200"
@@ -209,7 +211,71 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |    "geoPointField": {
         |      "lat": 1.0,
         |      "lon": 1.0
-        |    }
+        |    },
+        |    "vectorField": [
+        |      1,
+        |      5,
+        |      -20
+        |    ]
+        |  }
+        |}""".stripMargin,
+      StatusCode.Ok
+    )
+  )
+
+  private val knnSearchStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_knn_search",
+    response = Response(
+      """
+        |{
+        |  "took": 5,
+        |  "timed_out": false,
+        |  "_shards": {
+        |    "total": 8,
+        |    "successful": 8,
+        |    "failed": 0
+        |  },
+        |  "hits": {
+        |    "total": {
+        |      "value": 2,
+        |      "relation": "eq"
+        |    },
+        |    "max_score": 0.008547009,
+        |    "hits": [
+        |      {
+        |        "_index": "repositories",
+        |        "_type": "type",
+        |        "_id": "111",
+        |        "_score": 0.008547009,
+        |        "_source": {
+        |          "stringField": "StringField",
+        |          "subDocumentList": [
+        |            {
+        |              "stringField": "StringField",
+        |              "nestedField": {
+        |                "stringField": "StringField",
+        |                "longField": 1
+        |              },
+        |              "intField": 132,
+        |              "intFieldList": []
+        |            }
+        |          ],
+        |          "dateField": "2020-10-11",
+        |          "intField": 10,
+        |          "doubleField": 10.0,
+        |          "booleanField": true,
+        |          "geoPointField": {
+        |            "lat": 1.0,
+        |            "lon": 1.0
+        |          },
+        |          "vectorField": [
+        |            1,
+        |            5,
+        |            -20
+        |          ]
+        |        }
+        |      }
+        |    ]
         |  }
         |}""".stripMargin,
       StatusCode.Ok
@@ -265,7 +331,12 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          "geoPointField": {
         |            "lat": 1.0,
         |            "lon": 1.0
-        |          }
+        |          },
+        |          "vectorField": [
+        |            1,
+        |            5,
+        |            -20
+        |          ]
         |        }
         |      }
         |    ]
@@ -319,7 +390,12 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |          "geoPointField": {
         |            "lat": 1.0,
         |            "lon": 1.0
-        |          }
+        |          },
+        |          "vectorField": [
+        |            1,
+        |            5,
+        |            -20
+        |          ]
         |        }
         |      }
         |    ]
@@ -341,13 +417,13 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
-  private val UpdateRequestStub: StubMapping = StubMapping(
+  private val updateRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_update/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
     response = Response("Updated", StatusCode.Ok)
   )
 
-  private val UpdateByQueryRequestStub: StubMapping = StubMapping(
+  private val updateByQueryRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_update_by_query?conflicts=proceed&refresh=true&routing=routing",
     response = Response(
@@ -377,11 +453,12 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     deleteIndexRequestStub,
     existsRequestStub,
     getByIdRequestStub,
+    knnSearchStub,
     refreshRequestStub,
     searchRequestStub,
     searchWithAggregationRequestStub,
-    UpdateRequestStub,
-    UpdateByQueryRequestStub
+    updateRequestStub,
+    updateByQueryRequestStub
   )
 
   private val sttpBackendStubLayer: TaskLayer[SttpBackendStub[Task, Any]] = ZLayer.succeed(

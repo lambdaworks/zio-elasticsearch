@@ -18,7 +18,7 @@ package zio.elasticsearch
 
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.termsAggregation
-import zio.elasticsearch.ElasticQuery.{matchAll, term}
+import zio.elasticsearch.ElasticQuery.{kNN, matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Shards}
@@ -175,6 +175,16 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             .documentAs[TestDocument]
 
         assertZIO(executorGetById)(isSome(equalTo(doc)))
+      },
+      test("knnSearch") {
+        val executorSearch =
+          Executor
+            .execute(
+              ElasticRequest
+                .knnSearch(selectors = index, query = kNN(TestDocument.vectorField, 2, 5, Chunk(-5.0, 9.0, -12.0)))
+            )
+            .documentAs[TestDocument]
+        assertZIO(executorSearch)(equalTo(Chunk(doc)))
       },
       test("refresh") {
         val executorRefresh = Executor.execute(ElasticRequest.refresh(selectors = index))

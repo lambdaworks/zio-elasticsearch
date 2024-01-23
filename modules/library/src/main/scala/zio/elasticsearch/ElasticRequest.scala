@@ -22,13 +22,14 @@ import zio.elasticsearch.IndexSelector.IndexNameSyntax
 import zio.elasticsearch.aggregation.ElasticAggregation
 import zio.elasticsearch.executor.response.BulkResponse
 import zio.elasticsearch.highlights.Highlights
-import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
+import zio.elasticsearch.query.{ElasticQuery, KNNQuery}
 import zio.elasticsearch.request._
 import zio.elasticsearch.request.options._
 import zio.elasticsearch.result.{
   AggregateResult,
   GetResult,
+  KNNSearchResult,
   SearchAndAggregateResult,
   SearchResult,
   UpdateByQueryResult
@@ -214,6 +215,20 @@ object ElasticRequest {
    */
   final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
     GetById(index = index, id = id, refresh = None, routing = None)
+
+  /**
+   * Constructs an instance of [[KNNRequest]] used for performing a k-nearest neighbour (kNN) search. Given a query
+   * vector, it finds the k closest vectors and returns those documents as search hits.
+   *
+   * @param selectors
+   *   the name of the index or more indices to search in
+   * @param query
+   *   an instance of [[zio.elasticsearch.query.KNNQuery]] to run
+   * @return
+   *   an instance of [[KNNRequest]] that represents k-nearest neighbour (kNN) operation to be performed.
+   */
+  final def knnSearch[I: IndexSelector](selectors: I, query: KNNQuery[_]): KNNRequest =
+    KNN(knn = query, selectors = selectors.toSelector, filter = None, routing = None)
 
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
@@ -593,6 +608,40 @@ object ElasticRequest {
       self.copy(routing = Some(value))
   }
 
+  sealed trait KNNRequest extends ElasticRequest[KNNSearchResult] with HasRouting[KNNRequest] {
+
+    /**
+     * Adds an [[zio.elasticsearch.ElasticQuery]] to the [[zio.elasticsearch.ElasticRequest.KNNRequest]] to filter the
+     * documents that can match. If not provided, all documents are allowed to match.
+     *
+     * @param query
+     *   the Elastic query to be added
+     * @return
+     *   an instance of a [[zio.elasticsearch.ElasticRequest.KNNRequest]] that represents the kNN search operation
+     *   enriched with filter query to be performed.
+     */
+    def filter(query: ElasticQuery[_]): KNNRequest
+  }
+
+  private[elasticsearch] final case class KNN(
+    knn: KNNQuery[_],
+    selectors: String,
+    filter: Option[ElasticQuery[_]],
+    routing: Option[Routing]
+  ) extends KNNRequest { self =>
+
+    def filter(query: ElasticQuery[_]): KNNRequest =
+      self.copy(filter = Some(query))
+
+    def routing(value: Routing): KNNRequest =
+      self.copy(routing = Some(value))
+
+    private[elasticsearch] def toJson: Json = {
+      val filterJson: Json = filter.fold(Obj())(f => Obj("filter" -> f.toJson(None)))
+      Obj("knn" -> knn.toJson) merge filterJson
+    }
+  }
+
   sealed trait RefreshRequest extends ElasticRequest[Boolean]
 
   private[elasticsearch] final case class Refresh(selectors: String) extends RefreshRequest
@@ -612,7 +661,7 @@ object ElasticRequest {
      * [[zio.elasticsearch.ElasticRequest.SearchRequest]].
      *
      * @param aggregation
-     *   the elastic aggregation to be added
+     *   the Elastic aggregation to be added
      * @return
      *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] that represents search and
      *   aggregate operations to be performed.

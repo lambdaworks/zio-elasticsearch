@@ -266,6 +266,44 @@ private[elasticsearch] final case class Exists[S](field: String, boost: Option[D
     )
 }
 
+sealed trait KNNQuery[-S] { self =>
+
+  /**
+   * Sets the `similarity` parameter for the [[zio.elasticsearch.query.KNNQuery]]. The `similarity` parameter is the
+   * required minimum similarity for a vector to be considered a match.
+   *
+   * @param value
+   *   a non-negative real number used for the `similarity`
+   * @return
+   *   an instance of [[zio.elasticsearch.query.KNNQuery]] enriched with the `similarity` parameter.
+   */
+  def similarity(value: Double): KNNQuery[S]
+
+  private[elasticsearch] def toJson: Json
+}
+
+private[elasticsearch] final case class KNN[S](
+  field: String,
+  k: Int,
+  numCandidates: Int,
+  queryVector: Chunk[Double],
+  similarity: Option[Double]
+) extends KNNQuery[S] { self =>
+
+  def similarity(value: Double): KNN[S] =
+    self.copy(similarity = Some(value))
+
+  private[elasticsearch] def toJson: Json = {
+    val similarityJson = similarity.fold(Obj())(s => Obj("similarity" -> s.toJson))
+    Obj(
+      "field"          -> field.toJson,
+      "query_vector"   -> Arr(queryVector.map(_.toJson)),
+      "k"              -> k.toJson,
+      "num_candidates" -> numCandidates.toJson
+    ) merge similarityJson
+  }
+}
+
 sealed trait FunctionScoreQuery[S] extends ElasticQuery[S] with HasBoost[FunctionScoreQuery[S]] {
 
   /**

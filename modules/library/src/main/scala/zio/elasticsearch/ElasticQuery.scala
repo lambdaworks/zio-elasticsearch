@@ -547,6 +547,46 @@ object ElasticQuery {
     Ids(values = Chunk.fromIterable(value +: values))
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.KNNQuery]] is used to perform a k-nearest neighbor (kNN) search and returns the matching
+   * documents.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param k
+   *   number of nearest neighbors to return as top hits (must be less than `numCandidates`)
+   * @param numCandidates
+   *   number of nearest neighbor candidates to consider per shard
+   * @param queryVector
+   *   query vector
+   * @tparam S
+   *   document for which field query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.KNNQuery]] that represents the kNN query to be performed.
+   */
+  final def kNN[S](field: Field[S, _], k: Int, numCandidates: Int, queryVector: Chunk[Double]): KNNQuery[S] =
+    KNN(field = field.toString, k = k, numCandidates = numCandidates, queryVector = queryVector, similarity = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.KNNQuery]] is used to perform a k-nearest neighbor (kNN) search and returns the matching
+   * documents.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param k
+   *   number of nearest neighbors to return as top hits (must be less than `numCandidates`)
+   * @param numCandidates
+   *   number of nearest neighbor candidates to consider per shard
+   * @param queryVector
+   *   query vector
+   * @return
+   *   an instance of [[zio.elasticsearch.query.KNNQuery]] that represents the kNN query to be performed.
+   */
+  final def kNN(field: String, k: Int, numCandidates: Int, queryVector: Chunk[Double]): KNNQuery[Any] =
+    KNN(field = field, k = k, numCandidates = numCandidates, queryVector = queryVector, similarity = None)
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.query.MatchAllQuery]] used for matching all documents.
    *
    * @return
