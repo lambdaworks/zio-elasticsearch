@@ -479,7 +479,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
-        test("search and aggregate") {
+        test("search + aggregate") {
           val searchAndAggRequest = search(selectors = Index, query = Query, aggregation = MaxAggregation)
           val searchAndAggRequestWithSort =
             search(selectors = Index, query = Query, aggregation = MaxAggregation).sort(sortBy(TestDocument.intField))
@@ -1381,7 +1381,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequestWithInclSchema)(equalTo(expectedWithInclSchema.toJson)) &&
           assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
         },
-        test("search and aggregate") {
+        test("search + aggregate") {
           val jsonRequest = search(selectors = Index, query = Query, aggregation = TermsAggregation) match {
             case r: SearchAndAggregate => r.toJson
           }

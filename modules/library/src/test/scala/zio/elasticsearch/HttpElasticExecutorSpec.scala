@@ -203,7 +203,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
 
         assertZIO(executorSearch)(equalTo(Chunk(doc))) && assertZIO(executorSearchWithTerms)(equalTo(Chunk(doc)))
       },
-      test("search and aggregate") {
+      test("search + aggregate") {
         val terms = termsAggregation(name = "aggregation1", field = "name")
         val executorSearchAggregations =
           Executor
