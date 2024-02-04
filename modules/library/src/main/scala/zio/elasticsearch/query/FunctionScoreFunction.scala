@@ -19,7 +19,7 @@ package zio.elasticsearch.query
 import zio.Chunk
 import zio.elasticsearch.Field
 import zio.elasticsearch.query.DecayFunctionType._
-import zio.elasticsearch.script.Script
+import zio.elasticsearch.script.{Script => ScriptDefinition}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Obj, Str}
 import zio.schema.Schema
@@ -363,7 +363,7 @@ object FunctionScoreFunction {
    *   an instance of [[zio.elasticsearch.query.ScriptScoreFunction]] that represents the
    *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
    */
-  def scriptScoreFunction(script: Script): ScriptScoreFunction[Any] =
+  def scriptScoreFunction(script: ScriptDefinition): ScriptScoreFunction[Any] =
     ScriptScoreFunction(script = script, filter = None, weight = None)
 
   /**
@@ -379,7 +379,7 @@ object FunctionScoreFunction {
    *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
    */
   def scriptScoreFunction(scriptSource: String): ScriptScoreFunction[Any] =
-    ScriptScoreFunction(script = Script.apply(source = scriptSource), filter = None, weight = None)
+    ScriptScoreFunction(script = ScriptDefinition(source = scriptSource), filter = None, weight = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.WeightFunction]] using the specified parameters.
@@ -659,7 +659,7 @@ private[elasticsearch] final case class RandomScoreFunction[S](
 }
 
 private[elasticsearch] final case class ScriptScoreFunction[S](
-  script: Script,
+  script: ScriptDefinition,
   filter: Option[ElasticQuery[S]],
   weight: Option[Double]
 ) extends FunctionScoreFunction[S] { self =>
