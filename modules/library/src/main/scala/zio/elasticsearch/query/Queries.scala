@@ -196,9 +196,8 @@ private[elasticsearch] final case class Boosting[S](
     val negativeBoostJson = Obj("negative_boost" -> negativeBoost.toJson)
     val negativeQueryJson = Obj("negative" -> negativeQuery.toJson(fieldPath))
     val positiveQueryJson = Obj("positive" -> positiveQuery.toJson(fieldPath))
-    Obj(
-      "boosting" -> (negativeBoostJson merge negativeQueryJson merge positiveQueryJson)
-    )
+
+    Obj("boosting" -> (negativeBoostJson merge negativeQueryJson merge positiveQueryJson))
   }
 }
 
@@ -210,12 +209,11 @@ private[elasticsearch] final case class ConstantScore[S](query: ElasticQuery[S],
   def boost(value: Double): ConstantScoreQuery[S] =
     self.copy(boost = Some(value))
 
-  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj(
-      "constant_score" -> (Obj("filter" -> query.toJson(fieldPath)) merge boost.fold(Obj())(b =>
-        Obj("boost" -> b.toJson)
-      ))
-    )
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val boostJson = boost.fold(Obj())(b => Obj("boost" -> b.toJson))
+
+    Obj("constant_score" -> (Obj("filter" -> query.toJson(fieldPath)) merge boostJson))
+  }
 }
 
 sealed trait DisjunctionMaxQuery[S] extends ElasticQuery[S] {
@@ -258,12 +256,11 @@ private[elasticsearch] final case class Exists[S](field: String, boost: Option[D
   def boost(value: Double): ExistsQuery[S] =
     self.copy(boost = Some(value))
 
-  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj(
-      "exists" -> (Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson) merge boost.fold(Obj())(b =>
-        Obj("boost" -> b.toJson)
-      ))
-    )
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val boostJson = boost.fold(Obj())(b => Obj("boost" -> b.toJson))
+
+    Obj("exists" -> (Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson) merge boostJson))
+  }
 }
 
 sealed trait KNNQuery[-S] { self =>
@@ -295,6 +292,7 @@ private[elasticsearch] final case class KNN[S](
 
   private[elasticsearch] def toJson: Json = {
     val similarityJson = similarity.fold(Obj())(s => Obj("similarity" -> s.toJson))
+
     Obj(
       "field"          -> field.toJson,
       "query_vector"   -> Arr(queryVector.map(_.toJson)),
@@ -496,6 +494,7 @@ private[elasticsearch] final case class Fuzzy[S](
     val fuzzyFields = Some("value" -> value.toJson) ++ fuzziness.map("fuzziness" -> _.toJson) ++ maxExpansions.map(
       "max_expansions" -> _.toJson
     ) ++ prefixLength.map("prefix_length" -> _.toJson)
+
     Obj("fuzzy" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(fuzzyFields))))
   }
 }
@@ -551,11 +550,14 @@ private[elasticsearch] final case class GeoDistance[S](
   validationMethod: Option[ValidationMethod]
 ) extends GeoDistanceQuery[S] { self =>
 
-  def distanceType(value: DistanceType): GeoDistanceQuery[S] = self.copy(distanceType = Some(value))
+  def distanceType(value: DistanceType): GeoDistanceQuery[S] =
+    self.copy(distanceType = Some(value))
 
-  def name(value: String): GeoDistanceQuery[S] = self.copy(queryName = Some(value))
+  def name(value: String): GeoDistanceQuery[S] =
+    self.copy(queryName = Some(value))
 
-  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S] = self.copy(validationMethod = Some(value))
+  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S] =
+    self.copy(validationMethod = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
@@ -774,6 +776,14 @@ private[elasticsearch] final case class HasParent[S](
     )
 }
 
+sealed trait IdsQuery[S] extends ElasticQuery[S]
+
+private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends IdsQuery[S] { self =>
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
+}
+
 sealed trait MatchQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
@@ -847,17 +857,6 @@ sealed trait MultiMatchQuery[S]
     with HasMinimumShouldMatch[MultiMatchQuery[S]] {
 
   /**
-   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
-   * fields that will be searched.
-   *
-   * @param fields
-   *   a array of fields to set `fields` parameter to
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
-   */
-  def fields(field: String, fields: String*): MultiMatchQuery[S]
-
-  /**
    * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
    * array of type-safe fields that will be searched.
    *
@@ -867,6 +866,17 @@ sealed trait MultiMatchQuery[S]
    *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the type-safe `fields` parameter.
    */
   def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1]
+
+  /**
+   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
+   * fields that will be searched.
+   *
+   * @param fields
+   *   a array of fields to set `fields` parameter to
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
+   */
+  def fields(field: String, fields: String*): MultiMatchQuery[S]
 
   /**
    * Sets the `type` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `type` parameter decides the way
@@ -903,11 +913,11 @@ private[elasticsearch] final case class MultiMatch[S](
   def boost(boost: Double): MultiMatchQuery[S] =
     self.copy(boost = Some(boost))
 
-  def fields(field: String, fields: String*): MultiMatchQuery[S] =
-    self.copy(fields = Chunk.fromIterable(field +: fields))
-
   def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1] =
     self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
+
+  def fields(field: String, fields: String*): MultiMatchQuery[S] =
+    self.copy(fields = Chunk.fromIterable(field +: fields))
 
   def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S] =
     self.copy(matchingType = Some(matchingType))
@@ -1021,6 +1031,7 @@ private[elasticsearch] final case class Prefix[S](
     val prefixFields = Some("value" -> value.toJson) ++ caseInsensitive.map(
       "case_insensitive" -> _.toJson
     )
+
     Obj("prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(prefixFields))))
   }
 }
@@ -1160,6 +1171,7 @@ private[elasticsearch] final case class Regexp[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val regexpFields = Some("value" -> value.toJson) ++ caseInsensitive.map("case_insensitive" -> _.toJson)
+
     Obj("regexp" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(regexpFields))))
   }
 }
@@ -1195,6 +1207,7 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
     val termFields = Some("value" -> value.toJson) ++ boost.map("boost" -> _.toJson) ++ caseInsensitive.map(
       "case_insensitive" -> _.toJson
     )
+
     Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termFields))))
   }
 }
@@ -1213,6 +1226,7 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termsFields =
       Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(_.toJson))) ++ boost.map("boost" -> _.toJson)
+
     Obj("terms" -> Obj(Chunk.fromIterable(termsFields)))
   }
 }
@@ -1235,6 +1249,7 @@ private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
       Some("terms" -> Arr(terms.map(_.toJson))) ++ minimumShouldMatchField.map(
         "minimum_should_match_field" -> _.toJson
       ) ++ minimumShouldMatchScript.map("minimum_should_match_script" -> _.toJson) ++ boost.map("boost" -> _.toJson)
+
     Obj("terms_set" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termsSetFields))))
   }
 }
@@ -1261,14 +1276,7 @@ private[elasticsearch] final case class Wildcard[S](
     val wildcardFields = Some("value" -> value.toJson) ++ boost.map("boost" -> _.toJson) ++ caseInsensitive.map(
       "case_insensitive" -> _.toJson
     )
+
     Obj("wildcard" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(wildcardFields))))
   }
-}
-
-sealed trait IdsQuery[S] extends ElasticQuery[S]
-
-private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends IdsQuery[S] { self =>
-
-  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
 }

@@ -476,29 +476,6 @@ object ElasticRequest {
       document.json
   }
 
-  sealed trait CreateWithIdRequest
-      extends BulkableRequest[CreationOutcome]
-      with HasRefresh[CreateWithIdRequest]
-      with HasRouting[CreateWithIdRequest]
-
-  private[elasticsearch] final case class CreateWithId(
-    index: IndexName,
-    id: DocumentId,
-    document: Document,
-    refresh: Option[Boolean],
-    routing: Option[Routing]
-  ) extends CreateWithIdRequest { self =>
-
-    def refresh(value: Boolean): CreateWithIdRequest =
-      self.copy(refresh = Some(value))
-
-    def routing(value: Routing): CreateWithIdRequest =
-      self.copy(routing = Some(value))
-
-    private[elasticsearch] def toJson: Json =
-      document.json
-  }
-
   sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome]
 
   private[elasticsearch] final case class CreateIndex(
@@ -526,6 +503,29 @@ object ElasticRequest {
       self.copy(refresh = Some(value))
 
     def routing(value: Routing): CreateOrUpdateRequest =
+      self.copy(routing = Some(value))
+
+    private[elasticsearch] def toJson: Json =
+      document.json
+  }
+
+  sealed trait CreateWithIdRequest
+      extends BulkableRequest[CreationOutcome]
+      with HasRefresh[CreateWithIdRequest]
+      with HasRouting[CreateWithIdRequest]
+
+  private[elasticsearch] final case class CreateWithId(
+    index: IndexName,
+    id: DocumentId,
+    document: Document,
+    refresh: Option[Boolean],
+    routing: Option[Routing]
+  ) extends CreateWithIdRequest { self =>
+
+    def refresh(value: Boolean): CreateWithIdRequest =
+      self.copy(refresh = Some(value))
+
+    def routing(value: Routing): CreateWithIdRequest =
       self.copy(routing = Some(value))
 
     private[elasticsearch] def toJson: Json =
@@ -615,10 +615,10 @@ object ElasticRequest {
      * documents that can match. If not provided, all documents are allowed to match.
      *
      * @param query
-     *   the Elastic query to be added
+     *   [[zio.elasticsearch.ElasticQuery]] object for filtering the matching documents
      * @return
      *   an instance of a [[zio.elasticsearch.ElasticRequest.KNNRequest]] that represents the kNN search operation
-     *   enriched with filter query to be performed.
+     *   enriched with filter query.
      */
     def filter(query: ElasticQuery[_]): KNNRequest
   }
@@ -661,7 +661,7 @@ object ElasticRequest {
      * [[zio.elasticsearch.ElasticRequest.SearchRequest]].
      *
      * @param aggregation
-     *   the Elastic aggregation to be added
+     *   [[zio.elasticsearch.ElasticAggregation]] object for aggregating documents
      * @return
      *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] that represents search and
      *   aggregate operations to be performed.
@@ -733,26 +733,21 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ (sort +: sorts))
 
     private[elasticsearch] def toJson: Json = {
-      val fromJson: Json = from.fold(Obj())(f => Obj("from" -> f.toJson))
-
-      val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
-
-      val highlightsJson: Json = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
-
+      val fromJson: Json        = from.fold(Obj())(f => Obj("from" -> f.toJson))
+      val sizeJson: Json        = size.fold(Obj())(s => Obj("size" -> s.toJson))
+      val highlightsJson: Json  = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
-
-      val sortJson: Json = if (sortBy.nonEmpty) Obj("sort" -> Arr(sortBy.map(_.toJson))) else Obj()
-
+      val sortJson: Json        = if (sortBy.nonEmpty) Obj("sort" -> Arr(sortBy.map(_.toJson))) else Obj()
       val sourceJson: Json =
         (included, excluded) match {
           case (Chunk(), Chunk()) =>
             Obj()
-          case (included, excluded) =>
-            Obj("_source" -> {
-              val includes = if (included.isEmpty) Obj() else Obj("includes" -> Arr(included.map(_.toJson)))
-              val excludes = if (excluded.isEmpty) Obj() else Obj("excludes" -> Arr(excluded.map(_.toJson)))
-              includes merge excludes
-            })
+          case (is, Chunk()) =>
+            Obj("_source" -> Obj("includes" -> Arr(is.map(_.toJson))))
+          case (Chunk(), es) =>
+            Obj("_source" -> Obj("excludes" -> Arr(es.map(_.toJson))))
+          case (is, es) =>
+            Obj("_source" -> Obj("includes" -> Arr(is.map(_.toJson)), "excludes" -> Arr(es.map(_.toJson))))
         }
 
       Obj("query" -> query.toJson(fieldPath = None)) merge
@@ -825,26 +820,21 @@ object ElasticRequest {
       self.copy(sortBy = sortBy ++ (sort +: sorts))
 
     private[elasticsearch] def toJson: Json = {
-      val fromJson: Json = from.fold(Obj())(f => Obj("from" -> f.toJson))
-
-      val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
-
-      val highlightsJson: Json = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
-
+      val fromJson: Json        = from.fold(Obj())(f => Obj("from" -> f.toJson))
+      val sizeJson: Json        = size.fold(Obj())(s => Obj("size" -> s.toJson))
+      val highlightsJson: Json  = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
-
-      val sortJson: Json = if (sortBy.nonEmpty) Obj("sort" -> Arr(sortBy.map(_.toJson))) else Obj()
-
+      val sortJson: Json        = sortBy.nonEmptyOrElse(Obj())(sb => Obj("sort" -> Arr(sb.map(_.toJson))))
       val sourceJson: Json =
         (included, excluded) match {
           case (Chunk(), Chunk()) =>
             Obj()
-          case (included, excluded) =>
-            Obj("_source" -> {
-              val includes = if (included.isEmpty) Obj() else Obj("includes" -> Arr(included.map(_.toJson)))
-              val excludes = if (excluded.isEmpty) Obj() else Obj("excludes" -> Arr(excluded.map(_.toJson)))
-              includes merge excludes
-            })
+          case (is, Chunk()) =>
+            Obj("_source" -> Obj("includes" -> Arr(is.map(_.toJson))))
+          case (Chunk(), es) =>
+            Obj("_source" -> Obj("excludes" -> Arr(es.map(_.toJson))))
+          case (is, es) =>
+            Obj("_source" -> Obj("includes" -> Arr(is.map(_.toJson)), "excludes" -> Arr(es.map(_.toJson))))
         }
 
       Obj("query" -> query.toJson(fieldPath = None)) merge
@@ -897,11 +887,9 @@ object ElasticRequest {
       self.copy(routing = Some(value))
 
     private[elasticsearch] def toJson: Json = {
-      val docToJson: Json = doc.fold(Obj())(d => Obj("doc" -> d.json))
-
+      val docToJson: Json    = doc.fold(Obj())(d => Obj("doc" -> d.json))
       val scriptToJson: Json = script.fold(Obj())(s => Obj("script" -> s.toJson))
-
-      val upsertJson: Json = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
+      val upsertJson: Json   = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
 
       scriptToJson merge docToJson merge upsertJson
     }

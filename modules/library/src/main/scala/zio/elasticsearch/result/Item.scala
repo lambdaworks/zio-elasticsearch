@@ -39,11 +39,11 @@ final case class Item(
     json.toString.fromJson[Map[String, Chunk[String]]].toOption
   }
 
-  def highlight(field: String): Option[Chunk[String]] =
-    highlight.flatMap(_.get(JsonCursor.field(field)).toOption).flatMap(_.toString.fromJson[Chunk[String]].toOption)
-
   def highlight(field: Field[_, _]): Option[Chunk[String]] =
     highlight(field.toString)
+
+  def highlight(field: String): Option[Chunk[String]] =
+    highlight.flatMap(_.get(JsonCursor.field(field)).toOption).flatMap(_.toString.fromJson[Chunk[String]].toOption)
 
   def innerHit(name: String): Option[Chunk[Item]] =
     innerHits.get(name).map(_.map(hit => Item(hit.source, hit.highlight)))

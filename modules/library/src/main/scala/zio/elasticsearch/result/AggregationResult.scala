@@ -47,15 +47,9 @@ final case class FilterAggregationResult private[elasticsearch] (
 
   def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
-      case Some(aggRes) =>
-        aggRes match {
-          case agg: A =>
-            Right(Some(agg))
-          case _ =>
-            Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
-        }
-      case None =>
-        Right(None)
+      case Some(agg: A) => Right(Some(agg))
+      case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+      case None         => Right(None)
     }
 }
 
@@ -79,7 +73,7 @@ final case class StatsAggregationResult private[elasticsearch] (
   sum: Double
 ) extends AggregationResult
 
-private[elasticsearch] case class StdDeviationBoundsResult(
+final case class StdDeviationBoundsResult private[elasticsearch] (
   upper: Double,
   lower: Double,
   upperPopulation: Double,
@@ -104,15 +98,9 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
 
   def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
-      case Some(aggRes) =>
-        aggRes match {
-          case agg: A =>
-            Right(Some(agg))
-          case _ =>
-            Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
-        }
-      case None =>
-        Right(None)
+      case Some(agg: A) => Right(Some(agg))
+      case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+      case None         => Right(None)
     }
 }
 

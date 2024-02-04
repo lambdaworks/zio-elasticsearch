@@ -22,22 +22,19 @@ import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{Chunk, IO, Task, UIO, ZIO}
 
-import scala.util.{Failure, Success, Try}
-
 private[elasticsearch] sealed trait ResultWithAggregation {
   def aggregation(name: String): Task[Option[AggregationResult]]
 
   def aggregationAs[A <: AggregationResult](name: String): IO[DecodingException, Option[A]] =
     aggregation(name)
-      .mapError(e => DecodingException(s"Something went wrong decoding the aggregation with name $name: $e"))
-      .map {
-        case Some(aggRes) =>
-          Try(aggRes.asInstanceOf[A]) match {
-            case Failure(_)   => Left(DecodingException(s"Aggregation with name $name was not of type you provided."))
-            case Success(agg) => Right(Some(agg))
-          }
-        case None => Right(None)
-      }
+      .mapBoth(
+        e => DecodingException(s"Something went wrong decoding the aggregation with name $name: $e"),
+        {
+          case Some(agg: A) => Right(Some(agg))
+          case Some(_)      => Left(DecodingException(s"Aggregation with name $name was not of type you provided."))
+          case None         => Right(None)
+        }
+      )
       .absolve
 
   def aggregations: Task[Map[String, AggregationResult]]
@@ -139,8 +136,7 @@ final class SearchResult private[elasticsearch] (
   lazy val total: IO[ElasticException, Long] =
     ZIO
       .fromOption(fullResponse.hits.total)
-      .map(_.value)
-      .mapError(_ => new ElasticException("Total hits are not being tracked."))
+      .mapBoth(_ => new ElasticException("Total hits are not being tracked."), _.value)
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
@@ -174,6 +170,5 @@ final class SearchAndAggregateResult private[elasticsearch] (
   lazy val total: IO[ElasticException, Long] =
     ZIO
       .fromOption(fullResponse.hits.total)
-      .map(_.value)
-      .mapError(_ => new ElasticException("Total hits are not being tracked."))
+      .mapBoth(_ => new ElasticException("Total hits are not being tracked."), _.value)
 }

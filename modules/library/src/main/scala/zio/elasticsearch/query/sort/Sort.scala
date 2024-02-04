@@ -141,7 +141,7 @@ private[elasticsearch] final case class SortByFieldOptions(
       self.unmappedType.map(unmappedType => "unmapped_type" -> unmappedType.toJson)
     ).flatten
 
-    if (allParams.isEmpty) self.field.toJson else Obj(self.field -> Obj(allParams))
+    allParams.nonEmptyOrElse(self.field.toJson)(ps => Obj(self.field -> Obj(ps)))
   }
 }
 
@@ -166,8 +166,8 @@ private[elasticsearch] final case class SortByScriptOptions(
         Chunk(
           Some("type"   -> self.sourceType.toString.toJson),
           Some("script" -> script.toJson),
-          self.order.map(order => "order" -> order.toString.toJson),
-          self.mode.map(mode => "mode" -> mode.toString.toJson)
+          self.order.map("order" -> _.toString.toJson),
+          self.mode.map("mode" -> _.toString.toJson)
         ).flatten
       )
     )

@@ -21,8 +21,7 @@ import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
 import zio.Chunk
 import zio.prelude.{AssertionError, Validator}
 
-object IndexNameValidator
-    extends Validator[String](name => {
+object IndexNameValidator extends Validator[String](name => {
       def containsAny(string: String, params: Chunk[String]): Boolean =
         params.exists(StringUtils.contains(string, _))
 
