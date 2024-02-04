@@ -22,7 +22,6 @@ import example.external.github.RepoFetcher
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
-import zio.config.getConfig
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
 import zio.http.{Server, ServerConfig}
 
@@ -32,7 +31,7 @@ import scala.util.Using
 object Main extends ZIOAppDefault {
 
   override def run: Task[ExitCode] = {
-    val elasticConfigLive = ZLayer(getConfig[ElasticsearchConfig].map(es => ElasticConfig(es.host, es.port)))
+    val elasticConfigLive = ZLayer(ZIO.serviceWith[ElasticsearchConfig](es => ElasticConfig(es.host, es.port)))
 
     (prepare *> runServer).provide(
       AppConfig.live,
@@ -71,7 +70,7 @@ object Main extends ZIOAppDefault {
     val serverConfigLive = ZLayer.fromFunction((http: HttpConfig) => ServerConfig.default.port(http.port))
 
     (for {
-      http  <- getConfig[HttpConfig]
+      http  <- ZIO.service[HttpConfig]
       _     <- ZIO.logInfo(s"Starting an HTTP service on port: ${http.port}")
       routes = HealthCheck.Route ++ Repositories.Routes
       _     <- Server.serve(routes)

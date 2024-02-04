@@ -16,17 +16,15 @@
 
 package example.config
 
-import zio.Layer
-import zio.config.ReadError
-import zio.config.magnolia.descriptor
-import zio.config.syntax._
-import zio.config.typesafe.TypesafeConfig
+import zio.config.magnolia.deriveConfig
+import zio.config.typesafe.TypesafeConfigProvider
+import zio.{Config, Layer, ZLayer}
 
 final case class AppConfig(http: HttpConfig, elasticsearch: ElasticsearchConfig)
 
 object AppConfig {
-  lazy val live: Layer[ReadError[String], ElasticsearchConfig with HttpConfig] = {
-    val config = TypesafeConfig.fromResourcePath(descriptor[AppConfig])
-    config.narrow(_.elasticsearch) >+> config.narrow(_.http)
+  lazy val live: Layer[Config.Error, ElasticsearchConfig with HttpConfig] = {
+    val config = TypesafeConfigProvider.fromResourcePath().load(deriveConfig[AppConfig])
+    ZLayer.fromZIO(config.map(_.elasticsearch)) ++ ZLayer.fromZIO(config.map(_.http))
   }
 }
