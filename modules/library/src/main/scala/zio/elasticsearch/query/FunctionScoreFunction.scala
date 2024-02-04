@@ -379,7 +379,7 @@ object FunctionScoreFunction {
    *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
    */
   def scriptScoreFunction(scriptSource: String): ScriptScoreFunction[Any] =
-    ScriptScoreFunction(script = Script(source = scriptSource), filter = None, weight = None)
+    ScriptScoreFunction(script = Script.apply(source = scriptSource), filter = None, weight = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.WeightFunction]] using the specified parameters.
