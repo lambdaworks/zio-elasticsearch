@@ -2821,6 +2821,62 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryTsWithBoost.toJson(fieldPath = None))(equalTo(expectedTsWithBoost.toJson))
         },
+        test("functionScore") {
+          val query = functionScore(
+            scriptScoreFunction(Script("params.agg1 + params.agg2 > 10")),
+            randomScoreFunction().weight(2.0),
+            expDecayFunction("field", origin = "2013-09-17", scale = "10d")
+              .offset("5d")
+              .multiValueMode(Max)
+              .weight(10.0)
+          )
+            .boost(2.0)
+            .boostMode(FunctionScoreBoostMode.Avg)
+            .maxBoost(42)
+            .minScore(32)
+            .query(matches("stringField", "string"))
+            .scoreMode(FunctionScoreScoreMode.Min)
+
+          val expected =
+            """
+              |{
+              |  "function_score": {
+              |    "query" : { "match": { "stringField" : "string" } },
+              |    "score_mode": "min",
+              |    "boost": 2.0,
+              |    "boost_mode": "avg",
+              |    "max_boost": 42.0,
+              |    "min_score": 32.0,
+              |    "functions": [
+              |      {
+              |        "script_score": {
+              |          "script": {
+              |            "source": "params.agg1 + params.agg2 > 10"
+              |          }
+              |        }
+              |      },
+              |      {
+              |        "random_score": {},
+              |        "weight": 2.0
+              |      },
+              |      {
+              |        "exp": {
+              |          "field": {
+              |            "origin": "2013-09-17",
+              |            "scale": "10d",
+              |            "offset": "5d"
+              |          },
+              |          "multi_value_mode": "max"
+              |        },
+              |        "weight": 10.0
+              |      }
+              |    ]
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
+        },
         test("fuzzy") {
           val query                  = fuzzy("stringField", "test")
           val queryTs                = fuzzy(TestDocument.stringField, "test")
@@ -2910,62 +2966,6 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithPrefixLength.toJson(fieldPath = None))(equalTo(expectedWithPrefixLength.toJson)) &&
           assert(queryWithAllParameters.toJson(fieldPath = None))(equalTo(expectedWithAllParameters.toJson)) &&
           assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson))
-        },
-        test("functionScore") {
-          val query = functionScore(
-            scriptScoreFunction(Script("params.agg1 + params.agg2 > 10")),
-            randomScoreFunction().weight(2.0),
-            expDecayFunction("field", origin = "2013-09-17", scale = "10d")
-              .offset("5d")
-              .multiValueMode(Max)
-              .weight(10.0)
-          )
-            .boost(2.0)
-            .boostMode(FunctionScoreBoostMode.Avg)
-            .maxBoost(42)
-            .minScore(32)
-            .query(matches("stringField", "string"))
-            .scoreMode(FunctionScoreScoreMode.Min)
-
-          val expected =
-            """
-              |{
-              |  "function_score": {
-              |    "query" : { "match": { "stringField" : "string" } },
-              |    "score_mode": "min",
-              |    "boost": 2.0,
-              |    "boost_mode": "avg",
-              |    "max_boost": 42.0,
-              |    "min_score": 32.0,
-              |    "functions": [
-              |      {
-              |        "script_score": {
-              |          "script": {
-              |            "source": "params.agg1 + params.agg2 > 10"
-              |          }
-              |        }
-              |      },
-              |      {
-              |        "random_score": {},
-              |        "weight": 2.0
-              |      },
-              |      {
-              |        "exp": {
-              |          "field": {
-              |            "origin": "2013-09-17",
-              |            "scale": "10d",
-              |            "offset": "5d"
-              |          },
-              |          "multi_value_mode": "max"
-              |        },
-              |        "weight": 10.0
-              |      }
-              |    ]
-              |  }
-              |}
-              |""".stripMargin
-
-          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("geoDistance") {
           val queryWithHash =

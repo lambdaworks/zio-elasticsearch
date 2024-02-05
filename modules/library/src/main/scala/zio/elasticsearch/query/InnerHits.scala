@@ -135,12 +135,10 @@ final case class InnerHits private[elasticsearch] (
   private[elasticsearch] def toStringJsonPair(fieldPath: Option[String]): (String, Json) = {
     val sourceJson: Option[Json] =
       (included, excluded) match {
-        case (Chunk(), Chunk()) =>
-          None
-        case (included, excluded) =>
-          val includes = if (included.isEmpty) Obj() else Obj("includes" -> Arr(included.map(_.toJson)))
-          val excludes = if (excluded.isEmpty) Obj() else Obj("excludes" -> Arr(excluded.map(_.toJson)))
-          Some(includes merge excludes)
+        case (Chunk(), Chunk()) => None
+        case (is, Chunk())      => Some(Obj("includes" -> Arr(is.map(_.toJson))))
+        case (Chunk(), es)      => Some(Obj("excludes" -> Arr(es.map(_.toJson))))
+        case (is, es)           => Some(Obj("includes" -> Arr(is.map(_.toJson)), "excludes" -> Arr(es.map(_.toJson))))
       }
 
     "inner_hits" -> Obj(

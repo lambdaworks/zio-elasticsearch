@@ -101,7 +101,7 @@ object HighlightsSpec extends ZIOSpecDefault {
 
         }
       ),
-      suite("encoding  as JSON")(
+      suite("encoding as JSON")(
         test("highlight") {
           val highlightObject =
             highlight(field = "day_of_week")

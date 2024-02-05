@@ -115,6 +115,30 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.MinAggregationResult]].
+     */
+    def asMinAggregation(name: String): RIO[R, Option[MinAggregationResult]] =
+      aggregationAs[MinAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.MissingAggregationResult]].
+     */
+    def asMissingAggregation(name: String): RIO[R, Option[MissingAggregationResult]] =
+      aggregationAs[MissingAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.PercentileRanksAggregationResult]].
      */
     def asPercentileRanksAggregation(name: String): RIO[R, Option[PercentileRanksAggregationResult]] =
@@ -155,30 +179,6 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      */
     def asSumAggregation(name: String): RIO[R, Option[SumAggregationResult]] =
       aggregationAs[SumAggregationResult](name)
-
-    /**
-     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
-     *
-     * @param name
-     *   the name of the aggregation to retrieve
-     * @return
-     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
-     *   [[result.MinAggregationResult]].
-     */
-    def asMinAggregation(name: String): RIO[R, Option[MinAggregationResult]] =
-      aggregationAs[MinAggregationResult](name)
-
-    /**
-     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
-     *
-     * @param name
-     *   the name of the aggregation to retrieve
-     * @return
-     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
-     *   [[result.MissingAggregationResult]].
-     */
-    def asMissingAggregation(name: String): RIO[R, Option[MissingAggregationResult]] =
-      aggregationAs[MissingAggregationResult](name)
 
     /**
      * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].

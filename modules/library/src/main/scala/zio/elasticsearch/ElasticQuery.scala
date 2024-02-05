@@ -449,8 +449,8 @@ object ElasticQuery {
    * @param childType
    *   a name of the child relationship mapped for the join field
    * @param query
-   *   the type-safe [[ElasticQuery]] object representing query you wish to run on child documents of the child `type`
-   *   field
+   *   the type-safe [[zio.elasticsearch.ElasticQuery]] object representing query you wish to run on child documents of
+   *   the child `type` field
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -473,7 +473,8 @@ object ElasticQuery {
    * @param childType
    *   a name of the child relationship mapped for the join field
    * @param query
-   *   the [[ElasticQuery]] object representing query you wish to run on child documents of the child `type` field
+   *   the [[zio.elasticsearch.ElasticQuery]] object representing query you wish to run on child documents of the child
+   *   `type` field
    * @return
    *   an instance of [[zio.elasticsearch.query.HasChildQuery]] that represents the `has child query` to be performed.
    */
@@ -494,8 +495,8 @@ object ElasticQuery {
    * @param parentType
    *   a name of the parent relationship mapped for the join field
    * @param query
-   *   the type-safe [[ElasticQuery]] object representing query you wish to run on parent documents of the `parent_type`
-   *   field
+   *   the type-safe [[zio.elasticsearch.ElasticQuery]] object representing query you wish to run on parent documents of
+   *   the `parent_type` field
    * @tparam S
    *   document for which field query is executed
    * @return
@@ -517,7 +518,8 @@ object ElasticQuery {
    * @param parentType
    *   a name of the parent relationship mapped for the join field
    * @param query
-   *   the [[ElasticQuery]] object representing query you wish to run on parent documents of the `parent_type` field
+   *   the [[zio.elasticsearch.ElasticQuery]] object representing query you wish to run on parent documents of the
+   *   `parent_type` field
    * @return
    *   an instance of [[zio.elasticsearch.query.HasParentQuery]] that represents the has parent query to be performed.
    */
@@ -596,40 +598,6 @@ object ElasticQuery {
     MatchAll(boost = None)
 
   /**
-   * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.MatchQuery]] is used for matching a provided text, number, date or boolean value.
-   *
-   * @param field
-   *   the type-safe field for which query is specified for
-   * @param value
-   *   the value to be matched, represented by an instance of type `A`
-   * @tparam S
-   *   document for which field query is executed
-   * @tparam A
-   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
-   * @return
-   *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
-   */
-  final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
-    Match(field = field.toString, value = value)
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.query.MatchQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.MatchQuery]] is used for matching a provided text, number, date or boolean value.
-   *
-   * @param field
-   *   the field for which query is specified for
-   * @param value
-   *   the value to be matched, represented by an instance of type `A`
-   * @tparam A
-   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
-   * @return
-   *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
-   */
-  final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
-    Match(field = field, value = value)
-
-  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] using the specified
    * parameters. [[zio.elasticsearch.query.MatchBooleanPrefixQuery]] analyzes its input and constructs a
    * [[zio.elasticsearch.query.BoolQuery]] from the terms. Each term except the last is used in a
@@ -668,6 +636,40 @@ object ElasticQuery {
    */
   final def matchBooleanPrefix[A: ElasticPrimitive](field: String, value: A): MatchBooleanPrefixQuery[Any] =
     MatchBooleanPrefix(field = field, value = value, minimumShouldMatch = None)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.MatchQuery]] is used for matching a provided text, number, date or boolean value.
+   *
+   * @param field
+   *   the type-safe field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `A`
+   * @tparam S
+   *   document for which field query is executed
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
+   */
+  final def matches[S, A: ElasticPrimitive](field: Field[S, A], value: A): MatchQuery[S] =
+    Match(field = field.toString, value = value)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.MatchQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.MatchQuery]] is used for matching a provided text, number, date or boolean value.
+   *
+   * @param field
+   *   the field for which query is specified for
+   * @param value
+   *   the value to be matched, represented by an instance of type `A`
+   * @tparam A
+   *   the type of value to be matched. A JSON decoder must be provided in the scope for this type
+   * @return
+   *   an instance of [[zio.elasticsearch.query.MatchQuery]] that represents the match query to be performed.
+   */
+  final def matches[A: ElasticPrimitive](field: String, value: A): MatchQuery[Any] =
+    Match(field = field, value = value)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.MatchPhraseQuery]] using the specified parameters.
@@ -840,7 +842,7 @@ object ElasticQuery {
    * @param path
    *   the type-safe path to the field for which query is specified for
    * @param query
-   *   the [[ElasticQuery]] object representing the query to execute on nested objects.
+   *   the [[zio.elasticsearch.ElasticQuery]] object representing the query to execute on nested objects.
    * @tparam S
    *   document for which field query is executed
    * @tparam A
@@ -858,7 +860,7 @@ object ElasticQuery {
    * @param path
    *   the path to the field for which query is specified for
    * @param query
-   *   the [[ElasticQuery]] object representing the query to execute on nested objects.
+   *   the [[zio.elasticsearch.ElasticQuery]] object representing the query to execute on nested objects.
    * @return
    *   an instance of [[zio.elasticsearch.query.NestedQuery]] that represents the nested query to be performed.
    */

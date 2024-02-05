@@ -113,11 +113,8 @@ private[elasticsearch] final case class BucketSort(
 
   private[elasticsearch] def toJson: Json = {
     val fromJson: Json = self.from.fold(Obj())(f => Obj("from" -> f.toJson))
-
     val sizeJson: Json = size.fold(Obj())(s => Obj("size" -> s.toJson))
-
-    val sortJson: Json =
-      if (self.sortBy.nonEmpty) Obj("sort" -> Arr(self.sortBy.map(_.toJson): _*)) else Obj()
+    val sortJson: Json = self.sortBy.nonEmptyOrElse(Obj())(s => Obj("sort" -> Arr(s.map(_.toJson): _*)))
 
     Obj(name -> Obj("bucket_sort" -> (sortJson merge fromJson merge sizeJson)))
   }
@@ -180,8 +177,7 @@ private[elasticsearch] final case class ExtendedStats(
 
   private[elasticsearch] def toJson: Json = {
     val missingJson: Json = missing.fold(Obj())(m => Obj("missing" -> m.toJson))
-
-    val sigmaJson: Json = sigma.fold(Obj())(m => Obj("sigma" -> m.toJson))
+    val sigmaJson: Json   = sigma.fold(Obj())(m => Obj("sigma" -> m.toJson))
 
     Obj(name -> Obj("extended_stats" -> (Obj("field" -> field.toJson) merge missingJson merge sigmaJson)))
   }
@@ -203,10 +199,7 @@ private[elasticsearch] final case class Filter(
 
   private[elasticsearch] def toJson: Json = {
     val subAggsJson: Obj =
-      if (self.subAggregations.nonEmpty)
-        Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
-      else
-        Obj()
+      self.subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
 
     Obj(name -> (Obj("filter" -> query.toJson(fieldPath = None)) merge subAggsJson))
   }
@@ -350,10 +343,10 @@ private[elasticsearch] final case class Percentiles(
     multipleAggregations.aggregations(self, agg)
 
   private[elasticsearch] def toJson: Json = {
-    val percentsField =
-      (if (percents.nonEmpty) Some("percents" -> Arr(percents.map(_.toJson))) else None) ++ missing.map(
-        "missing" -> _.toJson
-      )
+    val percentsField = percents.nonEmptyOrElse[Option[(String, Arr)]](None)(ps =>
+      Some("percents" -> Arr(ps.map(_.toJson)))
+    ) ++ missing.map("missing" -> _.toJson)
+
     Obj(name -> Obj("percentiles" -> (Obj("field" -> field.toJson) merge Obj(Chunk.fromIterable(percentsField)))))
   }
 }
@@ -435,12 +428,8 @@ private[elasticsearch] final case class Terms(
       }
 
     val sizeJson = size.fold(Obj())(s => Obj("size" -> s.toJson))
-
     val subAggsJson =
-      if (self.subAggregations.nonEmpty)
-        Obj("aggs" -> self.subAggregations.map(_.toJson).reduce(_ merge _))
-      else
-        Obj()
+      self.subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
 
     Obj(name -> (Obj("terms" -> (Obj("field" -> self.field.toJson) merge orderJson merge sizeJson)) merge subAggsJson))
   }
@@ -509,9 +498,9 @@ private[elasticsearch] final case class WeightedAvg(
 
     Obj(
       name -> Obj(
-        "weighted_avg" -> (Obj("value" -> (Obj("field" -> valueField.toJson) merge valueMissingJson)) merge (Obj(
+        "weighted_avg" -> (Obj("value" -> (Obj("field" -> valueField.toJson) merge valueMissingJson)) merge Obj(
           "weight" -> (Obj("field" -> weightField.toJson) merge weightMissingJson)
-        )))
+        ))
       )
     )
   }

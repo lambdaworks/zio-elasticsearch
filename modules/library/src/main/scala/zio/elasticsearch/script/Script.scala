@@ -64,7 +64,7 @@ object Script {
 
 sealed trait ScriptLang
 
-case object Painless   extends ScriptLang
 case object Expression extends ScriptLang
-case object Mustache   extends ScriptLang
 case object Java       extends ScriptLang
+case object Mustache   extends ScriptLang
+case object Painless   extends ScriptLang

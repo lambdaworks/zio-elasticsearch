@@ -73,6 +73,7 @@ private[elasticsearch] final case class Field[-S, +A](parent: Option[Field[S, _]
    * Appends a suffix to the name of the [[Field]]. The type of the field's value is preserved.
    *
    * @param suffix
+   *   a user-defined suffix to append (e.g. 'keyword', 'raw')
    * @tparam A1
    *   the underlying type of the current [[Field]], constrained by the [[ElasticPrimitive]], which specifies that it
    *   must be a supertype of the field's value

@@ -115,20 +115,6 @@ object ElasticAggregation {
     Cardinality(name = name, field = field, missing = None)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param query
-   *   a query which the documents must match
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] that represents filter aggregation to be
-   *   performed.
-   */
-  final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
-    Filter(name = name, query = query, subAggregations = Chunk.empty)
-
-  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified
    * parameters.
    *
@@ -159,6 +145,20 @@ object ElasticAggregation {
    */
   final def extendedStatsAggregation(name: String, field: String): ExtendedStatsAggregation =
     ExtendedStats(name = name, field = field, missing = None, sigma = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param query
+   *   a query which the documents must match
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] that represents filter aggregation to be
+   *   performed.
+   */
+  final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
+    Filter(name = name, query = query, subAggregations = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.

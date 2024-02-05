@@ -19,6 +19,7 @@ package zio.elasticsearch.query
 import zio.Chunk
 import zio.elasticsearch.Field
 import zio.elasticsearch.query.DecayFunctionType._
+import zio.elasticsearch.script.{Script => ScriptDefinition}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Obj, Str}
 import zio.schema.Schema
@@ -32,17 +33,6 @@ sealed trait FunctionScoreFunction[-S] {
    *
    * @param filter
    *   the [[zio.elasticsearch.query.ElasticQuery]] used for filtering
-   * @return
-   *   an instance of [[zio.elasticsearch.query.FunctionScoreFunction]] that can be used in
-   *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed enriched with the `filter` parameter.
-   */
-  def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any]
-
-  /**
-   * Sets the `filter` parameter for the [[zio.elasticsearch.query.FunctionScoreFunction]].
-   *
-   * @param filter
-   *   the [[zio.elasticsearch.query.ElasticQuery]] used for filtering
    * @tparam S1
    *   the type of query used in filter, requires implicit [[zio.schema.Schema]] in scope
    * @return
@@ -50,6 +40,17 @@ sealed trait FunctionScoreFunction[-S] {
    *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed enriched with the `filter` parameter.
    */
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1]
+
+  /**
+   * Sets the `filter` parameter for the [[zio.elasticsearch.query.FunctionScoreFunction]].
+   *
+   * @param filter
+   *   the [[zio.elasticsearch.query.ElasticQuery]] used for filtering
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FunctionScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed enriched with the `filter` parameter.
+   */
+  def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any]
 
   private[elasticsearch] def toJson: Json
 }
@@ -296,7 +297,7 @@ object FunctionScoreFunction {
   /**
    * Constructs an instance of [[zio.elasticsearch.query.RandomScoreFunction]] using the specified parameters.
    * [[zio.elasticsearch.query.RandomScoreFunction]] generates scores that are uniformly distributed from 0 up to but
-   * not including 1. By default, it uses the internal Lucene doc ids as a source of randomness, which is very efficient
+   * not including 1. By default, it uses the internal Lucene doc IDs as a source of randomness, which is very efficient
    * but unfortunately not reproducible since documents might be renumbered by merges.
    *
    * @param seed
@@ -307,27 +308,6 @@ object FunctionScoreFunction {
    */
   def randomScoreFunction(seed: Long): RandomScoreFunction[Any] =
     RandomScoreFunction(filter = None, seedAndField = Some(SeedAndField(seed = seed)), weight = None)
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.query.RandomScoreFunction]] using the specified parameters.
-   * [[zio.elasticsearch.query.RandomScoreFunction]] generates scores that are uniformly distributed from 0 up to but
-   * not including 1. By default, it uses the internal Lucene doc ids as a source of randomness, which is very efficient
-   * but unfortunately not reproducible since documents might be renumbered by merges.
-   *
-   * @param seed
-   *   the final score will be computed based on this value and value for field
-   * @param field
-   *   the field value that will be used to compute final score
-   * @return
-   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that can be used in
-   *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
-   */
-  def randomScoreFunction(seed: Long, field: String): RandomScoreFunction[Any] =
-    RandomScoreFunction(
-      filter = None,
-      seedAndField = Some(SeedAndField(seed = seed, fieldName = field)),
-      weight = None
-    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.RandomScoreFunction]] using the specified parameters.
@@ -351,6 +331,27 @@ object FunctionScoreFunction {
     )
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.query.RandomScoreFunction]] using the specified parameters.
+   * [[zio.elasticsearch.query.RandomScoreFunction]] generates scores that are uniformly distributed from 0 up to but
+   * not including 1. By default, it uses the internal Lucene doc IDs as a source of randomness, which is very efficient
+   * but unfortunately not reproducible since documents might be renumbered by merges.
+   *
+   * @param seed
+   *   the final score will be computed based on this value and value for field
+   * @param field
+   *   the field value that will be used to compute final score
+   * @return
+   *   an instance of [[zio.elasticsearch.query.RandomScoreFunction]] that can be used in
+   *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
+   */
+  def randomScoreFunction(seed: Long, field: String): RandomScoreFunction[Any] =
+    RandomScoreFunction(
+      filter = None,
+      seedAndField = Some(SeedAndField(seed = seed, fieldName = field)),
+      weight = None
+    )
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.query.ScriptScoreFunction]] using the specified parameters.
    * [[zio.elasticsearch.query.ScriptScoreFunction]] function allows you to wrap another
    * [[zio.elasticsearch.query.ElasticQuery]] and customize the scoring of it optionally with a computation derived from
@@ -362,7 +363,7 @@ object FunctionScoreFunction {
    *   an instance of [[zio.elasticsearch.query.ScriptScoreFunction]] that represents the
    *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
    */
-  def scriptScoreFunction(script: zio.elasticsearch.script.Script): ScriptScoreFunction[Any] =
+  def scriptScoreFunction(script: ScriptDefinition): ScriptScoreFunction[Any] =
     ScriptScoreFunction(script = script, filter = None, weight = None)
 
   /**
@@ -378,7 +379,7 @@ object FunctionScoreFunction {
    *   [[zio.elasticsearch.query.FunctionScoreQuery]] to be performed.
    */
   def scriptScoreFunction(scriptSource: String): ScriptScoreFunction[Any] =
-    ScriptScoreFunction(script = zio.elasticsearch.script.Script(source = scriptSource), filter = None, weight = None)
+    ScriptScoreFunction(script = ScriptDefinition(source = scriptSource), filter = None, weight = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.WeightFunction]] using the specified parameters.
@@ -419,31 +420,11 @@ final case class DecayFunction[S](
   def decay(value: Double): DecayFunction[S] =
     self.copy(decay = Some(value))
 
-  def filter(filter: ElasticQuery[Any]): DecayFunction[Any] =
-    DecayFunction(
-      field = self.field,
-      decayFunctionType = self.decayFunctionType,
-      origin = self.origin,
-      scale = self.scale,
-      decay = self.decay,
-      filter = Some(filter),
-      multiValueMode = self.multiValueMode,
-      offset = self.offset,
-      weight = self.weight
-    )
-
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): DecayFunction[S1] =
-    DecayFunction[S1](
-      field = self.field,
-      decayFunctionType = self.decayFunctionType,
-      origin = self.origin,
-      scale = self.scale,
-      decay = self.decay,
-      filter = Some(filter),
-      multiValueMode = self.multiValueMode,
-      offset = self.offset,
-      weight = self.weight
-    )
+    self.copy(filter = Some(filter))
+
+  def filter(filter: ElasticQuery[Any]): DecayFunction[Any] =
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `multiValueMode` parameter for the [[zio.elasticsearch.query.DecayFunction]]. If a field used for
@@ -510,7 +491,7 @@ final case class DecayFunction[S](
           )
         ),
         weight.map("weight" -> Num(_)),
-        filter.map(f => "filter" -> f.toJson(None))
+        filter.map("filter" -> _.toJson(None))
       ).flatten
     )
 }
@@ -536,6 +517,24 @@ final case class FieldValueFactor[S](
   def factor(value: Double): FieldValueFactor[S] =
     self.copy(factor = Some(value))
 
+  def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FieldValueFactor[S1] =
+    self.copy(filter = Some(filter))
+
+  def filter(filter: ElasticQuery[Any]): FieldValueFactor[Any] =
+    self.copy(filter = Some(filter))
+
+  /**
+   * Sets the `missing` parameter for the [[zio.elasticsearch.query.FieldValueFactor]]. Value used if the document does
+   * not have that field. The modifier and factor are still applied to it as though it were read from the document.
+   *
+   * @param value
+   *   a non-negative real number value for the `missing` parameter
+   * @return
+   *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] enriched with the `missing` parameter.
+   */
+  def missing(value: Double): FieldValueFactor[S] =
+    self.copy(missing = Some(value))
+
   /**
    * Sets the `modifier` parameter for the [[zio.elasticsearch.query.FieldValueFactor]]. Modifier to apply to the field
    * value.
@@ -559,18 +558,6 @@ final case class FieldValueFactor[S](
     self.copy(modifier = Some(value))
 
   /**
-   * Sets the `missing` parameter for the [[zio.elasticsearch.query.FieldValueFactor]]. Value used if the document does
-   * not have that field. The modifier and factor are still applied to it as though it were read from the document.
-   *
-   * @param value
-   *   a non-negative real number value for the `missing` parameter
-   * @return
-   *   an instance of [[zio.elasticsearch.query.FieldValueFactor]] enriched with the `missing` parameter.
-   */
-  def missing(value: Double): FieldValueFactor[S] =
-    self.copy(missing = Some(value))
-
-  /**
    * Sets the `weight` parameter for the [[zio.elasticsearch.query.FieldValueFactor]]. The weight score allows you to
    * multiply the score by the provided `weight`.
    *
@@ -581,26 +568,6 @@ final case class FieldValueFactor[S](
    */
   def weight(value: Double): FieldValueFactor[S] =
     self.copy(weight = Some(value))
-
-  def filter(value: ElasticQuery[Any]): FieldValueFactor[Any] =
-    FieldValueFactor(
-      field = self.field,
-      factor = self.factor,
-      filter = Some(value),
-      modifier = self.modifier,
-      missing = self.missing,
-      weight = self.weight
-    )
-
-  def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FieldValueFactor[S1] =
-    FieldValueFactor[S1](
-      field = self.field,
-      factor = self.factor,
-      filter = Some(filter),
-      modifier = self.modifier,
-      missing = self.missing,
-      weight = self.weight
-    )
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -615,7 +582,7 @@ final case class FieldValueFactor[S](
             ).flatten
           )
         ),
-        filter.map(f => "filter" -> f.toJson(None)),
+        filter.map("filter" -> _.toJson(None)),
         weight.map("weight" -> Num(_))
       ).flatten
     )
@@ -626,6 +593,12 @@ private[elasticsearch] final case class RandomScoreFunction[S](
   seedAndField: Option[SeedAndField],
   weight: Option[Double]
 ) extends FunctionScoreFunction[S] { self =>
+
+  def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): RandomScoreFunction[S1] =
+    self.copy(filter = Some(filter))
+
+  def filter(filter: ElasticQuery[Any]): RandomScoreFunction[Any] =
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `weight` parameter for the [[zio.elasticsearch.query.ScriptScoreFunction]]. The weight score allows you to
@@ -639,12 +612,6 @@ private[elasticsearch] final case class RandomScoreFunction[S](
   def weight(value: Double): RandomScoreFunction[S] =
     self.copy(weight = Some(value))
 
-  def filter(filter: ElasticQuery[Any]): RandomScoreFunction[Any] =
-    RandomScoreFunction(filter = Some(filter), seedAndField = self.seedAndField, weight = self.weight)
-
-  def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): RandomScoreFunction[S1] =
-    RandomScoreFunction[S1](Some(filter), seedAndField, weight)
-
   private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
@@ -652,16 +619,22 @@ private[elasticsearch] final case class RandomScoreFunction[S](
           "random_score" -> seedAndField.fold(Obj())(sf => Obj("seed" -> Num(sf.seed), "field" -> Str(sf.fieldName)))
         ),
         weight.map("weight" -> Num(_)),
-        filter.map(f => "filter" -> f.toJson(None))
+        filter.map("filter" -> _.toJson(None))
       ).flatten
     )
 }
 
 private[elasticsearch] final case class ScriptScoreFunction[S](
-  script: zio.elasticsearch.script.Script,
+  script: ScriptDefinition,
   filter: Option[ElasticQuery[S]],
   weight: Option[Double]
 ) extends FunctionScoreFunction[S] { self =>
+
+  def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1] =
+    self.copy(filter = Some(filter))
+
+  def filter(filter: ElasticQuery[Any]): ScriptScoreFunction[Any] =
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `weight` parameter for the [[zio.elasticsearch.query.RandomScoreFunction]]. The weight score allows you to
@@ -675,22 +648,12 @@ private[elasticsearch] final case class ScriptScoreFunction[S](
   def weight(value: Double): ScriptScoreFunction[S] =
     self.copy(weight = Some(value))
 
-  def filter(filter: ElasticQuery[Any]): ScriptScoreFunction[Any] =
-    ScriptScoreFunction(script = self.script, filter = Some(filter), weight = self.weight)
-
-  def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1] =
-    ScriptScoreFunction[S1](
-      script = script,
-      filter = Some(filter),
-      weight = weight
-    )
-
   private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
         Some("script_score" -> Obj("script" -> script.toJson)),
         weight.map("weight" -> Num(_)),
-        filter.map(f => "filter" -> f.toJson(None))
+        filter.map("filter" -> _.toJson(None))
       ).flatten
     )
 
@@ -699,17 +662,17 @@ private[elasticsearch] final case class ScriptScoreFunction[S](
 private[elasticsearch] final case class WeightFunction[S](weight: Double, filter: Option[ElasticQuery[S]])
     extends FunctionScoreFunction[S] { self =>
 
-  def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any] =
-    WeightFunction(weight = self.weight, filter = Some(filter))
-
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1] =
-    WeightFunction[S1](weight = weight, filter = Some(filter))
+    self.copy(filter = Some(filter))
+
+  def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any] =
+    self.copy(filter = Some(filter))
 
   private[elasticsearch] def toJson: Json =
     Obj(
       Chunk(
         Some("weight" -> Num(weight)),
-        filter.map(f => "filter" -> f.toJson(None))
+        filter.map("filter" -> _.toJson(None))
       ).flatten
     )
 }
