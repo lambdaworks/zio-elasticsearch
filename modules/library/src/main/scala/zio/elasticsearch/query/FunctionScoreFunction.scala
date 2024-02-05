@@ -297,7 +297,7 @@ object FunctionScoreFunction {
   /**
    * Constructs an instance of [[zio.elasticsearch.query.RandomScoreFunction]] using the specified parameters.
    * [[zio.elasticsearch.query.RandomScoreFunction]] generates scores that are uniformly distributed from 0 up to but
-   * not including 1. By default, it uses the internal Lucene doc ids as a source of randomness, which is very efficient
+   * not including 1. By default, it uses the internal Lucene doc IDs as a source of randomness, which is very efficient
    * but unfortunately not reproducible since documents might be renumbered by merges.
    *
    * @param seed
@@ -333,7 +333,7 @@ object FunctionScoreFunction {
   /**
    * Constructs an instance of [[zio.elasticsearch.query.RandomScoreFunction]] using the specified parameters.
    * [[zio.elasticsearch.query.RandomScoreFunction]] generates scores that are uniformly distributed from 0 up to but
-   * not including 1. By default, it uses the internal Lucene doc ids as a source of randomness, which is very efficient
+   * not including 1. By default, it uses the internal Lucene doc IDs as a source of randomness, which is very efficient
    * but unfortunately not reproducible since documents might be renumbered by merges.
    *
    * @param seed
@@ -421,30 +421,10 @@ final case class DecayFunction[S](
     self.copy(decay = Some(value))
 
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): DecayFunction[S1] =
-    DecayFunction[S1](
-      field = self.field,
-      decayFunctionType = self.decayFunctionType,
-      origin = self.origin,
-      scale = self.scale,
-      decay = self.decay,
-      filter = Some(filter),
-      multiValueMode = self.multiValueMode,
-      offset = self.offset,
-      weight = self.weight
-    )
+    self.copy(filter = Some(filter))
 
   def filter(filter: ElasticQuery[Any]): DecayFunction[Any] =
-    DecayFunction(
-      field = self.field,
-      decayFunctionType = self.decayFunctionType,
-      origin = self.origin,
-      scale = self.scale,
-      decay = self.decay,
-      filter = Some(filter),
-      multiValueMode = self.multiValueMode,
-      offset = self.offset,
-      weight = self.weight
-    )
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `multiValueMode` parameter for the [[zio.elasticsearch.query.DecayFunction]]. If a field used for
@@ -538,24 +518,10 @@ final case class FieldValueFactor[S](
     self.copy(factor = Some(value))
 
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FieldValueFactor[S1] =
-    FieldValueFactor[S1](
-      field = self.field,
-      factor = self.factor,
-      filter = Some(filter),
-      modifier = self.modifier,
-      missing = self.missing,
-      weight = self.weight
-    )
+    self.copy(filter = Some(filter))
 
-  def filter(value: ElasticQuery[Any]): FieldValueFactor[Any] =
-    FieldValueFactor(
-      field = self.field,
-      factor = self.factor,
-      filter = Some(value),
-      modifier = self.modifier,
-      missing = self.missing,
-      weight = self.weight
-    )
+  def filter(filter: ElasticQuery[Any]): FieldValueFactor[Any] =
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `missing` parameter for the [[zio.elasticsearch.query.FieldValueFactor]]. Value used if the document does
@@ -629,10 +595,10 @@ private[elasticsearch] final case class RandomScoreFunction[S](
 ) extends FunctionScoreFunction[S] { self =>
 
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): RandomScoreFunction[S1] =
-    RandomScoreFunction[S1](Some(filter), seedAndField, weight)
+    self.copy(filter = Some(filter))
 
   def filter(filter: ElasticQuery[Any]): RandomScoreFunction[Any] =
-    RandomScoreFunction(filter = Some(filter), seedAndField = self.seedAndField, weight = self.weight)
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `weight` parameter for the [[zio.elasticsearch.query.ScriptScoreFunction]]. The weight score allows you to
@@ -665,10 +631,10 @@ private[elasticsearch] final case class ScriptScoreFunction[S](
 ) extends FunctionScoreFunction[S] { self =>
 
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1] =
-    ScriptScoreFunction[S1](script = script, filter = Some(filter), weight = weight)
+    self.copy(filter = Some(filter))
 
   def filter(filter: ElasticQuery[Any]): ScriptScoreFunction[Any] =
-    ScriptScoreFunction(script = self.script, filter = Some(filter), weight = self.weight)
+    self.copy(filter = Some(filter))
 
   /**
    * Sets the `weight` parameter for the [[zio.elasticsearch.query.RandomScoreFunction]]. The weight score allows you to
@@ -697,10 +663,10 @@ private[elasticsearch] final case class WeightFunction[S](weight: Double, filter
     extends FunctionScoreFunction[S] { self =>
 
   def filter[S1 <: S: Schema](filter: ElasticQuery[S1]): FunctionScoreFunction[S1] =
-    WeightFunction[S1](weight = weight, filter = Some(filter))
+    self.copy(filter = Some(filter))
 
   def filter(filter: ElasticQuery[Any]): FunctionScoreFunction[Any] =
-    WeightFunction(weight = self.weight, filter = Some(filter))
+    self.copy(filter = Some(filter))
 
   private[elasticsearch] def toJson: Json =
     Obj(
