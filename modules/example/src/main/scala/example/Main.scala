@@ -31,7 +31,7 @@ import scala.util.Using
 
 object Main extends ZIOAppDefault {
 
-  override val bootstrap: Layer[Nothing, Unit] =
+  override val bootstrap: ULayer[Unit] =
     Runtime.setConfigProvider(TypesafeConfigProvider.fromResourcePath())
 
   def run: Task[ExitCode] = {
