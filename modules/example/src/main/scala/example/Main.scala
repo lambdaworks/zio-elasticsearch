@@ -22,6 +22,7 @@ import example.external.github.RepoFetcher
 import sttp.client3.SttpBackend
 import sttp.client3.httpclient.zio.HttpClientZioBackend
 import zio._
+import zio.config.typesafe.TypesafeConfigProvider
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
 import zio.http.{Server, ServerConfig}
 
@@ -30,7 +31,10 @@ import scala.util.Using
 
 object Main extends ZIOAppDefault {
 
-  override def run: Task[ExitCode] = {
+  override val bootstrap: Layer[Nothing, Unit] =
+    Runtime.setConfigProvider(TypesafeConfigProvider.fromResourcePath())
+
+  def run: Task[ExitCode] = {
     val elasticConfigLive = ZLayer(ZIO.serviceWith[ElasticsearchConfig](es => ElasticConfig(es.host, es.port)))
 
     (prepare *> runServer).provide(

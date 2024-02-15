@@ -17,14 +17,13 @@
 package example.config
 
 import zio.config.magnolia.deriveConfig
-import zio.config.typesafe.TypesafeConfigProvider
-import zio.{Config, Layer, ZLayer}
+import zio.{Config, Layer, ZIO, ZLayer}
 
 final case class AppConfig(http: HttpConfig, elasticsearch: ElasticsearchConfig)
 
 object AppConfig {
-  lazy val live: Layer[Config.Error, ElasticsearchConfig with HttpConfig] = {
-    val config = TypesafeConfigProvider.fromResourcePath().load(deriveConfig[AppConfig])
-    ZLayer.fromZIO(config.map(_.elasticsearch)) ++ ZLayer.fromZIO(config.map(_.http))
-  }
+  private[this] final val config = ZIO.config(deriveConfig[AppConfig])
+
+  lazy val live: Layer[Config.Error, ElasticsearchConfig with HttpConfig] =
+    ZLayer(config.map(_.elasticsearch)) ++ ZLayer(config.map(_.http))
 }
