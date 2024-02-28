@@ -7,7 +7,7 @@ import scalafix.sbt.ScalafixPlugin.autoImport._
 object BuildHelper {
 
   val Scala212: String = "2.12.19"
-  val Scala213: String = "2.13.12"
+  val Scala213: String = "2.13.13"
   val Scala3: String   = "3.3.1"
 
   def stdSettings(prjName: String) =
