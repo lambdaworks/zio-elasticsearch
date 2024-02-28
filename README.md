@@ -177,4 +177,4 @@ See the [Code of Conduct](https://lambdaworks.github.io/zio-elasticsearch/about/
 [License](LICENSE)
 
 
-[scala-version-badge]: https://img.shields.io/badge/scala-2.13.10-blue?logo=scala&color=red
+[scala-version-badge]: https://img.shields.io/badge/scala-2.13.13-blue?logo=scala&color=red
