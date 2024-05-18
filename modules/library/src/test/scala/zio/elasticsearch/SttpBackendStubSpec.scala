@@ -1,8 +1,8 @@
 package zio.elasticsearch
 
-import sttp.client3.httpclient.zio.HttpClientZioBackend
-import sttp.client3.testing.SttpBackendStub
-import sttp.client3.{Request, Response, StringBody}
+import sttp.client4.httpclient.zio.HttpClientZioBackend
+import sttp.client4.testing.{ResponseStub, WebSocketStreamBackendStub}
+import sttp.client4.{GenericRequest, Response, StringBody}
 import sttp.model.{Method, StatusCode}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
@@ -14,10 +14,10 @@ import java.time.LocalDate
 
 trait SttpBackendStubSpec extends ZIOSpecDefault {
 
-  case class StubMapping(request: Request[_, _] => Boolean, response: Response[Any])
+  final case class StubMapping(request: GenericRequest[_, _] => Boolean, response: Response[Any])
 
-  final implicit class SttpBackendStubOps[A](sttpBackendStub: SttpBackendStub[Task, A]) {
-    def addStubMapping(stubMapping: StubMapping): SttpBackendStub[Task, A] =
+  final implicit class SttpBackendStubOps[A](sttpBackendStub: WebSocketStreamBackendStub[Task, A]) {
+    def addStubMapping(stubMapping: StubMapping): WebSocketStreamBackendStub[Task, A] =
       sttpBackendStub
         .whenRequestMatches(stubMapping.request)
         .thenRespond(stubMapping.response)
@@ -63,7 +63,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val bulkRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/_bulk?refresh=true",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         | "took" : 3,
@@ -87,14 +87,13 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |     }
         |   }
         | ]
-        |}""".stripMargin,
-      StatusCode.Ok
+        |}""".stripMargin
     )
   )
 
   private val countRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_count?routing=routing",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         |  "count": 2,
@@ -103,14 +102,13 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |    "successful": 2,
         |    "failed": 0
         |  }
-        |}""".stripMargin,
-      StatusCode.Ok
+        |}""".stripMargin
     )
   )
 
   private val createDocumentRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_doc?refresh=true&routing=routing",
-    response = Response(
+    response = ResponseStub(
       """
         |{
         |  "_id": "V4x8q4UB3agN0z75fv5r"
@@ -121,7 +119,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val createIndexRequestWithoutMappingStub: StubMapping = StubMapping(
     request = r => r.method == Method.PUT && r.uri.toString == s"$url/repositories",
-    response = Response("Ok", StatusCode.Ok)
+    response = ResponseStub.ok("Ok")
   )
 
   private val createIndexRequestWithMappingStub: StubMapping = StubMapping(
@@ -148,47 +146,47 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
           |""".stripMargin,
         "utf-8"
       ),
-    response = Response("Ok", StatusCode.Ok)
+    response = ResponseStub.ok("Ok")
   )
 
   private val createOrUpdateRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.PUT && r.uri.toString == s"$url/repositories/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
-    response = Response("Created", StatusCode.Created)
+    response = ResponseStub("Created", StatusCode.Created)
   )
 
   private val createRequestWithGivenIdStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_create/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
-    response = Response("Created", StatusCode.Created)
+    response = ResponseStub("Created", StatusCode.Created)
   )
 
   private val deleteByIdRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.DELETE && r.uri.toString == s"$url/repositories/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
-    response = Response("Ok", StatusCode.Ok)
+    response = ResponseStub.ok("Ok")
   )
 
   private val deleteByQueryRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_delete_by_query?refresh=true&routing=routing",
-    response = Response("Ok", StatusCode.Ok)
+    response = ResponseStub.ok("Ok")
   )
 
   private val deleteIndexRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.DELETE && r.uri.toString == s"$url/repositories",
-    response = Response("Ok", StatusCode.Ok)
+    response = ResponseStub.ok("Ok")
   )
 
   private val existsRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.HEAD && r.uri.toString == s"$url/repositories/_doc/example-id?routing=routing",
-    response = Response("Ok", StatusCode.Ok)
+    response = ResponseStub.ok("Ok")
   )
 
   private val getByIdRequestStub: StubMapping = StubMapping(
     request =
       r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_doc/V4x8q4UB3agN0z75fv5r?routing=routing",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         |  "_source": {
@@ -218,14 +216,13 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |      -20
         |    ]
         |  }
-        |}""".stripMargin,
-      StatusCode.Ok
+        |}""".stripMargin
     )
   )
 
   private val knnSearchStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_knn_search",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         |  "took": 5,
@@ -277,19 +274,18 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |      }
         |    ]
         |  }
-        |}""".stripMargin,
-      StatusCode.Ok
+        |}""".stripMargin
     )
   )
 
   private val refreshRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_refresh",
-    response = Response("OK", StatusCode.Ok)
+    response = ResponseStub.ok("OK")
   )
 
   private val searchRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         |  "took": 5,
@@ -341,14 +337,13 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |      }
         |    ]
         |  }
-        |}""".stripMargin,
-      StatusCode.Ok
+        |}""".stripMargin
     )
   )
 
   private val searchWithAggregationRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search?typed_keys",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         |  "took": 5,
@@ -412,21 +407,20 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |      ]
         |    }
         |  }
-        |}""".stripMargin,
-      StatusCode.Ok
+        |}""".stripMargin
     )
   )
 
   private val updateRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_update/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
-    response = Response("Updated", StatusCode.Ok)
+    response = ResponseStub.ok("Updated")
   )
 
   private val updateByQueryRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_update_by_query?conflicts=proceed&refresh=true&routing=routing",
-    response = Response(
+    response = ResponseStub.ok(
       """
         |{
         |  "took" : 1,
@@ -435,8 +429,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |  "deleted" : 0,
         |  "version_conflicts" : 2
         |}
-        |""".stripMargin,
-      StatusCode.Ok
+        |""".stripMargin
     )
   )
 
@@ -461,7 +454,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     updateByQueryRequestStub
   )
 
-  private val sttpBackendStubLayer: TaskLayer[SttpBackendStub[Task, Any]] = ZLayer.succeed(
+  private val sttpBackendStubLayer = ZLayer.succeed(
     stubs.foldLeft(HttpClientZioBackend.stub)(_.addStubMapping(_))
   )
 

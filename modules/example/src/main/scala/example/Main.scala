@@ -19,8 +19,7 @@ package example
 import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import example.external.github.RepoFetcher
-import sttp.client3.SttpBackend
-import sttp.client3.httpclient.zio.HttpClientZioBackend
+import sttp.client4.httpclient.zio.{HttpClientZioBackend, SttpClient}
 import zio._
 import zio.config.typesafe.TypesafeConfigProvider
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
@@ -46,7 +45,7 @@ object Main extends ZIOAppDefault {
     )
   }
 
-  private[this] def prepare: RIO[SttpBackend[Task, Any] with Elasticsearch, Unit] = {
+  private[this] def prepare: RIO[SttpClient with Elasticsearch, Unit] = {
     val deleteIndex: RIO[Elasticsearch, Unit] =
       for {
         _ <- ZIO.logInfo(s"Deleting index '$Index'...")
@@ -60,7 +59,7 @@ object Main extends ZIOAppDefault {
         _       <- Elasticsearch.execute(ElasticRequest.createIndex(Index, mapping))
       } yield ()
 
-    val populate: RIO[SttpBackend[Task, Any] with Elasticsearch, Unit] =
+    val populate: RIO[SttpClient with Elasticsearch, Unit] =
       (for {
         repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
