@@ -45,15 +45,15 @@ lazy val library =
     .settings(scalacOptions += "-language:higherKinds")
     .settings(
       libraryDependencies ++= List(
-        "com.softwaremill.sttp.client3" %% "zio"             % "3.9.6",
-        "com.softwaremill.sttp.client3" %% "zio-json"        % "3.9.6",
+        "com.softwaremill.sttp.client4" %% "zio"             % "4.0.0-M14",
+        "com.softwaremill.sttp.client4" %% "zio-json"        % "4.0.0-M14",
         "dev.zio"                       %% "zio-json"        % "0.6.2",
-        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC25",
+        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC26",
         "dev.zio"                       %% "zio-schema"      % "1.1.1",
         "dev.zio"                       %% "zio-schema-json" % "1.1.1",
         "org.apache.commons"             % "commons-lang3"   % "3.14.0",
-        "dev.zio"                       %% "zio-test"        % "2.0.22" % Test,
-        "dev.zio"                       %% "zio-test-sbt"    % "2.0.22" % Test
+        "dev.zio"                       %% "zio-test"        % "2.1.1" % Test,
+        "dev.zio"                       %% "zio-test-sbt"    % "2.1.1" % Test
       ),
       testFrameworks := List(new TestFramework("zio.test.sbt.ZTestFramework"))
     )
@@ -77,7 +77,7 @@ lazy val example =
       crossScalaVersions := List(Scala213),
       publish / skip     := true,
       libraryDependencies ++= List(
-        "dev.zio" %% "zio"                 % "2.0.22",
+        "dev.zio" %% "zio"                 % "2.1.1",
         "dev.zio" %% "zio-config"          % "4.0.2",
         "dev.zio" %% "zio-config-magnolia" % "4.0.2",
         "dev.zio" %% "zio-config-typesafe" % "4.0.2",
