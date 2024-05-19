@@ -1,6 +1,6 @@
 package zio.elasticsearch
 
-import sttp.client4.httpclient.zio.HttpClientZioBackend
+import sttp.client4.httpclient.zio.{HttpClientZioBackend, SttpClient}
 import sttp.client4.testing.{ResponseStub, WebSocketStreamBackendStub}
 import sttp.client4.{GenericRequest, Response, StringBody}
 import sttp.model.{Method, StatusCode}
@@ -8,7 +8,7 @@ import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
 import zio.test.ZIOSpecDefault
-import zio.{Task, TaskLayer, ZLayer}
+import zio.{Task, TaskLayer, ULayer, ZLayer}
 
 import java.time.LocalDate
 
@@ -454,9 +454,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     updateByQueryRequestStub
   )
 
-  private val sttpBackendStubLayer = ZLayer.succeed(
-    stubs.foldLeft(HttpClientZioBackend.stub)(_.addStubMapping(_))
-  )
+  private val sttpBackendStubLayer: ULayer[SttpClient] =
+    ZLayer.succeed(stubs.foldLeft(HttpClientZioBackend.stub)(_.addStubMapping(_)))
 
   val elasticsearchSttpLayer: TaskLayer[Executor] =
     (sttpBackendStubLayer ++ ZLayer.succeed(ElasticConfig.Default)) >>> ElasticExecutor.live
