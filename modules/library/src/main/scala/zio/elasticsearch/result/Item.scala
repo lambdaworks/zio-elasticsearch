@@ -54,9 +54,8 @@ final case class Item(
       innerHits <-
         Validation
           .validateAll(
-            innerHitItems.map(item =>
-              Validation.fromEither(JsonDecoder.decode(schema, item.raw.toString)).mapError(_.message)
-            )
+            innerHitItems
+              .map(item => Validation.fromEither(JsonDecoder.decode(schema, item.raw.toString)).mapError(_.message))
           )
           .toEitherWith(errors =>
             DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
