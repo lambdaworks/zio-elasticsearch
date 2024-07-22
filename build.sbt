@@ -51,7 +51,7 @@ lazy val library =
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC27",
         "dev.zio"                       %% "zio-schema"      % "1.3.0",
         "dev.zio"                       %% "zio-schema-json" % "1.3.0",
-        "org.apache.commons"             % "commons-lang3"   % "3.14.0",
+        "org.apache.commons"             % "commons-lang3"   % "3.15.0",
         "dev.zio"                       %% "zio-test"        % "2.1.6" % Test,
         "dev.zio"                       %% "zio-test-sbt"    % "2.1.6" % Test
       ),
