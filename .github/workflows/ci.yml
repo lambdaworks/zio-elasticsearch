@@ -60,7 +60,7 @@ jobs:
       - name: Run tests
         run: ./sbt ++${{ matrix.scala }}! library/test
       - name: Run test container
-        run: docker-compose -f docker/elasticsearch-8.x.yml up -d
+        run: docker compose -f docker/elasticsearch-8.x.yml up -d
       - name: Run integration tests
         run: ./sbt ++${{ matrix.scala }}! integration/test
 
