@@ -23,7 +23,7 @@ import sttp.client4.httpclient.zio.{HttpClientZioBackend, SttpClient}
 import zio._
 import zio.config.typesafe.TypesafeConfigProvider
 import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
-import zio.http.{Server, ServerConfig}
+import zio.http.Server
 
 import scala.io.Source
 import scala.util.Using
@@ -70,12 +70,12 @@ object Main extends ZIOAppDefault {
   }
 
   private[this] def runServer: RIO[HttpConfig with Elasticsearch, ExitCode] = {
-    val serverConfigLive = ZLayer.fromFunction((http: HttpConfig) => ServerConfig.default.port(http.port))
+    val serverConfigLive = ZLayer.fromFunction((http: HttpConfig) => Server.Config.default.port(http.port))
 
     (for {
       http  <- ZIO.service[HttpConfig]
       _     <- ZIO.logInfo(s"Starting an HTTP service on port: ${http.port}")
-      routes = HealthCheck.Route ++ Repositories.Routes
+      routes = HealthCheck.health ++ Repositories.routes
       _     <- Server.serve(routes)
     } yield ExitCode.success).provideSome(
       RepositoriesElasticsearch.live,
