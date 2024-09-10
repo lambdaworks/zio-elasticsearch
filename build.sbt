@@ -81,7 +81,7 @@ lazy val example =
         "dev.zio" %% "zio-config"          % "4.0.2",
         "dev.zio" %% "zio-config-magnolia" % "4.0.2",
         "dev.zio" %% "zio-config-typesafe" % "4.0.2",
-        "dev.zio" %% "zio-http"            % "0.0.5",
+        "dev.zio" %% "zio-http"            % "3.0.0",
         "dev.zio" %% "zio-json"            % "0.7.3",
         "dev.zio" %% "zio-schema"          % "1.4.1",
         "dev.zio" %% "zio-schema-json"     % "1.4.1"
