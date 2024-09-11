@@ -16,15 +16,16 @@
 
 package example.api
 
-import zio.http._
-import zio.http.model.Method
+import zio.http.{Method, _}
 import zio.json.EncoderOps
 import zio.json.ast.Json._
 
 object HealthCheck {
 
-  final val Route: Http[Any, Nothing, Any, Response] = Http.collect { case Method.GET -> !! / "health" =>
-    Response.json(Obj("name" -> Str("zio-elasticsearch-example"), "status" -> Str("up")).toJsonPretty)
-  }
+  final val health: Routes[Any, Nothing] = Routes(
+    Method.GET / Root / "health" -> handler(
+      Response.json(Obj("name" -> Str("zio-elasticsearch-example"), "status" -> Str("up")).toJsonPretty)
+    )
+  )
 
 }
