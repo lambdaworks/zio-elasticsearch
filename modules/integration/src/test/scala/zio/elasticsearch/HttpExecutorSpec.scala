@@ -1298,10 +1298,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                   for {
                     _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                     _ <-
-                      Executor.execute(ElasticRequest.upsert[TestDocument](secondSearchIndex, subDocumentId, document))
+                      Executor.execute(ElasticRequest.upsert[TestDocument](secondSearchIndex, documentId, document))
                     _ <- Executor.execute(
                            ElasticRequest
-                             .upsert[TestSubDocument](secondSearchIndex, documentId, subDocument)
+                             .upsert[TestSubDocument](secondSearchIndex, subDocumentId, subDocument)
                              .refreshTrue
                          )
                     query = range(TestDocument.intField).gte(0)
