@@ -1311,7 +1311,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 assertZIO(result.exit)(
                   fails(
                     isSubtype[Exception](
-                      assertException("Could not parse all documents successfully: .subDocumentList(missing)")
+                      assertException("Could not parse all documents successfully: .dateField(missing)")
                     )
                   )
                 )
