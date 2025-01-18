@@ -48,7 +48,7 @@ lazy val library =
         "com.softwaremill.sttp.client4" %% "zio"             % "4.0.0-M19",
         "com.softwaremill.sttp.client4" %% "zio-json"        % "4.0.0-M19",
         "dev.zio"                       %% "zio-json"        % "0.7.3",
-        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC36",
+        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC37",
         "dev.zio"                       %% "zio-schema"      % "1.5.0",
         "dev.zio"                       %% "zio-schema-json" % "1.5.0",
         "org.apache.commons"             % "commons-lang3"   % "3.17.0",
