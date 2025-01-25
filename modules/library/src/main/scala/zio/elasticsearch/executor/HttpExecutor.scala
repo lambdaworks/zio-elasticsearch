@@ -145,7 +145,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(asJson(r.body))
+        .body(r.body)
         .response(asJson[BulkResponse])
     ).flatMap { response =>
       response.code match {
