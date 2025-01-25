@@ -20,14 +20,31 @@ import sttp.client4.httpclient.zio.SttpClient
 import sttp.client4.ziojson._
 import sttp.client4.{Request, Response, ResponseException, UriContext, basicRequest => request}
 import sttp.model.MediaType.ApplicationJson
-import sttp.model.StatusCode.{BadRequest => HttpBadRequest, Conflict => HttpConflict, Created => HttpCreated, Forbidden => HttpForbidden, NotFound => HttpNotFound, Ok => HttpOk, Unauthorized => HttpUnauthorized}
+import sttp.model.StatusCode.{
+  BadRequest => HttpBadRequest,
+  Conflict => HttpConflict,
+  Created => HttpCreated,
+  Forbidden => HttpForbidden,
+  NotFound => HttpNotFound,
+  Ok => HttpOk,
+  Unauthorized => HttpUnauthorized
+}
 import sttp.model.Uri.QuerySegment
 import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
 import zio.elasticsearch.executor.response.AggregationResponse.toResult
-import zio.elasticsearch.executor.response.{BulkResponse, CountResponse, CreateResponse, DocumentWithHighlightsAndSort, GetResponse, Hit, SearchWithAggregationsResponse, UpdateByQueryResponse}
+import zio.elasticsearch.executor.response.{
+  BulkResponse,
+  CountResponse,
+  CreateResponse,
+  DocumentWithHighlightsAndSort,
+  GetResponse,
+  Hit,
+  SearchWithAggregationsResponse,
+  UpdateByQueryResponse
+}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
