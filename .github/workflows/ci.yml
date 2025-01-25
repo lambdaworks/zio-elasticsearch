@@ -42,7 +42,7 @@ jobs:
           - '21'
         scala:
           - '2.12.20'
-          - '2.13.15'
+          - '2.13.16'
           - '3.6.3'
     steps:
       - name: Checkout current branch
