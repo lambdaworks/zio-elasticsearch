@@ -119,7 +119,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri"${esConfig.uri}/${r.selectors}/$Search?typed_keys")
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -165,7 +165,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       .contentType(ApplicationJson)
       .response(asJson[CountResponse])
 
-    sendRequestWithCustomResponse(r.query.fold(req)(_ => req.body(r.toJson))).flatMap { response =>
+    sendRequestWithCustomResponse(r.query.fold(req)(_ => req.body(asJson(r.toJson)))).flatMap { response =>
       response.code match {
         case HttpOk =>
           response.body
@@ -188,7 +188,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
         .response(asJson[CreateResponse])
     ).flatMap { response =>
       response.code match {
@@ -214,7 +214,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpCreated  => ZIO.succeed(CreationOutcome.Created)
@@ -242,7 +242,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.toJson)).flatMap { response =>
+    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(asJson(r.toJson))).flatMap { response =>
       response.code match {
         case HttpOk | HttpCreated => ZIO.unit
         case _                    => ZIO.fail(handleFailures(response))
@@ -294,7 +294,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk       => ZIO.succeed(DeletionOutcome.Deleted)
@@ -349,7 +349,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri"${esConfig.uri}/$Search/$Scroll".withParams((Scroll, config.keepAlive)))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(Obj(ScrollId -> scrollId.toJson))
+        .body(asJson(Obj(ScrollId -> scrollId.toJson)))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -383,7 +383,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri)
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -413,7 +413,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .post(uri"${esConfig.uri}/${r.selectors}/$Search".withParams(getQueryParams(Chunk(("routing", r.routing)))))
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -466,11 +466,13 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
         .body(
-          pointInTimeJson merge
-            sortsJson merge
-            Obj("query" -> r.query.toJson(fieldPath = None)) merge
-            searchAfter.fold(Obj())(sa => Obj("search_after" -> sa)) merge
-            config.pageSize.fold(Obj())(ps => Obj("size" -> ps.toJson))
+          asJson(
+            pointInTimeJson merge
+              sortsJson merge
+              Obj("query" -> r.query.toJson(fieldPath = None)) merge
+              searchAfter.fold(Obj())(sa => Obj("search_after" -> sa)) merge
+              config.pageSize.fold(Obj())(ps => Obj("size" -> ps.toJson))
+          )
         )
     ).flatMap { response =>
       response.code match {
@@ -524,7 +526,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -556,7 +558,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
         .response(asJson[SearchWithAggregationsResponse])
         .contentType(ApplicationJson)
-        .body(Obj("query" -> r.query.toJson(fieldPath = None)) merge Obj("sort" -> Arr(r.sortBy.map(_.toJson))))
+        .body(asJson(Obj("query" -> r.query.toJson(fieldPath = None)) merge Obj("sort" -> Arr(r.sortBy.map(_.toJson)))))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -581,7 +583,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           )
         )
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk      => ZIO.succeed(UpdateOutcome.Updated)
@@ -600,7 +602,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         )
         .response(asJson[UpdateByQueryResponse])
         .contentType(ApplicationJson)
-        .body(r.toJson)
+        .body(asJson(r.toJson))
     ).flatMap { response =>
       response.code match {
         case HttpOk =>
@@ -632,7 +634,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
 
   private def handleFailuresFromCustomResponse[A](
-    response: Response[Either[ResponseException[String, String], A]]
+    response: Response[Either[ResponseException[String], A]]
   ): ElasticException =
     response.code match {
       case HttpUnauthorized | HttpForbidden =>
@@ -662,8 +664,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
-    req: Request[Either[ResponseException[String, String], A]]
-  ): Task[Response[Either[ResponseException[String, String], A]]] =
+    req: Request[Either[ResponseException[String], A]]
+  ): Task[Response[Either[ResponseException[String], A]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
       resp <- req.send(client)
