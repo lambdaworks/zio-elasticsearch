@@ -1050,7 +1050,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than bound set.
    */
   def gt[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: LB =:= Unbounded.type
+    ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThan[B], UB]
 
   /**
@@ -1064,7 +1064,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the greater-than-or-equal-to bound set.
    */
   def gte[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: LB =:= Unbounded.type
+    ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB]
 
   /**
@@ -1078,7 +1078,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than bound set.
    */
   def lt[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: UB =:= Unbounded.type
+    ev: UB =:= Unbounded.type
   ): RangeQuery[S, B, LB, LessThan[B]]
 
   /**
@@ -1092,7 +1092,7 @@ sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
    *   an instance of [[zio.elasticsearch.query.RangeQuery]] enriched with the less-than-or-equal-to bound set.
    */
   def lte[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: UB =:= Unbounded.type
+    ev: UB =:= Unbounded.type
   ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]]
 }
 
@@ -1111,22 +1111,22 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
     self.copy(format = Some(value))
 
   def gt[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: LB =:= Unbounded.type
+    ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThan[B], UB] =
     self.copy(lower = GreaterThan(value))
 
   def gte[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: LB =:= Unbounded.type
+    ev: LB =:= Unbounded.type
   ): RangeQuery[S, B, GreaterThanOrEqualTo[B], UB] =
     self.copy(lower = GreaterThanOrEqualTo(value))
 
   def lt[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: UB =:= Unbounded.type
+    ev: UB =:= Unbounded.type
   ): RangeQuery[S, B, LB, LessThan[B]] =
     self.copy(upper = LessThan(value))
 
   def lte[B <: A: ElasticPrimitive](value: B)(implicit
-     ev: UB =:= Unbounded.type
+    ev: UB =:= Unbounded.type
   ): RangeQuery[S, B, LB, LessThanOrEqualTo[B]] =
     self.copy(upper = LessThanOrEqualTo(value))
 
