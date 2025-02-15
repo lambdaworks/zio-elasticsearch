@@ -63,7 +63,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val bulkRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/_bulk?refresh=true",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         | "took" : 3,
@@ -93,7 +93,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val countRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_count?routing=routing",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "count": 2,
@@ -108,7 +108,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val createDocumentRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_doc?refresh=true&routing=routing",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "_id": "V4x8q4UB3agN0z75fv5r"
@@ -186,7 +186,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
   private val getByIdRequestStub: StubMapping = StubMapping(
     request =
       r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_doc/V4x8q4UB3agN0z75fv5r?routing=routing",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "_source": {
@@ -222,7 +222,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val knnSearchStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_knn_search",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "took": 5,
@@ -285,7 +285,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val searchRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "took": 5,
@@ -343,7 +343,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val searchWithAggregationRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_search?typed_keys",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "took": 5,
@@ -420,7 +420,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
   private val updateByQueryRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.POST && r.uri.toString == s"$url/repositories/_update_by_query?conflicts=proceed&refresh=true&routing=routing",
-    response = ResponseStub.exact(
+    response = ResponseStub.adjust(
       """
         |{
         |  "took" : 1,
