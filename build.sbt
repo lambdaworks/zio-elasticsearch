@@ -5,7 +5,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 inThisBuild(
   List(
     homepage         := Some(url("https://github.com/lambdaworks/zio-elasticsearch/")),
-    licenses         := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+    licenses         := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
     organization     := "io.lambdaworks",
     organizationName := "LambdaWorks",
     startYear        := Some(2022),
@@ -47,7 +47,7 @@ lazy val library =
       libraryDependencies ++= List(
         "com.softwaremill.sttp.client4" %% "zio"             % "4.0.0-M25",
         "com.softwaremill.sttp.client4" %% "zio-json"        % "4.0.0-M25",
-        "dev.zio"                       %% "zio-json"        % "0.7.6",
+        "dev.zio"                       %% "zio-json"        % "0.7.21",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC39",
         "dev.zio"                       %% "zio-schema"      % "1.6.1",
         "dev.zio"                       %% "zio-schema-json" % "1.6.1",
@@ -82,7 +82,7 @@ lazy val example =
         "dev.zio" %% "zio-config-magnolia" % "4.0.3",
         "dev.zio" %% "zio-config-typesafe" % "4.0.3",
         "dev.zio" %% "zio-http"            % "3.0.1",
-        "dev.zio" %% "zio-json"            % "0.7.6",
+        "dev.zio" %% "zio-json"            % "0.7.21",
         "dev.zio" %% "zio-schema"          % "1.6.1",
         "dev.zio" %% "zio-schema-json"     % "1.6.1"
       )
