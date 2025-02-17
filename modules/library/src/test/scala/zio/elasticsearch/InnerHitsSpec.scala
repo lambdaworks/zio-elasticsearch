@@ -135,7 +135,7 @@ object InnerHitsSpec extends ZIOSpecDefault {
           """
             |{
             |  "inner_hits": {
-            |    
+            |
             |  }
             |}
             |""".stripMargin
