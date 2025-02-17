@@ -394,7 +394,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |        }
         |      }
         |    ]
-        |  }, 
+        |  },
         |  "aggregations": {
         |    "terms#aggregation1": {
         |      "doc_count_error_upper_bound": 0,

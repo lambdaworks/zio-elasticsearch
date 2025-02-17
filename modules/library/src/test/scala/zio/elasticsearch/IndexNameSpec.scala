@@ -79,16 +79,16 @@ object IndexNameSpec extends ZIOSpecDefault {
     )
 
   private def indexNameFailureMessage(name: String): String =
-    s"""$name did not satisfy 
-       |   - Must be lower case only
-       |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
-       |   - Cannot include ":"(since 7.0).
-       |   - Cannot be empty
-       |   - Cannot start with -, _, +.
-       |   - Cannot be `.` or `..`.
-       |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
-       |   - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
-       |""".stripMargin
+    s"""|$name did not satisfy\u00A0
+        |   - Must be lower case only
+        |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
+        |   - Cannot include ":"(since 7.0).
+        |   - Cannot be empty
+        |   - Cannot start with -, _, +.
+        |   - Cannot be `.` or `..`.
+        |   - Cannot be longer than 255 bytes (note it is bytes, so multi-byte characters will count towards the 255 limit faster).
+        |   - Names starting with . are deprecated, except for hidden indices and internal indices managed by plugins.
+        |""".stripMargin
 
   private def genString(min: Int, max: Int): Gen[Any, String] =
     Gen.stringBounded(min, max)(Gen.alphaChar).map(_.toLowerCase)
