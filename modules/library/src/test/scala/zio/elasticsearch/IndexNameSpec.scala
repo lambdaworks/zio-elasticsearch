@@ -79,7 +79,7 @@ object IndexNameSpec extends ZIOSpecDefault {
     )
 
   private def indexNameFailureMessage(name: String): String =
-    s"""$name did not satisfy 
+    s"""$name did not satisfy
        |   - Must be lower case only
        |   - Cannot include \\, /, *, ?, ", <, >, |, ` `(space character), `,`(comma), #.
        |   - Cannot include ":"(since 7.0).
