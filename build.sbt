@@ -78,9 +78,9 @@ lazy val example =
       publish / skip     := true,
       libraryDependencies ++= List(
         "dev.zio" %% "zio"                 % "2.1.16",
-        "dev.zio" %% "zio-config"          % "4.0.3",
-        "dev.zio" %% "zio-config-magnolia" % "4.0.3",
-        "dev.zio" %% "zio-config-typesafe" % "4.0.3",
+        "dev.zio" %% "zio-config"          % "4.0.4",
+        "dev.zio" %% "zio-config-magnolia" % "4.0.4",
+        "dev.zio" %% "zio-config-typesafe" % "4.0.4",
         "dev.zio" %% "zio-http"            % "3.1.0",
         "dev.zio" %% "zio-json"            % "0.7.39",
         "dev.zio" %% "zio-schema"          % "1.6.5",
