@@ -24,7 +24,7 @@ import zio.json.ast.{Json, JsonCursor}
 import zio.prelude.Validation
 import zio.schema.Schema
 import zio.schema.codec.DecodeError
-import zio.schema.codec.JsonCodec.JsonDecoder
+import zio.schema.codec.JsonCodec.{Configuration => JsonCodecConfig, JsonDecoder}
 
 final case class Item(
   raw: Json,
@@ -33,7 +33,8 @@ final case class Item(
   sort: Option[Json] = None
 ) {
 
-  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] = JsonDecoder.decode(schema, raw.toString)
+  def documentAs[A](implicit schema: Schema[A]): Either[DecodeError, A] =
+    JsonDecoder.decode(schema, raw.toString, JsonCodecConfig.default)
 
   lazy val highlights: Option[Map[String, Chunk[String]]] = highlight.flatMap { json =>
     json.toString.fromJson[Map[String, Chunk[String]]].toOption
@@ -55,7 +56,11 @@ final case class Item(
         Validation
           .validateAll(
             innerHitItems
-              .map(item => Validation.fromEither(JsonDecoder.decode(schema, item.raw.toString)).mapError(_.message))
+              .map(item =>
+                Validation
+                  .fromEither(JsonDecoder.decode(schema, item.raw.toString, JsonCodecConfig.default))
+                  .mapError(_.message)
+              )
           )
           .toEitherWith(errors =>
             DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")

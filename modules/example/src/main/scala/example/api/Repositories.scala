@@ -29,7 +29,7 @@ import zio.http.Status.{
 }
 import zio.http.{Method, _}
 import zio.json.EncoderOps
-import zio.schema.codec.JsonCodec
+import zio.schema.codec.JsonCodec.{Configuration => JsonCodecConfig, JsonDecoder}
 
 import CompoundOperator._
 import FilterOperator._
@@ -56,7 +56,7 @@ object Repositories {
       }.orDie,
       Method.POST / BasePath -> handler { (req: Request) =>
         req.body.asString
-          .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
+          .map(JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _, JsonCodecConfig.default))
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).status(HttpBadRequest))
@@ -71,7 +71,7 @@ object Repositories {
       }.orDie,
       Method.POST / BasePath / "search" -> handler { (req: Request) =>
         req.body.asString
-          .map(JsonCodec.JsonDecoder.decode[Criteria](Criteria.schema, _))
+          .map(JsonDecoder.decode[Criteria](Criteria.schema, _, JsonCodecConfig.default))
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).status(HttpBadRequest))
@@ -83,7 +83,7 @@ object Repositories {
       }.orDie,
       Method.PUT / BasePath / string("id") -> handler { (id: String, req: Request) =>
         req.body.asString
-          .map(JsonCodec.JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _))
+          .map(JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _, JsonCodecConfig.default))
           .flatMap {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).status(HttpBadRequest))
