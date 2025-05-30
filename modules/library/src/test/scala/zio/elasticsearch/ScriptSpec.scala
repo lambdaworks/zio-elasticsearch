@@ -16,9 +16,9 @@ object ScriptSpec extends ZIOSpecDefault {
           val params           = "factor" -> 2
           val lang             = Painless
 
-          val script           = Script(source)
-          val scriptWithParams = Script(sourceWithParams).params(params)
-          val scriptWithLang   = Script(sourceWithParams).lang(lang)
+          val script                  = Script(source)
+          val scriptWithParams        = Script(sourceWithParams).params(params)
+          val scriptWithLang          = Script(sourceWithParams).lang(lang)
           val scriptWithLangAndParams =
             Script(sourceWithParams).params(params).lang(lang)
 
@@ -50,9 +50,9 @@ object ScriptSpec extends ZIOSpecDefault {
           val params           = "factor" -> 2
           val lang             = Painless
 
-          val script           = Script(source)
-          val scriptWithParams = Script(sourceWithParams).params(params)
-          val scriptWithLang   = Script(source).lang(lang)
+          val script                  = Script(source)
+          val scriptWithParams        = Script(sourceWithParams).params(params)
+          val scriptWithLang          = Script(source).lang(lang)
           val scriptWithLangAndParams =
             Script(sourceWithParams).params(params).lang(lang)
 

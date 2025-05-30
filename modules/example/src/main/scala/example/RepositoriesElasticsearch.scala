@@ -30,7 +30,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def findById(organization: String, id: String): Task[Option[GitHubRepo]] =
     for {
       routing <- routingOf(organization)
-      res <- elasticsearch
+      res     <- elasticsearch
                .execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing))
                .documentAs[GitHubRepo]
     } yield res
@@ -38,7 +38,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def create(repository: GitHubRepo): Task[CreationOutcome] =
     for {
       routing <- routingOf(repository.organization)
-      res <- elasticsearch.execute(
+      res     <- elasticsearch.execute(
                ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
              )
     } yield res
@@ -46,7 +46,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def createAll(repositories: Chunk[GitHubRepo]): Task[Unit] =
     for {
       routing <- routingOf(organization)
-      _ <- elasticsearch.execute(
+      _       <- elasticsearch.execute(
              ElasticRequest
                .bulk(repositories.map { repository =>
                  ElasticRequest.create[GitHubRepo](Index, DocumentId(repository.id), repository)
@@ -58,7 +58,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
-      _ <- elasticsearch.execute(
+      _       <- elasticsearch.execute(
              ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
            )
     } yield ()

@@ -22,7 +22,7 @@ object InnerHitsSpec extends ZIOSpecDefault {
         val innerHitsWithIncluded   = InnerHits().includes(TestDocument.intField)
         val innerHitsWithName       = InnerHits().name("innerHitName")
         val innerHitsWithSize       = InnerHits().size(5)
-        val innerHitsWithAllParams =
+        val innerHitsWithAllParams  =
           InnerHits()
             .excludes("longField")
             .includes("intField")
@@ -122,7 +122,7 @@ object InnerHitsSpec extends ZIOSpecDefault {
         val innerHitsWithIncluded   = InnerHits().includes(TestDocument.intField)
         val innerHitsWithName       = InnerHits().name("innerHitName")
         val innerHitsWithSize       = InnerHits().size(5)
-        val innerHitsWithAllParams =
+        val innerHitsWithAllParams  =
           InnerHits()
             .excludes("longField")
             .includes("intField")

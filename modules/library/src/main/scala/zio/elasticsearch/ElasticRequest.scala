@@ -738,7 +738,7 @@ object ElasticRequest {
       val highlightsJson: Json  = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
       val sortJson: Json        = if (sortBy.nonEmpty) Obj("sort" -> Arr(sortBy.map(_.toJson))) else Obj()
-      val sourceJson: Json =
+      val sourceJson: Json      =
         (included, excluded) match {
           case (Chunk(), Chunk()) =>
             Obj()
@@ -825,7 +825,7 @@ object ElasticRequest {
       val highlightsJson: Json  = highlights.fold(Obj())(h => Obj("highlight" -> h.toJson(None)))
       val searchAfterJson: Json = searchAfter.fold(Obj())(sa => Obj("search_after" -> sa))
       val sortJson: Json        = sortBy.nonEmptyOrElse(Obj())(sb => Obj("sort" -> Arr(sb.map(_.toJson))))
-      val sourceJson: Json =
+      val sourceJson: Json      =
         (included, excluded) match {
           case (Chunk(), Chunk()) =>
             Obj()

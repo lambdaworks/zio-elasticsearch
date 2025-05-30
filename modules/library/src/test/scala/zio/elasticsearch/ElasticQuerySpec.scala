@@ -41,7 +41,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
       suite("constructing")(
         suite("bool")(
           test("filter") {
-            val query = filter(matches(TestDocument.stringField, "test"), matches(field = "testField", "test field"))
+            val query          = filter(matches(TestDocument.stringField, "test"), matches(field = "testField", "test field"))
             val queryWithBoost =
               filter(matches(TestDocument.stringField, "test"), matches(TestDocument.intField, 22))
                 .boost(10.21)
@@ -77,7 +77,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           },
           test("must") {
-            val query = must(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val query          = must(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
             val queryWithBoost =
               must(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22)).boost(10.21)
 
@@ -112,7 +112,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           },
           test("mustNot") {
-            val query = mustNot(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val query          = mustNot(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
             val queryWithBoost =
               mustNot(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22))
                 .boost(10.21)
@@ -148,7 +148,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           },
           test("should") {
-            val query = should(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val query          = should(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
             val queryWithBoost =
               should(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22)).boost(10.21)
             val queryWithMinimumShouldMatch = should(
@@ -882,7 +882,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithMaxChildren    = hasChild("child", matchAll).maxChildren(5)
           val queryWithMinChildren    = hasChild("child", matchAll).minChildren(1)
           val queryWithScoreMode      = hasChild("child", matchAll).scoreMode(ScoreMode.Avg)
-          val queryWithAllParams = hasChild("child", matchAll)
+          val queryWithAllParams      = hasChild("child", matchAll)
             .scoreMode(ScoreMode.Avg)
             .ignoreUnmappedTrue
             .innerHits
@@ -1279,7 +1279,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
           val queryWithBoost              = multiMatch("this is a test").boost(2.2)
           val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
-          val queryWithAllParams = multiMatch("this is a test")
+          val queryWithAllParams          = multiMatch("this is a test")
             .fields(TestDocument.stringField)
             .matchingType(BestFields)
             .boost(2.2)
@@ -1378,11 +1378,11 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val query                   = nested("testField", matchAll)
           val queryTs                 = nested(TestDocument.subDocumentList, matchAll)
           val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
-          val queryWithInnerHits =
+          val queryWithInnerHits      =
             nested(TestDocument.subDocumentList, matchAll).innerHits(InnerHits().from(0).name("innerHitName").size(3))
           val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
           val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
-          val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
+          val queryWithAllParams      = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
             .innerHits(InnerHits().name("innerHitName"))
             .scoreMode(ScoreMode.Max)
 
@@ -1862,7 +1862,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             termsSet(field = "stringField", minimumShouldMatchField = "required_matches", terms = "a", "b", "c")
           val queryBool =
             termsSet(field = "booleanField", minimumShouldMatchField = "required_matches", terms = true, false)
-          val queryInt = termsSet(field = "intField", minimumShouldMatchField = "required_matches", terms = 1, 2, 3)
+          val queryInt      = termsSet(field = "intField", minimumShouldMatchField = "required_matches", terms = 1, 2, 3)
           val queryStringTs = termsSet(
             field = TestDocument.stringField,
             minimumShouldMatchField = TestDocument.stringField,
@@ -2244,7 +2244,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
           },
           test("mustNot") {
-            val query = mustNot(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val query          = mustNot(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
             val queryWithBoost =
               mustNot(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22))
                 .boost(10.21)
@@ -2294,7 +2294,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
           },
           test("should") {
-            val query = should(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
+            val query          = should(matches(TestDocument.stringField, "test"), matches("testField", "test field"))
             val queryWithBoost =
               should(matches(TestDocument.stringField.keyword, "test"), matches(TestDocument.intField, 22)).boost(10.21)
             val queryWithMinimumShouldMatch = should(
@@ -2738,8 +2738,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("disjunctionMax") {
-          val query   = disjunctionMax(exists("existsField"), ids("1", "2", "3"))
-          val queryTs = disjunctionMax(exists(TestDocument.stringField), ids("1", "2", "3"))
+          val query               = disjunctionMax(exists("existsField"), ids("1", "2", "3"))
+          val queryTs             = disjunctionMax(exists(TestDocument.stringField), ids("1", "2", "3"))
           val queryWithTieBreaker =
             disjunctionMax(exists("existsField"), ids("1", "2", "3")).tieBreaker(0.5f)
 
@@ -3147,7 +3147,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithMaxChildren    = hasChild("child", matches("field", "value")).maxChildren(5)
           val queryWithMinChildren    = hasChild("child", matches("field", "value")).minChildren(1)
           val queryWithScoreMode      = hasChild("child", matches("field", "value")).scoreMode(ScoreMode.Avg)
-          val queryWithAllParams = hasChild("child", matches("field", "value"))
+          val queryWithAllParams      = hasChild("child", matches("field", "value"))
             .scoreMode(ScoreMode.Avg)
             .ignoreUnmappedTrue
             .innerHits
@@ -3271,10 +3271,10 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("hasParent") {
-          val query                   = hasParent("parent", matches(TestDocument.stringField, "test"))
-          val queryWithBoost          = hasParent("parent", matches(TestDocument.stringField, "test")).boost(3)
-          val queryWithScore          = hasParent("parent", matches("field", "test")).withScoreFalse
-          val queryWithIgnoreUnmapped = hasParent("parent", matches("field", "test")).ignoreUnmappedFalse
+          val query                           = hasParent("parent", matches(TestDocument.stringField, "test"))
+          val queryWithBoost                  = hasParent("parent", matches(TestDocument.stringField, "test")).boost(3)
+          val queryWithScore                  = hasParent("parent", matches("field", "test")).withScoreFalse
+          val queryWithIgnoreUnmapped         = hasParent("parent", matches("field", "test")).ignoreUnmappedFalse
           val queryWithScoreAndIgnoreUnmapped =
             hasParent("parent", matches("field", "test")).withScoreTrue.ignoreUnmappedTrue
           val queryWithInnerHits = hasParent("parent", matches("field", "test")).innerHits
@@ -3665,7 +3665,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
           val queryWithBoost              = multiMatch("this is a test").boost(2.2)
           val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
-          val queryWithAllParams = multiMatch("this is a test")
+          val queryWithAllParams          = multiMatch("this is a test")
             .fields(TestDocument.stringField)
             .matchingType(BestFields)
             .boost(2.2)
@@ -3768,7 +3768,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val query                   = nested(TestDocument.subDocumentList, matchAll)
           val queryWithNested         = nested(TestDocument.subDocumentList, nested("items", term("testField", "test")))
           val queryWithIgnoreUnmapped = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedTrue
-          val queryWithInnerHits =
+          val queryWithInnerHits      =
             nested(TestDocument.subDocumentList, matchAll).innerHits(
               InnerHits()
                 .from(0)
@@ -3780,7 +3780,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           val queryWithInnerHitsEmpty = nested(TestDocument.subDocumentList, matchAll).innerHits
           val queryWithScoreMode      = nested(TestDocument.subDocumentList, matchAll).scoreMode(ScoreMode.Avg)
-          val queryWithAllParams = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
+          val queryWithAllParams      = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
             .innerHits(InnerHits().from(10).size(20).name("innerHitName"))
             .scoreMode(ScoreMode.Min)
 
@@ -4343,7 +4343,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             termsSet(field = "stringField", minimumShouldMatchField = "required_matches", terms = "a", "b", "c")
           val queryBool =
             termsSet(field = "booleanField", minimumShouldMatchField = "required_matches", terms = true, false)
-          val queryInt = termsSet(field = "intField", minimumShouldMatchField = "required_matches", terms = 1, 2, 3)
+          val queryInt      = termsSet(field = "intField", minimumShouldMatchField = "required_matches", terms = 1, 2, 3)
           val queryStringTs = termsSet(
             field = TestDocument.stringField,
             minimumShouldMatchField = TestDocument.stringField,

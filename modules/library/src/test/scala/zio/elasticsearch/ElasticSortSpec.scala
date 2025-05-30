@@ -26,7 +26,7 @@ object ElasticSortSpec extends ZIOSpecDefault {
           val sortTsWithNumericType  = sortBy(TestDocument.intField).numericType(NumTypeLong)
           val sortTsWithOrder        = sortBy(TestDocument.intField).order(Desc)
           val sortTsWithUnmappedType = sortBy(TestDocument.intField).unmappedType("long")
-          val sortTsWithAllParams = sortBy(TestDocument.dateField)
+          val sortTsWithAllParams    = sortBy(TestDocument.dateField)
             .format("strict_date_optional_time_nanos")
             .missing(First)
             .mode(Avg)
@@ -198,7 +198,7 @@ object ElasticSortSpec extends ZIOSpecDefault {
           )
         },
         test("sortByScript") {
-          val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
+          val sort         = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
           val sortWithMode =
             sortBy(Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2), NumberType)
               .mode(Avg)
@@ -265,7 +265,7 @@ object ElasticSortSpec extends ZIOSpecDefault {
           val sortWithNumericType  = sortBy(TestDocument.intField).numericType(NumTypeLong)
           val sortWithOrder        = sortBy(TestDocument.intField).order(Desc)
           val sortWithUnmappedType = sortBy(TestDocument.intField).unmappedType("long")
-          val sortWithAllParams = sortBy(TestDocument.dateField)
+          val sortWithAllParams    = sortBy(TestDocument.dateField)
             .format("strict_date_optional_time_nanos")
             .missing(First)
             .mode(Avg)
@@ -351,7 +351,7 @@ object ElasticSortSpec extends ZIOSpecDefault {
           assert(sortWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("sortByScript") {
-          val sort = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
+          val sort         = sortBy(script = Script("doc['day_of_week'].value"), sourceType = NumberType)
           val sortWithMode = sortBy(
             script = Script("doc['day_of_week'].value * params['factor']").params("factor" -> 2),
             sourceType = NumberType

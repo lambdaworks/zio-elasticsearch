@@ -52,7 +52,7 @@ final case class Item(
   def innerHitAs[A](name: String)(implicit schema: Schema[A]): Either[DecodingException, Chunk[A]] =
     for {
       innerHitItems <- innerHit(name).toRight(DecodingException(s"Could not find inner hits with name $name"))
-      innerHits <-
+      innerHits     <-
         Validation
           .validateAll(
             innerHitItems

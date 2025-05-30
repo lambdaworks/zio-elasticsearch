@@ -68,7 +68,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   aggregation = avgAggregation(name = "aggregationDouble", field = TestDocument.doubleField)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asAvgAggregation("aggregationDouble")
@@ -93,7 +93,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = cardinalityAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
 
@@ -119,7 +119,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = extendedStatsAggregation(name = "aggregation", field = TestDocument.intField).sigma(3)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asExtendedStatsAggregation("aggregation")
@@ -159,8 +159,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
-                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  firstDocumentUpdated = firstDocument.copy(stringField = "test", intField = 7)
+                  _                    <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated  = firstDocument.copy(stringField = "test", intField = 7)
                   secondDocumentUpdated =
                     secondDocument.copy(stringField = "filterAggregation", intField = 3)
                   thirdDocumentUpdated =
@@ -189,7 +189,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .refreshTrue
                        )
-                  query = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
+                  query       = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
                   aggregation =
                     filterAggregation(name = "aggregation", query = query).withSubAgg(
                       maxAggregation("subAggregation", TestDocument.intField)
@@ -221,7 +221,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = maxAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .aggregations
@@ -246,7 +246,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = minAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asMinAggregation("aggregationInt")
@@ -427,7 +427,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = statsAggregation(name = "aggregation", field = TestDocument.intField)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asStatsAggregation("aggregation")
@@ -457,7 +457,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   aggregation = sumAggregation(name = "aggregationInt", field = TestDocument.intField)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asSumAggregation("aggregationInt")
@@ -621,7 +621,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .refreshTrue
                     )
                   aggregation = valueCountAggregation(name = "aggregation", field = TestDocument.stringField.keyword)
-                  aggsRes <-
+                  aggsRes    <-
                     Executor
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asValueCountAggregation("aggregation")
@@ -686,7 +686,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
                            .refreshTrue
                        )
-                  query = matchAll
+                  query       = matchAll
                   aggregation = termsAggregation(
                                   name = "aggregationString",
                                   field = TestDocument.stringField.keyword
@@ -714,15 +714,15 @@ object HttpExecutorSpec extends IntegrationSpec {
           ) {
             checkOnce(genTestDocument) { firstDocument =>
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                 reqs = (0 to 20).map { i =>
                          ElasticRequest.create[TestDocument](
                            firstSearchIndex,
                            firstDocument.copy(stringField = Random.alphanumeric.take(5).mkString, intField = i)
                          )
                        }
-                _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
-                query = matchAll
+                _          <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+                query       = matchAll
                 aggregation = termsAggregation(
                                 name = "aggregationString",
                                 field = TestDocument.stringField.keyword
@@ -736,7 +736,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                sortBy(TestDocument.intField).order(Asc)
                              )
                          )
-                sa <- res.lastSortValue
+                sa   <- res.lastSortValue
                 res2 <- Executor
                           .execute(
                             ElasticRequest
@@ -771,7 +771,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentWithFixedIntField)
                            .refreshTrue
                        )
-                  query = matchAll
+                  query       = matchAll
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
@@ -812,7 +812,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 100))
                         .refreshTrue
                     )
-                  query = matchAll
+                  query       = matchAll
                   aggregation =
                     termsAggregation(
                       name = "aggregationString",
@@ -1037,7 +1037,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = ids(firstDocumentId.toString, secondDocumentId.toString)
-                  res <-
+                  res  <-
                     Executor.execute(
                       ElasticRequest.search(firstSearchIndex, query)
                     )
@@ -1089,7 +1089,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   _                    <- Executor.execute(ElasticRequest.bulk(req1, req2, req3).refreshTrue)
                   query                 = ElasticQuery.kNN(TestDocument.vectorField, 2, 3, Chunk(-5.0, 9.0, -12.0))
                   filter                = ElasticQuery.range(TestDocument.intField).gt(10)
-                  res <- Executor
+                  res                  <- Executor
                            .execute(ElasticRequest.knnSearch(firstSearchIndex, query).filter(filter))
                            .documentAs[TestDocument]
                 } yield (assert(res)(equalTo(Chunk(firstDocumentUpdated, secondDocumentUpdated))))
@@ -1109,7 +1109,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   firstDocumentUpdated =
                     firstDocument.copy(stringField = s"this is a ${firstDocument.stringField} test", intField = 7)
                   secondDocumentUpdated =
@@ -1148,7 +1148,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = "this is a test")
-                  _ <-
+                  _       <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
                          ElasticRequest
@@ -1185,7 +1185,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = range(TestDocument.doubleField).gte(100.0)
-                  res <- Executor
+                  res  <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query).from(0).size(2))
                            .documentAs[TestDocument]
                 } yield assert(res.length)(equalTo(2))
@@ -1238,7 +1238,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = range(TestDocument.doubleField).gte(100.0)
-                  res <- Executor
+                  res  <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query).includes[PartialTestDocument])
                   items <- res.items
                 } yield assert(items.map(item => Right(item.raw)))(
@@ -1274,7 +1274,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                              .refreshTrue
                          )
                     query = range(TestDocument.doubleField).gte(100.0)
-                    _ <- Executor
+                    _    <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query).excludes("intField"))
                            .documentAs[TestDocument]
                   } yield ()
@@ -1350,7 +1350,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   firstDocumentUpdated =
                     firstDocument.copy(stringField = s"This is a ${firstDocument.stringField} test.")
                   secondDocumentUpdated =
@@ -1491,20 +1491,20 @@ object HttpExecutorSpec extends IntegrationSpec {
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                   firstDocumentCopy = firstDocument.copy(stringField = "this is test")
-                  _ <-
+                  _                <-
                     Executor.execute(
                       ElasticRequest
                         .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
                         .refreshTrue
                     )
                   secondDocumentCopy = secondDocument.copy(stringField = "this is test")
-                  _ <- Executor.execute(
+                  _                 <- Executor.execute(
                          ElasticRequest
                            .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
                            .refreshTrue
                        )
                   query = matchAll
-                  res <- Executor
+                  res  <- Executor
                            .execute(ElasticRequest.search(IndexPattern("search-index*"), query))
                            .documentAs[TestDocument]
                 } yield assert(res)(Assertion.contains(firstDocumentCopy)) && assert(res)(
@@ -1524,7 +1524,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = "test this is boolean")
-                  _ <-
+                  _       <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
                          ElasticRequest
@@ -1546,14 +1546,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                   firstDocumentCopy = firstDocument.copy(stringField = "this is test")
-                  _ <-
+                  _                <-
                     Executor.execute(
                       ElasticRequest
                         .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentCopy)
                         .refreshTrue
                     )
                   secondDocumentCopy = secondDocument.copy(stringField = "this is test")
-                  _ <- Executor.execute(
+                  _                 <- Executor.execute(
                          ElasticRequest
                            .upsert[TestDocument](secondSearchIndex, secondDocumentId, secondDocumentCopy)
                            .refreshTrue
@@ -1583,7 +1583,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test")
-                  _ <-
+                  _       <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
                          ElasticRequest
@@ -1607,7 +1607,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = s"${firstDocument.stringField} test")
-                  _ <-
+                  _       <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
                          ElasticRequest
@@ -1631,7 +1631,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 for {
                   _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   document = firstDocument.copy(stringField = "test")
-                  _ <-
+                  _       <-
                     Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                   _ <- Executor.execute(
                          ElasticRequest
@@ -1652,8 +1652,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
-                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  firstDocumentUpdated = firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test")
+                  _                    <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  firstDocumentUpdated  = firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test")
                   secondDocumentUpdated =
                     secondDocument.copy(stringField = s"this is ${secondDocument.stringField} another test")
                   _ <-
@@ -1684,7 +1684,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   firstDocumentUpdated =
                     firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test", intField = 2)
                   secondDocumentUpdated =
@@ -1720,7 +1720,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _                   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   firstDocumentUpdated =
                     firstDocument.copy(stringField = s"this is ${firstDocument.stringField} test", intField = 2)
                   secondDocumentUpdated =
@@ -1932,7 +1932,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     nested(path = TestDocument.subDocumentList, query = matchAll).innerHits
                   result <- Executor.execute(ElasticRequest.search(firstSearchIndex, query))
                   items  <- result.items
-                  res =
+                  res     =
                     items.map(_.innerHitAs[TestSubDocument]("subDocumentList")).collect { case Right(value) => value }
                 } yield assert(res)(
                   hasSameElements(List(firstDocument.subDocumentList, secondDocument.subDocumentList))
@@ -1963,7 +1963,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = should(matches("stringField", firstDocument.stringField))
-                  res <-
+                  res  <-
                     Executor.execute(
                       ElasticRequest.search(firstSearchIndex, query).highlights(highlight("stringField"))
                     )
@@ -2003,7 +2003,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                           )
                   result <- Executor.execute(ElasticRequest.search(firstSearchIndex, query))
                   items  <- result.items
-                  res = items
+                  res     = items
                           .flatMap(_.innerHit("subDocumentList"))
                           .flatten
                           .flatMap(_.highlight("subDocumentList.stringField"))
@@ -2039,7 +2039,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = should(matches("stringField", firstDocument.stringField))
-                  res <-
+                  res  <-
                     Executor.execute(
                       ElasticRequest.search(firstSearchIndex, query).highlights(highlight(TestDocument.stringField))
                     )
@@ -2066,7 +2066,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = should(matches("stringField", firstDocument.stringField))
-                  res <-
+                  res  <-
                     Executor.execute(
                       ElasticRequest.search(firstSearchIndex, query).highlights(highlight("stringField"))
                     )
@@ -2093,7 +2093,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = should(matches("stringField", firstDocument.stringField))
-                  res <-
+                  res  <-
                     Executor.execute(
                       ElasticRequest
                         .search(firstSearchIndex, query)
@@ -2126,7 +2126,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = should(matches("stringField", firstDocument.stringField))
-                  res <-
+                  res  <-
                     Executor.execute(
                       ElasticRequest
                         .search(firstSearchIndex, query)
@@ -2173,7 +2173,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = range(TestDocument.intField).gte(20)
-                  res <- Executor
+                  res  <- Executor
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
@@ -2214,7 +2214,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = range(TestDocument.intField).gte(20)
-                  res <-
+                  res  <-
                     Executor
                       .execute(
                         ElasticRequest
@@ -2251,7 +2251,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   query = matchAll
-                  res <- Executor
+                  res  <- Executor
                            .execute(
                              ElasticRequest
                                .search(firstSearchIndex, query)
@@ -2296,7 +2296,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
 
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                 reqs = (0 to 203).map { _ =>
                          ElasticRequest.create[TestDocument](
                            secondSearchIndex,
@@ -2305,7 +2305,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range(TestDocument.doubleField).gte(100.0)
-                res <- Executor
+                res  <- Executor
                          .stream(
                            ElasticRequest.search(secondSearchIndex, query)
                          )
@@ -2322,7 +2322,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 ZSink.collectAll[TestDocument]
 
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                 reqs = (0 to 200).map { _ =>
                          ElasticRequest.create[TestDocument](
                            secondSearchIndex,
@@ -2331,7 +2331,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range(TestDocument.doubleField).gte(100.0)
-                res <- Executor
+                res  <- Executor
                          .streamAs[TestDocument](ElasticRequest.search(secondSearchIndex, query))
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
@@ -2360,7 +2360,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 ZSink.collectAll[Item]
 
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                 reqs = (0 to 200).map { _ =>
                          ElasticRequest.create[TestDocument](
                            secondSearchIndex,
@@ -2369,7 +2369,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range(TestDocument.doubleField).gte(100.0)
-                res <- Executor
+                res  <- Executor
                          .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.SearchAfter)
                          .run(sink)
               } yield assert(res)(hasSize(equalTo(201)))
@@ -2386,7 +2386,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 ZSink.collectAll[Item]
 
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                 reqs = (0 to 200).map { _ =>
                          ElasticRequest.create[TestDocument](
                            secondSearchIndex,
@@ -2395,7 +2395,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range(TestDocument.doubleField).gte(100.0)
-                res <- Executor
+                res  <- Executor
                          .stream(
                            ElasticRequest.search(secondSearchIndex, query),
                            StreamConfig.SearchAfter.withPageSize(40).keepAliveFor("2m")
@@ -2413,7 +2413,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 ZSink.collectAll[TestDocument]
 
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
                 reqs = (0 to 200).map { _ =>
                          ElasticRequest.create[TestDocument](
                            secondSearchIndex,
@@ -2422,7 +2422,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range(TestDocument.doubleField).gte(100.0)
-                res <- Executor
+                res  <- Executor
                          .streamAs[TestDocument](
                            ElasticRequest.search(secondSearchIndex, query),
                            StreamConfig.SearchAfter
@@ -2450,7 +2450,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .refreshTrue
                      )
                 query = range(TestDocument.doubleField).gte(200.0)
-                res <- Executor
+                res  <- Executor
                          .stream(ElasticRequest.search(secondSearchIndex, query), StreamConfig.SearchAfter)
                          .run(sink)
               } yield assert(res)(isEmpty)
@@ -2464,7 +2464,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           test("search for document sorted by ascending age while using search after query") {
             checkOnce(genTestDocument) { firstDocument =>
               for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                 reqs = (0 to 100).map { i =>
                          ElasticRequest.create[TestDocument](
                            firstSearchIndex,
@@ -2473,7 +2473,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        }
                 _    <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
                 query = range(TestDocument.intField).gte(10)
-                res <- Executor
+                res  <- Executor
                          .execute(
                            ElasticRequest
                              .search(firstSearchIndex, query)
@@ -2482,7 +2482,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                                sortBy(TestDocument.intField).order(Asc)
                              )
                          )
-                sa <- res.lastSortValue
+                sa   <- res.lastSortValue
                 res2 <- Executor
                           .execute(
                             ElasticRequest
@@ -2534,7 +2534,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            .refreshTrue
                        )
                   deleteQuery = range(TestDocument.doubleField).gte(300.0)
-                  _ <- Executor
+                  _          <- Executor
                          .execute(ElasticRequest.deleteByQuery(deleteByQueryIndex, deleteQuery).refreshTrue)
                   res <- Executor
                            .execute(ElasticRequest.search(deleteByQueryIndex, matchAll))

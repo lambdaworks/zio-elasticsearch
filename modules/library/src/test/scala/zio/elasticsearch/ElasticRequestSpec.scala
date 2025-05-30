@@ -31,7 +31,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(aggregateRequest)(equalTo(Aggregate(selectors = Index.toSelector, aggregation = MaxAggregation)))
         },
         test("bulk") {
-          val bulkRequest = bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2))
+          val bulkRequest            = bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2))
           val bulkRequestWithRefresh =
             bulk(create(index = Index, doc = Doc1), upsert(index = Index, id = DocId, doc = Doc2)).refreshTrue
           val bulkRequestWithRouting =
@@ -146,9 +146,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("create with ID") {
-          val createRequest            = create(index = Index, id = DocId, doc = Doc1)
-          val createRequestWithRefresh = create(index = Index, id = DocId, doc = Doc1).refreshTrue
-          val createRequestWithRouting = create(index = Index, id = DocId, doc = Doc1).routing(RoutingValue)
+          val createRequest              = create(index = Index, id = DocId, doc = Doc1)
+          val createRequestWithRefresh   = create(index = Index, id = DocId, doc = Doc1).refreshTrue
+          val createRequestWithRouting   = create(index = Index, id = DocId, doc = Doc1).routing(RoutingValue)
           val createRequestWithAllParams =
             create(index = Index, id = DocId, doc = Doc1).refreshTrue.routing(RoutingValue)
 
@@ -218,9 +218,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("deleteByQuery") {
-          val deleteByQueryRequest            = deleteByQuery(index = Index, query = Query)
-          val deleteByQueryRequestWithRefresh = deleteByQuery(index = Index, query = Query).refreshTrue
-          val deleteByQueryRequestWithRouting = deleteByQuery(index = Index, query = Query).routing(RoutingValue)
+          val deleteByQueryRequest              = deleteByQuery(index = Index, query = Query)
+          val deleteByQueryRequestWithRefresh   = deleteByQuery(index = Index, query = Query).refreshTrue
+          val deleteByQueryRequestWithRouting   = deleteByQuery(index = Index, query = Query).routing(RoutingValue)
           val deleteByQueryRequestWithAllParams =
             deleteByQuery(index = Index, query = Query).refreshTrue.routing(RoutingValue)
 
@@ -262,8 +262,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("knnSearch") {
-          val knnSearchRequest           = knnSearch(selectors = Index, query = KnnQuery)
-          val knnSearchRequestWithFilter = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query)
+          val knnSearchRequest            = knnSearch(selectors = Index, query = KnnQuery)
+          val knnSearchRequestWithFilter  = knnSearch(selectors = Index, query = KnnQuery).filter(query = Query)
           val knnSearchRequestWithRouting =
             knnSearch(selectors = Index, query = KnnQuery.similarity(3.14)).routing(RoutingValue)
           val knnSearchRequestWithAllParams =
@@ -298,17 +298,17 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(refreshWithMultiIndex)(equalTo(Refresh(Indices.toSelector)))
         },
         test("search") {
-          val searchRequest         = search(selectors = Index, query = Query)
-          val searchRequestWithSort = search(selectors = Index, query = Query).sort(sortBy(TestDocument.intField))
+          val searchRequest                    = search(selectors = Index, query = Query)
+          val searchRequestWithSort            = search(selectors = Index, query = Query).sort(sortBy(TestDocument.intField))
           val searchRequestWithSourceFiltering =
             search(selectors = Index, query = Query).includes("stringField", "doubleField").excludes("booleanField")
-          val searchRequestWithFrom = search(selectors = Index, query = Query).from(5)
+          val searchRequestWithFrom       = search(selectors = Index, query = Query).from(5)
           val searchRequestWithHighlights =
             search(selectors = Index, query = Query).highlights(highlight(TestDocument.intField))
           val searchRequestWithRouting     = search(selectors = Index, query = Query).routing(RoutingValue)
           val searchRequestWithSearchAfter = search(selectors = Index, query = Query).searchAfter(Arr(Str("12345")))
           val searchRequestWithSize        = search(selectors = Index, query = Query).size(5)
-          val searchRequestWithAllParams = search(selectors = Index, query = Query)
+          val searchRequestWithAllParams   = search(selectors = Index, query = Query)
             .sort(sortBy("intField"))
             .includes("stringField", "doubleField")
             .excludes("booleanField")
@@ -480,7 +480,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("search + aggregate") {
-          val searchAndAggRequest = search(selectors = Index, query = Query, aggregation = MaxAggregation)
+          val searchAndAggRequest         = search(selectors = Index, query = Query, aggregation = MaxAggregation)
           val searchAndAggRequestWithSort =
             search(selectors = Index, query = Query, aggregation = MaxAggregation).sort(sortBy(TestDocument.intField))
           val searchAndAggRequestWithSourceFiltering =
@@ -814,7 +814,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("updateByQuery") {
-          val updateByQueryRequest = updateByQuery(index = Index, query = Query, script = Script1)
+          val updateByQueryRequest              = updateByQuery(index = Index, query = Query, script = Script1)
           val updateByQueryRequestWithConflicts =
             updateByQuery(index = Index, query = Query, script = Script1).conflicts(Abort)
           val updateByQueryRequestWithRefresh =
@@ -885,10 +885,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("updateByScript") {
-          val updateRequest            = updateByScript(Index, DocId, Script1)
-          val updateRequestWithRefresh = updateByScript(Index, DocId, Script1).refreshTrue
-          val updateRequestWithRouting = updateByScript(Index, DocId, Script1).routing(RoutingValue)
-          val updateRequestWithUpsert  = updateByScript(Index, DocId, Script1).orCreate(Doc2)
+          val updateRequest              = updateByScript(Index, DocId, Script1)
+          val updateRequestWithRefresh   = updateByScript(Index, DocId, Script1).refreshTrue
+          val updateRequestWithRouting   = updateByScript(Index, DocId, Script1).routing(RoutingValue)
+          val updateRequestWithUpsert    = updateByScript(Index, DocId, Script1).orCreate(Doc2)
           val updateRequestWithAllParams =
             updateByScript(Index, DocId, Script1).refreshTrue.routing(RoutingValue).orCreate(Doc2)
 
@@ -955,9 +955,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           )
         },
         test("upsert") {
-          val upsertRequest            = upsert(index = Index, id = DocId, doc = Doc1)
-          val upsertRequestWithRefresh = upsert(index = Index, id = DocId, doc = Doc1).refreshTrue
-          val upsertRequestWithRouting = upsert(index = Index, id = DocId, doc = Doc1).routing(RoutingValue)
+          val upsertRequest              = upsert(index = Index, id = DocId, doc = Doc1)
+          val upsertRequestWithRefresh   = upsert(index = Index, id = DocId, doc = Doc1).refreshTrue
+          val upsertRequestWithRouting   = upsert(index = Index, id = DocId, doc = Doc1).routing(RoutingValue)
           val upsertRequestWithAllParams =
             upsert(index = Index, id = DocId, doc = Doc1).refreshTrue.routing(RoutingValue)
 
