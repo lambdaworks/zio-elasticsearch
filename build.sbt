@@ -9,7 +9,7 @@ inThisBuild(
     organization     := "io.lambdaworks",
     organizationName := "LambdaWorks",
     startYear        := Some(2022),
-    developers := List(
+    developers       := List(
       Developer(
         "lambdaworks",
         "LambdaWorks' Team",

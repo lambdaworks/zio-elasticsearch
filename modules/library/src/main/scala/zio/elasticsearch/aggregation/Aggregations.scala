@@ -427,7 +427,7 @@ private[elasticsearch] final case class Terms(
           }))
       }
 
-    val sizeJson = size.fold(Obj())(s => Obj("size" -> s.toJson))
+    val sizeJson    = size.fold(Obj())(s => Obj("size" -> s.toJson))
     val subAggsJson =
       self.subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
 

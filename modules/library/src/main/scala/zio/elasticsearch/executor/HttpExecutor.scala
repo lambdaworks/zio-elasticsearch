@@ -482,7 +482,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             body => {
               body.resultsWithHighlightsAndSort.toList match {
                 case Nil => ZIO.succeed((Chunk.empty, None))
-                case _ =>
+                case _   =>
                   body.pitId match {
                     case Some(newPitId) =>
                       body.lastSortField match {

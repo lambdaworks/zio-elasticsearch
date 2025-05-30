@@ -195,7 +195,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           Executor
             .execute(ElasticRequest.search(selectors = index, query = matchAll))
             .documentAs[TestDocument]
-        val terms = termsAggregation(name = "aggregation1", field = "name")
+        val terms                   = termsAggregation(name = "aggregation1", field = "name")
         val executorSearchWithTerms =
           Executor
             .execute(ElasticRequest.search(selectors = index, query = matchAll, aggregation = terms))
@@ -204,7 +204,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(executorSearch)(equalTo(Chunk(doc))) && assertZIO(executorSearchWithTerms)(equalTo(Chunk(doc)))
       },
       test("search + aggregate") {
-        val terms = termsAggregation(name = "aggregation1", field = "name")
+        val terms                      = termsAggregation(name = "aggregation1", field = "name")
         val executorSearchAggregations =
           Executor
             .execute(ElasticRequest.search(selectors = index, query = matchAll, aggregation = terms))

@@ -59,9 +59,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("bucketSort") {
-          val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
-          val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
-          val aggregationWithSort = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
+          val aggregationWithFrom      = bucketSortAggregation("aggregation").from(5)
+          val aggregationWithSize      = bucketSortAggregation("aggregation").size(5)
+          val aggregationWithSort      = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
           val aggregationWithAllParams =
             bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2")).from(5).size(7)
 
@@ -128,11 +128,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("extendedStats") {
-          val aggregation            = extendedStatsAggregation("aggregation", "testField")
-          val aggregationTs          = extendedStatsAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = extendedStatsAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0)
-          val aggregationWithSigma   = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
+          val aggregation                    = extendedStatsAggregation("aggregation", "testField")
+          val aggregationTs                  = extendedStatsAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw               = extendedStatsAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing         = extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationWithSigma           = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
           val aggregationWithMissingAndSigma =
             extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0).sigma(3.0)
 
@@ -151,8 +151,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("filter") {
-          val query       = term(TestDocument.stringField, "test")
-          val aggregation = filterAggregation("aggregation", query)
+          val query                         = term(TestDocument.stringField, "test")
+          val aggregation                   = filterAggregation("aggregation", query)
           val aggregationWithSubAggregation =
             filterAggregation("aggregation", query).withSubAgg(minAggregation("subAggregation", TestDocument.intField))
           val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
@@ -284,9 +284,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("percentileRanks") {
-          val aggregation      = percentileRanksAggregation("aggregation", "testField", 5, 6)
-          val aggregationTs    = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
-          val aggregationTsRaw = percentileRanksAggregation("aggregation", TestSubDocument.intField.raw, 5, 6)
+          val aggregation            = percentileRanksAggregation("aggregation", "testField", 5, 6)
+          val aggregationTs          = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
+          val aggregationTsRaw       = percentileRanksAggregation("aggregation", TestSubDocument.intField.raw, 5, 6)
           val aggregationWithMissing =
             percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
 
@@ -310,10 +310,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("percentiles") {
-          val aggregation            = percentilesAggregation("aggregation", "testField")
-          val aggregationTs          = percentilesAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = percentilesAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = percentilesAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregation             = percentilesAggregation("aggregation", "testField")
+          val aggregationTs           = percentilesAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw        = percentilesAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing  = percentilesAggregation("aggregation", TestSubDocument.intField).missing(20.0)
           val aggregationWithPercents =
             percentilesAggregation("aggregation", TestSubDocument.intField).percents(75, 90, 99)
           val aggregationWithAllParams =
@@ -445,14 +445,14 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("terms") {
-          val aggregation      = termsAggregation("aggregation", "testField")
-          val aggregationTs    = termsAggregation("aggregation", TestSubDocument.stringField)
-          val aggregationTsRaw = termsAggregation("aggregation", TestSubDocument.stringField.raw)
+          val aggregation           = termsAggregation("aggregation", "testField")
+          val aggregationTs         = termsAggregation("aggregation", TestSubDocument.stringField)
+          val aggregationTsRaw      = termsAggregation("aggregation", TestSubDocument.stringField.raw)
           val aggregationWithOrders =
             termsAggregation("aggregation", TestSubDocument.stringField).orderByKeyDesc
               .orderBy(AggregationOrder("test", Desc))
               .orderByCountAsc
-          val aggregationWithSize = termsAggregation("aggregation", TestSubDocument.stringField).size(10)
+          val aggregationWithSize      = termsAggregation("aggregation", TestSubDocument.stringField).size(10)
           val aggregationWithAllParams =
             termsAggregation("aggregation", TestSubDocument.stringField.suffix("test")).orderByCountDesc.orderByKeyAsc
               .size(5)
@@ -538,8 +538,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationTsRaw)(equalTo(ValueCount(name = "aggregation", field = "stringField.raw")))
         },
         test("weightedAvg") {
-          val aggregation   = weightedAvgAggregation("aggregation", "valueField", "weightField")
-          val aggregationTs = weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField)
+          val aggregation      = weightedAvgAggregation("aggregation", "valueField", "weightField")
+          val aggregationTs    = weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField)
           val aggregationTsRaw =
             weightedAvgAggregation("aggregation", TestDocument.stringField.raw, TestDocument.intField.raw)
           val aggregationWithValueMissing =
@@ -713,9 +713,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation2.toJson)(equalTo(expected2.toJson))
         },
         test("bucketSort") {
-          val aggregationWithFrom = bucketSortAggregation("aggregation").from(5)
-          val aggregationWithSize = bucketSortAggregation("aggregation").size(5)
-          val aggregationWithSort = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
+          val aggregationWithFrom      = bucketSortAggregation("aggregation").from(5)
+          val aggregationWithSize      = bucketSortAggregation("aggregation").size(5)
+          val aggregationWithSort      = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
           val aggregationWithAllParams =
             bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2")).from(5).size(7)
 
@@ -818,10 +818,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("extendedStats") {
-          val aggregation            = extendedStatsAggregation("aggregation", "testField")
-          val aggregationTs          = extendedStatsAggregation("aggregation", TestSubDocument.intField)
-          val aggregationWithMissing = extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0)
-          val aggregationWithSigma   = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
+          val aggregation                    = extendedStatsAggregation("aggregation", "testField")
+          val aggregationTs                  = extendedStatsAggregation("aggregation", TestSubDocument.intField)
+          val aggregationWithMissing         = extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationWithSigma           = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
           val aggregationWithMissingAndSigma =
             extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0).sigma(3.0)
 
@@ -891,8 +891,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissingAndSigma.toJson)(equalTo(expectedWithMissingAndSigma.toJson))
         },
         test("filter") {
-          val query       = term(TestDocument.stringField, "test")
-          val aggregation = filterAggregation("aggregation", query)
+          val query                         = term(TestDocument.stringField, "test")
+          val aggregation                   = filterAggregation("aggregation", query)
           val aggregationWithSubAggregation =
             filterAggregation("aggregation", query).withSubAgg(minAggregation("subAggregation", TestDocument.intField))
           val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
@@ -1146,8 +1146,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("percentileRanks") {
-          val aggregation   = percentileRanksAggregation("aggregation", "testField", 5, 6)
-          val aggregationTs = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
+          val aggregation            = percentileRanksAggregation("aggregation", "testField", 5, 6)
+          val aggregationTs          = percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6)
           val aggregationWithMissing =
             percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
 
@@ -1193,11 +1193,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("percentiles") {
-          val aggregation   = percentilesAggregation("aggregation", "testField")
-          val aggregationTs = percentilesAggregation("aggregation", TestDocument.intField)
+          val aggregation             = percentilesAggregation("aggregation", "testField")
+          val aggregationTs           = percentilesAggregation("aggregation", TestDocument.intField)
           val aggregationWithPercents =
             percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99)
-          val aggregationWithMissing = percentilesAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregationWithMissing   = percentilesAggregation("aggregation", TestDocument.intField).missing(20.0)
           val aggregationWithAllParams =
             percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99).missing(20.0)
 
@@ -1401,10 +1401,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("terms") {
-          val aggregation          = termsAggregation("aggregation", "testField")
-          val aggregationTs        = termsAggregation("aggregation", TestDocument.stringField)
-          val aggregationWithOrder = termsAggregation("aggregation", TestDocument.stringField).orderByKeyDesc
-          val aggregationWithSize  = termsAggregation("aggregation", TestDocument.stringField).size(10)
+          val aggregation              = termsAggregation("aggregation", "testField")
+          val aggregationTs            = termsAggregation("aggregation", TestDocument.stringField)
+          val aggregationWithOrder     = termsAggregation("aggregation", TestDocument.stringField).orderByKeyDesc
+          val aggregationWithSize      = termsAggregation("aggregation", TestDocument.stringField).size(10)
           val aggregationWithAllParams = termsAggregation("aggregation", TestDocument.stringField)
             .orderBy(AggregationOrder("test", SortOrder.Asc))
             .size(20)
@@ -1508,8 +1508,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson))
         },
         test("weightedAvg") {
-          val aggregation   = weightedAvgAggregation("aggregation", "valueField", "weightField")
-          val aggregationTs = weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.stringField)
+          val aggregation                 = weightedAvgAggregation("aggregation", "valueField", "weightField")
+          val aggregationTs               = weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.stringField)
           val aggregationWithValueMissing =
             weightedAvgAggregation("aggregation", TestDocument.stringField, TestDocument.intField).valueMissing(2.0)
           val aggregationWithWeightMissing =
