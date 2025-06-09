@@ -1188,17 +1188,6 @@ private[elasticsearch] final case class Script(script: zio.elasticsearch.script.
 
 sealed trait SimpleQueryStringQuery[S] extends ElasticQuery[S] with HasMinimumShouldMatch[SimpleQueryStringQuery[S]] {
   /**
-   * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
-   * array of type-safe fields that will be searched.
-   *
-   * @param fields
-   *   an array of type-safe fields to set `fields` parameter to
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the type-safe `fields` parameter.
-   */
-  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): SimpleQueryStringQuery[S1]
-
-  /**
    * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
    * fields that will be searched.
    *
@@ -1208,6 +1197,20 @@ sealed trait SimpleQueryStringQuery[S] extends ElasticQuery[S] with HasMinimumSh
    *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
    */
   def fields(field: String, fields: String*): SimpleQueryStringQuery[S]
+
+  /**
+   * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]].
+   * This version allows specifying multiple fields of different types (e.g. String, Int, Boolean)
+   * in a type-safe way using their respective definitions.
+   *
+   * @param fields
+   *   a chunk of type-safe fields to search within. These fields may be of any supported scalar type
+   *   (such as String, Int, Boolean, etc.), and must be part of the document schema `S1`.
+   *
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the provided type-safe `fields`.
+   */
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): SimpleQueryStringQuery[S1]
 }
 
 private[elasticsearch] final case class SimpleQueryString[S](
@@ -1230,11 +1233,12 @@ private[elasticsearch] final case class SimpleQueryString[S](
   def minimumShouldMatch(value: Int): SimpleQueryString[S] =
     copy(minimumShouldMatch = Some(value))
 
-  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): SimpleQueryStringQuery[S1] =
-    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
-
   def fields(field: String, fields: String*): SimpleQueryStringQuery[S] =
     self.copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): SimpleQueryStringQuery[S1] =
+    self.copy(fields = fields.map(_.toString))
+
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val fieldsJson = if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson))) else None

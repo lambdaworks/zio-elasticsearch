@@ -1699,7 +1699,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
         test("simpleQueryString") {
           val queryNoFields           = simpleQueryString("test")
           val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
-          val queryTyped              = simpleQueryString("test").fields(TestDocument.stringField)
+          val queryTyped = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
           val queryAllParams          = SimpleQueryString(
             query = "test",
@@ -4272,7 +4272,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
         test("simpleQueryString") {
           val queryNoFields           = simpleQueryString("test")
           val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
-          val queryTyped              = simpleQueryString("test").fields(TestDocument.stringField)
+          val queryTyped = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
           val queryAllParams          = SimpleQueryString(
             query = "test",
