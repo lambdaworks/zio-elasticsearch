@@ -1008,6 +1008,66 @@ object ElasticQuery {
     )
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] using the specified
+   * parameters. [[zio.elasticsearch.query.SimpleQueryStringQuery]] supports query strings with simple syntax for
+   * searching multiple fields.
+   *
+   * @param fields
+   *   the type-safe fields to be searched
+   * @param query
+   *   the query string to search for
+   * @tparam S
+   *   the document type on which the query is executed
+   * @return
+   *   an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] that represents the query to be performed
+   */
+  final def simpleQueryString[S: Schema](query: String, fields: Field[S, _]*): SimpleQueryStringQuery[S] =
+    SimpleQueryString[S](
+      query = query,
+      fields = Chunk.fromIterable(fields.map(_.toString)),
+      defaultOperator = None,
+      allFields = None,
+      analyzeWildcard = None,
+      analyzer = None,
+      autoGenerateSynonymsPhraseQuery = None,
+      flags = None,
+      fuzzyMaxExpansions = None,
+      fuzzyPrefixLength = None,
+      fuzzyTranspositions = None,
+      lenient = None,
+      minimumShouldMatch = None,
+      quoteFieldSuffix = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.SimpleQueryStringQuery]] supports query strings with simple syntax for searching multiple
+   * fields.
+   *
+   * @param query
+   *   the query string to search for
+   * @return
+   *   an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] that represents the query to be performed
+   */
+  final def simpleQueryString(query: String): SimpleQueryStringQuery[Any] =
+    SimpleQueryString(
+      query = query,
+      fields = Chunk.empty,
+      defaultOperator = None,
+      allFields = None,
+      analyzeWildcard = None,
+      analyzer = None,
+      autoGenerateSynonymsPhraseQuery = None,
+      flags = None,
+      fuzzyMaxExpansions = None,
+      fuzzyPrefixLength = None,
+      fuzzyTranspositions = None,
+      lenient = None,
+      minimumShouldMatch = None,
+      quoteFieldSuffix = None
+    )
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.WildcardQuery]] using the specified parameters.
    * [[zio.elasticsearch.query.WildcardQuery]] is used for matching documents containing a value that starts with the
    * specified value in the specified field.
