@@ -44,5 +44,3 @@ SimpleQueryString(
   minimumShouldMatch = Some(2)
 )
 ```
-You can find more information about the SimpleQueryString query in the [official Elasticsearch documentation](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-simple-query-string-query.html).
-
