@@ -75,6 +75,12 @@ trait IntegrationSpec extends ZIOSpecDefault {
       longitude <- Gen.bigDecimal(10, 90).map(_.setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble)
     } yield GeoPoint(latitude, longitude)
 
+  def genMultiWordString(minWords: Int = 2, maxWords: Int = 5): Gen[Any, String] =
+    for {
+      wordCount <- Gen.int(minWords, maxWords)
+      words     <- Gen.listOfN(wordCount)(Gen.stringBounded(5, 10)(Gen.alphaChar))
+    } yield words.mkString(" ")
+
   def genTestDocument: Gen[Any, TestDocument] = for {
     stringField     <- Gen.stringBounded(5, 10)(Gen.alphaChar)
     dateField       <- Gen.localDate(LocalDate.parse("2010-12-02"), LocalDate.parse("2022-12-05"))

@@ -1064,7 +1064,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   _                    <- Executor.execute(ElasticRequest.bulk(req1, req2, req3).refreshTrue)
                   query                 = ElasticQuery.kNN(TestDocument.vectorField, 2, 3, Chunk(-5.0, 9.0, -12.0))
                   res                  <- Executor.execute(ElasticRequest.knnSearch(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(equalTo(Chunk(firstDocumentUpdated, thirdDocumentUpdated))))
+                } yield assert(res)(equalTo(Chunk(firstDocumentUpdated, thirdDocumentUpdated)))
             }
           } @@ around(
             Executor.execute(
@@ -1092,7 +1092,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res                  <- Executor
                            .execute(ElasticRequest.knnSearch(firstSearchIndex, query).filter(filter))
                            .documentAs[TestDocument]
-                } yield (assert(res)(equalTo(Chunk(firstDocumentUpdated, secondDocumentUpdated))))
+                } yield assert(res)(equalTo(Chunk(firstDocumentUpdated, secondDocumentUpdated)))
             }
           } @@ around(
             Executor.execute(
@@ -1136,7 +1136,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             )
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(equalTo(Chunk(secondDocumentUpdated, firstDocumentUpdated))))
+                } yield assert(res)(equalTo(Chunk(secondDocumentUpdated, firstDocumentUpdated)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1162,7 +1162,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             )
                           ).boost(2.1)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
+                } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1407,11 +1407,63 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
+          test("search for a document using a simple query string query") {
+            checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
+                val firstDoc = firstDocument.copy(stringField = multiWordString)
+
+                for {
+                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDoc))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue
+                       )
+                  searchTerm = multiWordString.split("\\s+").head
+                  query      = simpleQueryString(searchTerm).fields(Chunk(TestDocument.stringField))
+                  res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(firstDoc))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using a simple query string query with empty fields") {
+            checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
+                val firstDoc = firstDocument.copy(stringField = multiWordString)
+
+                for {
+                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDoc))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue
+                       )
+                  searchTerm = multiWordString.split("\\s+").head
+                  query      = simpleQueryString(searchTerm)
+                  res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(firstDoc))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search for a document using a simple query string query with non-existent field") {
+            checkOnce(genDocumentId, genTestDocument, genMultiWordString()) { (docId, doc, multiWordString) =>
+              val docWithMultiWord = doc.copy(stringField = multiWordString)
+
+              for {
+                _         <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, docWithMultiWord).refreshTrue)
+                searchTerm = multiWordString.split("\\s+").head
+                query      = simpleQueryString(searchTerm).fields("nonExistentField")
+                res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+              } yield assert(res)(Assertion.isEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
           test("search for a document which contains a term using a wildcard query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
                          ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
                        )
@@ -1437,7 +1489,6 @@ object HttpExecutorSpec extends IntegrationSpec {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(
                          ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
                        )
@@ -1533,7 +1584,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                   query = matchBooleanPrefix(TestDocument.stringField, "this is test bo")
                   res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
+                } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1619,7 +1670,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             value = s"${firstDocument.stringField} te"
                           )
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
+                } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1642,7 +1693,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   query =
                     multiMatch(value = "test").fields(TestDocument.stringField).matchingType(BestFields)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument)))
+                } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1878,9 +1929,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                   res <- Executor
                            .execute(ElasticRequest.search(firstSearchIndex, query))
                            .documentAs[TestDocument]
-                } yield (assert(res)(Assertion.contains(firstDocument)) && assert(res)(
+                } yield assert(res)(Assertion.contains(firstDocument)) && assert(res)(
                   !Assertion.contains(secondDocument)
-                ))
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

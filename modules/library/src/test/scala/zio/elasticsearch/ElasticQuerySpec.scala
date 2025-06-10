@@ -1696,6 +1696,63 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("simpleQueryString") {
+          val queryNoFields           = simpleQueryString("test")
+          val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
+          val queryTyped              = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
+          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
+          val queryAllParams          = SimpleQueryString(
+            query = "test",
+            fields = Chunk.empty,
+            minimumShouldMatch = Some(1)
+          )
+
+          assert(queryNoFields)(
+            equalTo(
+              SimpleQueryString[Any](
+                query = "test",
+                fields = Chunk.empty,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithFields)(
+            equalTo(
+              SimpleQueryString[Any](
+                query = "test",
+                fields = Chunk("stringField1", "stringField2"),
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryTyped)(
+            equalTo(
+              SimpleQueryString[TestDocument](
+                query = "test",
+                fields = Chunk("stringField"),
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithMinShouldMatch)(
+            equalTo(
+              SimpleQueryString[Any](
+                query = "test",
+                fields = Chunk.empty,
+                minimumShouldMatch = Some(2)
+              )
+            )
+          ) &&
+          assert(queryAllParams)(
+            equalTo(
+              SimpleQueryString(
+                query = "test",
+                fields = Chunk.empty,
+                minimumShouldMatch = Some(1)
+              )
+            )
+          )
+        },
         test("startsWith") {
           val query                    = startsWith("testField", "test")
           val queryTs                  = startsWith(TestDocument.stringField, "test")
@@ -4145,6 +4202,73 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
+        },
+        test("simpleQueryString") {
+          val queryNoFields           = simpleQueryString("test")
+          val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
+          val queryTyped              = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
+          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
+          val queryAllParams          = SimpleQueryString(
+            query = "test",
+            fields = Chunk.empty,
+            minimumShouldMatch = Some(1)
+          )
+
+          val expectedNoFields =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFields =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test",
+              |    "fields": [ "stringField1", "stringField2" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithTypedField =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test",
+              |    "fields": [ "stringField" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMinShouldMatch =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test",
+              |    "minimum_should_match": 2
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedAllParams =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test",
+              |    "minimum_should_match": 1
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(queryNoFields.toJson(None))(equalTo(expectedNoFields.toJson)) &&
+          assert(queryWithFields.toJson(None))(equalTo(expectedWithFields.toJson)) &&
+          assert(queryTyped.toJson(None))(equalTo(expectedWithTypedField.toJson)) &&
+          assert(queryWithMinShouldMatch.toJson(None))(equalTo(expectedWithMinShouldMatch.toJson)) &&
+          assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson))
+
         },
         test("startsWith") {
           val query                    = startsWith(TestDocument.stringField, "test")
