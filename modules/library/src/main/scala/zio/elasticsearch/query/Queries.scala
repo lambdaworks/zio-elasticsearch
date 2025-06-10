@@ -852,29 +852,8 @@ private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, valu
 sealed trait MultiMatchQuery[S]
     extends ElasticQuery[S]
     with HasBoost[MultiMatchQuery[S]]
+    with HasFields[MultiMatchQuery, S]
     with HasMinimumShouldMatch[MultiMatchQuery[S]] {
-
-  /**
-   * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
-   * array of type-safe fields that will be searched.
-   *
-   * @param fields
-   *   a array of type-safe fields to set `fields` parameter to
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the type-safe `fields` parameter.
-   */
-  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1]
-
-  /**
-   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
-   * fields that will be searched.
-   *
-   * @param fields
-   *   a array of fields to set `fields` parameter to
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
-   */
-  def fields(field: String, fields: String*): MultiMatchQuery[S]
 
   /**
    * Sets the `type` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `type` parameter decides the way
@@ -911,11 +890,14 @@ private[elasticsearch] final case class MultiMatch[S](
   def boost(boost: Double): MultiMatchQuery[S] =
     self.copy(boost = Some(boost))
 
-  def fields[S1 <: S: Schema](field: Field[S1, String], fields: Field[S1, String]*): MultiMatchQuery[S1] =
-    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
-
   def fields(field: String, fields: String*): MultiMatchQuery[S] =
-    self.copy(fields = Chunk.fromIterable(field +: fields))
+    copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): MultiMatchQuery[S1] =
+    copy(fields = fields.map(_.toString))
+
+  def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): MultiMatchQuery[S1] =
+    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
 
   def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S] =
     self.copy(matchingType = Some(matchingType))
@@ -1186,59 +1168,28 @@ private[elasticsearch] final case class Script(script: zio.elasticsearch.script.
     Obj("script" -> Obj(("script" -> script.toJson) +: Chunk.fromIterable(boost.map("boost" -> _.toJson))))
 }
 
-sealed trait SimpleQueryStringQuery[S] extends ElasticQuery[S] with HasMinimumShouldMatch[SimpleQueryStringQuery[S]] {
-  /**
-   * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
-   * fields that will be searched.
-   *
-   * @param fields
-   *   an array of fields to set `fields` parameter to
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the `fields` parameter.
-   */
-  def fields(field: String, fields: String*): SimpleQueryStringQuery[S]
-
-  /**
-   * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]].
-   * This version allows specifying multiple fields of different types (e.g. String, Int, Boolean)
-   * in a type-safe way using their respective definitions.
-   *
-   * @param fields
-   *   a chunk of type-safe fields to search within. These fields may be of any supported scalar type
-   *   (such as String, Int, Boolean, etc.), and must be part of the document schema `S1`.
-   *
-   * @return
-   *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the provided type-safe `fields`.
-   */
-  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): SimpleQueryStringQuery[S1]
-}
+sealed trait SimpleQueryStringQuery[S]
+    extends ElasticQuery[S]
+    with HasFields[SimpleQueryStringQuery, S]
+    with HasMinimumShouldMatch[SimpleQueryStringQuery[S]]
 
 private[elasticsearch] final case class SimpleQueryString[S](
   query: String,
   fields: Chunk[String],
-  defaultOperator: Option[String],
-  allFields: Option[Boolean],
-  analyzeWildcard: Option[Boolean],
-  analyzer: Option[String],
-  autoGenerateSynonymsPhraseQuery: Option[Boolean],
-  flags: Option[String],
-  fuzzyMaxExpansions: Option[Int],
-  fuzzyPrefixLength: Option[Int],
-  fuzzyTranspositions: Option[Int],
-  lenient: Option[Boolean],
-  minimumShouldMatch: Option[Int],
-  quoteFieldSuffix: Option[String]
+  minimumShouldMatch: Option[Int]
 ) extends SimpleQueryStringQuery[S] { self =>
+
+  def fields(field: String, fields: String*): SimpleQueryStringQuery[S] =
+    copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): SimpleQueryStringQuery[S1] =
+    copy(fields = fields.map(_.toString))
+
+  def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): SimpleQueryStringQuery[S1] =
+    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
 
   def minimumShouldMatch(value: Int): SimpleQueryString[S] =
     copy(minimumShouldMatch = Some(value))
-
-  def fields(field: String, fields: String*): SimpleQueryStringQuery[S] =
-    self.copy(fields = Chunk.fromIterable(field +: fields))
-
-  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): SimpleQueryStringQuery[S1] =
-    self.copy(fields = fields.map(_.toString))
-
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val fieldsJson = if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson))) else None
@@ -1246,18 +1197,7 @@ private[elasticsearch] final case class SimpleQueryString[S](
     val params = Chunk(
       Some("query" -> query.toJson),
       fieldsJson,
-      defaultOperator.map("default_operator" -> _.toJson),
-      allFields.map("all_fields" -> _.toJson),
-      analyzeWildcard.map("analyze_wildcard" -> _.toJson),
-      analyzer.map("analyzer" -> _.toJson),
-      autoGenerateSynonymsPhraseQuery.map("auto_generate_synonyms_phrase_query" -> _.toJson),
-      flags.map("flags" -> _.toJson),
-      fuzzyMaxExpansions.map("fuzzy_max_expansions" -> _.toJson),
-      fuzzyPrefixLength.map("fuzzy_prefix_length" -> _.toJson),
-      fuzzyTranspositions.map("fuzzy_transpositions" -> _.toJson),
-      lenient.map("lenient" -> _.toJson),
-      minimumShouldMatch.map("minimum_should_match" -> _.toJson),
-      quoteFieldSuffix.map("quote_field_suffix" -> _.toJson)
+      minimumShouldMatch.map("minimum_should_match" -> _.toJson)
     ).flatten
 
     Obj("simple_query_string" -> Obj(params))

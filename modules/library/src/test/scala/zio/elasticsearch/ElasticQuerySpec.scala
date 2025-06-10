@@ -1699,23 +1699,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
         test("simpleQueryString") {
           val queryNoFields           = simpleQueryString("test")
           val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
-          val queryTyped = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
+          val queryTyped              = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
           val queryAllParams          = SimpleQueryString(
             query = "test",
             fields = Chunk.empty,
-            defaultOperator = Some("OR"),
-            allFields = Some(true),
-            analyzeWildcard = Some(true),
-            analyzer = Some("standard"),
-            autoGenerateSynonymsPhraseQuery = Some(false),
-            flags = Some("AND|OR"),
-            fuzzyMaxExpansions = Some(10),
-            fuzzyPrefixLength = Some(2),
-            fuzzyTranspositions = Some(1),
-            lenient = Some(false),
-            minimumShouldMatch = Some(1),
-            quoteFieldSuffix = Some(".exact")
+            minimumShouldMatch = Some(1)
           )
 
           assert(queryNoFields)(
@@ -1723,18 +1712,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString[Any](
                 query = "test",
                 fields = Chunk.empty,
-                defaultOperator = None,
-                allFields = None,
-                analyzeWildcard = None,
-                analyzer = None,
-                autoGenerateSynonymsPhraseQuery = None,
-                flags = None,
-                fuzzyMaxExpansions = None,
-                fuzzyPrefixLength = None,
-                fuzzyTranspositions = None,
-                lenient = None,
-                minimumShouldMatch = None,
-                quoteFieldSuffix = None
+                minimumShouldMatch = None
               )
             )
           ) &&
@@ -1743,18 +1721,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString[Any](
                 query = "test",
                 fields = Chunk("stringField1", "stringField2"),
-                defaultOperator = None,
-                allFields = None,
-                analyzeWildcard = None,
-                analyzer = None,
-                autoGenerateSynonymsPhraseQuery = None,
-                flags = None,
-                fuzzyMaxExpansions = None,
-                fuzzyPrefixLength = None,
-                fuzzyTranspositions = None,
-                lenient = None,
-                minimumShouldMatch = None,
-                quoteFieldSuffix = None
+                minimumShouldMatch = None
               )
             )
           ) &&
@@ -1763,18 +1730,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString[TestDocument](
                 query = "test",
                 fields = Chunk("stringField"),
-                defaultOperator = None,
-                allFields = None,
-                analyzeWildcard = None,
-                analyzer = None,
-                autoGenerateSynonymsPhraseQuery = None,
-                flags = None,
-                fuzzyMaxExpansions = None,
-                fuzzyPrefixLength = None,
-                fuzzyTranspositions = None,
-                lenient = None,
-                minimumShouldMatch = None,
-                quoteFieldSuffix = None
+                minimumShouldMatch = None
               )
             )
           ) &&
@@ -1783,18 +1739,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString[Any](
                 query = "test",
                 fields = Chunk.empty,
-                defaultOperator = None,
-                allFields = None,
-                analyzeWildcard = None,
-                analyzer = None,
-                autoGenerateSynonymsPhraseQuery = None,
-                flags = None,
-                fuzzyMaxExpansions = None,
-                fuzzyPrefixLength = None,
-                fuzzyTranspositions = None,
-                lenient = None,
-                minimumShouldMatch = Some(2),
-                quoteFieldSuffix = None
+                minimumShouldMatch = Some(2)
               )
             )
           ) &&
@@ -1803,18 +1748,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString(
                 query = "test",
                 fields = Chunk.empty,
-                defaultOperator = Some("OR"),
-                allFields = Some(true),
-                analyzeWildcard = Some(true),
-                analyzer = Some("standard"),
-                autoGenerateSynonymsPhraseQuery = Some(false),
-                flags = Some("AND|OR"),
-                fuzzyMaxExpansions = Some(10),
-                fuzzyPrefixLength = Some(2),
-                fuzzyTranspositions = Some(1),
-                lenient = Some(false),
-                minimumShouldMatch = Some(1),
-                quoteFieldSuffix = Some(".exact")
+                minimumShouldMatch = Some(1)
               )
             )
           )
@@ -4272,23 +4206,12 @@ object ElasticQuerySpec extends ZIOSpecDefault {
         test("simpleQueryString") {
           val queryNoFields           = simpleQueryString("test")
           val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
-          val queryTyped = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
+          val queryTyped              = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
           val queryAllParams          = SimpleQueryString(
             query = "test",
             fields = Chunk.empty,
-            defaultOperator = Some("OR"),
-            allFields = Some(true),
-            analyzeWildcard = Some(true),
-            analyzer = Some("standard"),
-            autoGenerateSynonymsPhraseQuery = Some(false),
-            flags = Some("AND|OR"),
-            fuzzyMaxExpansions = Some(10),
-            fuzzyPrefixLength = Some(2),
-            fuzzyTranspositions = Some(1),
-            lenient = Some(false),
-            minimumShouldMatch = Some(1),
-            quoteFieldSuffix = Some(".exact")
+            minimumShouldMatch = Some(1)
           )
 
           val expectedNoFields =
@@ -4335,18 +4258,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |{
               |  "simple_query_string": {
               |    "query": "test",
-              |    "default_operator": "OR",
-              |    "all_fields": true,
-              |    "analyze_wildcard": true,
-              |    "analyzer": "standard",
-              |    "auto_generate_synonyms_phrase_query": false,
-              |    "flags": "AND|OR",
-              |    "fuzzy_max_expansions": 10,
-              |    "fuzzy_prefix_length": 2,
-              |    "fuzzy_transpositions": 1,
-              |    "lenient": false,
-              |    "minimum_should_match": 1,
-              |    "quote_field_suffix": ".exact"
+              |    "minimum_should_match": 1
               |  }
               |}
               |""".stripMargin

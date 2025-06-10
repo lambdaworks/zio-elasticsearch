@@ -31,7 +31,7 @@ import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits, SimpleQueryString}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{FilterAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
@@ -1408,15 +1408,19 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
           test("search for a document using a simple query string query") {
-            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
-              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+            checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
+                val firstDoc = firstDocument.copy(stringField = multiWordString)
+
                 for {
-                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDocument))
-                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue)
-                  searchTerm = firstDocument.stringField.takeWhile(_ != ' ')
-                  query = simpleQueryString(searchTerm).fields(Chunk(TestDocument.stringField))
-                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(Assertion.contains(firstDocument))
+                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDoc))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue
+                       )
+                  searchTerm = multiWordString.split("\\s+").head
+                  query      = simpleQueryString(searchTerm).fields(Chunk(TestDocument.stringField))
+                  res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(Assertion.contains(firstDoc))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

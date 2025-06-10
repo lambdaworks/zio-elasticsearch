@@ -1019,24 +1019,13 @@ object ElasticQuery {
    * @tparam S
    *   the document type on which the query is executed
    * @return
-   *   an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] that represents the query to be performed
+   *   an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] that represents the query to be performed.
    */
   final def simpleQueryString[S: Schema](query: String, fields: Field[S, _]*): SimpleQueryStringQuery[S] =
     SimpleQueryString[S](
       query = query,
       fields = Chunk.fromIterable(fields.map(_.toString)),
-      defaultOperator = None,
-      allFields = None,
-      analyzeWildcard = None,
-      analyzer = None,
-      autoGenerateSynonymsPhraseQuery = None,
-      flags = None,
-      fuzzyMaxExpansions = None,
-      fuzzyPrefixLength = None,
-      fuzzyTranspositions = None,
-      lenient = None,
-      minimumShouldMatch = None,
-      quoteFieldSuffix = None
+      minimumShouldMatch = None
     )
 
   /**
@@ -1047,24 +1036,13 @@ object ElasticQuery {
    * @param query
    *   the query string to search for
    * @return
-   *   an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] that represents the query to be performed
+   *   an instance of [[zio.elasticsearch.query.SimpleQueryStringQuery]] that represents the query to be performed.
    */
   final def simpleQueryString(query: String): SimpleQueryStringQuery[Any] =
     SimpleQueryString(
       query = query,
       fields = Chunk.empty,
-      defaultOperator = None,
-      allFields = None,
-      analyzeWildcard = None,
-      analyzer = None,
-      autoGenerateSynonymsPhraseQuery = None,
-      flags = None,
-      fuzzyMaxExpansions = None,
-      fuzzyPrefixLength = None,
-      fuzzyTranspositions = None,
-      lenient = None,
-      minimumShouldMatch = None,
-      quoteFieldSuffix = None
+      minimumShouldMatch = None
     )
 
   /**
