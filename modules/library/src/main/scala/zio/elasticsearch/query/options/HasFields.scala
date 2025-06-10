@@ -19,6 +19,7 @@ package zio.elasticsearch.query.options
 import zio.Chunk
 import zio.elasticsearch.Field
 import zio.schema.Schema
+
 private[elasticsearch] trait HasFields[Q[_], S] {
 
   /**
@@ -54,7 +55,7 @@ private[elasticsearch] trait HasFields[Q[_], S] {
    * array of type-safe fields that will be searched.
    *
    * @param field
-   *   the first type-safe field to search within
+   *   the first type-safe field to include in the `fields` parameter
    * @param fields
    *   an array of type-safe fields to set `fields` parameter to
    * @tparam S1
