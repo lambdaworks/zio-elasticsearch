@@ -19,13 +19,14 @@ package zio.elasticsearch.query.options
 import zio.Chunk
 import zio.elasticsearch.Field
 import zio.schema.Schema
-
 private[elasticsearch] trait HasFields[Q[_], S] {
 
   /**
    * Sets the `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is array of
    * fields that will be searched.
    *
+   * @param field
+   *   the first field to include in the `fields` parameter
    * @param fields
    *   an array of fields to set `fields` parameter to
    * @return
@@ -41,7 +42,8 @@ private[elasticsearch] trait HasFields[Q[_], S] {
    * @param fields
    *   a chunk of type-safe fields to search within. These fields may be of any supported scalar type (such as String,
    *   Int, Boolean, etc.), and must be part of the document schema `S1`.
-   *
+   * @tparam S1
+   *   a subtype of the base document type `S` representing the schema that contains the selected fields
    * @return
    *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the provided type-safe `fields`.
    */
@@ -51,8 +53,12 @@ private[elasticsearch] trait HasFields[Q[_], S] {
    * Sets the type-safe `fields` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `fields` parameter is
    * array of type-safe fields that will be searched.
    *
+   * @param field
+   *   the first type-safe field to search within
    * @param fields
    *   an array of type-safe fields to set `fields` parameter to
+   * @tparam S1
+   *   a subtype of the base document type `S` representing the schema that contains the selected fields
    * @return
    *   an instance of the [[zio.elasticsearch.query.ElasticQuery]] enriched with the type-safe `fields` parameter.
    */

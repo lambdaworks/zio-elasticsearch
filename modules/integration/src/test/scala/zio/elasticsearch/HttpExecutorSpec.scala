@@ -1433,10 +1433,12 @@ object HttpExecutorSpec extends IntegrationSpec {
 
                 for {
                   _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDoc))
-                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue)
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue
+                       )
                   searchTerm = multiWordString.split("\\s+").head
                   query      = simpleQueryString(searchTerm)
-                  res        <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                  res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
                 } yield assert(res)(Assertion.contains(firstDoc))
             }
           } @@ around(
@@ -1448,10 +1450,10 @@ object HttpExecutorSpec extends IntegrationSpec {
               val docWithMultiWord = doc.copy(stringField = multiWordString)
 
               for {
-                _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, docWithMultiWord).refreshTrue)
+                _         <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, docWithMultiWord).refreshTrue)
                 searchTerm = multiWordString.split("\\s+").head
                 query      = simpleQueryString(searchTerm).fields("nonExistentField")
-                res        <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
               } yield assert(res)(Assertion.isEmpty)
             }
           } @@ around(
