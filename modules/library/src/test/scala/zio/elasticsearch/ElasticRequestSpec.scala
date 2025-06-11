@@ -1214,7 +1214,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(requestBody)(equalTo(expected))
         },
-        test("bulk body with global index") {
+        test("bulk with global index") {
             val doc1Json = """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
             val doc2Json = """{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}"""
 
