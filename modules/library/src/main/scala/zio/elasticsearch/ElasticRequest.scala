@@ -26,7 +26,14 @@ import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.query.{ElasticQuery, KNNQuery}
 import zio.elasticsearch.request._
 import zio.elasticsearch.request.options._
-import zio.elasticsearch.result.{AggregateResult, GetResult, KNNSearchResult, SearchAndAggregateResult, SearchResult, UpdateByQueryResult}
+import zio.elasticsearch.result.{
+  AggregateResult,
+  GetResult,
+  KNNSearchResult,
+  SearchAndAggregateResult,
+  SearchResult,
+  UpdateByQueryResult
+}
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
@@ -65,16 +72,15 @@ object ElasticRequest {
     Bulk(requests = Chunk.fromIterable(requests), index = None, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[BulkRequest]] using the specified index and requests.
-   * All requests within this bulk operation will be executed against the provided index,
-   * unless a specific request overrides it with its own index.
+   * Constructs an instance of [[BulkRequest]] using the specified index and requests. All requests within this bulk
+   * operation will be executed against the provided index, unless a specific request overrides it with its own index.
    *
    * @param index
-   * the default index name to be used for all requests within this bulk operation.
+   *   the default index name to be used for all requests within this bulk operation.
    * @param requests
-   * a list of requests that will be executed as a bulk.
+   *   a list of requests that will be executed as a bulk.
    * @return
-   * an instance of [[BulkRequest]] that represents the bulk operation to be performed.
+   *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
    */
   final def bulk(index: IndexName, requests: BulkableRequest[_]*): BulkRequest =
     Bulk(requests = Chunk.fromIterable(requests), index = Some(index), refresh = None, routing = None)
@@ -137,33 +143,33 @@ object ElasticRequest {
     CreateWithId(index = Some(index), id = id, document = Document.from(doc), refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[CreateRequest]] used for creating a document.
-   * This method is intended to be used within a bulk operation where the index is specified at the bulk level,
-   * or when the default index is configured globally for the Elasticsearch client.
+   * Constructs an instance of [[CreateRequest]] used for creating a document. This method is intended to be used within
+   * a bulk operation where the index is specified at the bulk level, or when the default index is configured globally
+   * for the Elasticsearch client.
    *
    * @param doc
-   * the document to be created, represented by an instance of type `A`
+   *   the document to be created, represented by an instance of type `A`
    * @tparam A
-   * the type of the document to be created. An implicit `Schema` instance must be in scope for this type
+   *   the type of the document to be created. An implicit `Schema` instance must be in scope for this type
    * @return
-   * an instance of [[CreateRequest]] that represents the create operation to be performed.
+   *   an instance of [[CreateRequest]] that represents the create operation to be performed.
    */
   final def create[A: Schema](doc: A): CreateRequest =
     Create(index = None, document = Document.from(doc), refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[CreateWithIdRequest]] used for creating a document with a specified ID.
-   * This method is intended to be used within a bulk operation where the index is specified at the bulk level,
-   * or when the default index is configured globally for the Elasticsearch client.
+   * Constructs an instance of [[CreateWithIdRequest]] used for creating a document with a specified ID. This method is
+   * intended to be used within a bulk operation where the index is specified at the bulk level, or when the default
+   * index is configured globally for the Elasticsearch client.
    *
    * @param id
-   * the ID of the new document
+   *   the ID of the new document
    * @param doc
-   * the document to be created, represented by an instance of type `A`
+   *   the document to be created, represented by an instance of type `A`
    * @tparam A
-   * the type of the document to be created. An implicit `Schema` instance must be in scope for this type
+   *   the type of the document to be created. An implicit `Schema` instance must be in scope for this type
    * @return
-   * an instance of [[CreateRequest]] that represents the create with id operation to be performed.
+   *   an instance of [[CreateRequest]] that represents the create with id operation to be performed.
    */
   final def create[A: Schema](id: DocumentId, doc: A): CreateWithIdRequest =
     CreateWithId(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -207,14 +213,14 @@ object ElasticRequest {
     DeleteById(index = Some(index), id = id, refresh = None, routing = None)
 
   /**
-   * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document by specified ID.
-   * This method is intended to be used within a bulk operation where the index is specified at the bulk level,
-   * or when the default index is configured globally for the Elasticsearch client.
+   * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document by specified ID. This method is
+   * intended to be used within a bulk operation where the index is specified at the bulk level, or when the default
+   * index is configured globally for the Elasticsearch client.
    *
    * @param id
-   * the ID of the document to be deleted
+   *   the ID of the document to be deleted
    * @return
-   * an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
+   *   an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
    */
   final def deleteById(id: DocumentId): DeleteByIdRequest =
     DeleteById(index = None, id = id, refresh = None, routing = None)
@@ -377,18 +383,18 @@ object ElasticRequest {
     )
 
   /**
-   * Constructs an instance of [[UpdateRequest]] used for updating a document by specified ID.
-   * This method is intended to be used within a bulk operation where the index is specified at the bulk level,
-   * or when the default index is configured globally for the Elasticsearch client.
+   * Constructs an instance of [[UpdateRequest]] used for updating a document by specified ID. This method is intended
+   * to be used within a bulk operation where the index is specified at the bulk level, or when the default index is
+   * configured globally for the Elasticsearch client.
    *
    * @param id
-   * the ID of the document to update
+   *   the ID of the document to update
    * @param doc
-   * the document to be updated, represented by an instance of type `A`
+   *   the document to be updated, represented by an instance of type `A`
    * @tparam A
-   * the type of the document to be updated. An implicit `Schema` instance must be in scope for this type
+   *   the type of the document to be updated. An implicit `Schema` instance must be in scope for this type
    * @return
-   * an instance of [[UpdateRequest]] that represents update operation to be performed.
+   *   an instance of [[UpdateRequest]] that represents update operation to be performed.
    */
   final def update[A: Schema](id: DocumentId, doc: A): UpdateRequest =
     Update(
@@ -444,7 +450,15 @@ object ElasticRequest {
    *   an instance of [[UpdateRequest]] that represents update by script operation to be performed.
    */
   final def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
-    Update(index = Some(index), id = id, doc = None, refresh = None, routing = None, script = Some(script), upsert = None)
+    Update(
+      index = Some(index),
+      id = id,
+      doc = None,
+      refresh = None,
+      routing = None,
+      script = Some(script),
+      upsert = None
+    )
 
   /**
    * Constructs an instance of [[CreateOrUpdateRequest]] used for creating or updating the document in the specified
@@ -466,17 +480,17 @@ object ElasticRequest {
 
   /**
    * Constructs an instance of [[CreateOrUpdateRequest]] used for creating or updating a document with a specified ID.
-   * This method is intended to be used within a bulk operation where the index is specified at the bulk level,
-   * or when the default index is configured globally for the Elasticsearch client.
+   * This method is intended to be used within a bulk operation where the index is specified at the bulk level, or when
+   * the default index is configured globally for the Elasticsearch client.
    *
    * @param id
-   * the ID of the document to be created or updated
+   *   the ID of the document to be created or updated
    * @param doc
-   * the document to be created or updated, represented by an instance of type `A`
+   *   the document to be created or updated, represented by an instance of type `A`
    * @tparam A
-   * the type of the document to be created or updated. An implicit `Schema` instance must be in scope for this type
+   *   the type of the document to be created or updated. An implicit `Schema` instance must be in scope for this type
    * @return
-   * an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
+   *   an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
    */
   final def upsert[A: Schema](id: DocumentId, doc: A): CreateOrUpdateRequest =
     CreateOrUpdate(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)
@@ -495,10 +509,10 @@ object ElasticRequest {
       with HasRouting[BulkRequest]
 
   private[elasticsearch] final case class Bulk(
-                                                requests: Chunk[BulkableRequest[_]],
-                                                index: Option[IndexName],
-                                                refresh: Option[Boolean],
-                                                routing: Option[Routing]
+    requests: Chunk[BulkableRequest[_]],
+    index: Option[IndexName],
+    refresh: Option[Boolean],
+    routing: Option[Routing]
   ) extends BulkRequest { self =>
 
     def refresh(value: Boolean): BulkRequest =
@@ -510,27 +524,47 @@ object ElasticRequest {
     lazy val body: String = requests.flatMap { r =>
       (r: @unchecked) match {
         case Create(index, document, _, routing) =>
-          Chunk(getActionAndMeta("create", Chunk(("_index", index.orElse(this.index)), ("routing", routing))), document.json)
+          Chunk(
+            getActionAndMeta("create", Chunk(("_index", index.orElse(this.index)), ("routing", routing))),
+            document.json
+          )
         case CreateWithId(index, id, document, _, routing) =>
           Chunk(
-            getActionAndMeta("create", Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))),
+            getActionAndMeta(
+              "create",
+              Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            ),
             document.json
           )
         case CreateOrUpdate(index, id, document, _, routing) =>
           Chunk(
-            getActionAndMeta("index", Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))),
+            getActionAndMeta(
+              "index",
+              Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            ),
             document.json
           )
         case DeleteById(index, id, _, routing) =>
-          Chunk(getActionAndMeta("delete", Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))))
+          Chunk(
+            getActionAndMeta(
+              "delete",
+              Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            )
+          )
         case Update(index, id, Some(document), _, routing, None, _) =>
           Chunk(
-            getActionAndMeta("update", Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))),
+            getActionAndMeta(
+              "update",
+              Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            ),
             Obj("doc" -> document.json)
           )
         case Update(index, id, None, _, routing, Some(script), _) =>
           Chunk(
-            getActionAndMeta("update", Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))),
+            getActionAndMeta(
+              "update",
+              Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            ),
             Obj("script" -> script.toJson)
           )
       }
@@ -1034,13 +1068,12 @@ object ElasticRequest {
   }
 
   private def getActionAndMeta(requestType: String, parameters: Chunk[(String, Any)]): String =
-    parameters.collect {
-        case (name, Some(value)) =>
-          val serializedValue = value match {
-            case indexName: IndexName => IndexName.unwrap(indexName)
-            case other                => other.toString
-          }
-          s""""$name" : "$serializedValue""""
+    parameters.collect { case (name, Some(value)) =>
+      val serializedValue = value match {
+        case indexName: IndexName => IndexName.unwrap(indexName)
+        case other                => other.toString
       }
+      s""""$name" : "$serializedValue""""
+    }
       .mkString(s"""{ "$requestType" : { """, ", ", " } }")
 }

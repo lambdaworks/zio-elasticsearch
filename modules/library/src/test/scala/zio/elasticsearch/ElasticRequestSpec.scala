@@ -158,139 +158,139 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               )
             )
           ) &&
-            assert(bulkRequestWithMixedIndices)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
-                    CreateOrUpdate(
-                      index = Some(Index2),
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = None,
-                  routing = None
-                )
-              )
-            ) &&
-            assert(bulkRequestWithAllIndividualIndices)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = Some(Index2), document = Document.from(Doc1), refresh = None, routing = None),
-                    CreateOrUpdate(
-                      index = Some(Index2),
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = None,
-                  routing = None
-                )
-              )
-            ) &&
-            assert(bulkRequestWithGlobalIndexAndRefresh)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
-                    CreateOrUpdate(
-                      index = None,
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = Some(true),
-                  routing = None
-                )
-              )
-            ) &&
-            assert(bulkRequestWithGlobalIndexAndRouting)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
-                    CreateOrUpdate(
-                      index = None,
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = None,
-                  routing = Some(RoutingValue)
-                )
-              )
-            ) &&
-            assert(bulkRequestWithGlobalIndexAndAllParams)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
-                    CreateOrUpdate(
-                      index = None,
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = Some(true),
-                  routing = Some(RoutingValue)
-                )
-              )
-            ) &&
-            assert(bulkRequestWithOverlappingRefresh)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = None, document = Document.from(Doc1), refresh = Some(false), routing = None),
-                    CreateOrUpdate(
-                      index = None,
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = Some(true),
-                  routing = None
-                )
-              )
-            ) &&
-            assert(bulkRequestWithOverlappingRouting)(
-              equalTo(
-                Bulk(
-                  requests = Chunk(
-                    Create(index = None, document = Document.from(Doc1), refresh = None, routing = Some(RoutingValue2)),
-                    CreateOrUpdate(
-                      index = None,
-                      id = DocId,
-                      document = Document.from(Doc2),
-                      refresh = None,
-                      routing = None
-                    )
-                  ),
-                  index = Some(Index),
-                  refresh = None,
-                  routing = Some(RoutingValue)
-                )
+          assert(bulkRequestWithMixedIndices)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = Some(Index2),
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = None,
+                routing = None
               )
             )
+          ) &&
+          assert(bulkRequestWithAllIndividualIndices)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = Some(Index2), document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = Some(Index2),
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = None,
+                routing = None
+              )
+            )
+          ) &&
+          assert(bulkRequestWithGlobalIndexAndRefresh)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = None,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = Some(true),
+                routing = None
+              )
+            )
+          ) &&
+          assert(bulkRequestWithGlobalIndexAndRouting)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = None,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = None,
+                routing = Some(RoutingValue)
+              )
+            )
+          ) &&
+          assert(bulkRequestWithGlobalIndexAndAllParams)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = None, document = Document.from(Doc1), refresh = None, routing = None),
+                  CreateOrUpdate(
+                    index = None,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = Some(true),
+                routing = Some(RoutingValue)
+              )
+            )
+          ) &&
+          assert(bulkRequestWithOverlappingRefresh)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = None, document = Document.from(Doc1), refresh = Some(false), routing = None),
+                  CreateOrUpdate(
+                    index = None,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = Some(true),
+                routing = None
+              )
+            )
+          ) &&
+          assert(bulkRequestWithOverlappingRouting)(
+            equalTo(
+              Bulk(
+                requests = Chunk(
+                  Create(index = None, document = Document.from(Doc1), refresh = None, routing = Some(RoutingValue2)),
+                  CreateOrUpdate(
+                    index = None,
+                    id = DocId,
+                    document = Document.from(Doc2),
+                    refresh = None,
+                    routing = None
+                  )
+                ),
+                index = Some(Index),
+                refresh = None,
+                routing = Some(RoutingValue)
+              )
+            )
+          )
         },
         test("count") {
           val countRequest              = count(Index)
@@ -316,10 +316,17 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(createRequestWithRefresh)(
             equalTo(Create(index = Some(Index), document = Document.from(Doc1), refresh = Some(true), routing = None))
           ) && assert(createRequestWithRouting)(
-            equalTo(Create(index = Some(Index), document = Document.from(Doc1), refresh = None, routing = Some(RoutingValue)))
+            equalTo(
+              Create(index = Some(Index), document = Document.from(Doc1), refresh = None, routing = Some(RoutingValue))
+            )
           ) && assert(createRequestWithAllParams)(
             equalTo(
-              Create(index = Some(Index), document = Document.from(Doc1), refresh = Some(true), routing = Some(RoutingValue))
+              Create(
+                index = Some(Index),
+                document = Document.from(Doc1),
+                refresh = Some(true),
+                routing = Some(RoutingValue)
+              )
             )
           )
         },
@@ -1141,7 +1148,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(upsertRequest)(
             equalTo(
-              CreateOrUpdate(index = Some(Index), id = DocId, document = Document.from(Doc1), refresh = None, routing = None)
+              CreateOrUpdate(
+                index = Some(Index),
+                id = DocId,
+                document = Document.from(Doc1),
+                refresh = None,
+                routing = None
+              )
             )
           ) && assert(upsertRequestWithRefresh)(
             equalTo(
@@ -1215,46 +1228,56 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(requestBody)(equalTo(expected))
         },
         test("bulk with global index") {
-            val doc1Json = """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
-            val doc2Json = """{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}"""
+          val doc1Json =
+            """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
+          val doc2Json =
+            """{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}"""
 
-            val bodyGlobalIndexOnly = bulk(Index, create(doc = Doc1), upsert(id = DocId, doc = Doc2)) match { case r: Bulk => r.body }
-            val expectedGlobalIndexOnly =
-              s"""|{ "create" : { "_index" : "index" } }
-                  |$doc1Json
-                  |{ "index" : { "_index" : "index", "_id" : "documentid" } }
-                  |$doc2Json
-                  |""".stripMargin
+          val bodyGlobalIndexOnly = bulk(Index, create(doc = Doc1), upsert(id = DocId, doc = Doc2)) match {
+            case r: Bulk => r.body
+          }
+          val expectedGlobalIndexOnly =
+            s"""|{ "create" : { "_index" : "index" } }
+                |$doc1Json
+                |{ "index" : { "_index" : "index", "_id" : "documentid" } }
+                |$doc2Json
+                |""".stripMargin
 
-            val bodyMixedIndices = bulk(Index, create(doc = Doc1), upsert(index = Index2, id = DocId, doc = Doc2)) match { case r: Bulk => r.body }
-            val expectedMixedIndices =
-              s"""|{ "create" : { "_index" : "index" } }
-                  |$doc1Json
-                  |{ "index" : { "_index" : "index2", "_id" : "documentid" } }
-                  |$doc2Json
-                  |""".stripMargin
+          val bodyMixedIndices = bulk(Index, create(doc = Doc1), upsert(index = Index2, id = DocId, doc = Doc2)) match {
+            case r: Bulk => r.body
+          }
+          val expectedMixedIndices =
+            s"""|{ "create" : { "_index" : "index" } }
+                |$doc1Json
+                |{ "index" : { "_index" : "index2", "_id" : "documentid" } }
+                |$doc2Json
+                |""".stripMargin
 
-            val bodyAllIndividualIndices = bulk(Index, create(index = Index2, doc = Doc1), upsert(index = Index2, id = DocId, doc = Doc2)) match { case r: Bulk => r.body }
-            val expectedAllIndividualIndices =
-              s"""|{ "create" : { "_index" : "index2" } }
-                  |$doc1Json
-                  |{ "index" : { "_index" : "index2", "_id" : "documentid" } }
-                  |$doc2Json
-                  |""".stripMargin
+          val bodyAllIndividualIndices =
+            bulk(Index, create(index = Index2, doc = Doc1), upsert(index = Index2, id = DocId, doc = Doc2)) match {
+              case r: Bulk => r.body
+            }
+          val expectedAllIndividualIndices =
+            s"""|{ "create" : { "_index" : "index2" } }
+                |$doc1Json
+                |{ "index" : { "_index" : "index2", "_id" : "documentid" } }
+                |$doc2Json
+                |""".stripMargin
 
-            val bodyIndividualRoutingOverridesGlobal = bulk(Index, create(doc = Doc1).routing(RoutingValue2), upsert(id = DocId, doc = Doc2)).routing(RoutingValue) match { case r: Bulk => r.body }
-            val expectedIndividualRoutingOverridesGlobal =
-              s"""|{ "create" : { "_index" : "index", "routing" : "routing2" } }
-                  |$doc1Json
-                  |{ "index" : { "_index" : "index", "_id" : "documentid" } }
-                  |$doc2Json
-                  |""".stripMargin
+          val bodyIndividualRoutingOverridesGlobal =
+            bulk(Index, create(doc = Doc1).routing(RoutingValue2), upsert(id = DocId, doc = Doc2))
+              .routing(RoutingValue) match { case r: Bulk => r.body }
+          val expectedIndividualRoutingOverridesGlobal =
+            s"""|{ "create" : { "_index" : "index", "routing" : "routing2" } }
+                |$doc1Json
+                |{ "index" : { "_index" : "index", "_id" : "documentid" } }
+                |$doc2Json
+                |""".stripMargin
 
-
-            assert(bodyGlobalIndexOnly)(equalTo(expectedGlobalIndexOnly)) &&
-              assert(bodyMixedIndices)(equalTo(expectedMixedIndices)) &&
-              assert(bodyAllIndividualIndices)(equalTo(expectedAllIndividualIndices)) &&
-              assert(bodyIndividualRoutingOverridesGlobal)(equalTo(expectedIndividualRoutingOverridesGlobal))
+          assert(bodyGlobalIndexOnly)(equalTo(expectedGlobalIndexOnly)) &&
+          assert(bodyMixedIndices)(equalTo(expectedMixedIndices)) &&
+          assert(bodyAllIndividualIndices)(equalTo(expectedAllIndividualIndices)) &&
+          assert(bodyIndividualRoutingOverridesGlobal)(equalTo(expectedIndividualRoutingOverridesGlobal))
         },
         test("count") {
           val jsonRequest = count(Index) match {
@@ -1951,13 +1974,13 @@ object ElasticRequestSpec extends ZIOSpecDefault {
   )
   private val DocId            = DocumentId("documentid")
   private val Index            = IndexName("index")
-  private val Index2            = IndexName("index2")
+  private val Index2           = IndexName("index2")
   private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)
   private val Indices          = MultiIndex.names(Index, IndexName("index2"))
   private val Query            = ElasticQuery.range(TestDocument.intField).gte(10)
   private val KnnQuery         = ElasticQuery.kNN(TestDocument.stringField, 10, 21, Chunk(1.1, 3.3))
   private val RoutingValue     = Routing("routing")
-  private val RoutingValue2     = Routing("routing2")
+  private val RoutingValue2    = Routing("routing2")
   private val Script1          = Script("doc['intField'].value * params['factor']").params("factor" -> 2)
   private val TermsAggregation = termsAggregation(name = "aggregation", field = "intField")
 }
