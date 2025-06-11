@@ -14,12 +14,12 @@ import zio.elasticsearch._
 ```
 
 You can create a `Bulk` request using the `bulk` method, which offers two main ways to handle indices:
-1. With a Global Index:
+1. With a global index:
 This approach is ideal when most (or all) of your bulk operations target the same index. You provide a default index for the entire bulk request as 
 the first argument. Any individual operation within this `bulk` request that doesn't explicitly specify its own index will automatically use this 
 global index.
-Important: If an individual operation does specify its own index, that individual index will always take precedence over the global one for that 
-specific operation.
+_**Important: If an individual operation does specify its own index, that individual index will always take precedence over the global one for that 
+specific operation.**_
 ```scala
 val index = IndexName("my-global-index")
 
@@ -32,9 +32,9 @@ create(doc = document1),
 upsert(id = DocumentId("111"), doc = document2)
 )
 ```
-2. Without a Global Index:
+2. Without a global index:
 Choose this method when your bulk operations frequently target different indices, or when you prefer to explicitly define the index for every single 
-operation. When using this variant, each individual BulkableRequest must specify its own index.
+operation. When using this variant, each individual `BulkableRequest` must specify its own index.
 ```scala
 val index1 = IndexName("first-index")
 val index2 = IndexName("second-index")

@@ -39,9 +39,7 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
-sealed trait BulkableRequest[A] extends ElasticRequest[A] {
-  def index: Option[IndexName]
-}
+sealed trait BulkableRequest[A] extends ElasticRequest[A]
 
 sealed trait ElasticRequest[A]
 
@@ -76,9 +74,9 @@ object ElasticRequest {
    * operation will be executed against the provided index, unless a specific request overrides it with its own index.
    *
    * @param index
-   *   the default index name to be used for all requests within this bulk operation.
+   *   the default index name to be used for all requests within this bulk operation
    * @param requests
-   *   a list of requests that will be executed as a bulk.
+   *   a list of requests that will be executed as a bulk
    * @return
    *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
    */
