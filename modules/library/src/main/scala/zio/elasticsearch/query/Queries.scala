@@ -21,9 +21,12 @@ import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
+import zio.json.{DeriveJsonEncoder, JsonEncoder}
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.schema.Schema
+
+import javax.management.Query
 
 sealed trait ElasticQuery[-S] { self =>
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json
@@ -528,7 +531,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    * incorrect coordinates.
    *
    * @param value
-   *   defines how to handle invalid latitude nad longitude:
+   *   defines how to handle invalid latitude and longitude:
    *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
    *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
    *     longitude
@@ -569,7 +572,6 @@ private[elasticsearch] final case class GeoDistance[S](
         ).flatten: _*
       )
     )
-
 }
 
 sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
@@ -590,7 +592,7 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
    * incorrect coordinates.
    *
    * @param value
-   *   defines how to handle invalid latitude nad longitude:
+   *   defines how to handle invalid latitude and longitude:
    *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
    *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
    *     longitude
@@ -782,6 +784,268 @@ private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends Id
     Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
 }
 
+sealed trait IntervalQuery {
+  private[elasticsearch] def toJson: Json
+}
+
+/**
+ * Represents a `match` interval query. Matches analyzed text within intervals.
+ *
+ * @param query
+ *   The text to match.
+ * @param analyzer
+ *   Optional analyzer to use for this query.
+ * @param useField
+ *   Optional alternative field used for term extraction.
+ */
+
+/** `match` interval-query */
+private[elasticsearch] final case class IntervalMatch(
+  query: String,
+  analyzer: Option[String],
+  useField: Option[String],
+  maxGaps: Option[Int],
+  ordered: Option[Boolean],
+  filter: Option[IntervalQuery]
+) extends IntervalQuery { self =>
+
+  def withAnalyzer(a: String)      = copy(analyzer = Some(a))
+  def withUseField(f: String)      = copy(useField = Some(f))
+  def withMaxGaps(g: Int)          = copy(maxGaps = Some(g))
+  def withOrdered(o: Boolean)      = copy(ordered = Some(o))
+  def withFilter(f: IntervalQuery) = copy(filter = Some(f))
+
+  override private[elasticsearch] def toJson: Json =
+    Obj(
+      "match" -> Obj(
+        Chunk(
+          Some("query" -> Str(query)),
+          analyzer.map("analyzer" -> _.toJson),
+          useField.map("use_field" -> _.toJson),
+          maxGaps.map("max_gaps" -> _.toJson),
+          ordered.map("ordered" -> _.toJson),
+          filter.map("filter" -> _.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+private[elasticsearch] final case class IntervalPrefix(
+  prefix: String,
+  analyzer: Option[String],
+  useField: Option[String]
+) extends IntervalQuery {
+
+  override private[elasticsearch] def toJson: Json =
+    Obj(
+      "prefix" -> Obj(
+        Chunk(
+          Some("prefix" -> Str(prefix)),
+          analyzer.map(a => "analyzer" -> Str(a)),
+          useField.map(u => "use_field" -> Str(u))
+        ).flatten: _*
+      )
+    )
+}
+
+/**
+ * Represents a `prefix` interval query. Matches terms with the given prefix.
+ *
+ * @param prefix
+ *   The prefix string.
+ * @param analyzer
+ *   Optional analyzer to apply.
+ * @param useField
+ *   Optional alternative field used for term extraction.
+ */
+
+final case class IntervalRegexp(
+  pattern: String,
+  analyzer: Option[String],
+  useField: Option[String]
+) extends IntervalQuery {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "regexp" -> Obj(
+        Chunk(
+          Some("pattern" -> pattern.toJson),
+          analyzer.map("analyzer" -> _.toJson),
+          useField.map("use_field" -> _.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+/**
+ * Represents a `wildcard` interval query. Matches terms using wildcard syntax.
+ *
+ * @param pattern
+ *   The wildcard pattern.
+ * @param analyzer
+ *   Optional analyzer to apply.
+ * @param useField
+ *   Optional alternative field used for term extraction.
+ */
+private[elasticsearch] final case class IntervalWildcard(
+  pattern: String,
+  analyzer: Option[String],
+  useField: Option[String]
+) extends IntervalQuery {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "wildcard" -> Obj(
+        Chunk(
+          Some("pattern" -> pattern.toJson),
+          analyzer.map("analyzer" -> _.toJson),
+          useField.map("use_field" -> _.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+/**
+ * Represents an `all_of` interval query. Matches documents that contain all specified intervals.
+ *
+ * @param intervals
+ *   List of interval queries to match.
+ * @param maxGaps
+ *   Optional maximum allowed gaps between intervals.
+ * @param ordered
+ *   Optional flag indicating if intervals should be in order.
+ * @param filter
+ *   Optional filter interval query that restricts matches.
+ */
+private[elasticsearch] final case class IntervalAllOf(
+  intervals: Chunk[IntervalQuery],
+  maxGaps: Option[Int],
+  ordered: Option[Boolean],
+  filter: Option[IntervalQuery]
+) extends IntervalQuery {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "all_of" -> Obj(
+        Chunk(
+          Some("intervals" -> Arr(intervals.map(_.toJson): _*)),
+          maxGaps.map("max_gaps" -> _.toJson),
+          ordered.map("ordered" -> _.toJson),
+          filter.map("filter" -> _.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+/**
+ * Represents an `any_of` interval query. Matches documents that contain any of the specified intervals.
+ *
+ * @param intervals
+ *   List of interval queries to match.
+ */
+private[elasticsearch] final case class IntervalAnyOf(
+  intervals: Chunk[IntervalQuery],
+  filter: Option[IntervalQuery]
+) extends IntervalQuery {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "any_of" -> Obj(
+        "intervals" -> Arr(intervals.map(_.toJson): _*)
+      )
+    )
+}
+
+private[elasticsearch] final case class IntervalFuzzy(
+  term: String,
+  prefixLength: Option[Int],
+  transpositions: Option[Boolean],
+  fuzziness: Option[String],
+  analyzer: Option[String],
+  useField: Option[String]
+) extends IntervalQuery {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "fuzzy" -> Obj(
+        Chunk(
+          Some("term" -> term.toJson),
+          prefixLength.map("prefix_length" -> _.toJson),
+          transpositions.map("transpositions" -> _.toJson),
+          fuzziness.map("fuzziness" -> _.toJson),
+          analyzer.map("analyzer" -> _.toJson),
+          useField.map("use_field" -> _.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+/**
+ */
+
+private[elasticsearch] final case class IntervalRange(
+  gt: Option[String],
+  gte: Option[String],
+  lt: Option[String],
+  lte: Option[String],
+  analyzer: Option[String],
+  useField: Option[String]
+) extends IntervalQuery {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      "range" -> Obj(
+        Chunk(
+          gt.map("gt" -> _.toJson),
+          gte.map("gte" -> _.toJson),
+          lt.map("lt" -> _.toJson),
+          lte.map("lte" -> _.toJson),
+          analyzer.map("analyzer" -> _.toJson),
+          useField.map("use_field" -> _.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+//private[elasticsearch] final case class IntervalScriptFilter(
+//                                                              after: Option[Query] = None,
+//                                                              before: Option[Query] = None,
+//                                                              contained_by: Option[Query] = None,
+//                                                              containing: Option[Query] = None,
+//                                                              not_contained_by: Option[Query] = None,
+//                                                              not_containing: Option[Query] = None,
+//                                                              not_overlapping: Option[Query] = None,
+//                                                              overlapping: Option[Query] = None,
+//                                                              script: Option[Json] = None
+//                                                            ) extends IntervalQuery {
+//  private[elasticsearch] def toJson: Json =
+//    Obj(
+//      "filter" -> Obj(
+//        Chunk(
+//          after.map("after" -> _.toJson),
+//          before.map("before" -> _.toJson),
+//          contained_by.map("contained_by" -> _.toJson),
+//          containing.map("containing" -> _.toJson),
+//          not_contained_by.map("not_contained_by" -> _.toJson),
+//          not_containing.map("not_containing" -> _.toJson),
+//          not_overlapping.map("not_overlapping" -> _.toJson),
+//          overlapping.map("overlapping" -> _.toJson),
+//          script.map("script" -> _)
+//        ).flatten: _*
+//      )
+//    )
+//}
+
+sealed trait IntervalsQuery[S] extends ElasticQuery[S]
+
+private[elasticsearch] final case class Intervals[S](
+  field: String,
+  query: IntervalQuery
+) extends IntervalsQuery[S] {
+  self =>
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "intervals" -> Obj(
+        fieldPath.getOrElse(field) -> query.toJson
+      )
+    )
+}
+
 sealed trait MatchQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
@@ -906,7 +1170,8 @@ private[elasticsearch] final case class MultiMatch[S](
   boost: Option[Double],
   matchingType: Option[MultiMatchType],
   minimumShouldMatch: Option[Int]
-) extends MultiMatchQuery[S] { self =>
+) extends MultiMatchQuery[S] {
+  self =>
 
   def boost(boost: Double): MultiMatchQuery[S] =
     self.copy(boost = Some(boost))
@@ -949,7 +1214,8 @@ private[elasticsearch] final case class Nested[S](
   ignoreUnmapped: Option[Boolean],
   innerHitsField: Option[InnerHits],
   scoreMode: Option[ScoreMode]
-) extends NestedQuery[S] { self =>
+) extends NestedQuery[S] {
+  self =>
 
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
@@ -1020,7 +1286,8 @@ private[elasticsearch] final case class Prefix[S](
   field: String,
   value: String,
   caseInsensitive: Option[Boolean]
-) extends PrefixQuery[S] { self =>
+) extends PrefixQuery[S] {
+  self =>
 
   def caseInsensitive(value: Boolean): PrefixQuery[S] =
     self.copy(caseInsensitive = Some(value))
@@ -1102,7 +1369,8 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   upper: UB,
   boost: Option[Double],
   format: Option[String]
-) extends RangeQuery[S, A, LB, UB] { self =>
+) extends RangeQuery[S, A, LB, UB] {
+  self =>
 
   def boost(value: Double): RangeQuery[S, A, LB, UB] =
     self.copy(boost = Some(value))
@@ -1162,7 +1430,8 @@ private[elasticsearch] final case class Regexp[S](
   field: String,
   value: String,
   caseInsensitive: Option[Boolean]
-) extends RegexpQuery[S] { self =>
+) extends RegexpQuery[S] {
+  self =>
 
   def caseInsensitive(value: Boolean): RegexpQuery[S] =
     self.copy(caseInsensitive = Some(value))
@@ -1177,7 +1446,8 @@ private[elasticsearch] final case class Regexp[S](
 sealed trait ScriptQuery extends ElasticQuery[Any] with HasBoost[ScriptQuery]
 
 private[elasticsearch] final case class Script(script: zio.elasticsearch.script.Script, boost: Option[Double])
-    extends ScriptQuery { self =>
+    extends ScriptQuery {
+  self =>
 
   def boost(value: Double): ScriptQuery =
     self.copy(boost = Some(value))
@@ -1193,7 +1463,8 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
   value: A,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends TermQuery[S] { self =>
+) extends TermQuery[S] {
+  self =>
 
   def boost(value: Double): TermQuery[S] =
     self.copy(boost = Some(value))
@@ -1216,7 +1487,8 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   field: String,
   values: Chunk[A],
   boost: Option[Double]
-) extends TermsQuery[S] { self =>
+) extends TermsQuery[S] {
+  self =>
 
   def boost(value: Double): TermsQuery[S] =
     self.copy(boost = Some(value))
@@ -1237,7 +1509,8 @@ private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
   boost: Option[Double],
   minimumShouldMatchField: Option[String],
   minimumShouldMatchScript: Option[zio.elasticsearch.script.Script]
-) extends TermsSetQuery[S] { self =>
+) extends TermsSetQuery[S] {
+  self =>
 
   def boost(value: Double): TermsSetQuery[S] =
     self.copy(boost = Some(value))
@@ -1262,7 +1535,8 @@ private[elasticsearch] final case class Wildcard[S](
   value: String,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends WildcardQuery[S] { self =>
+) extends WildcardQuery[S] {
+  self =>
 
   def boost(value: Double): WildcardQuery[S] =
     self.copy(boost = Some(value))

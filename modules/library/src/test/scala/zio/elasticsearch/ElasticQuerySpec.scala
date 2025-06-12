@@ -1074,6 +1074,70 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("intervalsQuery") {
+          val intervalNoOptions = intervalMatch("lambda works")
+
+          val intervalWithOptions = intervalMatch("lambda works")
+            .withOrdered(true)
+            .withMaxGaps(2)
+            .withAnalyzer("standard")
+
+          val queryWithStringField = intervals("content", intervalWithOptions)
+
+          val typedField: Field[TestDocument, String] = Field(None, "content")
+          val queryWithTypedField                     = intervals(typedField, intervalWithOptions)
+
+          val expectedNoOptions =
+            """
+              |{
+              |  "intervals": {
+              |    "content": {
+              |      "match": {
+              |        "query": "lambda works"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithOptions =
+            """
+              |{
+              |  "intervals": {
+              |    "content": {
+              |      "match": {
+              |        "query": "lambda works",
+              |        "ordered": true,
+              |        "max_gaps": 2,
+              |        "analyzer": "standard"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(intervalNoOptions)(
+            equalTo(
+              IntervalMatch(
+                query = "lambda works",
+                analyzer = None,
+                useField = None,
+                maxGaps = None,
+                ordered = None,
+                filter = None
+              )
+            )
+          ) &&
+          assert(intervals("content", intervalNoOptions).toJson(None))(
+            equalTo(expectedNoOptions.toJson)
+          ) &&
+          assert(queryWithStringField.toJson(None))(
+            equalTo(expectedWithOptions.toJson)
+          ) &&
+          assert(queryWithTypedField.toJson(None))(
+            equalTo(expectedWithOptions.toJson)
+          )
+        },
         test("kNN") {
           val queryString         = kNN("stringField", 5, 10, Chunk(1.1, 2.2, 3.3))
           val queryBool           = kNN("boolField", 5, 10, Chunk(1.1, 2.2, 3.3))

@@ -21,7 +21,10 @@ import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.query._
 import zio.elasticsearch.script.Script
+import zio.json.ast.Json
 import zio.schema.Schema
+
+import javax.management.Query
 
 object ElasticQuery {
 
@@ -547,6 +550,239 @@ object ElasticQuery {
    */
   final def ids(value: String, values: String*): IdsQuery[Any] =
     Ids(values = Chunk.fromIterable(value +: values))
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalMatch]] interval query.
+   *
+   * This query matches analyzed text within specified intervals based on the provided query string.
+   *
+   * @param query
+   *   the text to match in the intervals.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalMatch]] that represents the `match` interval query.
+   */
+
+  final def intervalMatch(query: String): IntervalMatch =
+    IntervalMatch(
+      query = query,
+      analyzer = None,
+      useField = None,
+      maxGaps = None,
+      ordered = None,
+      filter = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalPrefix]] interval query.
+   *
+   * This query matches terms that start with the specified prefix in the intervals.
+   *
+   * @param prefix
+   *   the prefix string to match.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalPrefix]] that represents the `prefix` interval query.
+   */
+
+  final def intervalPrefix(prefix: String): IntervalPrefix =
+    IntervalPrefix(prefix = prefix, analyzer = None, useField = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalRegexp]] interval query.
+   *
+   * This query matches terms that follow the specified regular expression pattern within the intervals.
+   *
+   * @param pattern
+   *   the regular expression pattern to match.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalRegexp]] that represents the `regexp` interval query.
+   */
+
+  final def intervalRegexp(pattern: String): IntervalRegexp =
+    IntervalRegexp(pattern = pattern, analyzer = None, useField = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalWildcard]] interval query.
+   *
+   * This query matches terms in the intervals based on the specified wildcard pattern.
+   *
+   * @param pattern
+   *   the wildcard pattern to match.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalWildcard]] that represents the `wildcard` interval query.
+   */
+
+  final def intervalWildcard(pattern: String): IntervalWildcard =
+    IntervalWildcard(pattern = pattern, analyzer = None, useField = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalAllOf]] interval query.
+   *
+   * This query matches analyzed text where all specified intervals are found, optionally ordered and/or filtered.
+   *
+   * @param intervals
+   *   the list of sub-intervals that all must match.
+   * @param maxGaps
+   *   optional maximum number of allowed gaps between intervals.
+   * @param ordered
+   *   optional flag to enforce ordered appearance.
+   * @param filter
+   *   optional filter to further restrict results.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalAllOf]] that represents the `all_of` interval query.
+   */
+
+  final def intervalAllOf(
+    intervals: Chunk[IntervalQuery],
+    maxGaps: Option[Int],
+    ordered: Option[Boolean],
+    filter: Option[IntervalQuery]
+  ): IntervalAllOf =
+    IntervalAllOf(intervals, maxGaps = None, ordered = None, filter = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalAnyOf]] interval query.
+   *
+   * This query matches documents that contain any of the specified interval queries.
+   *
+   * @param intervals
+   *   a list of interval queries where any can match.
+   * @param filter
+   *   optional filter to further restrict results.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalAnyOf]] that represents the `any_of` interval query.
+   */
+
+  final def intervalAnyOf(
+    intervals: Chunk[IntervalQuery],
+    filter: Option[IntervalQuery]
+  ): IntervalAnyOf =
+    IntervalAnyOf(intervals, filter = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalFuzzy]] interval query.
+   *
+   * This query returns documents that match terms similar to the specified term using fuzzy logic.
+   *
+   * @param term
+   *   the term to match using fuzzy logic.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalFuzzy]] that represents the `fuzzy` interval query.
+   */
+
+  final def intervalFuzzy(term: String): IntervalFuzzy =
+    IntervalFuzzy(
+      term = term,
+      prefixLength = None,
+      transpositions = None,
+      fuzziness = None,
+      analyzer = None,
+      useField = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalRange]] interval query.
+   *
+   * This query matches documents containing terms within the specified string range constraints.
+   *
+   * @param gt
+   *   optional exclusive lower bound.
+   * @param gte
+   *   optional inclusive lower bound.
+   * @param lt
+   *   optional exclusive upper bound.
+   * @param lte
+   *   optional inclusive upper bound.
+   * @param analyzer
+   *   optional analyzer to use for the range terms.
+   * @param useField
+   *   optional alternative field to use.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalRange]] that represents the `range` interval query.
+   */
+
+  final def intervalRange(
+    gt: Option[String],
+    gte: Option[String],
+    lt: Option[String],
+    lte: Option[String],
+    analyzer: Option[String],
+    useField: Option[String]
+  ): IntervalRange =
+    IntervalRange(gt = None, gte = None, lt = None, lte = None, analyzer = None, useField = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.IntervalScriptFilter]] interval filter.
+   *
+   * This filter allows further refinement of interval queries using a custom script.
+   *
+   * @param source
+   *   the source of the script used for filtering.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.IntervalScriptFilter]] representing the script filter.
+   */
+  //  final def intervalScriptFilter(
+  //    after: Option[Query],
+  //    before: Option[Query] ,
+  //    contained_by: Option[Query] ,
+  //    containing: Option[Query] ,
+  //    not_contained_by: Option[Query] ,
+  //    not_containing: Option[Query],
+  //    not_overlapping: Option[Query],
+  //    overlapping: Option[Query] ,
+  //    script: Option[Json]
+  //  ): IntervalScriptFilter =
+  //    IntervalScriptFilter(
+  //      after= None,
+  //      before= None,
+  //      contained_by= None,
+  //      containing= None,
+  //      not_contained_by= None,
+  //      not_containing= None,
+  //      not_overlapping= None,
+  //      overlapping= None,
+  //      script= None
+  //    )
+
+  /**
+   * Constructs an intervals query by combining a field and an interval query.
+   *
+   * The resulting query wraps the specified interval query under the given field in the intervals query structure.
+   *
+   * @param field
+   *   the name of the field to be queried.
+   * @param rule
+   *   an instance of [[zio.elasticsearch.query.IntervalQuery]] representing the interval query rule.
+   * @return
+   *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
+   */
+
+  final def intervals(
+    field: String,
+    rule: IntervalQuery
+  ): ElasticQuery[Any] =
+    Intervals(field, rule)
+
+  /**
+   * Constructs a type-safe intervals query by combining a field and an interval query.
+   *
+   * The resulting query wraps the specified interval query under the given type-safe field in the intervals query
+   * structure.
+   *
+   * @param field
+   *   the type-safe field on which the query is executed.
+   * @param rule
+   *   an instance of [[zio.elasticsearch.query.IntervalQuery]] representing the interval query rule.
+   * @tparam S
+   *   the document type for which the query is defined.
+   * @return
+   *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
+   */
+
+  final def intervals[S](
+    field: Field[S, _],
+    rule: IntervalQuery
+  ): ElasticQuery[S] =
+    Intervals(field.toString, rule)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.
