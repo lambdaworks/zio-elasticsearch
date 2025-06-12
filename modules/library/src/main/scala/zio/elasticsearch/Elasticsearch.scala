@@ -29,13 +29,14 @@ trait Elasticsearch {
    * Executes the given [[ElasticRequest]].
    *
    * @param request
-   *   the [[zio.elasticsearch.ElasticRequest]] to execute, this request must be of type `Executable`
+   *   the [[zio.elasticsearch.ElasticRequest]] to execute, this request must be of type
+   *   [[zio.elasticsearch.Executable]]
    * @tparam A
    *   the type of the expected response
    * @return
    *   a [[Task]] representing the response of the executed request.
    */
-  def execute[A](request: ElasticRequest[A, Executable.type]): Task[A]
+  def execute[A](request: ElasticRequest[A, Executable]): Task[A]
 
   /**
    * Executes the given [[zio.elasticsearch.ElasticRequest.SearchRequest]] as a stream.
@@ -89,7 +90,7 @@ trait Elasticsearch {
 }
 
 object Elasticsearch {
-  final def execute[A](request: ElasticRequest[A, Executable.type]): RIO[Elasticsearch, A] =
+  final def execute[A](request: ElasticRequest[A, Executable]): RIO[Elasticsearch, A] =
     ZIO.serviceWithZIO[Elasticsearch](_.execute(request))
 
   final def stream(request: SearchRequest): ZStream[Elasticsearch, Throwable, Item] =
@@ -107,7 +108,7 @@ object Elasticsearch {
   lazy val layer: URLayer[Executor, Elasticsearch] =
     ZLayer.fromFunction { (executor: Executor) =>
       new Elasticsearch {
-        final def execute[A](request: ElasticRequest[A, Executable.type]): Task[A] =
+        final def execute[A](request: ElasticRequest[A, Executable]): Task[A] =
           executor.execute(request)
 
         final def stream(request: SearchRequest): Stream[Throwable, Item] =

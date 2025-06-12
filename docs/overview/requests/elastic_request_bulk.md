@@ -27,8 +27,8 @@ val document1 = new Document(id = DocumentId("111"), intField = 1, stringField =
 val document2 = new Document(id = DocumentId("222"), intField = 2, stringField = "stringField2")
 
 val request: BulkRequest = bulk(
-index,
-create(doc = document1),
+index = index,
+requests = create(doc = document1),
 upsert(id = DocumentId("111"), doc = document2)
 )
 ```
@@ -43,16 +43,16 @@ val document1 = new Document(id = DocumentId("111"), intField = 1, stringField =
 val document2 = new Document(id = DocumentId("222"), intField = 2, stringField = "stringField2")
 
 val request: BulkRequest = bulk(
-  create(index = index1, doc = document1),
+  requests = create(index = index1, doc = document1),
   upsert(index = index2, id = DocumentId("111"), doc = document2)
 )
 ```
 
 If you want to change the `refresh`, you can use `refresh`, `refreshFalse` or `refreshTrue` method:
 ```scala
-val requestWithRefresh: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refresh(true)
-val requestWithRefreshFalse: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refreshFalse
-val requestWithRefreshTrue: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refreshTrue
+val requestWithRefresh: BulkRequest = bulk(requests = create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refresh(true)
+val requestWithRefreshFalse: BulkRequest = bulk(requests = create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refreshFalse
+val requestWithRefreshTrue: BulkRequest = bulk(requests = create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).refreshTrue
 ```
 
 If you want to change the `routing`, you can use the `routing` method:
@@ -60,7 +60,7 @@ If you want to change the `routing`, you can use the `routing` method:
 // this import is required for using `Routing` also
 import zio.elasticsearch._
 
-val requestWithRouting: BulkRequest = bulk(create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).routing(Routing("routing"))
+val requestWithRouting: BulkRequest = bulk(requests = create(index = index, doc = document1), upsert(index = index, id = DocumentId("111"), doc = document2)).routing(Routing("routing"))
 ```
 
 You can find more information about `Bulk` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-bulk.html).

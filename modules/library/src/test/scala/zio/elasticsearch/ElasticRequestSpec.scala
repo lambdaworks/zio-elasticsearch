@@ -22,7 +22,6 @@ import zio.test._
 import java.time.LocalDate
 
 object ElasticRequestSpec extends ZIOSpecDefault {
-  implicit val executable: Executable.type = Executable
 
   override def spec: Spec[TestEnvironment, Any] =
     suite("ElasticRequest")(
@@ -314,16 +313,30 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val createRequestWithAllParams = create(index = Index, doc = Doc1).refreshTrue.routing(RoutingValue)
 
           assert(createRequest)(
-            equalTo(Create(index = Some(Index), document = Document.from(Doc1), refresh = None, routing = None))
+            equalTo(
+              Create[Executable](index = Some(Index), document = Document.from(Doc1), refresh = None, routing = None)
+            )
           ) && assert(createRequestWithRefresh)(
-            equalTo(Create(index = Some(Index), document = Document.from(Doc1), refresh = Some(true), routing = None))
+            equalTo(
+              Create[Executable](
+                index = Some(Index),
+                document = Document.from(Doc1),
+                refresh = Some(true),
+                routing = None
+              )
+            )
           ) && assert(createRequestWithRouting)(
             equalTo(
-              Create(index = Some(Index), document = Document.from(Doc1), refresh = None, routing = Some(RoutingValue))
+              Create[Executable](
+                index = Some(Index),
+                document = Document.from(Doc1),
+                refresh = None,
+                routing = Some(RoutingValue)
+              )
             )
           ) && assert(createRequestWithAllParams)(
             equalTo(
-              Create(
+              Create[Executable](
                 index = Some(Index),
                 document = Document.from(Doc1),
                 refresh = Some(true),
@@ -341,7 +354,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(createRequest)(
             equalTo(
-              CreateWithId(
+              CreateWithId[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -351,7 +364,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(createRequestWithRefresh)(
             equalTo(
-              CreateWithId(
+              CreateWithId[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -361,7 +374,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(createRequestWithRouting)(
             equalTo(
-              CreateWithId(
+              CreateWithId[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -371,7 +384,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(createRequestWithAllParams)(
             equalTo(
-              CreateWithId(
+              CreateWithId[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -395,13 +408,22 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val deleteByIdRequestWithAllParams = deleteById(index = Index, id = DocId).refreshTrue.routing(RoutingValue)
 
           assert(deleteByIdRequest)(
-            equalTo(DeleteById(index = Some(Index), id = DocId, refresh = None, routing = None))
+            equalTo(DeleteById[Executable](index = Some(Index), id = DocId, refresh = None, routing = None))
           ) && assert(deleteByIdRequestWithRefresh)(
-            equalTo(DeleteById(index = Some(Index), id = DocId, refresh = Some(true), routing = None))
+            equalTo(DeleteById[Executable](index = Some(Index), id = DocId, refresh = Some(true), routing = None))
           ) && assert(deleteByIdRequestWithRouting)(
-            equalTo(DeleteById(index = Some(Index), id = DocId, refresh = None, routing = Some(RoutingValue)))
+            equalTo(
+              DeleteById[Executable](index = Some(Index), id = DocId, refresh = None, routing = Some(RoutingValue))
+            )
           ) && assert(deleteByIdRequestWithAllParams)(
-            equalTo(DeleteById(index = Some(Index), id = DocId, refresh = Some(true), routing = Some(RoutingValue)))
+            equalTo(
+              DeleteById[Executable](
+                index = Some(Index),
+                id = DocId,
+                refresh = Some(true),
+                routing = Some(RoutingValue)
+              )
+            )
           )
         },
         test("deleteByQuery") {
@@ -875,7 +897,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(updateRequest)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = Some(Document.from(Doc1)),
@@ -887,7 +909,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithRefresh)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = Some(Document.from(Doc1)),
@@ -899,7 +921,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithRouting)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = Some(Document.from(Doc1)),
@@ -911,7 +933,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithUpsert)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = Some(Document.from(Doc1)),
@@ -923,7 +945,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithAllParams)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = Some(Document.from(Doc1)),
@@ -1081,7 +1103,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(updateRequest)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = None,
@@ -1093,7 +1115,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithRefresh)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = None,
@@ -1105,7 +1127,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithRouting)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = None,
@@ -1117,7 +1139,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithUpsert)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = None,
@@ -1129,7 +1151,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(updateRequestWithAllParams)(
             equalTo(
-              Update(
+              Update[Executable](
                 index = Some(Index),
                 id = DocId,
                 doc = None,
@@ -1150,7 +1172,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(upsertRequest)(
             equalTo(
-              CreateOrUpdate(
+              CreateOrUpdate[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -1160,7 +1182,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(upsertRequestWithRefresh)(
             equalTo(
-              CreateOrUpdate(
+              CreateOrUpdate[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -1170,7 +1192,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(upsertRequestWithRouting)(
             equalTo(
-              CreateOrUpdate(
+              CreateOrUpdate[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -1180,7 +1202,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           ) && assert(upsertRequestWithAllParams)(
             equalTo(
-              CreateOrUpdate(
+              CreateOrUpdate[Executable](
                 index = Some(Index),
                 id = DocId,
                 document = Document.from(Doc1),
@@ -1309,7 +1331,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("create") {
           val jsonRequest = create(Index, Doc1) match {
-            case r: Create[Executable.type] => r.toJson
+            case r: Create[Executable] => r.toJson
           }
 
           val expected =
@@ -1333,7 +1355,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("create with ID") {
           val jsonRequest = create(index = Index, id = DocId, doc = Doc1) match {
-            case r: CreateWithId[Executable.type] => r.toJson
+            case r: CreateWithId[Executable] => r.toJson
           }
 
           val expected =
@@ -1777,10 +1799,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
-            case r: Update[Executable.type] => r.toJson
+            case r: Update[Executable] => r.toJson
           }
           val jsonRequestWithUpsert = update(index = Index, id = DocId, doc = Doc1).orCreate(Doc2) match {
-            case r: Update[Executable.type] => r.toJson
+            case r: Update[Executable] => r.toJson
           }
 
           val expected =
@@ -1881,10 +1903,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("updateByScript") {
           val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
-            case r: Update[Executable.type] => r.toJson
+            case r: Update[Executable] => r.toJson
           }
           val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
-            case r: Update[Executable.type] => r.toJson
+            case r: Update[Executable] => r.toJson
           }
 
           val expected =
@@ -1929,7 +1951,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("upsert") {
           val jsonRequest = upsert(index = Index, id = DocId, doc = Doc1) match {
-            case r: CreateOrUpdate[Executable.type] => r.toJson
+            case r: CreateOrUpdate[Executable] => r.toJson
           }
 
           val expected =
