@@ -22,6 +22,8 @@ import zio.test._
 import java.time.LocalDate
 
 object ElasticRequestSpec extends ZIOSpecDefault {
+  implicit val executable: Executable.type = Executable
+
   override def spec: Spec[TestEnvironment, Any] =
     suite("ElasticRequest")(
       suite("constructing")(
@@ -1307,7 +1309,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("create") {
           val jsonRequest = create(Index, Doc1) match {
-            case r: Create => r.toJson
+            case r: Create[Executable.type] => r.toJson
           }
 
           val expected =
@@ -1331,7 +1333,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("create with ID") {
           val jsonRequest = create(index = Index, id = DocId, doc = Doc1) match {
-            case r: CreateWithId => r.toJson
+            case r: CreateWithId[Executable.type] => r.toJson
           }
 
           val expected =
@@ -1775,10 +1777,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
-            case r: Update => r.toJson
+            case r: Update[Executable.type] => r.toJson
           }
           val jsonRequestWithUpsert = update(index = Index, id = DocId, doc = Doc1).orCreate(Doc2) match {
-            case r: Update => r.toJson
+            case r: Update[Executable.type] => r.toJson
           }
 
           val expected =
@@ -1879,10 +1881,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("updateByScript") {
           val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
-            case r: Update => r.toJson
+            case r: Update[Executable.type] => r.toJson
           }
           val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
-            case r: Update => r.toJson
+            case r: Update[Executable.type] => r.toJson
           }
 
           val expected =
@@ -1927,7 +1929,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("upsert") {
           val jsonRequest = upsert(index = Index, id = DocId, doc = Doc1) match {
-            case r: CreateOrUpdate => r.toJson
+            case r: CreateOrUpdate[Executable.type] => r.toJson
           }
 
           val expected =

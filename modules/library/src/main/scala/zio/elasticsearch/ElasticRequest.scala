@@ -39,9 +39,16 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
-sealed trait BulkableRequest[A] extends ElasticRequest[A]
+sealed trait IsExecutable
+case object Executable    extends IsExecutable
+case object NotExecutable extends IsExecutable
 
-sealed trait ElasticRequest[A]
+sealed trait BulkableRequest[A, E <: IsExecutable] extends ElasticRequest[A, E] {
+  def index: Option[IndexName]
+  def indexed(index: IndexName)(implicit ev: E =:= NotExecutable.type): BulkableRequest[A, Executable.type]
+}
+
+sealed trait ElasticRequest[A, E <: IsExecutable]
 
 object ElasticRequest {
 
@@ -56,7 +63,7 @@ object ElasticRequest {
    *   an instance of [[AggregateRequest]] that represents the aggregation to be performed.
    */
   final def aggregate[I: IndexSelector](selectors: I, aggregation: ElasticAggregation): AggregateRequest =
-    Aggregate(selectors = selectors.toSelector, aggregation = aggregation)
+    Aggregate(selectors = selectors.toSelector, aggregation = aggregation)(Executable)
 
   /**
    * Constructs an instance of [[BulkRequest]] using the specified requests.
@@ -66,8 +73,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
    */
-  final def bulk(requests: BulkableRequest[_]*): BulkRequest =
-    Bulk(requests = Chunk.fromIterable(requests), index = None, refresh = None, routing = None)
+  final def bulk(requests: BulkableRequest[_, Executable.type]*): BulkRequest[Executable.type] =
+    Bulk(requests = Chunk.fromIterable(requests), index = None, refresh = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[BulkRequest]] using the specified index and requests. All requests within this bulk
@@ -80,8 +87,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[BulkRequest]] that represents the bulk operation to be performed.
    */
-  final def bulk(index: IndexName, requests: BulkableRequest[_]*): BulkRequest =
-    Bulk(requests = Chunk.fromIterable(requests), index = Some(index), refresh = None, routing = None)
+  final def bulk(index: IndexName, requests: BulkableRequest[_, _]*): BulkRequest[Executable.type] =
+    Bulk(requests = Chunk.fromIterable(requests), index = Some(index), refresh = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[CountRequest]] for whole specified index.
@@ -92,7 +99,7 @@ object ElasticRequest {
    *   an instance of [[CountRequest]] that represents the count operation to be performed.
    */
   final def count(index: IndexName): CountRequest =
-    Count(index = index, query = None, routing = None)
+    Count(index = index, query = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[CountRequest]] for counting documents satisfy the query.
@@ -105,7 +112,7 @@ object ElasticRequest {
    *   an instance of [[CountRequest]] that represents the count operation to be performed.
    */
   final def count(index: IndexName, query: ElasticQuery[_]): CountRequest =
-    Count(index = index, query = Some(query), routing = None)
+    Count(index = index, query = Some(query), routing = None)(Executable)
 
   /**
    * Constructs an instance of [[CreateRequest]] used for creating a document in the specified index.
@@ -119,8 +126,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[CreateRequest]] that represents the create operation to be performed.
    */
-  final def create[A: Schema](index: IndexName, doc: A): CreateRequest =
-    Create(index = Some(index), document = Document.from(doc), refresh = None, routing = None)
+  final def create[A: Schema](index: IndexName, doc: A): CreateRequest[Executable.type] =
+    Create(index = Some(index), document = Document.from(doc), refresh = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[CreateWithIdRequest]] used for creating a document with specified ID in the specified
@@ -137,8 +144,10 @@ object ElasticRequest {
    * @return
    *   an instance of [[CreateRequest]] that represents the create with id operation to be performed.
    */
-  final def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithIdRequest =
-    CreateWithId(index = Some(index), id = id, document = Document.from(doc), refresh = None, routing = None)
+  final def create[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateWithIdRequest[Executable.type] =
+    CreateWithId(index = Some(index), id = id, document = Document.from(doc), refresh = None, routing = None)(
+      Executable
+    )
 
   /**
    * Constructs an instance of [[CreateRequest]] used for creating a document. This method is intended to be used within
@@ -152,8 +161,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[CreateRequest]] that represents the create operation to be performed.
    */
-  final def create[A: Schema](doc: A): CreateRequest =
-    Create(index = None, document = Document.from(doc), refresh = None, routing = None)
+  final def create[A: Schema](doc: A): CreateRequest[NotExecutable.type] =
+    Create(index = None, document = Document.from(doc), refresh = None, routing = None)(NotExecutable)
 
   /**
    * Constructs an instance of [[CreateWithIdRequest]] used for creating a document with a specified ID. This method is
@@ -169,8 +178,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[CreateRequest]] that represents the create with id operation to be performed.
    */
-  final def create[A: Schema](id: DocumentId, doc: A): CreateWithIdRequest =
-    CreateWithId(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)
+  final def create[A: Schema](id: DocumentId, doc: A): CreateWithIdRequest[NotExecutable.type] =
+    CreateWithId(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)(NotExecutable)
 
   /**
    * Constructs an instance of [[CreateIndexRequest]] used for creating an empty index.
@@ -181,7 +190,7 @@ object ElasticRequest {
    *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
    */
   final def createIndex(index: IndexName): CreateIndexRequest =
-    CreateIndex(index = index, definition = None)
+    CreateIndex(index = index, definition = None)(Executable)
 
   /**
    * Constructs an instance of [[CreateIndexRequest]] used for creating an index with a specified definition.
@@ -194,7 +203,7 @@ object ElasticRequest {
    *   an instance of [[CreateIndexRequest]] that represents the create index operation to be performed.
    */
   final def createIndex(index: IndexName, definition: String): CreateIndexRequest =
-    CreateIndex(index = index, definition = Some(definition))
+    CreateIndex(index = index, definition = Some(definition))(Executable)
 
   /**
    * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document from the specified index by specified
@@ -207,8 +216,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
    */
-  final def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest =
-    DeleteById(index = Some(index), id = id, refresh = None, routing = None)
+  final def deleteById(index: IndexName, id: DocumentId): DeleteByIdRequest[Executable.type] =
+    DeleteById(index = Some(index), id = id, refresh = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[DeleteByIdRequest]] used for deleting a document by specified ID. This method is
@@ -220,8 +229,8 @@ object ElasticRequest {
    * @return
    *   an instance of [[DeleteByIdRequest]] that represents delete by id operation to be performed.
    */
-  final def deleteById(id: DocumentId): DeleteByIdRequest =
-    DeleteById(index = None, id = id, refresh = None, routing = None)
+  final def deleteById(id: DocumentId): DeleteByIdRequest[NotExecutable.type] =
+    DeleteById(index = None, id = id, refresh = None, routing = None)(NotExecutable)
 
   /**
    * Constructs an instance of [[DeleteByQueryRequest]] used for deleting documents from the specified index that
@@ -235,7 +244,7 @@ object ElasticRequest {
    *   an instance of [[DeleteByQueryRequest]] that represents delete by query operation to be performed.
    */
   final def deleteByQuery(index: IndexName, query: ElasticQuery[_]): DeleteByQueryRequest =
-    DeleteByQuery(index = index, query = query, refresh = None, routing = None)
+    DeleteByQuery(index = index, query = query, refresh = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[DeleteIndexRequest]] used for deleting an index by specified name.
@@ -246,7 +255,7 @@ object ElasticRequest {
    *   an instance of [[DeleteIndexRequest]] that represents delete index operation to be performed.
    */
   final def deleteIndex(index: IndexName): DeleteIndexRequest =
-    DeleteIndex(index = index)
+    DeleteIndex(index = index)(Executable)
 
   /**
    * Constructs an instance of [[ExistsRequest]] used for checking whether document exists.
@@ -259,7 +268,7 @@ object ElasticRequest {
    *   an instance of [[ExistsRequest]] that represents exists operation to be performed.
    */
   final def exists(index: IndexName, id: DocumentId): ExistsRequest =
-    Exists(index = index, id = id, routing = None)
+    Exists(index = index, id = id, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[GetByIdRequest]] used for retrieving the document from specified index, by specified
@@ -273,7 +282,7 @@ object ElasticRequest {
    *   an instance of [[GetByIdRequest]] that represents get by id operation to be performed.
    */
   final def getById(index: IndexName, id: DocumentId): GetByIdRequest =
-    GetById(index = index, id = id, refresh = None, routing = None)
+    GetById(index = index, id = id, refresh = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[KNNRequest]] used for performing a k-nearest neighbour (kNN) search. Given a query
@@ -287,7 +296,7 @@ object ElasticRequest {
    *   an instance of [[KNNRequest]] that represents k-nearest neighbour (kNN) operation to be performed.
    */
   final def knnSearch[I: IndexSelector](selectors: I, query: KNNQuery[_]): KNNRequest =
-    KNN(knn = query, selectors = selectors.toSelector, filter = None, routing = None)
+    KNN(knn = query, selectors = selectors.toSelector, filter = None, routing = None)(Executable)
 
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
@@ -298,7 +307,7 @@ object ElasticRequest {
    *   an instance of [[RefreshRequest]] that represents refresh operation to be performed.
    */
   final def refresh[I: IndexSelector](selectors: I): RefreshRequest =
-    Refresh(selectors = selectors.toSelector)
+    Refresh(selectors = selectors.toSelector)(Executable)
 
   /**
    * Constructs an instance of [[SearchRequest]] using the specified parameters.
@@ -322,7 +331,7 @@ object ElasticRequest {
       routing = None,
       searchAfter = None,
       size = None
-    )
+    )(Executable)
 
   /**
    * Constructs an instance of [[SearchAndAggregateRequest]] using the specified parameters.
@@ -353,7 +362,7 @@ object ElasticRequest {
       routing = None,
       searchAfter = None,
       size = None
-    )
+    )(Executable)
 
   /**
    * Constructs an instance of [[UpdateRequest]] used for updating the document in the specified index, by specified ID.
@@ -369,7 +378,7 @@ object ElasticRequest {
    * @return
    *   an instance of [[UpdateRequest]] that represents update operation to be performed.
    */
-  final def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest =
+  final def update[A: Schema](index: IndexName, id: DocumentId, doc: A): UpdateRequest[Executable.type] =
     Update(
       index = Some(index),
       id = id,
@@ -378,7 +387,7 @@ object ElasticRequest {
       routing = None,
       script = None,
       upsert = None
-    )
+    )(Executable)
 
   /**
    * Constructs an instance of [[UpdateRequest]] used for updating a document by specified ID. This method is intended
@@ -394,7 +403,7 @@ object ElasticRequest {
    * @return
    *   an instance of [[UpdateRequest]] that represents update operation to be performed.
    */
-  final def update[A: Schema](id: DocumentId, doc: A): UpdateRequest =
+  final def update[A: Schema](id: DocumentId, doc: A): UpdateRequest[NotExecutable.type] =
     Update(
       index = None,
       id = id,
@@ -403,7 +412,7 @@ object ElasticRequest {
       routing = None,
       script = None,
       upsert = None
-    )
+    )(NotExecutable)
 
   /**
    * Constructs an instance of [[UpdateByQueryRequest]] used for updating all documents in the specified index.
@@ -416,7 +425,9 @@ object ElasticRequest {
    *   an instance of [[UpdateByQueryRequest]] that represents update all operation to be performed.
    */
   final def updateAllByQuery(index: IndexName, script: Script): UpdateByQueryRequest =
-    UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)
+    UpdateByQuery(index = index, script = script, conflicts = None, query = None, refresh = None, routing = None)(
+      Executable
+    )
 
   /**
    * Constructs an instance of [[UpdateByQueryRequest]] used for satisfying documents matching specified query in the
@@ -432,7 +443,14 @@ object ElasticRequest {
    *   an instance of [[UpdateByQueryRequest]] that represents update by query operation to be performed.
    */
   final def updateByQuery(index: IndexName, query: ElasticQuery[_], script: Script): UpdateByQueryRequest =
-    UpdateByQuery(index = index, script = script, conflicts = None, query = Some(query), refresh = None, routing = None)
+    UpdateByQuery(
+      index = index,
+      script = script,
+      conflicts = None,
+      query = Some(query),
+      refresh = None,
+      routing = None
+    )(Executable)
 
   /**
    * Constructs an instance of [[UpdateRequest]] used for updating the document with specified ID in the specified
@@ -447,7 +465,7 @@ object ElasticRequest {
    * @return
    *   an instance of [[UpdateRequest]] that represents update by script operation to be performed.
    */
-  final def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest =
+  final def updateByScript(index: IndexName, id: DocumentId, script: Script): UpdateRequest[Executable.type] =
     Update(
       index = Some(index),
       id = id,
@@ -456,7 +474,7 @@ object ElasticRequest {
       routing = None,
       script = Some(script),
       upsert = None
-    )
+    )(Executable)
 
   /**
    * Constructs an instance of [[CreateOrUpdateRequest]] used for creating or updating the document in the specified
@@ -473,8 +491,10 @@ object ElasticRequest {
    * @return
    *   an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
    */
-  final def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest =
-    CreateOrUpdate(index = Some(index), id = id, document = Document.from(doc), refresh = None, routing = None)
+  final def upsert[A: Schema](index: IndexName, id: DocumentId, doc: A): CreateOrUpdateRequest[Executable.type] =
+    CreateOrUpdate(index = Some(index), id = id, document = Document.from(doc), refresh = None, routing = None)(
+      Executable
+    )
 
   /**
    * Constructs an instance of [[CreateOrUpdateRequest]] used for creating or updating a document with a specified ID.
@@ -490,33 +510,35 @@ object ElasticRequest {
    * @return
    *   an instance of [[CreateOrUpdateRequest]] that represents upsert operation to be performed.
    */
-  final def upsert[A: Schema](id: DocumentId, doc: A): CreateOrUpdateRequest =
-    CreateOrUpdate(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)
+  final def upsert[A: Schema](id: DocumentId, doc: A): CreateOrUpdateRequest[NotExecutable.type] =
+    CreateOrUpdate(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)(NotExecutable)
 
-  sealed trait AggregateRequest extends ElasticRequest[AggregateResult]
+  sealed trait AggregateRequest extends ElasticRequest[AggregateResult, Executable.type]
 
-  private[elasticsearch] final case class Aggregate(selectors: String, aggregation: ElasticAggregation)
-      extends AggregateRequest {
+  private[elasticsearch] final case class Aggregate(selectors: String, aggregation: ElasticAggregation)(implicit
+    val isExecutable: Executable.type
+  ) extends AggregateRequest {
 
     private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }
 
-  sealed trait BulkRequest
-      extends ElasticRequest[BulkResponse]
-      with HasRefresh[BulkRequest]
-      with HasRouting[BulkRequest]
+  sealed trait BulkRequest[E <: IsExecutable]
+      extends ElasticRequest[BulkResponse, E]
+      with HasRefresh[BulkRequest[E]]
+      with HasRouting[BulkRequest[E]]
 
   private[elasticsearch] final case class Bulk(
-    requests: Chunk[BulkableRequest[_]],
+    requests: Chunk[BulkableRequest[_, _]],
     index: Option[IndexName],
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends BulkRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends BulkRequest[Executable.type] { self =>
 
-    def refresh(value: Boolean): BulkRequest =
+    def refresh(value: Boolean): BulkRequest[Executable.type] =
       self.copy(refresh = Some(value))
 
-    def routing(value: Routing): BulkRequest =
+    def routing(value: Routing): BulkRequest[Executable.type] =
       self.copy(routing = Some(value))
 
     lazy val body: String = requests.flatMap { r =>
@@ -565,17 +587,19 @@ object ElasticRequest {
             ),
             Obj("script" -> script.toJson)
           )
+        case _ => throw new IllegalStateException("Unsupported bulkable request type in Bulk request")
       }
     }.mkString(start = "", sep = "\n", end = "\n")
   }
 
-  sealed trait CountRequest extends ElasticRequest[Int] with HasRouting[CountRequest]
+  sealed trait CountRequest extends ElasticRequest[Int, Executable.type] with HasRouting[CountRequest]
 
   private[elasticsearch] final case class Count(
     index: IndexName,
     query: Option[ElasticQuery[_]],
     routing: Option[Routing]
-  ) extends CountRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends CountRequest { self =>
 
     def routing(value: Routing): CountRequest =
       self.copy(routing = Some(value))
@@ -583,105 +607,128 @@ object ElasticRequest {
     private[elasticsearch] def toJson: Json = query.fold(Obj())(q => Obj("query" -> q.toJson(fieldPath = None)))
   }
 
-  sealed trait CreateRequest
-      extends BulkableRequest[DocumentId]
-      with HasRefresh[CreateRequest]
-      with HasRouting[CreateRequest]
+  sealed trait CreateRequest[E <: IsExecutable]
+      extends BulkableRequest[DocumentId, E]
+      with HasRefresh[CreateRequest[E]]
+      with HasRouting[CreateRequest[E]]
 
-  private[elasticsearch] final case class Create(
+  private[elasticsearch] final case class Create[E <: IsExecutable](
     index: Option[IndexName],
     document: Document,
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends CreateRequest { self =>
+  )(implicit val isExecutable: E)
+      extends CreateRequest[E] { self =>
 
-    def refresh(value: Boolean): CreateRequest =
+    def refresh(value: Boolean): CreateRequest[E] =
       self.copy(refresh = Some(value))
 
-    def routing(value: Routing): CreateRequest =
+    def routing(value: Routing): CreateRequest[E] =
       self.copy(routing = Some(value))
+
+    override def indexed(newIndex: IndexName)(implicit ev: E =:= NotExecutable.type): CreateRequest[Executable.type] =
+      Create(Some(newIndex), document, refresh, routing)(Executable)
 
     private[elasticsearch] def toJson: Json =
       document.json
   }
 
-  sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome]
+  sealed trait CreateIndexRequest extends ElasticRequest[CreationOutcome, Executable.type]
 
   private[elasticsearch] final case class CreateIndex(
     index: IndexName,
     definition: Option[String]
-  ) extends CreateIndexRequest {
+  )(implicit val isExecutable: Executable.type)
+      extends CreateIndexRequest {
 
     private[elasticsearch] def toJson: String = definition.getOrElse("")
   }
 
-  sealed trait CreateOrUpdateRequest
-      extends BulkableRequest[Unit]
-      with HasRefresh[CreateOrUpdateRequest]
-      with HasRouting[CreateOrUpdateRequest]
+  sealed trait CreateOrUpdateRequest[E <: IsExecutable]
+      extends BulkableRequest[Unit, E]
+      with HasRefresh[CreateOrUpdateRequest[E]]
+      with HasRouting[CreateOrUpdateRequest[E]]
 
-  private[elasticsearch] final case class CreateOrUpdate(
+  private[elasticsearch] final case class CreateOrUpdate[E <: IsExecutable](
     index: Option[IndexName],
     id: DocumentId,
     document: Document,
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends CreateOrUpdateRequest { self =>
+  )(implicit val isExecutable: E)
+      extends CreateOrUpdateRequest[E] { self =>
 
-    def refresh(value: Boolean): CreateOrUpdateRequest =
+    def refresh(value: Boolean): CreateOrUpdateRequest[E] =
       self.copy(refresh = Some(value))
 
-    def routing(value: Routing): CreateOrUpdateRequest =
+    def routing(value: Routing): CreateOrUpdateRequest[E] =
       self.copy(routing = Some(value))
+
+    override def indexed(newIndex: IndexName)(implicit
+      ev: E =:= NotExecutable.type
+    ): CreateOrUpdateRequest[Executable.type] =
+      CreateOrUpdate(Some(newIndex), id, document, refresh, routing)(Executable)
 
     private[elasticsearch] def toJson: Json =
       document.json
   }
 
-  sealed trait CreateWithIdRequest
-      extends BulkableRequest[CreationOutcome]
-      with HasRefresh[CreateWithIdRequest]
-      with HasRouting[CreateWithIdRequest]
+  sealed trait CreateWithIdRequest[E <: IsExecutable]
+      extends BulkableRequest[CreationOutcome, E]
+      with HasRefresh[CreateWithIdRequest[E]]
+      with HasRouting[CreateWithIdRequest[E]]
 
-  private[elasticsearch] final case class CreateWithId(
+  private[elasticsearch] final case class CreateWithId[E <: IsExecutable](
     index: Option[IndexName],
     id: DocumentId,
     document: Document,
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends CreateWithIdRequest { self =>
+  )(implicit val isExecutable: E)
+      extends CreateWithIdRequest[E] { self =>
 
-    def refresh(value: Boolean): CreateWithIdRequest =
+    def refresh(value: Boolean): CreateWithIdRequest[E] =
       self.copy(refresh = Some(value))
 
-    def routing(value: Routing): CreateWithIdRequest =
+    def routing(value: Routing): CreateWithIdRequest[E] =
       self.copy(routing = Some(value))
+
+    override def indexed(newIndex: IndexName)(implicit
+      ev: E =:= NotExecutable.type
+    ): CreateWithIdRequest[Executable.type] =
+      CreateWithId(Some(newIndex), id, document, refresh, routing)(Executable)
 
     private[elasticsearch] def toJson: Json =
       document.json
   }
 
-  sealed trait DeleteByIdRequest
-      extends BulkableRequest[DeletionOutcome]
-      with HasRefresh[DeleteByIdRequest]
-      with HasRouting[DeleteByIdRequest]
+  sealed trait DeleteByIdRequest[E <: IsExecutable]
+      extends BulkableRequest[DeletionOutcome, E]
+      with HasRefresh[DeleteByIdRequest[E]]
+      with HasRouting[DeleteByIdRequest[E]]
 
-  private[elasticsearch] final case class DeleteById(
+  private[elasticsearch] final case class DeleteById[E <: IsExecutable](
     index: Option[IndexName],
     id: DocumentId,
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends DeleteByIdRequest { self =>
+  )(implicit val isExecutable: E)
+      extends DeleteByIdRequest[E] { self =>
 
-    def refresh(value: Boolean): DeleteByIdRequest =
+    def refresh(value: Boolean): DeleteByIdRequest[E] =
       self.copy(refresh = Some(value))
 
-    def routing(value: Routing): DeleteByIdRequest =
+    def routing(value: Routing): DeleteByIdRequest[E] =
       self.copy(routing = Some(value))
+
+    override def indexed(newIndex: IndexName)(implicit
+      ev: E =:= NotExecutable.type
+    ): DeleteByIdRequest[Executable.type] =
+      DeleteById(Some(newIndex), id, refresh, routing)(Executable)
   }
 
   sealed trait DeleteByQueryRequest
-      extends ElasticRequest[DeletionOutcome]
+      extends ElasticRequest[DeletionOutcome, Executable.type]
       with HasRefresh[DeleteByQueryRequest]
       with HasRouting[DeleteByQueryRequest]
 
@@ -690,7 +737,8 @@ object ElasticRequest {
     query: ElasticQuery[_],
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends DeleteByQueryRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends DeleteByQueryRequest { self =>
 
     def refresh(value: Boolean): DeleteByQueryRequest =
       self.copy(refresh = Some(value))
@@ -702,24 +750,26 @@ object ElasticRequest {
       Obj("query" -> query.toJson(fieldPath = None))
   }
 
-  sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome]
+  sealed trait DeleteIndexRequest extends ElasticRequest[DeletionOutcome, Executable.type]
 
-  private[elasticsearch] final case class DeleteIndex(index: IndexName) extends DeleteIndexRequest
+  private[elasticsearch] final case class DeleteIndex(index: IndexName)(implicit val isExecutable: Executable.type)
+      extends DeleteIndexRequest
 
-  sealed trait ExistsRequest extends ElasticRequest[Boolean] with HasRouting[ExistsRequest]
+  sealed trait ExistsRequest extends ElasticRequest[Boolean, Executable.type] with HasRouting[ExistsRequest]
 
   private[elasticsearch] final case class Exists(
     index: IndexName,
     id: DocumentId,
     routing: Option[Routing]
-  ) extends ExistsRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends ExistsRequest { self =>
 
     def routing(value: Routing): ExistsRequest =
       self.copy(routing = Some(value))
   }
 
   sealed trait GetByIdRequest
-      extends ElasticRequest[GetResult]
+      extends ElasticRequest[GetResult, Executable.type]
       with HasRefresh[GetByIdRequest]
       with HasRouting[GetByIdRequest]
 
@@ -728,7 +778,8 @@ object ElasticRequest {
     id: DocumentId,
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends GetByIdRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends GetByIdRequest { self =>
 
     def refresh(value: Boolean): GetByIdRequest =
       self.copy(refresh = Some(value))
@@ -737,7 +788,7 @@ object ElasticRequest {
       self.copy(routing = Some(value))
   }
 
-  sealed trait KNNRequest extends ElasticRequest[KNNSearchResult] with HasRouting[KNNRequest] {
+  sealed trait KNNRequest extends ElasticRequest[KNNSearchResult, Executable.type] with HasRouting[KNNRequest] {
 
     /**
      * Adds an [[zio.elasticsearch.ElasticQuery]] to the [[zio.elasticsearch.ElasticRequest.KNNRequest]] to filter the
@@ -757,7 +808,8 @@ object ElasticRequest {
     selectors: String,
     filter: Option[ElasticQuery[_]],
     routing: Option[Routing]
-  ) extends KNNRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends KNNRequest { self =>
 
     def filter(query: ElasticQuery[_]): KNNRequest =
       self.copy(filter = Some(query))
@@ -771,12 +823,13 @@ object ElasticRequest {
     }
   }
 
-  sealed trait RefreshRequest extends ElasticRequest[Boolean]
+  sealed trait RefreshRequest extends ElasticRequest[Boolean, Executable.type]
 
-  private[elasticsearch] final case class Refresh(selectors: String) extends RefreshRequest
+  private[elasticsearch] final case class Refresh(selectors: String)(implicit val isExecutable: Executable.type)
+      extends RefreshRequest
 
   sealed trait SearchRequest
-      extends ElasticRequest[SearchResult]
+      extends ElasticRequest[SearchResult, Executable.type]
       with HasFrom[SearchRequest]
       with HasHighlights[SearchRequest]
       with HasRouting[SearchRequest]
@@ -809,7 +862,8 @@ object ElasticRequest {
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
-  ) extends SearchRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends SearchRequest { self =>
 
     def aggregate(aggregation: ElasticAggregation): SearchAndAggregateRequest =
       SearchAndAggregate(
@@ -890,7 +944,7 @@ object ElasticRequest {
   }
 
   sealed trait SearchAndAggregateRequest
-      extends ElasticRequest[SearchAndAggregateResult]
+      extends ElasticRequest[SearchAndAggregateResult, Executable.type]
       with HasFrom[SearchAndAggregateRequest]
       with HasHighlights[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
@@ -911,7 +965,8 @@ object ElasticRequest {
     routing: Option[Routing],
     searchAfter: Option[Json],
     size: Option[Int]
-  ) extends SearchAndAggregateRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends SearchAndAggregateRequest { self =>
 
     def excludes[S](field: Field[S, _], fields: Field[S, _]*): SearchAndAggregateRequest =
       self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
@@ -977,10 +1032,10 @@ object ElasticRequest {
     }
   }
 
-  sealed trait UpdateRequest
-      extends BulkableRequest[UpdateOutcome]
-      with HasRefresh[UpdateRequest]
-      with HasRouting[UpdateRequest] {
+  sealed trait UpdateRequest[E <: IsExecutable]
+      extends BulkableRequest[UpdateOutcome, E]
+      with HasRefresh[UpdateRequest[E]]
+      with HasRouting[UpdateRequest[E]] {
 
     /**
      * Sets `upsert` parameter for [[zio.elasticsearch.ElasticRequest.UpdateRequest]] which allows creation of a
@@ -993,10 +1048,10 @@ object ElasticRequest {
      * @return
      *   an instance of the [[zio.elasticsearch.ElasticRequest.UpdateRequest]] enriched with the `upsert` parameter.
      */
-    def orCreate[A: Schema](doc: A): UpdateRequest
+    def orCreate[A: Schema](doc: A): UpdateRequest[E]
   }
 
-  private[elasticsearch] final case class Update(
+  private[elasticsearch] final case class Update[E <: IsExecutable](
     index: Option[IndexName],
     id: DocumentId,
     doc: Option[Document],
@@ -1004,16 +1059,20 @@ object ElasticRequest {
     routing: Option[Routing],
     script: Option[Script],
     upsert: Option[Document]
-  ) extends UpdateRequest { self =>
+  )(implicit val isExecutable: E)
+      extends UpdateRequest[E] { self =>
 
-    def orCreate[A: Schema](doc: A): UpdateRequest =
+    def orCreate[A: Schema](doc: A): UpdateRequest[E] =
       self.copy(upsert = Some(Document.from(doc)))
 
-    def refresh(value: Boolean): UpdateRequest =
+    def refresh(value: Boolean): UpdateRequest[E] =
       self.copy(refresh = Some(value))
 
-    def routing(value: Routing): UpdateRequest =
+    def routing(value: Routing): UpdateRequest[E] =
       self.copy(routing = Some(value))
+
+    override def indexed(newIndex: IndexName)(implicit ev: E =:= NotExecutable.type): UpdateRequest[Executable.type] =
+      Update(Some(newIndex), id, doc, refresh, routing, script, upsert)(Executable)
 
     private[elasticsearch] def toJson: Json = {
       val docToJson: Json    = doc.fold(Obj())(d => Obj("doc" -> d.json))
@@ -1025,7 +1084,7 @@ object ElasticRequest {
   }
 
   sealed trait UpdateByQueryRequest
-      extends ElasticRequest[UpdateByQueryResult]
+      extends ElasticRequest[UpdateByQueryResult, Executable.type]
       with HasRefresh[UpdateByQueryRequest]
       with HasRouting[UpdateByQueryRequest] {
 
@@ -1048,7 +1107,8 @@ object ElasticRequest {
     query: Option[ElasticQuery[_]],
     refresh: Option[Boolean],
     routing: Option[Routing]
-  ) extends UpdateByQueryRequest { self =>
+  )(implicit val isExecutable: Executable.type)
+      extends UpdateByQueryRequest { self =>
 
     def conflicts(value: UpdateConflicts): UpdateByQueryRequest =
       self.copy(conflicts = Some(value))
