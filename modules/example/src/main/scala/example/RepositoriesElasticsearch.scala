@@ -55,6 +55,17 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
            )
     } yield ()
 
+  def upsertBulk(organization: String, repositories: Chunk[GitHubRepo]): Task[Unit] =
+    for {
+      routing     <- routingOf(organization)
+      bulkRequests = repositories.map { repo =>
+                       ElasticRequest.upsert(DocumentId(repo.id), repo).routing(routing)
+                     }
+      _ <- elasticsearch.execute(
+             ElasticRequest.bulk(Index, bulkRequests: _*)
+           )
+    } yield ()
+
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
     for {
       routing <- routingOf(repository.organization)
@@ -74,7 +85,6 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
   private def routingOf(value: String): IO[IllegalArgumentException, Routing.Type] =
     Routing.make(value).toZIO.mapError(e => new IllegalArgumentException(e))
-
 }
 
 object RepositoriesElasticsearch {
@@ -90,6 +100,9 @@ object RepositoriesElasticsearch {
 
   def createAll(repositories: Chunk[GitHubRepo]): RIO[RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.createAll(repositories))
+
+  def upsertBulk(organization: String, repositories: Chunk[GitHubRepo]): RIO[RepositoriesElasticsearch, Unit] =
+    ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsertBulk(organization, repositories))
 
   def upsert(id: String, repository: GitHubRepo): RIO[RepositoriesElasticsearch, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsert(id, repository))

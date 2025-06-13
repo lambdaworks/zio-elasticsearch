@@ -11,8 +11,8 @@ import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.highlights.{HighlightField, Highlights}
 import zio.elasticsearch.query.sort.Missing.First
 import zio.elasticsearch.query.sort.SortByFieldOptions
-import zio.elasticsearch.request.Document
 import zio.elasticsearch.request.UpdateConflicts.Abort
+import zio.elasticsearch.request.{Document, Executable}
 import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils.RichString
 import zio.json.ast.Json.{Arr, Str}

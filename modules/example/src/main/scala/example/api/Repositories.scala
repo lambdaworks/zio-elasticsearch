@@ -17,7 +17,6 @@
 package example.api
 
 import example.{GitHubRepo, RepositoriesElasticsearch}
-import zio.ZIO
 import zio.elasticsearch._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
@@ -29,7 +28,9 @@ import zio.http.Status.{
 }
 import zio.http.{Method, _}
 import zio.json.EncoderOps
+import zio.schema.Schema
 import zio.schema.codec.JsonCodec.{Configuration => JsonCodecConfig, JsonDecoder}
+import zio.{Chunk, ZIO}
 
 import CompoundOperator._
 import FilterOperator._
@@ -68,6 +69,26 @@ object Repositories {
                   Response.json("A repository with a given ID already exists.").status(HttpBadRequest)
               }
           }
+      }.orDie,
+      Method.POST / BasePath / string("organization") / "bulk-upsert" -> handler {
+        (organization: String, req: Request) =>
+          req.body.asString
+            .map(JsonDecoder.decode[Chunk[GitHubRepo]](Schema.chunk(GitHubRepo.schema), _, JsonCodecConfig.default))
+            .flatMap {
+              case Left(jsonError) =>
+                ZIO.succeed(Response.json(ErrorResponse.fromReasons(jsonError.message).toJson).status(HttpBadRequest))
+              case Right(repositories) =>
+                RepositoriesElasticsearch
+                  .upsertBulk(organization, repositories)
+                  .map(_ => Response.status(HttpNoContent))
+                  .catchAll(e =>
+                    ZIO.succeed(
+                      Response
+                        .json(ErrorResponse.fromReasons(s"Bulk operation failed: ${e.getMessage}").toJson)
+                        .status(HttpBadRequest)
+                    )
+                  )
+            }
       }.orDie,
       Method.POST / BasePath / "search" -> handler { (req: Request) =>
         req.body.asString

@@ -129,12 +129,35 @@ ElasticQuery.range(User.age).gte(18).lt(100)
 ZIO Elastic requests like `Create`, `CreateOrUpdate`, `CreateWithId`, and `DeleteById` are bulkable requests.
 For bulkable requests, you can use `bulk` API that accepts request types that inherit the `Bulkable` trait.
 
+When performing bulk operations, you can specify the target index at the request level for each individual operation. 
+However, you can also define a global index for the entire bulk request if all operations within that request target 
+the same index. If a global index is specified for the bulk request, but an individual operation 
+within that same bulk request also explicitly defines its own index, the individual operation's index will take precedence for 
+that specific request.
+
 ```scala
+val indexName: IndexName = IndexName("users-index")
+val specificIndexName: IndexName = IndexName("specific-users-index")
+
 ElasticRequest.bulk(
-  ElasticRequest.create[User](indexName, User(1, "John Doe")),
-  ElasticRequest.create[User](indexName, DocumentId("documentId2"), User(2, "Jane Doe")),
-  ElasticRequest.upsert[User](indexName, DocumentId("documentId3"), User(3, "Richard Roe")),
-  ElasticRequest.deleteById(indexName, DocumentId("documentId2"))
+  ElasticRequest.create[User](index = indexName, doc = User(1, "John Doe")),
+  ElasticRequest.create[User](index = indexName, id = DocumentId("documentId2"), doc = User(2, "Jane Doe")),
+  ElasticRequest.upsert[User](index = indexName, id = DocumentId("documentId3"), doc = User(3, "Richard Roe")),
+  ElasticRequest.deleteById(index = indexName, id = DocumentId("documentId2"))
+)
+
+ElasticRequest.bulk(
+  index = indexName,
+  ElasticRequest.create[User](doc = User(1, "John Doe")),
+  ElasticRequest.upsert[User](id = DocumentId("documentId2"), doc = User(2, "Jane Doe")),
+  ElasticRequest.deleteById(id = DocumentId("documentId3"))
+)
+
+ElasticRequest.bulk(
+  index = indexName, 
+  ElasticRequest.create[User](doc = User(20, "Eve")), 
+  ElasticRequest.upsert[User](index = specificIndexName, id = DocumentId("docId4"), doc = User(21, "Charlie")), 
+  ElasticRequest.deleteById(id = DocumentId("docId5"))
 )
 ```
 

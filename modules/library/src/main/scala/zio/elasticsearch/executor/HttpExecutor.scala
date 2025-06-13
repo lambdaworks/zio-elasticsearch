@@ -45,7 +45,7 @@ import zio.elasticsearch.executor.response.{
   SearchWithAggregationsResponse,
   UpdateByQueryResponse
 }
-import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, Executable, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}

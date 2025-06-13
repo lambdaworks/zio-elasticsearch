@@ -58,6 +58,42 @@
 			]
 		},
 		{
+			"name": "Bulk Upsert Repositories",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n    {\n        \"id\": \"repo-bulk-1\",\n        \"organization\": \"lambdaworks\",\n        \"name\": \"bulk-repo-one\",\n        \"url\": \"https://github.com/lambdaworks/bulk-repo-one\",\n        \"description\": \"First repository added via bulk upsert.\",\n        \"lastCommitAt\": \"2023-01-01T10:00:00.000\",\n        \"stars\": 100,\n        \"forks\": 10\n    },\n    {\n        \"id\": \"repo-bulk-2\",\n        \"organization\": \"lambdaworks\",\n        \"name\": \"bulk-repo-two\",\n        \"url\": \"https://github.com/lambdaworks/bulk-repo-two\",\n        \"description\": \"Second repository added via bulk upsert.\",\n        \"lastCommitAt\": \"2023-01-02T11:00:00.000\",\n        \"stars\": 200,\n        \"forks\": 20\n    },\n    {\n        \"id\": \"1234567\",\n        \"organization\": \"lambdaworks\",\n        \"name\": \"scurl-detector-updated\",\n        \"url\": \"https://github.com/lambdaworks/scurl-detector\",\n        \"description\": \"Scala library that detects and extracts URLs from text (UPDATED via bulk).\",\n        \"lastCommitAt\": \"2023-01-03T12:00:00.000\",\n        \"stars\": 150,\n        \"forks\": 15\n    }\n]",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:{{HTTP_PORT}}/api/repositories/lambdaworks/bulk-upsert",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "{{HTTP_PORT}}",
+					"path": [
+						"api",
+						"repositories",
+						"lambdaworks",
+						"bulk-upsert"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Checking app health",
 			"request": {
 				"method": "GET",

@@ -39,10 +39,6 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
-private[elasticsearch] sealed trait IsExecutable
-private[elasticsearch] sealed trait Executable    extends IsExecutable
-private[elasticsearch] sealed trait NotExecutable extends IsExecutable
-
 sealed trait ElasticRequest[A, X <: IsExecutable]
 
 sealed trait BulkableRequest[A, X <: IsExecutable] extends ElasticRequest[A, X] {

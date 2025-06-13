@@ -17,8 +17,9 @@
 package zio.elasticsearch.executor
 
 import zio.elasticsearch.ElasticRequest.SearchRequest
+import zio.elasticsearch.request.Executable
 import zio.elasticsearch.result.Item
-import zio.elasticsearch.{ElasticRequest, Executable, StreamConfig}
+import zio.elasticsearch.{ElasticRequest, StreamConfig}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
 import zio.{RIO, Task, ZIO}

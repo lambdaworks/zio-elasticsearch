@@ -18,6 +18,7 @@ package zio.elasticsearch
 
 import zio.elasticsearch.ElasticRequest.SearchRequest
 import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.request.Executable
 import zio.elasticsearch.result.Item
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
@@ -30,7 +31,7 @@ trait Elasticsearch {
    *
    * @param request
    *   the [[zio.elasticsearch.ElasticRequest]] to execute, this request must be of type
-   *   [[zio.elasticsearch.Executable]]
+   *   [[zio.elasticsearch.request.Executable]]
    * @tparam A
    *   the type of the expected response
    * @return
