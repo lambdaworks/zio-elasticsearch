@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.query._
@@ -562,7 +562,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalMatch]] that represents the `match` interval query.
    */
 
-  final def intervalMatch(query: String): IntervalMatch =
+  final def intervalMatch(query: String): IntervalMatch[String] =
     IntervalMatch(
       query = query,
       analyzer = None,
@@ -597,7 +597,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalRegexp]] that represents the `regexp` interval query.
    */
 
-  final def intervalRegexp(pattern: String): IntervalRegexp =
+  final def intervalRegexp(pattern: Regexp[Any]): IntervalRegexp[Any] =
     IntervalRegexp(pattern = pattern, analyzer = None, useField = None)
 
   /**
@@ -611,7 +611,48 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalWildcard]] that represents the `wildcard` interval query.
    */
 
-  final def intervalWildcard(pattern: String): IntervalWildcard =
+  /**
+   * Matches any term that contains the provided substring.
+   *
+   * @param pattern
+   *   the pattern that should be contained
+   * @return
+   *   an instance of IntervalWildcard that represents the `wildcard` interval query with contains pattern.
+   */
+  final def intervalContains[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(s"*$pattern*", analyzer = None, useField = None)
+
+  /**
+   * Matches any term that starts with the provided substring.
+   *
+   * @param pattern
+   *   the pattern that should be at the beginning
+   * @return
+   *   an instance of IntervalWildcard that represents the `wildcard` interval query with startsWith pattern.
+   */
+  final def intervalStartsWith[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(s"$pattern*", analyzer = None, useField = None)
+
+  /**
+   * Matches any term that ends with the provided substring.
+   *
+   * @param pattern
+   *   the pattern that should be at the end
+   * @return
+   *   an instance of IntervalWildcard that represents the `wildcard` interval query with endsWith pattern.
+   */
+  final def intervalEndsWith[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(s"*$pattern", analyzer = None, useField = None)
+
+  /**
+   * Matches any term that matches the exact pattern.
+   *
+   * @param pattern
+   *   wildcard pattern
+   * @return
+   *   an instance of IntervalWildcard that represents the `wildcard` interval query.
+   */
+  final def intervalWildcard[S](pattern: String): IntervalWildcard[S] =
     IntervalWildcard(pattern = pattern, analyzer = None, useField = None)
 
   /**
@@ -631,13 +672,13 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalAllOf]] that represents the `all_of` interval query.
    */
 
-  final def intervalAllOf(
-    intervals: Chunk[IntervalQuery],
+  final def intervalAllOf[S](
+    intervals: NonEmptyChunk[IntervalQuery],
     maxGaps: Option[Int],
     ordered: Option[Boolean],
-    filter: Option[IntervalQuery]
-  ): IntervalAllOf =
-    IntervalAllOf(intervals, maxGaps = None, ordered = None, filter = None)
+    filter: Option[IntervalFilter[S]]
+  ): IntervalAllOf[Any] =
+    IntervalAllOf(intervals.toChunk, maxGaps = None, ordered = None, filter = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.IntervalAnyOf]] interval query.
@@ -652,10 +693,10 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalAnyOf]] that represents the `any_of` interval query.
    */
 
-  final def intervalAnyOf(
+  final def intervalAnyOf[S](
     intervals: Chunk[IntervalQuery],
-    filter: Option[IntervalQuery]
-  ): IntervalAnyOf =
+    filter: Option[IntervalFilter[S]]
+  ): IntervalAnyOf[S] =
     IntervalAnyOf(intervals, filter = None)
 
   /**
@@ -720,28 +761,28 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalScriptFilter]] representing the script filter.
    */
-  //  final def intervalScriptFilter(
-  //    after: Option[Query],
-  //    before: Option[Query] ,
-  //    contained_by: Option[Query] ,
-  //    containing: Option[Query] ,
-  //    not_contained_by: Option[Query] ,
-  //    not_containing: Option[Query],
-  //    not_overlapping: Option[Query],
-  //    overlapping: Option[Query] ,
-  //    script: Option[Json]
-  //  ): IntervalScriptFilter =
-  //    IntervalScriptFilter(
-  //      after= None,
-  //      before= None,
-  //      contained_by= None,
-  //      containing= None,
-  //      not_contained_by= None,
-  //      not_containing= None,
-  //      not_overlapping= None,
-  //      overlapping= None,
-  //      script= None
-  //    )
+  final def intervalFilter[S](
+    after: Option[IntervalQuery] = None,
+    before: Option[IntervalQuery] = None,
+    containedBy: Option[IntervalQuery] = None,
+    containing: Option[IntervalQuery] = None,
+    notContainedBy: Option[IntervalQuery] = None,
+    notContaining: Option[IntervalQuery] = None,
+    notOverlapping: Option[IntervalQuery] = None,
+    overlapping: Option[IntervalQuery] = None,
+    script: Option[Json] = None
+  ): IntervalFilter[S] =
+    IntervalFilter(
+      after = after,
+      before = before,
+      containedBy = containedBy,
+      containing = containing,
+      notContainedBy = notContainedBy,
+      notContaining = notContaining,
+      notOverlapping = notOverlapping,
+      overlapping = overlapping,
+      script = script
+    )
 
   /**
    * Constructs an intervals query by combining a field and an interval query.

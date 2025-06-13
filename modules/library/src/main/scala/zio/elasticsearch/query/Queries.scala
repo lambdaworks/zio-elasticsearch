@@ -21,12 +21,9 @@ import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
-import zio.json.{DeriveJsonEncoder, JsonEncoder}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.schema.Schema
-
-import javax.management.Query
 
 sealed trait ElasticQuery[-S] { self =>
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json
@@ -800,20 +797,20 @@ sealed trait IntervalQuery {
  */
 
 /** `match` interval-query */
-private[elasticsearch] final case class IntervalMatch(
+private[elasticsearch] final case class IntervalMatch[S](
   query: String,
   analyzer: Option[String],
   useField: Option[String],
   maxGaps: Option[Int],
   ordered: Option[Boolean],
-  filter: Option[IntervalQuery]
+  filter: Option[IntervalFilter[S]]
 ) extends IntervalQuery { self =>
 
-  def withAnalyzer(a: String)      = copy(analyzer = Some(a))
-  def withUseField(f: String)      = copy(useField = Some(f))
-  def withMaxGaps(g: Int)          = copy(maxGaps = Some(g))
-  def withOrdered(o: Boolean)      = copy(ordered = Some(o))
-  def withFilter(f: IntervalQuery) = copy(filter = Some(f))
+  def withAnalyzer(a: String)          = copy(analyzer = Some(a))
+  def withUseField(f: String)          = copy(useField = Some(f))
+  def withMaxGaps(g: Int)              = copy(maxGaps = Some(g))
+  def withOrdered(o: Boolean)          = copy(ordered = Some(o))
+  def withFilter(f: IntervalFilter[S]) = copy(filter = Some(f))
 
   override private[elasticsearch] def toJson: Json =
     Obj(
@@ -836,6 +833,9 @@ private[elasticsearch] final case class IntervalPrefix(
   useField: Option[String]
 ) extends IntervalQuery {
 
+  def withAnalyzer(a: String) = copy(analyzer = Some(a))
+  def withUseField(f: String) = copy(useField = Some(f))
+
   override private[elasticsearch] def toJson: Json =
     Obj(
       "prefix" -> Obj(
@@ -848,19 +848,8 @@ private[elasticsearch] final case class IntervalPrefix(
     )
 }
 
-/**
- * Represents a `prefix` interval query. Matches terms with the given prefix.
- *
- * @param prefix
- *   The prefix string.
- * @param analyzer
- *   Optional analyzer to apply.
- * @param useField
- *   Optional alternative field used for term extraction.
- */
-
-final case class IntervalRegexp(
-  pattern: String,
+private[elasticsearch] final case class IntervalRegexp[S](
+  pattern: Regexp[S],
   analyzer: Option[String],
   useField: Option[String]
 ) extends IntervalQuery {
@@ -868,7 +857,7 @@ final case class IntervalRegexp(
     Obj(
       "regexp" -> Obj(
         Chunk(
-          Some("pattern" -> pattern.toJson),
+          Some("pattern" -> pattern.toJson(None)),
           analyzer.map("analyzer" -> _.toJson),
           useField.map("use_field" -> _.toJson)
         ).flatten: _*
@@ -876,21 +865,18 @@ final case class IntervalRegexp(
     )
 }
 
-/**
- * Represents a `wildcard` interval query. Matches terms using wildcard syntax.
- *
- * @param pattern
- *   The wildcard pattern.
- * @param analyzer
- *   Optional analyzer to apply.
- * @param useField
- *   Optional alternative field used for term extraction.
- */
-private[elasticsearch] final case class IntervalWildcard(
+private[elasticsearch] final case class IntervalWildcard[S](
   pattern: String,
   analyzer: Option[String],
   useField: Option[String]
 ) extends IntervalQuery {
+
+  def withAnalyzer(a: String): IntervalWildcard[S] =
+    copy(analyzer = Some(a))
+
+  def withUseField(f: String): IntervalWildcard[S] =
+    copy(useField = Some(f))
+
   private[elasticsearch] def toJson: Json =
     Obj(
       "wildcard" -> Obj(
@@ -903,23 +889,11 @@ private[elasticsearch] final case class IntervalWildcard(
     )
 }
 
-/**
- * Represents an `all_of` interval query. Matches documents that contain all specified intervals.
- *
- * @param intervals
- *   List of interval queries to match.
- * @param maxGaps
- *   Optional maximum allowed gaps between intervals.
- * @param ordered
- *   Optional flag indicating if intervals should be in order.
- * @param filter
- *   Optional filter interval query that restricts matches.
- */
-private[elasticsearch] final case class IntervalAllOf(
+private[elasticsearch] final case class IntervalAllOf[S](
   intervals: Chunk[IntervalQuery],
   maxGaps: Option[Int],
   ordered: Option[Boolean],
-  filter: Option[IntervalQuery]
+  filter: Option[IntervalFilter[S]]
 ) extends IntervalQuery {
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -934,15 +908,9 @@ private[elasticsearch] final case class IntervalAllOf(
     )
 }
 
-/**
- * Represents an `any_of` interval query. Matches documents that contain any of the specified intervals.
- *
- * @param intervals
- *   List of interval queries to match.
- */
-private[elasticsearch] final case class IntervalAnyOf(
+private[elasticsearch] final case class IntervalAnyOf[S](
   intervals: Chunk[IntervalQuery],
-  filter: Option[IntervalQuery]
+  filter: Option[IntervalFilter[S]]
 ) extends IntervalQuery {
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -975,9 +943,6 @@ private[elasticsearch] final case class IntervalFuzzy(
     )
 }
 
-/**
- */
-
 private[elasticsearch] final case class IntervalRange(
   gt: Option[String],
   gte: Option[String],
@@ -1001,34 +966,32 @@ private[elasticsearch] final case class IntervalRange(
     )
 }
 
-//private[elasticsearch] final case class IntervalScriptFilter(
-//                                                              after: Option[Query] = None,
-//                                                              before: Option[Query] = None,
-//                                                              contained_by: Option[Query] = None,
-//                                                              containing: Option[Query] = None,
-//                                                              not_contained_by: Option[Query] = None,
-//                                                              not_containing: Option[Query] = None,
-//                                                              not_overlapping: Option[Query] = None,
-//                                                              overlapping: Option[Query] = None,
-//                                                              script: Option[Json] = None
-//                                                            ) extends IntervalQuery {
-//  private[elasticsearch] def toJson: Json =
-//    Obj(
-//      "filter" -> Obj(
-//        Chunk(
-//          after.map("after" -> _.toJson),
-//          before.map("before" -> _.toJson),
-//          contained_by.map("contained_by" -> _.toJson),
-//          containing.map("containing" -> _.toJson),
-//          not_contained_by.map("not_contained_by" -> _.toJson),
-//          not_containing.map("not_containing" -> _.toJson),
-//          not_overlapping.map("not_overlapping" -> _.toJson),
-//          overlapping.map("overlapping" -> _.toJson),
-//          script.map("script" -> _)
-//        ).flatten: _*
-//      )
-//    )
-//}
+private[elasticsearch] final case class IntervalFilter[S](
+  after: Option[IntervalQuery] = None,
+  before: Option[IntervalQuery] = None,
+  containedBy: Option[IntervalQuery] = None,
+  containing: Option[IntervalQuery] = None,
+  notContainedBy: Option[IntervalQuery] = None,
+  notContaining: Option[IntervalQuery] = None,
+  notOverlapping: Option[IntervalQuery] = None,
+  overlapping: Option[IntervalQuery] = None,
+  script: Option[Json] = None
+) {
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      Chunk(
+        after.map("after" -> _.toJson),
+        before.map("before" -> _.toJson),
+        containedBy.map("contained_by" -> _.toJson),
+        containing.map("containing" -> _.toJson),
+        notContainedBy.map("not_contained_by" -> _.toJson),
+        notContaining.map("not_containing" -> _.toJson),
+        notOverlapping.map("not_overlapping" -> _.toJson),
+        overlapping.map("overlapping" -> _.toJson),
+        script.map("script" -> _)
+      ).flatten: _*
+    )
+}
 
 sealed trait IntervalsQuery[S] extends ElasticQuery[S]
 

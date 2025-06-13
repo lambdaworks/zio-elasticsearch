@@ -1074,24 +1074,34 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
-        test("intervalsQuery") {
-          val intervalNoOptions = intervalMatch("lambda works")
+        test("intervalsMatchQuery") {
+          val intervalNoOptions: IntervalMatch[String] = intervalMatch("lambda works")
 
-          val intervalWithOptions = intervalMatch("lambda works")
+          val intervalWithOptions: IntervalMatch[String] = intervalMatch("lambda works")
             .withOrdered(true)
             .withMaxGaps(2)
             .withAnalyzer("standard")
 
-          val queryWithStringField = intervals("content", intervalWithOptions)
+          val filter = IntervalFilter[String](
+            before = Some(intervalMatch("before_term")),
+            after = Some(intervalMatch("after_term"))
+          )
 
-          val typedField: Field[TestDocument, String] = Field(None, "content")
-          val queryWithTypedField                     = intervals(typedField, intervalWithOptions)
+          val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works")
+            .withOrdered(true)
+            .withMaxGaps(2)
+            .withAnalyzer("standard")
+            .withFilter(filter)
+
+          val queryWithStringField = intervals("stringField", intervalWithOptions)
+          val queryWithTypedField  = intervals(TestDocument.stringField, intervalWithOptions)
+          val queryWithFilter      = intervals("stringField", intervalWithFilter)
 
           val expectedNoOptions =
             """
               |{
               |  "intervals": {
-              |    "content": {
+              |    "stringField": {
               |      "match": {
               |        "query": "lambda works"
               |      }
@@ -1104,12 +1114,40 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             """
               |{
               |  "intervals": {
-              |    "content": {
+              |    "stringField": {
               |      "match": {
               |        "query": "lambda works",
-              |        "ordered": true,
+              |        "analyzer": "standard",
               |        "max_gaps": 2,
-              |        "analyzer": "standard"
+              |        "ordered": true
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFilter =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "match": {
+              |        "query": "lambda works",
+              |        "analyzer": "standard",
+              |        "max_gaps": 2,
+              |        "ordered": true,
+              |        "filter": {
+              |          "before": {
+              |            "match": {
+              |              "query": "before_term"
+              |            }
+              |          },
+              |          "after": {
+              |            "match": {
+              |              "query": "after_term"
+              |            }
+              |          }
+              |        }
               |      }
               |    }
               |  }
@@ -1118,7 +1156,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(intervalNoOptions)(
             equalTo(
-              IntervalMatch(
+              IntervalMatch[String](
                 query = "lambda works",
                 analyzer = None,
                 useField = None,
@@ -1128,7 +1166,67 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               )
             )
           ) &&
-          assert(intervals("content", intervalNoOptions).toJson(None))(
+          assert(intervals("stringField", intervalNoOptions).toJson(None))(
+            equalTo(expectedNoOptions.toJson)
+          ) &&
+          assert(queryWithStringField.toJson(None))(
+            equalTo(expectedWithOptions.toJson)
+          ) &&
+          assert(queryWithTypedField.toJson(None))(
+            equalTo(expectedWithOptions.toJson)
+          ) &&
+          assert(queryWithFilter.toJson(None))(
+            equalTo(expectedWithFilter.toJson)
+          )
+        },
+        test("intervalsPrefixQuery") {
+          val intervalNoOptions: IntervalPrefix = intervalPrefix("lambda")
+
+          val intervalWithOptions: IntervalPrefix = intervalPrefix("lambda")
+            .withAnalyzer("standard")
+            .withUseField("text")
+
+          val queryWithStringField = intervals("stringField", intervalWithOptions)
+          val queryWithTypedField  = intervals(TestDocument.stringField, intervalWithOptions)
+
+          val expectedNoOptions =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "prefix": {
+              |        "prefix": "lambda"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithOptions =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "prefix": {
+              |        "prefix": "lambda",
+              |        "analyzer": "standard",
+              |        "use_field": "text"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(intervalNoOptions)(
+            equalTo(
+              IntervalPrefix(
+                prefix = "lambda",
+                analyzer = None,
+                useField = None
+              )
+            )
+          ) &&
+          assert(intervals("stringField", intervalNoOptions).toJson(None))(
             equalTo(expectedNoOptions.toJson)
           ) &&
           assert(queryWithStringField.toJson(None))(
@@ -1137,6 +1235,97 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithTypedField.toJson(None))(
             equalTo(expectedWithOptions.toJson)
           )
+        },
+        test("intervalWildcard") {
+          val wildcardExact: IntervalWildcard[String] =
+            intervalWildcard("la*mb?da")
+
+          val wildcardContains: IntervalWildcard[String] =
+            intervalContains("lambda")
+
+          val wildcardStartsWith: IntervalWildcard[String] =
+            intervalStartsWith("lambda")
+
+          val wildcardEndsWith: IntervalWildcard[String] =
+            intervalEndsWith("lambda")
+
+          val queryExact: Intervals[String] =
+            Intervals("stringField", wildcardExact)
+
+          val queryContains: Intervals[String] =
+            Intervals("stringField", wildcardContains)
+
+          val queryStartsWith: Intervals[String] =
+            Intervals("stringField", wildcardStartsWith)
+
+          val queryEndsWith: Intervals[String] =
+            Intervals("stringField", wildcardEndsWith)
+
+          val expectedExact =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "wildcard": {
+              |        "pattern": "la*mb?da"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedContains =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "wildcard": {
+              |        "pattern": "*lambda*"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedStartsWith =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "wildcard": {
+              |        "pattern": "lambda*"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedEndsWith =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "wildcard": {
+              |        "pattern": "*lambda"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(wildcardExact)(
+            equalTo(
+              IntervalWildcard[String](
+                pattern = "la*mb?da",
+                analyzer = None,
+                useField = None
+              )
+            )
+          ) &&
+          assert(queryExact.toJson(None))(equalTo(expectedExact.toJson)) &&
+          assert(queryContains.toJson(None))(equalTo(expectedContains.toJson)) &&
+          assert(queryStartsWith.toJson(None))(equalTo(expectedStartsWith.toJson)) &&
+          assert(queryEndsWith.toJson(None))(equalTo(expectedEndsWith.toJson))
         },
         test("kNN") {
           val queryString         = kNN("stringField", 5, 10, Chunk(1.1, 2.2, 3.3))
