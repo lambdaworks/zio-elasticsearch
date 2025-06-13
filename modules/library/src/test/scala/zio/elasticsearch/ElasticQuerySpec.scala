@@ -1514,6 +1514,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("queryStringQuery"){
+          val query                    = range("testField")
+          val queryNoFields           = queryStringQuery("test")
+          val queryWithFields         = queryStringQuery("test").fields("stringField1", "stringField2")
+          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
+
+        },
         test("range") {
           val query                    = range("testField")
           val queryString              = range(TestDocument.stringField)
