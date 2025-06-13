@@ -22,7 +22,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Null, Obj, Str}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -1016,51 +1016,47 @@ private[elasticsearch] final case class Prefix[S](
   }
 }
 
-sealed trait QueryStringQuery[S] extends ElasticQuery[S]
-  with HasFields[QueryStringQuery, S]
-  with HasBoost[QueryStringQuery[S]]
-  with HasMinimumShouldMatch[QueryStringQuery[S]]
+sealed trait QueryStringQuery[S]
+    extends ElasticQuery[S]
+    with HasBoost[QueryStringQuery[S]]
+    with HasMinimumShouldMatch[QueryStringQuery[S]]
 
 private[elasticsearch] final case class QueryString[S](
-  query: String,
-  fields: Chunk[String],
   defaultField: Option[String],
+  fields: Chunk[String],
+  query: String,
   boost: Option[Double],
   minimumShouldMatch: Option[Int]
 ) extends QueryStringQuery[S] { self =>
 
-  def fields(field: String, fields: String*): QueryStringQuery[S] =
-    copy(fields = Chunk.fromIterable(field +: fields))
-
-  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): QueryStringQuery[S1] =
-    copy(fields = fields.map(_.toString))
-
-  def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): QueryStringQuery[S1] =
-    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
-
   def boost(value: Double): QueryStringQuery[S] =
     self.copy(boost = Some(value))
+
+  def fields(field: String, fields: String*): QueryStringQuery[S] =
+    self.copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields(fields: Chunk[String]): QueryStringQuery[S] =
+    self.copy(fields = fields)
 
   def minimumShouldMatch(value: Int): QueryStringQuery[S] =
     self.copy(minimumShouldMatch = Some(value))
 
-  override def toJson(fieldPath: Option[String]): Json = {
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(Str(_))))
+      else None
 
-    val fieldsJson = if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson))) else None
-    Obj(
-      "query" -> Obj(
-        "query_string" -> Obj(
-          List(
-            Some("query" -> Str(query)),
-            defaultField.map(df => "default_field" -> Str(df)),
-            fieldsJson,
-            boost.map(b => "boost" -> Json.Num(b)),
-            minimumShouldMatch.map(msm => "minimum_should_match" -> Json.Num(msm))
-          ).flatten: _*
-        )
-      )
-    )
+    val params = Chunk(
+      Some("query" -> Str(query)),
+      defaultField.map("default_field" -> Str(_)),
+      fieldsJson,
+      boost.map("boost" -> Json.Num(_)),
+      minimumShouldMatch.map("minimum_should_match" -> Json.Num(_))
+    ).flatten
+
+    Obj("query" -> Obj("query_string" -> Obj(params)))
   }
+
 }
 
 sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
@@ -1327,8 +1323,7 @@ private[elasticsearch] final case class Wildcard[S](
   value: String,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends WildcardQuery[S] {
-  self =>
+) extends WildcardQuery[S] { self =>
 
   def boost(value: Double): WildcardQuery[S] =
     self.copy(boost = Some(value))

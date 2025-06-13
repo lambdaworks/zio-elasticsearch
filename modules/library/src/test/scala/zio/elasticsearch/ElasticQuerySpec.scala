@@ -1514,12 +1514,69 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
-        test("queryStringQuery"){
-          val query                    = range("testField")
-          val queryNoFields           = queryStringQuery("test")
-          val queryWithFields         = queryStringQuery("test").fields("stringField1", "stringField2")
-          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
-
+        test("queryStringQuery") {
+          val queryNoFields   = queryStringQuery("(new york city) OR (big apple)")
+          val queryWithFields = queryStringQuery("(new york city) OR (big apple)")
+            .fields(Chunk("title", "description"))
+          val queryWithTypedFields = queryStringQuery("(new york city) OR (big apple)")
+            .fields(Chunk(TestDocument.stringField.toString))
+          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(1)
+          val queryAllParams          = queryWithFields.minimumShouldMatch(1).boost(2.0)
+          assert(queryNoFields)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk.empty,
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithFields)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("title", "description"),
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithTypedFields)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("string"),
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithMinShouldMatch)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk.empty,
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = Some(1)
+              )
+            )
+          ) &&
+          assert(queryAllParams)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("title", "description"),
+                defaultField = None,
+                boost = Some(2.0),
+                minimumShouldMatch = Some(1)
+              )
+            )
+          )
         },
         test("range") {
           val query                    = range("testField")

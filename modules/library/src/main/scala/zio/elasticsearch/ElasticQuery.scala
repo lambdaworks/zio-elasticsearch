@@ -900,9 +900,28 @@ object ElasticQuery {
     Prefix(field = field, value = value, caseInsensitive = None)
 
   /**
-   * Constructs a type-safe instance of [[zio.elasticsearch.query.QueryStringQuery]] using the specified
-   * parameters. [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for
-   * searching multiple fields.
+   * Constructs an instance of [[zio.elasticsearch.query.QueryStringQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for searching multiple
+   * fields.
+   *
+   * @param query
+   *   the query string to search for
+   * @return
+   *   an instance of [[zio.elasticsearch.query.QueryStringQuery]] that represents the query to be performed.
+   */
+  final def queryStringQuery(query: String): QueryString[Any] =
+    QueryString(
+      query = query,
+      fields = Chunk.empty,
+      defaultField = None,
+      boost = None,
+      minimumShouldMatch = None
+    )
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.QueryStringQuery]] using the specified parameters.
+   * [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for searching multiple
+   * fields.
    *
    * @param fields
    *   the type-safe fields to be searched
@@ -921,26 +940,6 @@ object ElasticQuery {
       boost = None,
       minimumShouldMatch = None
     )
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.query.QueryStringQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for searching multiple
-   * fields.
-   *
-   * @param query
-   *   the query string to search for
-   * @return
-   *   an instance of [[zio.elasticsearch.query.QueryStringQuery]] that represents the query to be performed.
-   */
-  final def queryStringQuery(query: String): QueryStringQuery[Any] =
-    QueryString(
-      query = query,
-      fields = Chunk.empty,
-      defaultField = None,
-      boost = None,
-      minimumShouldMatch = None
-    )
-
 
   /**
    * Constructs a type-safe unbounded instance of [[zio.elasticsearch.query.RangeQuery]] using the specified parameters.
