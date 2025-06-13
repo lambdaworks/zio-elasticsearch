@@ -362,27 +362,25 @@ sealed trait SamplerAggregation extends SingleElasticAggregation with WithSubAgg
    * @return
    *   an instance of the [[zio.elasticsearch.aggregation.SamplerAggregation]] enriched with the `shard_size` parameter.
    */
-  def shardSize(value: Int): SamplerAggregation
+  def maxDocumentsPerShard(value: Int): SamplerAggregation
 }
 
 private[elasticsearch] final case class Sampler(
   name: String,
-  shardSizeValue: Option[Int],
+  shardSizeValue: Int,
   subAggregations: Chunk[SingleElasticAggregation]
 ) extends SamplerAggregation {
   self =>
-  def shardSize(value: Int): SamplerAggregation =
-    self.copy(shardSizeValue = Some(value))
+  def maxDocumentsPerShard(value: Int): SamplerAggregation =
+    self.copy(shardSizeValue = value)
 
   def withSubAgg(aggregation: SingleElasticAggregation): SamplerAggregation =
     self.copy(subAggregations = aggregation +: subAggregations)
 
   private[elasticsearch] def toJson: Json = {
-    val samplerParamsContent: Obj = shardSizeValue.fold(Obj())(s => Obj("shard_size" -> s.toJson))
-    val subAggsBlock: Obj         = self.subAggregations.nonEmptyOrElse(Obj())(_ =>
-      Obj("aggs" -> self.subAggregations.map(_.toJson.asObject.get).reduce(_ merge _))
-    )
-    val mainAggBody: Obj = Obj("sampler" -> samplerParamsContent) merge subAggsBlock
+    val samplerParamsContent: Obj = Obj("sampler" -> Obj("shard_size" -> shardSizeValue.toJson))
+    val subAggsJson: Obj          = Obj("aggs" -> subAggregations.map(_.toJson).reduce(_ merge _))
+    val mainAggBody: Obj          = samplerParamsContent merge subAggsJson
 
     Obj(name -> mainAggBody)
   }

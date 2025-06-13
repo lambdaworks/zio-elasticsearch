@@ -87,6 +87,13 @@ object AggregationResponse {
         PercentileRanksAggregationResult(values)
       case PercentilesAggregationResponse(values) =>
         PercentilesAggregationResult(values)
+      case SamplerAggregationResponse(docCount, subAggregations) =>
+        SamplerAggregationResult(
+          docCount = docCount,
+          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
+            (key, toResult(response))
+          })
+        )
       case StatsAggregationResponse(count, min, max, avg, sum) =>
         StatsAggregationResult(count, min, max, avg, sum)
       case SumAggregationResponse(value) =>
@@ -169,6 +176,8 @@ private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) e
             )
           case str if str.contains("percentiles#") =>
             Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
+          case str if str.contains("sampler#") =>
+            Some(field -> data.unsafeAs[SamplerAggregationResponse](SamplerAggregationResponse.decoder))
           case str if str.contains("stats#") =>
             Some(
               field -> StatsAggregationResponse(
@@ -212,6 +221,8 @@ private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) e
           (field.split("#")(1), data.asInstanceOf[PercentileRanksAggregationResponse])
         case str if str.contains("percentiles#") =>
           (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
+        case str if str.contains("sampler#") =>
+          (field.split("#")(1), data.asInstanceOf[SamplerAggregationResponse])
         case str if str.contains("stats#") =>
           (field.split("#")(1), data.asInstanceOf[StatsAggregationResponse])
         case str if str.contains("sum#") =>
@@ -318,6 +329,23 @@ private[elasticsearch] final case class PercentilesAggregationResponse(values: M
 private[elasticsearch] object PercentilesAggregationResponse {
   implicit val decoder: JsonDecoder[PercentilesAggregationResponse] =
     DeriveJsonDecoder.gen[PercentilesAggregationResponse]
+}
+
+private[elasticsearch] final case class SamplerAggregationResponse(
+  @jsonField("doc_count")
+  docCount: Int,
+  subAggregations: Option[Map[String, AggregationResponse]] = None
+) extends AggregationResponse
+
+private[elasticsearch] object SamplerAggregationResponse {
+  implicit val decoder: JsonDecoder[SamplerAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
+    val bucketDecoder = BucketDecoder(fields)
+    val allFields     = bucketDecoder.allFields
+    val docCount      = allFields("doc_count").asInstanceOf[Int]
+    val subAggs       = bucketDecoder.subAggs
+
+    Right(SamplerAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
+  }
 }
 
 private[elasticsearch] final case class StatsAggregationResponse(

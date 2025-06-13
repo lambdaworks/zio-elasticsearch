@@ -341,27 +341,18 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("sampler") {
-          val aggregationNoShardSize   = samplerAggregation("aggregation")
-          val aggregationWithShardSize = samplerAggregation("aggregation2").shardSize(50)
-          val aggregationWithSubAgg    = samplerAggregation("aggregation2")
-            .shardSize(50)
-            .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
-          val aggregationWithMultipleSubAggs = samplerAggregation("aggregation2")
-            .shardSize(50)
-            .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
-            .withSubAgg(ElasticAggregation.avgAggregation("avg_length", "length"))
+          val aggregationWithSubAgg =
+            samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
+          val aggregationWithMultipleSubAggs =
+            samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
+              .maxDocumentsPerShard(50)
+              .withSubAgg(ElasticAggregation.avgAggregation("avg_length", "length"))
 
-          assert(aggregationNoShardSize)(
-            equalTo(Sampler(name = "aggregation", shardSizeValue = None, subAggregations = Chunk.empty))
-          ) &&
-          assert(aggregationWithShardSize)(
-            equalTo(Sampler(name = "aggregation2", shardSizeValue = Some(50), subAggregations = Chunk.empty))
-          ) &&
           assert(aggregationWithSubAgg)(
             equalTo(
               Sampler(
                 name = "aggregation2",
-                shardSizeValue = Some(50),
+                shardSizeValue = 100,
                 subAggregations = Chunk(
                   Terms(
                     name = "keywords",
@@ -378,7 +369,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               Sampler(
                 name = "aggregation2",
-                shardSizeValue = Some(50),
+                shardSizeValue = 50,
                 subAggregations = Chunk(
                   Avg(name = "avg_length", field = "length", missing = None),
                   Terms(
@@ -1320,44 +1311,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("sampler") {
-          val aggregationNoShardSize   = ElasticAggregation.samplerAggregation("sample_no_shard")
-          val aggregationWithShardSize = ElasticAggregation.samplerAggregation("sample_with_shard").shardSize(100)
-          val aggregationWithSubAgg    = ElasticAggregation
-            .samplerAggregation("sample_with_sub_agg")
-            .shardSize(500)
-            .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
+          val aggregationWithSubAgg = ElasticAggregation.samplerAggregation(
+            "sample_with_sub_agg",
+            ElasticAggregation.termsAggregation("keywords", "text")
+          )
           val aggregationWithMultipleSubAggs = ElasticAggregation
-            .samplerAggregation("sample_with_multiple_aggs")
-            .shardSize(100)
-            .withSubAgg(ElasticAggregation.avgAggregation("avg_length", "length"))
+            .samplerAggregation("sample_with_multiple_aggs", ElasticAggregation.avgAggregation("avg_length", "length"))
+            .maxDocumentsPerShard(50)
             .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
-
-          val expectedNoShardSize =
-            """
-              |{
-              |  "sample_no_shard": {
-              |    "sampler": {}
-              |  }
-              |}
-              |""".stripMargin
-
-          val expectedWithShardSize =
-            """
-              |{
-              |  "sample_with_shard": {
-              |    "sampler": {
-              |      "shard_size": 100
-              |    }
-              |  }
-              |}
-              |""".stripMargin
 
           val expectedWithSubAgg =
             """
               |{
               |  "sample_with_sub_agg": {
               |    "sampler": {
-              |      "shard_size": 500
+              |      "shard_size": 100
               |    },
               |    "aggs": {
               |      "keywords": {
@@ -1375,7 +1343,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |{
               |  "sample_with_multiple_aggs": {
               |    "sampler": {
-              |      "shard_size": 100
+              |      "shard_size": 50
               |    },
               |    "aggs": {
               |      "avg_length": {
@@ -1393,8 +1361,6 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(aggregationNoShardSize.toJson)(equalTo(expectedNoShardSize.toJson)) &&
-          assert(aggregationWithShardSize.toJson)(equalTo(expectedWithShardSize.toJson)) &&
           assert(aggregationWithSubAgg.toJson)(equalTo(expectedWithSubAgg.toJson)) &&
           assert(aggregationWithMultipleSubAggs.toJson)(equalTo(expectedWithMultipleSubAggs.toJson))
         },

@@ -354,8 +354,8 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.SamplerAggregation]] that represents sampler aggregation to be
    *   performed.
    */
-  final def samplerAggregation(name: String): SamplerAggregation =
-    Sampler(name = name, shardSizeValue = None, subAggregations = Chunk.empty)
+  final def samplerAggregation(name: String, subAgg: SingleElasticAggregation): SamplerAggregation =
+    Sampler(name = name, shardSizeValue = 100, subAggregations = Chunk(subAgg))
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified
