@@ -341,14 +341,14 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("sampler") {
-          val aggregationWithSubAgg =
+          val aggWithSubAgg =
             samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
-          val aggregationWithMultipleSubAggs =
+          val aggWithSubAggsAndMaxDocumentsPerShardParam =
             samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
               .maxDocumentsPerShard(50)
               .withSubAgg(ElasticAggregation.avgAggregation("avg_length", "length"))
 
-          assert(aggregationWithSubAgg)(
+          assert(aggWithSubAgg)(
             equalTo(
               Sampler(
                 name = "aggregation2",
@@ -365,7 +365,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               )
             )
           ) &&
-          assert(aggregationWithMultipleSubAggs)(
+          assert(aggWithSubAggsAndMaxDocumentsPerShardParam)(
             equalTo(
               Sampler(
                 name = "aggregation2",
@@ -1311,11 +1311,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("sampler") {
-          val aggregationWithSubAgg = ElasticAggregation.samplerAggregation(
+          val aggWithSubAgg = ElasticAggregation.samplerAggregation(
             "sample_with_sub_agg",
             ElasticAggregation.termsAggregation("keywords", "text")
           )
-          val aggregationWithMultipleSubAggs = ElasticAggregation
+          val aggWithSubAggsAndMaxDocumentsPerShardParam = ElasticAggregation
             .samplerAggregation("sample_with_multiple_aggs", ElasticAggregation.avgAggregation("avg_length", "length"))
             .maxDocumentsPerShard(50)
             .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
@@ -1361,8 +1361,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(aggregationWithSubAgg.toJson)(equalTo(expectedWithSubAgg.toJson)) &&
-          assert(aggregationWithMultipleSubAggs.toJson)(equalTo(expectedWithMultipleSubAggs.toJson))
+          assert(aggWithSubAgg.toJson)(equalTo(expectedWithSubAgg.toJson)) &&
+          assert(aggWithSubAggsAndMaxDocumentsPerShardParam.toJson)(equalTo(expectedWithMultipleSubAggs.toJson))
         },
         test("stats") {
           val aggregation            = statsAggregation("aggregation", "testField")

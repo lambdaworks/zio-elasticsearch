@@ -73,9 +73,8 @@ object AggregationResponse {
       case FilterAggregationResponse(docCount, subAggregations) =>
         FilterAggregationResult(
           docCount = docCount,
-          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
-            (key, toResult(response))
-          })
+          subAggregations =
+            subAggregations.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
         )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
@@ -87,12 +86,10 @@ object AggregationResponse {
         PercentileRanksAggregationResult(values)
       case PercentilesAggregationResponse(values) =>
         PercentilesAggregationResult(values)
-      case SamplerAggregationResponse(docCount, subAggregations) =>
+      case SamplerAggregationResponse(count, aggs) =>
         SamplerAggregationResult(
-          docCount = docCount,
-          subAggregations = subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
-            (key, toResult(response))
-          })
+          docCount = count,
+          subAggregations = aggs.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
         )
       case StatsAggregationResponse(count, min, max, avg, sum) =>
         StatsAggregationResult(count, min, max, avg, sum)
@@ -106,9 +103,8 @@ object AggregationResponse {
             TermsAggregationBucketResult(
               docCount = b.docCount,
               key = b.key,
-              subAggregations = b.subAggregations.fold(Map[String, AggregationResult]())(_.map { case (key, response) =>
-                (key, toResult(response))
-              })
+              subAggregations =
+                b.subAggregations.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
             )
           )
         )

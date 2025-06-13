@@ -874,13 +874,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           ),
           test("search using sampler aggregation") {
             val expectedAggResult = SamplerAggregationResult(
-              docCount = 1,
+              docCount = 2,
               subAggregations = Map(
                 "sampled_strings" -> TermsAggregationResult(
                   docErrorCount = 0,
                   sumOtherDocCount = 0,
                   buckets = Chunk(
-                    TermsAggregationBucketResult(key = "zio", docCount = 1, subAggregations = Map.empty)
+                    TermsAggregationBucketResult(key = "zio", docCount = 1, subAggregations = Map.empty),
+                    TermsAggregationBucketResult(key = "zio-elasticsearch", docCount = 1, subAggregations = Map.empty)
                   )
                 )
               )
@@ -890,7 +891,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                 val documentA          = docA.copy(stringField = "zio")
                 val documentB          = docB.copy(stringField = "elasticsearch")
                 val documentC          = docC.copy(stringField = "zio-elasticsearch")
-                val expectedSearchDocs = Chunk(documentA)
+                val expectedSearchDocs = Chunk(documentA, documentC)
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdA, documentA))
@@ -898,12 +899,12 @@ object HttpExecutorSpec extends IntegrationSpec {
                   _ <- Executor.execute(
                          ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdC, documentC).refreshTrue
                        )
-                  searchQuery = term(TestDocument.stringField.keyword, "zio")
+                  searchQuery = matches(TestDocument.stringField, "zio")
                   aggregation = samplerAggregation(
                                   "sampler_agg",
                                   termsAggregation("sampled_strings", TestDocument.stringField.keyword)
                                 )
-                                  .maxDocumentsPerShard(10)
+                                  .maxDocumentsPerShard(2)
                   res <- Executor.execute(
                            ElasticRequest
                              .search(
@@ -911,12 +912,11 @@ object HttpExecutorSpec extends IntegrationSpec {
                                query = searchQuery,
                                aggregation = aggregation
                              )
-                             .from(0)
-                             .size(1)
                          )
                   docs       <- res.documentAs[TestDocument]
                   samplerAgg <- res.aggregation("sampler_agg")
-                } yield assert(docs)(equalTo(expectedSearchDocs)) &&
+                } yield assert(docs.length)(equalTo(2)) &&
+                  assert(docs.toSet)(equalTo(expectedSearchDocs.toSet)) &&
                   assert(samplerAgg)(isSome(equalTo(expectedAggResult)))
             }
           } @@ around(

@@ -380,9 +380,8 @@ private[elasticsearch] final case class Sampler(
   private[elasticsearch] def toJson: Json = {
     val samplerParamsContent: Obj = Obj("sampler" -> Obj("shard_size" -> shardSizeValue.toJson))
     val subAggsJson: Obj          = Obj("aggs" -> subAggregations.map(_.toJson).reduce(_ merge _))
-    val mainAggBody: Obj          = samplerParamsContent merge subAggsJson
 
-    Obj(name -> mainAggBody)
+    Obj(name -> (samplerParamsContent merge subAggsJson))
   }
 }
 
