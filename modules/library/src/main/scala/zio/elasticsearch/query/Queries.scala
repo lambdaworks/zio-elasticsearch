@@ -22,7 +22,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -528,7 +528,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    * incorrect coordinates.
    *
    * @param value
-   *   defines how to handle invalid latitude nad longitude:
+   *   defines how to handle invalid latitude and longitude:
    *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
    *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
    *     longitude
@@ -569,7 +569,6 @@ private[elasticsearch] final case class GeoDistance[S](
         ).flatten: _*
       )
     )
-
 }
 
 sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
@@ -590,7 +589,7 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
    * incorrect coordinates.
    *
    * @param value
-   *   defines how to handle invalid latitude nad longitude:
+   *   defines how to handle invalid latitude and longitude:
    *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
    *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
    *     longitude
@@ -782,6 +781,21 @@ private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends Id
     Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
 }
 
+sealed trait IntervalsQuery[S] extends ElasticQuery[S]
+
+private[elasticsearch] final case class Intervals[S](
+  field: String,
+  query: IntervalRule
+) extends IntervalsQuery[S] { self =>
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "intervals" -> Obj(
+        fieldPath.getOrElse(field) -> query.toJson
+      )
+    )
+}
+
 sealed trait MatchQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
@@ -885,7 +899,8 @@ private[elasticsearch] final case class MultiMatch[S](
   boost: Option[Double],
   matchingType: Option[MultiMatchType],
   minimumShouldMatch: Option[Int]
-) extends MultiMatchQuery[S] { self =>
+) extends MultiMatchQuery[S] {
+  self =>
 
   def boost(boost: Double): MultiMatchQuery[S] =
     self.copy(boost = Some(boost))
@@ -931,7 +946,8 @@ private[elasticsearch] final case class Nested[S](
   ignoreUnmapped: Option[Boolean],
   innerHitsField: Option[InnerHits],
   scoreMode: Option[ScoreMode]
-) extends NestedQuery[S] { self =>
+) extends NestedQuery[S] {
+  self =>
 
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
@@ -1084,7 +1100,8 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   upper: UB,
   boost: Option[Double],
   format: Option[String]
-) extends RangeQuery[S, A, LB, UB] { self =>
+) extends RangeQuery[S, A, LB, UB] {
+  self =>
 
   def boost(value: Double): RangeQuery[S, A, LB, UB] =
     self.copy(boost = Some(value))
@@ -1144,7 +1161,8 @@ private[elasticsearch] final case class Regexp[S](
   field: String,
   value: String,
   caseInsensitive: Option[Boolean]
-) extends RegexpQuery[S] { self =>
+) extends RegexpQuery[S] {
+  self =>
 
   def caseInsensitive(value: Boolean): RegexpQuery[S] =
     self.copy(caseInsensitive = Some(value))
@@ -1159,7 +1177,8 @@ private[elasticsearch] final case class Regexp[S](
 sealed trait ScriptQuery extends ElasticQuery[Any] with HasBoost[ScriptQuery]
 
 private[elasticsearch] final case class Script(script: zio.elasticsearch.script.Script, boost: Option[Double])
-    extends ScriptQuery { self =>
+    extends ScriptQuery {
+  self =>
 
   def boost(value: Double): ScriptQuery =
     self.copy(boost = Some(value))
@@ -1211,7 +1230,8 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
   value: A,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends TermQuery[S] { self =>
+) extends TermQuery[S] {
+  self =>
 
   def boost(value: Double): TermQuery[S] =
     self.copy(boost = Some(value))
@@ -1234,7 +1254,8 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   field: String,
   values: Chunk[A],
   boost: Option[Double]
-) extends TermsQuery[S] { self =>
+) extends TermsQuery[S] {
+  self =>
 
   def boost(value: Double): TermsQuery[S] =
     self.copy(boost = Some(value))
@@ -1255,7 +1276,8 @@ private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
   boost: Option[Double],
   minimumShouldMatchField: Option[String],
   minimumShouldMatchScript: Option[zio.elasticsearch.script.Script]
-) extends TermsSetQuery[S] { self =>
+) extends TermsSetQuery[S] {
+  self =>
 
   def boost(value: Double): TermsSetQuery[S] =
     self.copy(boost = Some(value))
@@ -1280,7 +1302,8 @@ private[elasticsearch] final case class Wildcard[S](
   value: String,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends WildcardQuery[S] { self =>
+) extends WildcardQuery[S] {
+  self =>
 
   def boost(value: Double): WildcardQuery[S] =
     self.copy(boost = Some(value))
