@@ -671,10 +671,10 @@ object ElasticQuery {
    */
 
   final def intervalAllOf[S](
-    intervals: NonEmptyChunk[IntervalQuery],
-    maxGaps: Option[Int],
-    ordered: Option[Boolean],
-    filter: Option[IntervalFilter[S]]
+                              intervals: NonEmptyChunk[IntervalRule],
+                              maxGaps: Option[Int],
+                              ordered: Option[Boolean],
+                              filter: Option[IntervalFilter[S]]
   ): IntervalAllOf[Any] =
     IntervalAllOf(intervals.toChunk, maxGaps = None, ordered = None, filter = None)
 
@@ -692,8 +692,8 @@ object ElasticQuery {
    */
 
   final def intervalAnyOf[S](
-    intervals: Chunk[IntervalQuery],
-    filter: Option[IntervalFilter[S]]
+                              intervals: Chunk[IntervalRule],
+                              filter: Option[IntervalFilter[S]]
   ): IntervalAnyOf[S] =
     IntervalAnyOf(intervals, filter = None)
 
@@ -757,15 +757,15 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalScriptFilter]] representing the script filter.
    */
   final def intervalFilter[S](
-    after: Option[IntervalQuery] = None,
-    before: Option[IntervalQuery] = None,
-    containedBy: Option[IntervalQuery] = None,
-    containing: Option[IntervalQuery] = None,
-    notContainedBy: Option[IntervalQuery] = None,
-    notContaining: Option[IntervalQuery] = None,
-    notOverlapping: Option[IntervalQuery] = None,
-    overlapping: Option[IntervalQuery] = None,
-    script: Option[Json] = None
+                               after: Option[IntervalRule] = None,
+                               before: Option[IntervalRule] = None,
+                               containedBy: Option[IntervalRule] = None,
+                               containing: Option[IntervalRule] = None,
+                               notContainedBy: Option[IntervalRule] = None,
+                               notContaining: Option[IntervalRule] = None,
+                               notOverlapping: Option[IntervalRule] = None,
+                               overlapping: Option[IntervalRule] = None,
+                               script: Option[Json] = None
   ): IntervalFilter[S] =
     IntervalFilter(
       after = after,
@@ -785,16 +785,16 @@ object ElasticQuery {
    * The resulting query wraps the specified interval query under the given field in the intervals query structure.
    *
    * @param field
-   *   the name of the field to be queried.
+   * the name of the field to be queried.
    * @param rule
-   *   an instance of [[zio.elasticsearch.query.IntervalQuery]] representing the interval query rule.
+   * an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule.
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
 
   final def intervals(
     field: String,
-    rule: IntervalQuery
+    rule: IntervalRule
   ): ElasticQuery[Any] =
     Intervals(field, rule)
 
@@ -805,9 +805,9 @@ object ElasticQuery {
    * structure.
    *
    * @param field
-   *   the type-safe field on which the query is executed.
+   * the type-safe field on which the query is executed.
    * @param rule
-   *   an instance of [[zio.elasticsearch.query.IntervalQuery]] representing the interval query rule.
+   * an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule.
    * @tparam S
    *   the document type for which the query is defined.
    * @return
@@ -816,7 +816,7 @@ object ElasticQuery {
 
   final def intervals[S](
     field: Field[S, _],
-    rule: IntervalQuery
+    rule: IntervalRule
   ): ElasticQuery[S] =
     Intervals(field.toString, rule)
 
