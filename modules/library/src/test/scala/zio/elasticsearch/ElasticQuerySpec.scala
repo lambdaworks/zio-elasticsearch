@@ -1179,61 +1179,92 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             equalTo(expectedWithFilter.toJson)
           )
         },
-        test("intervalsPrefixQuery") {
-          val intervalNoOptions: IntervalPrefix = intervalPrefix("lambda")
+        test("intervalRange") {
+          val intervalNoBounds = ElasticQuery.intervalRange(
+            lower = None,
+            upper = None,
+            analyzer = None,
+            useField = None
+          )
 
-          val intervalWithOptions: IntervalPrefix = intervalPrefix("lambda")
-            .withAnalyzer("standard")
-            .withUseField("text")
+          val intervalWithBounds = ElasticQuery.intervalRange(
+            lower = Some(Left("10")),
+            upper = Some(Right("20")),
+            analyzer = Some("standard"),
+            useField = Some("otherField")
+          )
 
-          val queryWithStringField = intervals("stringField", intervalWithOptions)
-          val queryWithTypedField  = intervals(TestDocument.stringField, intervalWithOptions)
+          val intervalWithOnlyGt = ElasticQuery.intervalRange(
+            lower = Some(Left("10")),
+            upper = None,
+            analyzer = Some("standard"),
+            useField = Some("otherField")
+          )
 
-          val expectedNoOptions =
+          val queryWithStringField = intervals("stringField", intervalWithBounds)
+          val queryWithTypedField  = intervals(TestDocument.stringField, intervalWithBounds)
+          val queryWithOnlyGt      = intervals("stringField", intervalWithOnlyGt)
+
+          val expectedNoBounds =
             """
               |{
               |  "intervals": {
               |    "stringField": {
-              |      "prefix": {
-              |        "prefix": "lambda"
-              |      }
+              |      "range": {}
               |    }
               |  }
               |}
               |""".stripMargin
 
-          val expectedWithOptions =
+          val expectedWithBounds =
             """
               |{
               |  "intervals": {
               |    "stringField": {
-              |      "prefix": {
-              |        "prefix": "lambda",
+              |      "range": {
+              |        "gt": "10",
+              |        "lte": "20",
               |        "analyzer": "standard",
-              |        "use_field": "text"
+              |        "use_field": "otherField"
               |      }
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(intervalNoOptions)(
+          val expectedWithOnlyGt =
+            """
+              |{
+              |  "intervals": {
+              |    "stringField": {
+              |      "range": {
+              |        "gt": "10",
+              |        "analyzer": "standard",
+              |        "use_field": "otherField"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(intervalNoBounds)(
             equalTo(
-              IntervalPrefix(
-                prefix = "lambda",
+              IntervalRange(
+                lower = None,
+                upper = None,
                 analyzer = None,
                 useField = None
               )
             )
           ) &&
-          assert(intervals("stringField", intervalNoOptions).toJson(None))(
-            equalTo(expectedNoOptions.toJson)
-          ) &&
           assert(queryWithStringField.toJson(None))(
-            equalTo(expectedWithOptions.toJson)
+            equalTo(expectedWithBounds.toJson)
           ) &&
           assert(queryWithTypedField.toJson(None))(
-            equalTo(expectedWithOptions.toJson)
+            equalTo(expectedWithBounds.toJson)
+          ) &&
+          assert(queryWithOnlyGt.toJson(None))(
+            equalTo(expectedWithOnlyGt.toJson)
           )
         },
         test("intervalWildcard") {

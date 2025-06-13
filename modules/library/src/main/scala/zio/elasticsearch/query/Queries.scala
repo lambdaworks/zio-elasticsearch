@@ -920,7 +920,7 @@ private[elasticsearch] final case class IntervalAnyOf[S](
     )
 }
 
-private[elasticsearch] final case class IntervalFuzzy(
+private[elasticsearch] final case class IntervalFuzzy[S](
   term: String,
   prefixLength: Option[Int],
   transpositions: Option[Boolean],
@@ -943,27 +943,33 @@ private[elasticsearch] final case class IntervalFuzzy(
     )
 }
 
-private[elasticsearch] final case class IntervalRange(
-  gt: Option[String],
-  gte: Option[String],
-  lt: Option[String],
-  lte: Option[String],
+private[elasticsearch] final case class IntervalRange[S](
+  lower: Option[Either[String, String]],
+  upper: Option[Either[String, String]],
   analyzer: Option[String],
   useField: Option[String]
 ) extends IntervalQuery {
-  private[elasticsearch] def toJson: Json =
+  private[elasticsearch] def toJson: Json = {
+    val lowerJson = lower.map {
+      case Left(gt)   => "gt"  -> gt.toJson
+      case Right(gte) => "gte" -> gte.toJson
+    }
+    val upperJson = upper.map {
+      case Left(lt)   => "lt"  -> lt.toJson
+      case Right(lte) => "lte" -> lte.toJson
+    }
+
     Obj(
       "range" -> Obj(
         Chunk(
-          gt.map("gt" -> _.toJson),
-          gte.map("gte" -> _.toJson),
-          lt.map("lt" -> _.toJson),
-          lte.map("lte" -> _.toJson),
+          lowerJson,
+          upperJson,
           analyzer.map("analyzer" -> _.toJson),
           useField.map("use_field" -> _.toJson)
         ).flatten: _*
       )
     )
+  }
 }
 
 private[elasticsearch] final case class IntervalFilter[S](

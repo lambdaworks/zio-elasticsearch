@@ -24,8 +24,6 @@ import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.schema.Schema
 
-import javax.management.Query
-
 object ElasticQuery {
 
   /**
@@ -710,7 +708,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalFuzzy]] that represents the `fuzzy` interval query.
    */
 
-  final def intervalFuzzy(term: String): IntervalFuzzy =
+  final def intervalFuzzy[S](term: String): IntervalFuzzy[S] =
     IntervalFuzzy(
       term = term,
       prefixLength = None,
@@ -740,16 +738,13 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRange]] that represents the `range` interval query.
    */
-
-  final def intervalRange(
-    gt: Option[String],
-    gte: Option[String],
-    lt: Option[String],
-    lte: Option[String],
+  def intervalRange[S](
+    lower: Option[Either[String, String]],
+    upper: Option[Either[String, String]],
     analyzer: Option[String],
     useField: Option[String]
-  ): IntervalRange =
-    IntervalRange(gt = None, gte = None, lt = None, lte = None, analyzer = None, useField = None)
+  ): IntervalRange[S] =
+    IntervalRange(lower, upper, analyzer, useField)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.IntervalScriptFilter]] interval filter.
