@@ -16,6 +16,6 @@
 
 package zio.elasticsearch.request
 
-private[elasticsearch] trait IsExecutable
-private[elasticsearch] trait Executable    extends IsExecutable
-private[elasticsearch] trait NotExecutable extends IsExecutable
+private[elasticsearch] sealed trait IsExecutable
+private[elasticsearch] sealed trait Executable    extends IsExecutable
+private[elasticsearch] sealed trait NotExecutable extends IsExecutable
