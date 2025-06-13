@@ -58,12 +58,8 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def upsertBulk(organization: String, repositories: Chunk[GitHubRepo]): Task[Unit] =
     for {
       routing     <- routingOf(organization)
-      bulkRequests = repositories.map { repo =>
-                       ElasticRequest.upsert(DocumentId(repo.id), repo).routing(routing)
-                     }
-      _ <- elasticsearch.execute(
-             ElasticRequest.bulk(Index, bulkRequests: _*)
-           )
+      bulkRequests = repositories.map(repo => ElasticRequest.upsert(DocumentId(repo.id), repo).routing(routing))
+      _           <- elasticsearch.execute(ElasticRequest.bulk(Index, bulkRequests: _*))
     } yield ()
 
   def upsert(id: String, repository: GitHubRepo): Task[Unit] =
