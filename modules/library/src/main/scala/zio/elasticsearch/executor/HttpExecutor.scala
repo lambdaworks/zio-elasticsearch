@@ -45,7 +45,7 @@ import zio.elasticsearch.executor.response.{
   SearchWithAggregationsResponse,
   UpdateByQueryResponse
 }
-import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, UpdateOutcome}
+import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, Executable, UpdateOutcome}
 import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
@@ -65,26 +65,26 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     case _                 => request
   }
 
-  def execute[A](request: ElasticRequest[A]): Task[A] =
+  def execute[A](request: ElasticRequest[A, Executable]): Task[A] =
     request match {
-      case r: Aggregate          => executeAggregate(r)
-      case r: Bulk               => executeBulk(r)
-      case r: Count              => executeCount(r)
-      case r: Create             => executeCreate(r)
-      case r: CreateWithId       => executeCreateWithId(r)
-      case r: CreateIndex        => executeCreateIndex(r)
-      case r: CreateOrUpdate     => executeCreateOrUpdate(r)
-      case r: DeleteById         => executeDeleteById(r)
-      case r: DeleteByQuery      => executeDeleteByQuery(r)
-      case r: DeleteIndex        => executeDeleteIndex(r)
-      case r: Exists             => executeExists(r)
-      case r: GetById            => executeGetById(r)
-      case r: KNN                => executeKnn(r)
-      case r: Refresh            => executeRefresh(r)
-      case r: Search             => executeSearch(r)
-      case r: SearchAndAggregate => executeSearchAndAggregate(r)
-      case r: Update             => executeUpdate(r)
-      case r: UpdateByQuery      => executeUpdateByQuery(r)
+      case r: Aggregate                  => executeAggregate(r)
+      case r: Bulk                       => executeBulk(r)
+      case r: Count                      => executeCount(r)
+      case r: Create[Executable]         => executeCreate(r)
+      case r: CreateWithId[Executable]   => executeCreateWithId(r)
+      case r: CreateIndex                => executeCreateIndex(r)
+      case r: CreateOrUpdate[Executable] => executeCreateOrUpdate(r)
+      case r: DeleteById[Executable]     => executeDeleteById(r)
+      case r: DeleteByQuery              => executeDeleteByQuery(r)
+      case r: DeleteIndex                => executeDeleteIndex(r)
+      case r: Exists                     => executeExists(r)
+      case r: GetById                    => executeGetById(r)
+      case r: KNN                        => executeKnn(r)
+      case r: Refresh                    => executeRefresh(r)
+      case r: Search                     => executeSearch(r)
+      case r: SearchAndAggregate         => executeSearchAndAggregate(r)
+      case r: Update[Executable]         => executeUpdate(r)
+      case r: UpdateByQuery              => executeUpdateByQuery(r)
     }
 
   def stream(r: SearchRequest): Stream[Throwable, Item] =
@@ -180,7 +180,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
   }
 
-  private def executeCreate(r: Create): Task[DocumentId] = {
+  private def executeCreate(r: Create[Executable]): Task[DocumentId] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
@@ -206,7 +206,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   }
 
-  private def executeCreateWithId(r: CreateWithId): Task[CreationOutcome] = {
+  private def executeCreateWithId(r: CreateWithId[Executable]): Task[CreationOutcome] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Create/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
@@ -238,7 +238,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeCreateOrUpdate(r: CreateOrUpdate): Task[Unit] = {
+  private def executeCreateOrUpdate(r: CreateOrUpdate[Executable]): Task[Unit] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
@@ -271,7 +271,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeDeleteById(r: DeleteById): Task[DeletionOutcome] = {
+  private def executeDeleteById(r: DeleteById[Executable]): Task[DeletionOutcome] = {
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
@@ -574,7 +574,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
-  private def executeUpdate(r: Update): Task[UpdateOutcome] =
+  private def executeUpdate(r: Update[Executable]): Task[UpdateOutcome] =
     sendRequest(
       baseRequest
         .post(
