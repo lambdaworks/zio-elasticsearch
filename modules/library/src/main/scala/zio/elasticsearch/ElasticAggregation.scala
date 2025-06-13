@@ -346,6 +346,18 @@ object ElasticAggregation {
     Percentiles(name = name, field = field, percents = Chunk.empty, missing = None)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.SamplerAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   the name of the aggregation.
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.SamplerAggregation]] that represents sampler aggregation to be
+   *   performed.
+   */
+  final def samplerAggregation(name: String): SamplerAggregation =
+    Sampler(name = name, shardSizeValue = None, subAggregations = Chunk.empty)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified
    * parameters.
    *
