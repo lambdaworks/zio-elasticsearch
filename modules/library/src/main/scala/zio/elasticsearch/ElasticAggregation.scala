@@ -216,7 +216,24 @@ object ElasticAggregation {
   final def minAggregation(name: String, field: String): MinAggregation =
     Min(name = name, field = field, missing = None)
 
-  // TODO: Add docs
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which min aggregation will be executed
+   * @tparam A
+   *   expected number type
+   * @param range
+   *   the first range to be evaluated and transformed to bucket in [[zio.elasticsearch.aggregation.RangeAggregation]]
+   * @param ranges
+   *   an array of ranges to be evaluated and transformed to buckets in
+   *   [[zio.elasticsearch.aggregation.RangeAggregation]]
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents min aggregation to be
+   *   performed.
+   */
   final def rangeAggregation[A: Numeric](
     name: String,
     field: Field[_, A],
@@ -226,11 +243,26 @@ object ElasticAggregation {
     Range(
       name = name,
       field = field.toString,
-      ranges = Chunk.fromIterable(ranges.prepended(range)),
+      ranges = Chunk.single(range).prependedAll(ranges),
       keyed = None
     )
 
-  // TODO: Add docs
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which min aggregation will be executed
+   * @param range
+   *   the first range to be evaluated and transformed to bucket in [[zio.elasticsearch.aggregation.RangeAggregation]]
+   * @param ranges
+   *   an array of ranges to be evaluated and transformed to buckets in
+   *   [[zio.elasticsearch.aggregation.RangeAggregation]]
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents min aggregation to be
+   *   performed.
+   */
   final def rangeAggregation(
     name: String,
     field: String,
@@ -240,7 +272,7 @@ object ElasticAggregation {
     Range(
       name = name,
       field = field,
-      ranges = Chunk.fromIterable(ranges.prepended(range)),
+      ranges = Chunk.single(range).prependedAll(ranges),
       keyed = None
     )
 
