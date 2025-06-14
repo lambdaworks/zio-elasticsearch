@@ -243,7 +243,7 @@ object ElasticAggregation {
     Range(
       name = name,
       field = field.toString,
-      ranges = Chunk.single(range).prependedAll(ranges),
+      ranges = Chunk.fromIterable(range +: ranges),
       keyed = None
     )
 
@@ -272,7 +272,7 @@ object ElasticAggregation {
     Range(
       name = name,
       field = field,
-      ranges = Chunk.single(range).prependedAll(ranges),
+      ranges = Chunk.fromIterable(range +: ranges),
       keyed = None
     )
 
