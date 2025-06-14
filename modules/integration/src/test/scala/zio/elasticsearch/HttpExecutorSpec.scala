@@ -21,7 +21,7 @@ import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.aggregation.AggregationOrder
+import zio.elasticsearch.aggregation.{AggregationOrder, SingleRange}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
@@ -33,7 +33,7 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{FilterAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
+import zio.elasticsearch.result._
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -251,6 +251,49 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asMinAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(23.0))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using range aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument.copy(intField = 120))
+                       )
+                  _ <-
+                    Executor.execute(
+                      ElasticRequest
+                        .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument.copy(intField = 180))
+                        .refreshTrue
+                    )
+                  aggregation = rangeAggregation(
+                                  name = "aggregationInt",
+                                  field = TestDocument.intField,
+                                  range = SingleRange(from = 100.0, to = 200.0)
+                                )
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .asRangeAggregation("aggregationInt")
+                } yield assert(aggsRes.head)(
+                  equalTo(
+                    RegularRangeAggregationResult(
+                      Chunk(
+                        RegularRangeAggregationBucketResult(
+                          key = "100.0-200.0",
+                          from = Some(100.0),
+                          to = Some(200.0),
+                          docCount = 2
+                        )
+                      )
+                    )
+                  )
+                )
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

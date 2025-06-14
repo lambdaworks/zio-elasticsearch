@@ -17,6 +17,7 @@
 package zio.elasticsearch
 
 import zio.Chunk
+//import zio.elasticsearch.aggregation.{Range => IRange, SingleRange => Range, _}
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script
@@ -215,6 +216,34 @@ object ElasticAggregation {
    */
   final def minAggregation(name: String, field: String): MinAggregation =
     Min(name = name, field = field, missing = None)
+
+  // TODO: Add docs
+  final def rangeAggregation[A: Numeric](
+    name: String,
+    field: Field[_, A],
+    range: SingleRange,
+    ranges: SingleRange*
+  ): RangeAggregation =
+    Range(
+      name = name,
+      field = field.toString,
+      ranges = Chunk.fromIterable(ranges.prepended(range)),
+      keyed = None
+    )
+
+  // TODO: Add docs
+  final def rangeAggregation(
+    name: String,
+    field: String,
+    range: SingleRange,
+    ranges: SingleRange*
+  ): RangeAggregation =
+    Range(
+      name = name,
+      field = field,
+      ranges = Chunk.fromIterable(ranges.prepended(range)),
+      keyed = None
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified

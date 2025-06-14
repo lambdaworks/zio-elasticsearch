@@ -216,6 +216,71 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(Min(name = "aggregation", field = "intField", missing = Some(20.0)))
           )
         },
+        test("range") {
+          val aggregationTo   = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
+          val aggregationFrom = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
+          val aggregationFromTo =
+            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0)).keyed(false)
+          val aggregationKeyed = rangeAggregation("aggregation4", "testField", SingleRange.to(139)).keyed(true)
+          val aggregationMultiple = rangeAggregation(
+            "aggregation5",
+            "testField",
+            SingleRange.to(23.9),
+            SingleRange.from(3),
+            SingleRange.to(12).from(0)
+          ).keyed(true)
+
+          assert(aggregationTo)(
+            equalTo(
+              Range(
+                "aggregation1",
+                "testField",
+                Chunk.from(List(SingleRange.to(23.9))),
+                None
+              )
+            )
+          ) && assert(aggregationFrom)(
+            equalTo(
+              Range(
+                "aggregation2",
+                "testField",
+                Chunk.from(List(SingleRange.from(2.0))),
+                None
+              )
+            )
+          ) && assert(aggregationFromTo)(
+            equalTo(
+              Range(
+                "aggregation3",
+                "testField",
+                Chunk.from(List(SingleRange(from = 4, to = 344.0))),
+                Some(false)
+              )
+            )
+          ) && assert(aggregationKeyed)(
+            equalTo(
+              Range(
+                "aggregation4",
+                "testField",
+                Chunk.from(List(SingleRange.to(139))),
+                Some(true)
+              )
+            )
+          ) && assert(aggregationMultiple)(
+            equalTo(
+              Range(
+                "aggregation5",
+                "testField",
+                Chunk.from(
+                  List(
+                    SingleRange.to(23.9)
+                  )
+                ),
+                Some(true)
+              )
+            )
+          )
+        },
         test("missing") {
           val aggregation      = missingAggregation("aggregation", "testField")
           val aggregationTs    = missingAggregation("aggregation", TestSubDocument.stringField)
@@ -1052,6 +1117,97 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
+        test("range") {
+          val aggregationTo   = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
+          val aggregationFrom = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
+          val aggregationFromTo =
+            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0)).keyed(false)
+          val aggregationKeyed = rangeAggregation("aggregation4", "testField", SingleRange.to(139)).keyed(true)
+          val aggregationMultiple = rangeAggregation(
+            "aggregation5",
+            "testField",
+            SingleRange.to(23.9),
+            SingleRange.from(3),
+            SingleRange.to(12).from(0)
+          ).keyed(true)
+
+          val expectedTo =
+            """
+              |{
+              |  "aggregation1": {
+              |    "range": {
+              |      "field": "testField",
+              |      "ranges": [
+              |        { "to": 23.9 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedFrom =
+            """
+              |{
+              |  "aggregation2": {
+              |    "range": {
+              |      "field": "testField",
+              |      "ranges": [
+              |        { "from": 2.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedFromTo =
+            """
+              |{
+              |  "aggregation3": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": false,
+              |      "ranges": [
+              |        { "from": 4.0, "to": 344.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedKeyed =
+            """
+              |{
+              |  "aggregation4": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": true,
+              |      "ranges": [
+              |        { "to": 139.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedMultiple =
+            """
+              |{
+              |  "aggregation5": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": true,
+              |      "ranges": [
+              |        { "to": 23.9 },
+              |        { "key": "secondKey", "from": 3.0 },
+              |        { "key": "thirdKey", "from": 0.0, "to": 12.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregationTo.toJson)(equalTo(expectedTo.toJson)) &&
+          assert(aggregationFrom.toJson)(equalTo(expectedFrom.toJson)) &&
+          assert(aggregationFromTo.toJson)(equalTo(expectedFromTo.toJson)) &&
+          assert(aggregationKeyed.toJson)(equalTo(expectedKeyed.toJson)) &&
+          assert(aggregationMultiple.toJson)(equalTo(expectedMultiple.toJson))
         },
         test("missing") {
           val aggregation   = missingAggregation("aggregation", "testField")

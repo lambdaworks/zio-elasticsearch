@@ -81,6 +81,30 @@ object AggregationResponse {
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>
         MinAggregationResult(value)
+      case RegularRangeAggregationResponse(buckets) =>
+        RegularRangeAggregationResult(
+          buckets.map(b =>
+            RegularRangeAggregationBucketResult(
+              key = b.key,
+              to = b.to,
+              from = b.from,
+              docCount = b.docCount
+            )
+          )
+        )
+      case KeyedRangeAggregationResponse(buckets) =>
+        KeyedRangeAggregationResult(
+          buckets.map { case (k, v) =>
+            (
+              k,
+              KeyedRangeAggregationBucketResult(
+                to = v.to,
+                from = v.from,
+                docCount = v.docCount
+              )
+            )
+          }
+        )
       case MissingAggregationResponse(value) =>
         MissingAggregationResult(value)
       case PercentileRanksAggregationResponse(values) =>
@@ -296,6 +320,43 @@ private[elasticsearch] final case class MinAggregationResponse(value: Double) ex
 private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
 }
+
+private[elasticsearch] sealed trait RangeAggregationResponse extends AggregationResponse
+private[elasticsearch] object RangeAggregationBucketsResponse {
+  implicit val RangeAggregationResponseDecoder: JsonDecoder[RangeAggregationResponse] =
+    DeriveJsonDecoder.gen[RangeAggregationResponse]
+}
+
+private[elasticsearch] final case class RegularRangeAggregationBucketResponse(
+  key: String,
+  to: Option[Double],
+  from: Option[Double],
+  @jsonField("doc_count")
+  docCount: Int
+)
+private[elasticsearch] object RegularRangeAggregationBucketResponse {
+  implicit val RegularRangeAggregationBucketResponseDecoder: JsonDecoder[RegularRangeAggregationBucketResponse] =
+    DeriveJsonDecoder.gen[RegularRangeAggregationBucketResponse]
+}
+
+private[elasticsearch] final case class KeyedRangeAggregationBucketResponse(
+  to: Option[Double],
+  from: Option[Double],
+  @jsonField("doc_count")
+  docCount: Int
+)
+private[elasticsearch] object KeyedRangeAggregationBucketResponse {
+  implicit val KeyedRangeAggregationBucketResponseDecoder: JsonDecoder[KeyedRangeAggregationBucketResponse] =
+    DeriveJsonDecoder.gen[KeyedRangeAggregationBucketResponse]
+}
+
+private[elasticsearch] final case class RegularRangeAggregationResponse(
+  buckets: Chunk[RegularRangeAggregationBucketResponse]
+) extends RangeAggregationResponse
+
+private[elasticsearch] final case class KeyedRangeAggregationResponse(
+  buckets: Map[String, KeyedRangeAggregationBucketResponse]
+) extends RangeAggregationResponse
 
 private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Int)
     extends AggregationResponse

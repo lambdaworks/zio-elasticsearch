@@ -241,6 +241,64 @@ private[elasticsearch] final case class Min(name: String, field: String, missing
   }
 }
 
+private[elasticsearch] final case class SingleRange(
+  from: Option[Double],
+  to: Option[Double],
+  key: Option[String]
+) { self =>
+  def from(value: Double): SingleRange = self.copy(from = Some(value))
+  def to(value: Double): SingleRange   = self.copy(to = Some(value))
+}
+
+object SingleRange {
+
+  def from(value: Double): SingleRange =
+    SingleRange(from = Some(value), to = None, key = None)
+
+  def to(value: Double): SingleRange =
+    SingleRange(from = None, to = Some(value), key = None)
+
+  def apply(from: Double, to: Double): SingleRange =
+    SingleRange(from = Some(from), to = Some(to), key = None)
+
+}
+
+sealed trait RangeAggregation extends SingleElasticAggregation with WithAgg {
+
+  def keyed(value: Boolean): Range
+}
+
+private[elasticsearch] final case class Range(
+  name: String,
+  field: String,
+  ranges: Chunk[SingleRange],
+  keyed: Option[Boolean]
+) extends RangeAggregation { self =>
+
+  def keyed(value: Boolean): Range =
+    self.copy(keyed = Some(value))
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  private[elasticsearch] def toJson: Json = {
+    val keyedJson: Json = keyed.fold(Obj())(m => Obj("keyed" -> m.toJson))
+
+    Obj(
+      name -> Obj(
+        "range" -> (Obj(
+          "field" -> field.toJson,
+          "ranges" -> Arr(ranges.map { r =>
+            r.from.fold(Obj())(m => Obj("from" -> m.toJson)) merge
+              r.to.fold(Obj())(m => Obj("to" -> m.toJson)) merge
+              r.key.fold(Obj())(m => Obj("key" -> m.toJson))
+          })
+        ) merge keyedJson)
+      )
+    )
+  }
+}
+
 sealed trait MissingAggregation extends SingleElasticAggregation with WithAgg
 
 private[elasticsearch] final case class Missing(name: String, field: String) extends MissingAggregation { self =>
