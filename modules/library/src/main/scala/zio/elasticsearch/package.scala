@@ -120,6 +120,15 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
     def asMinAggregation(name: String): RIO[R, Option[MinAggregationResult]] =
       aggregationAs[MinAggregationResult](name)
 
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.RangeAggregationResult]].
+     */
     def asRangeAggregation(name: String): RIO[R, Option[RangeAggregationResult]] =
       aggregationAs[RangeAggregationResult](name)
 

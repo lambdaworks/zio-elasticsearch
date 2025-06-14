@@ -17,7 +17,6 @@
 package zio.elasticsearch
 
 import zio.Chunk
-//import zio.elasticsearch.aggregation.{Range => IRange, SingleRange => Range, _}
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script

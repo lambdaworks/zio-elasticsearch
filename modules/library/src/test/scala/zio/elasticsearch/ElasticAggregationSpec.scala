@@ -217,17 +217,28 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("range") {
-          val aggregationTo   = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
-          val aggregationFrom = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
+          val aggregationTo     = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
+          val aggregationFrom   = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
           val aggregationFromTo =
-            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0)).keyed(false)
-          val aggregationKeyed = rangeAggregation("aggregation4", "testField", SingleRange.to(139)).keyed(true)
-          val aggregationMultiple = rangeAggregation(
-            "aggregation5",
+            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0))
+          val aggregationRegular = rangeAggregation(
+            "aggregation4",
             "testField",
             SingleRange.to(23.9),
             SingleRange.from(3),
             SingleRange.to(12).from(0)
+          )
+          val aggregationKeyed = rangeAggregation(
+            "aggregation5",
+            "testField",
+            SingleRange.from(30).to(60),
+            SingleRange.from(60).to(100)
+          ).keyed(true)
+          val aggregationNamedKeyed = rangeAggregation(
+            "aggregation6",
+            "testField",
+            SingleRange.from(30).to(60).key("Low"),
+            SingleRange.from(60).to(100).key("High")
           ).keyed(true)
 
           assert(aggregationTo)(
@@ -254,26 +265,47 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                 "aggregation3",
                 "testField",
                 Chunk.from(List(SingleRange(from = 4, to = 344.0))),
-                Some(false)
+                None
               )
             )
-          ) && assert(aggregationKeyed)(
+          ) && assert(aggregationRegular)(
             equalTo(
               Range(
                 "aggregation4",
                 "testField",
-                Chunk.from(List(SingleRange.to(139))),
-                Some(true)
+                Chunk.from(
+                  List(
+                    SingleRange.to(23.9),
+                    SingleRange.from(3),
+                    SingleRange.to(12).from(0)
+                  )
+                ),
+                None
               )
             )
-          ) && assert(aggregationMultiple)(
+          ) && assert(aggregationKeyed)(
             equalTo(
               Range(
                 "aggregation5",
                 "testField",
                 Chunk.from(
                   List(
-                    SingleRange.to(23.9)
+                    SingleRange.from(30).to(60),
+                    SingleRange.from(60).to(100)
+                  )
+                ),
+                Some(true)
+              )
+            )
+          ) && assert(aggregationNamedKeyed)(
+            equalTo(
+              Range(
+                "aggregation6",
+                "testField",
+                Chunk.from(
+                  List(
+                    SingleRange.from(30).to(60).key("Low"),
+                    SingleRange.from(60).to(100).key("High")
                   )
                 ),
                 Some(true)
@@ -1119,17 +1151,28 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("range") {
-          val aggregationTo   = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
-          val aggregationFrom = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
+          val aggregationTo     = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
+          val aggregationFrom   = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
           val aggregationFromTo =
-            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0)).keyed(false)
-          val aggregationKeyed = rangeAggregation("aggregation4", "testField", SingleRange.to(139)).keyed(true)
-          val aggregationMultiple = rangeAggregation(
-            "aggregation5",
+            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0))
+          val aggregationRegular = rangeAggregation(
+            "aggregation4",
             "testField",
             SingleRange.to(23.9),
             SingleRange.from(3),
             SingleRange.to(12).from(0)
+          )
+          val aggregationKeyed = rangeAggregation(
+            "aggregation5",
+            "testField",
+            SingleRange.from(30).to(60),
+            SingleRange.from(60).to(100)
+          ).keyed(true)
+          val aggregationNamedKeyed = rangeAggregation(
+            "aggregation6",
+            "testField",
+            SingleRange.from(30).to(60).key("Low"),
+            SingleRange.from(60).to(100).key("High")
           ).keyed(true)
 
           val expectedTo =
@@ -1164,7 +1207,6 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation3": {
               |    "range": {
               |      "field": "testField",
-              |      "keyed": false,
               |      "ranges": [
               |        { "from": 4.0, "to": 344.0 }
               |      ]
@@ -1172,21 +1214,24 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-          val expectedKeyed =
+
+          val expectedRegular =
             """
               |{
               |  "aggregation4": {
               |    "range": {
               |      "field": "testField",
-              |      "keyed": true,
               |      "ranges": [
-              |        { "to": 139.0 }
+              |        { "to": 23.9 },
+              |        { "from": 3.0 },
+              |        { "from": 0.0, "to": 12.0 }
               |      ]
               |    }
               |  }
               |}
               |""".stripMargin
-          val expectedMultiple =
+
+          val expectedKeyed =
             """
               |{
               |  "aggregation5": {
@@ -1194,9 +1239,23 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |      "field": "testField",
               |      "keyed": true,
               |      "ranges": [
-              |        { "to": 23.9 },
-              |        { "key": "secondKey", "from": 3.0 },
-              |        { "key": "thirdKey", "from": 0.0, "to": 12.0 }
+              |        { "from": 30.0, "to": 60.0 },
+              |        { "from": 60.0, "to": 100.0 }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+          val expectedNamedKeyed =
+            """
+              |{
+              |  "aggregation6": {
+              |    "range": {
+              |      "field": "testField",
+              |      "keyed": true,
+              |      "ranges": [
+              |        { "from": 30.0, "to": 60.0, "key": "Low" },
+              |        { "from": 60.0, "to": 100.0, "key": "High" }
               |      ]
               |    }
               |  }
@@ -1206,8 +1265,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationTo.toJson)(equalTo(expectedTo.toJson)) &&
           assert(aggregationFrom.toJson)(equalTo(expectedFrom.toJson)) &&
           assert(aggregationFromTo.toJson)(equalTo(expectedFromTo.toJson)) &&
+          assert(aggregationRegular.toJson)(equalTo(expectedRegular.toJson)) &&
           assert(aggregationKeyed.toJson)(equalTo(expectedKeyed.toJson)) &&
-          assert(aggregationMultiple.toJson)(equalTo(expectedMultiple.toJson))
+          assert(aggregationNamedKeyed.toJson)(equalTo(expectedNamedKeyed.toJson))
         },
         test("missing") {
           val aggregation   = missingAggregation("aggregation", "testField")

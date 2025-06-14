@@ -80,7 +80,6 @@ private[elasticsearch] final case class KeyedRangeAggregationResult(
   buckets: Map[String, KeyedRangeAggregationBucketResult]
 ) extends RangeAggregationResult
 
-
 final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
 
 final case class PercentileRanksAggregationResult private[elasticsearch] (values: Map[String, Double])

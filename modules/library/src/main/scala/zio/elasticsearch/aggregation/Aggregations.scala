@@ -248,6 +248,7 @@ private[elasticsearch] final case class SingleRange(
 ) { self =>
   def from(value: Double): SingleRange = self.copy(from = Some(value))
   def to(value: Double): SingleRange   = self.copy(to = Some(value))
+  def key(value: String): SingleRange  = self.copy(key = Some(value))
 }
 
 object SingleRange {
@@ -287,7 +288,7 @@ private[elasticsearch] final case class Range(
     Obj(
       name -> Obj(
         "range" -> (Obj(
-          "field" -> field.toJson,
+          "field"  -> field.toJson,
           "ranges" -> Arr(ranges.map { r =>
             r.from.fold(Obj())(m => Obj("from" -> m.toJson)) merge
               r.to.fold(Obj())(m => Obj("to" -> m.toJson)) merge
