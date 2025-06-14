@@ -246,7 +246,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 "aggregation1",
                 "testField",
-                Chunk.from(List(SingleRange.to(23.9))),
+                Chunk.fromIterable(List(SingleRange.to(23.9))),
                 None
               )
             )
@@ -255,7 +255,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 "aggregation2",
                 "testField",
-                Chunk.from(List(SingleRange.from(2.0))),
+                Chunk.fromIterable(List(SingleRange.from(2.0))),
                 None
               )
             )
@@ -264,7 +264,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 "aggregation3",
                 "testField",
-                Chunk.from(List(SingleRange(from = 4, to = 344.0))),
+                Chunk.fromIterable(List(SingleRange(from = 4, to = 344.0))),
                 None
               )
             )
@@ -273,7 +273,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 "aggregation4",
                 "testField",
-                Chunk.from(
+                Chunk.fromIterable(
                   List(
                     SingleRange.to(23.9),
                     SingleRange.from(3),
@@ -288,7 +288,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 "aggregation5",
                 "testField",
-                Chunk.from(
+                Chunk.fromIterable(
                   List(
                     SingleRange.from(30).to(60),
                     SingleRange.from(60).to(100)
@@ -302,7 +302,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 "aggregation6",
                 "testField",
-                Chunk.from(
+                Chunk.fromIterable(
                   List(
                     SingleRange.from(30).to(60).key("Low"),
                     SingleRange.from(60).to(100).key("High")
@@ -1214,7 +1214,6 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
           val expectedRegular =
             """
               |{
@@ -1230,7 +1229,6 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  }
               |}
               |""".stripMargin
-
           val expectedKeyed =
             """
               |{
