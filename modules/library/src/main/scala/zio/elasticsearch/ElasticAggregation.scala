@@ -222,7 +222,7 @@ object ElasticAggregation {
    * @param name
    *   aggregation name
    * @param field
-   *   the field for which min aggregation will be executed
+   *   the field for which range aggregation will be executed
    * @tparam A
    *   expected number type
    * @param range
@@ -231,7 +231,7 @@ object ElasticAggregation {
    *   an array of ranges to be evaluated and transformed to buckets in
    *   [[zio.elasticsearch.aggregation.RangeAggregation]]
    * @return
-   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents min aggregation to be
+   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
    *   performed.
    */
   final def rangeAggregation[A: Numeric](
@@ -253,14 +253,14 @@ object ElasticAggregation {
    * @param name
    *   aggregation name
    * @param field
-   *   the field for which min aggregation will be executed
+   *   the field for which range aggregation will be executed
    * @param range
    *   the first range to be evaluated and transformed to bucket in [[zio.elasticsearch.aggregation.RangeAggregation]]
    * @param ranges
    *   an array of ranges to be evaluated and transformed to buckets in
    *   [[zio.elasticsearch.aggregation.RangeAggregation]]
    * @return
-   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents min aggregation to be
+   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
    *   performed.
    */
   final def rangeAggregation(
