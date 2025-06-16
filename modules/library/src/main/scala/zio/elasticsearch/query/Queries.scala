@@ -1195,8 +1195,7 @@ private[elasticsearch] final case class Regexp[S](
 sealed trait ScriptQuery extends ElasticQuery[Any] with HasBoost[ScriptQuery]
 
 private[elasticsearch] final case class Script(script: zio.elasticsearch.script.Script, boost: Option[Double])
-    extends ScriptQuery {
-  self =>
+    extends ScriptQuery { self =>
 
   def boost(value: Double): ScriptQuery =
     self.copy(boost = Some(value))
