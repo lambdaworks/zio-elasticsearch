@@ -1,12 +1,15 @@
 /*
  * Copyright 2022 LambdaWorks
  *
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +25,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Num, Obj, Str}
+import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -791,7 +794,7 @@ private[elasticsearch] final case class Intervals[S](
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "intervals" -> Obj(
-        fieldPath.getOrElse(field) -> query.toJson
+        field -> query.toJson
       )
     )
 }
@@ -920,8 +923,7 @@ private[elasticsearch] final case class MultiMatch[S](
   boost: Option[Double],
   matchingType: Option[MultiMatchType],
   minimumShouldMatch: Option[Int]
-) extends MultiMatchQuery[S] {
-  self =>
+) extends MultiMatchQuery[S] { self =>
 
   def boost(boost: Double): MultiMatchQuery[S] =
     self.copy(boost = Some(boost))
@@ -1118,8 +1120,7 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   upper: UB,
   boost: Option[Double],
   format: Option[String]
-) extends RangeQuery[S, A, LB, UB] {
-  self =>
+) extends RangeQuery[S, A, LB, UB] { self =>
 
   def boost(value: Double): RangeQuery[S, A, LB, UB] =
     self.copy(boost = Some(value))
@@ -1179,8 +1180,7 @@ private[elasticsearch] final case class Regexp[S](
   field: String,
   value: String,
   caseInsensitive: Option[Boolean]
-) extends RegexpQuery[S] {
-  self =>
+) extends RegexpQuery[S] { self =>
 
   def caseInsensitive(value: Boolean): RegexpQuery[S] =
     self.copy(caseInsensitive = Some(value))
@@ -1212,8 +1212,7 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
   value: A,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends TermQuery[S] {
-  self =>
+) extends TermQuery[S] { self =>
 
   def boost(value: Double): TermQuery[S] =
     self.copy(boost = Some(value))
@@ -1236,8 +1235,7 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
   field: String,
   values: Chunk[A],
   boost: Option[Double]
-) extends TermsQuery[S] {
-  self =>
+) extends TermsQuery[S] { self =>
 
   def boost(value: Double): TermsQuery[S] =
     self.copy(boost = Some(value))
@@ -1258,8 +1256,7 @@ private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
   boost: Option[Double],
   minimumShouldMatchField: Option[String],
   minimumShouldMatchScript: Option[zio.elasticsearch.script.Script]
-) extends TermsSetQuery[S] {
-  self =>
+) extends TermsSetQuery[S] { self =>
 
   def boost(value: Double): TermsSetQuery[S] =
     self.copy(boost = Some(value))
@@ -1284,8 +1281,7 @@ private[elasticsearch] final case class Wildcard[S](
   value: String,
   boost: Option[Double],
   caseInsensitive: Option[Boolean]
-) extends WildcardQuery[S] {
-  self =>
+) extends WildcardQuery[S] { self =>
 
   def boost(value: Double): WildcardQuery[S] =
     self.copy(boost = Some(value))
