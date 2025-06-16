@@ -23,6 +23,14 @@ import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
+import zio.elasticsearch.query.ElasticIntervalQuery.{
+  intervalContains,
+  intervalEndsWith,
+  intervalMatch,
+  intervalRange,
+  intervalStartsWith,
+  intervalWildcard
+}
 import zio.elasticsearch.query.FunctionScoreFunction._
 import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.MultiValueMode.Max
@@ -1180,21 +1188,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("intervalRange") {
-          val intervalNoBounds = ElasticQuery.intervalRange(
+          val intervalNoBounds = intervalRange(
             lower = None,
             upper = None,
             analyzer = None,
             useField = None
           )
 
-          val intervalWithBounds = ElasticQuery.intervalRange(
+          val intervalWithBounds = intervalRange(
             lower = Some(Left("10")),
             upper = Some(Right("20")),
             analyzer = Some("standard"),
             useField = Some("otherField")
           )
 
-          val intervalWithOnlyGt = ElasticQuery.intervalRange(
+          val intervalWithOnlyGt = intervalRange(
             lower = Some(Left("10")),
             upper = None,
             analyzer = Some("standard"),

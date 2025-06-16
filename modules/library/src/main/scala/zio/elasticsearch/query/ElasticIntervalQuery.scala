@@ -31,11 +31,17 @@ private[elasticsearch] final case class IntervalAllOf[S](
 private[elasticsearch] final case class IntervalAnyOf[S](
   intervals: Chunk[IntervalRule],
   filter: Option[IntervalFilter[S]]
-) extends IntervalRule {
-  private[elasticsearch] def toJson: Json =
+) extends IntervalRule { self =>
+
+  def withFilter(f: IntervalFilter[S]): IntervalAnyOf[S] = copy(filter = Some(f))
+
+  override private[elasticsearch] def toJson: Json =
     Obj(
       "any_of" -> Obj(
-        "intervals" -> Arr(intervals.map(_.toJson): _*)
+        Chunk(
+          Some("intervals" -> Arr(intervals.map(_.toJson): _*)),
+          filter.map("filter" -> _.toJson)
+        ).flatten: _*
       )
     )
 }
@@ -209,4 +215,47 @@ private[elasticsearch] final case class IntervalWildcard[S](
         ).flatten: _*
       )
     )
+}
+object ElasticIntervalQuery {
+
+  def intervalAllOf[S](intervals: Chunk[IntervalRule]): IntervalAllOf[S] =
+    IntervalAllOf(intervals, maxGaps = None, ordered = None, filter = None)
+
+  def intervalAnyOf[S](intervals: Chunk[IntervalRule]): IntervalAnyOf[S] =
+    IntervalAnyOf(intervals, filter = None)
+
+  def intervalContains[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(s"*$pattern*", analyzer = None, useField = None)
+
+  def intervalEndsWith[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(s"*$pattern", analyzer = None, useField = None)
+
+  def intervalFilter[S](): IntervalFilter[S] =
+    IntervalFilter()
+
+  def intervalFuzzy[S](term: String): IntervalFuzzy[S] =
+    IntervalFuzzy(term, prefixLength = None, transpositions = None, fuzziness = None, analyzer = None, useField = None)
+
+  def intervalMatch[S](query: String): IntervalMatch[S] =
+    IntervalMatch(query, analyzer = None, useField = None, maxGaps = None, ordered = None, filter = None)
+
+  def intervalPrefix[S](prefix: String): IntervalPrefix =
+    IntervalPrefix(prefix, analyzer = None, useField = None)
+
+  def intervalRange[S](
+    lower: Option[Either[String, String]] = None,
+    upper: Option[Either[String, String]] = None,
+    analyzer: Option[String] = None,
+    useField: Option[String] = None
+  ): IntervalRange[S] =
+    IntervalRange(lower, upper, analyzer, useField)
+
+  def intervalRegexp[S](pattern: Regexp[S]): IntervalRegexp[S] =
+    IntervalRegexp(pattern, analyzer = None, useField = None)
+
+  def intervalStartsWith[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(s"$pattern*", analyzer = None, useField = None)
+
+  def intervalWildcard[S](pattern: String): IntervalWildcard[S] =
+    IntervalWildcard(pattern, analyzer = None, useField = None)
 }
