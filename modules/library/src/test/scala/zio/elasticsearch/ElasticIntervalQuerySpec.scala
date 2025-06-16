@@ -18,13 +18,13 @@ import zio.test.Assertion.equalTo
 object ElasticIntervalQuerySpec extends ZIOSpecDefault {
 
   def spec = suite("ElasticIntervalQuerySpec")(
-    test("intervalsMatchQuery") {
+    test("intervalMatchQuery") {
       val intervalNoOptions: IntervalMatch[String] = intervalMatch("lambda works")
 
       val intervalWithOptions: IntervalMatch[String] = intervalMatch("lambda works")
-        .withOrdered(true)
-        .withMaxGaps(2)
-        .withAnalyzer("standard")
+        .orderedOn()
+        .maxGaps(2)
+        .analyzer("standard")
 
       val filter = IntervalFilter[String](
         before = Some(intervalMatch("before_term")),
@@ -32,10 +32,10 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
       )
 
       val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works")
-        .withOrdered(true)
-        .withMaxGaps(2)
-        .withAnalyzer("standard")
-        .withFilter(filter)
+        .orderedOff()
+        .maxGaps(2)
+        .analyzer("standard")
+        .filter(filter)
 
       val queryWithStringField = intervals("stringField", intervalWithOptions)
       val queryWithTypedField  = intervals(TestDocument.stringField, intervalWithOptions)
@@ -79,7 +79,7 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           |        "query": "lambda works",
           |        "analyzer": "standard",
           |        "max_gaps": 2,
-          |        "ordered": true,
+          |        "ordered": false,
           |        "filter": {
           |          "before": {
           |            "match": {

@@ -966,8 +966,7 @@ private[elasticsearch] final case class Nested[S](
   ignoreUnmapped: Option[Boolean],
   innerHitsField: Option[InnerHits],
   scoreMode: Option[ScoreMode]
-) extends NestedQuery[S] {
-  self =>
+) extends NestedQuery[S] { self =>
 
   def ignoreUnmapped(value: Boolean): NestedQuery[S] =
     self.copy(ignoreUnmapped = Some(value))

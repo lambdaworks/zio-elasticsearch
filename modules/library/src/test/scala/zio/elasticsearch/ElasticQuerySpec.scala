@@ -26,14 +26,6 @@ import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.query.DistanceType.Plane
 import zio.elasticsearch.query.DistanceUnit.Kilometers
-import zio.elasticsearch.query.ElasticIntervalQuery.{
-  intervalContains,
-  intervalEndsWith,
-  intervalMatch,
-  intervalRange,
-  intervalStartsWith,
-  intervalWildcard
-}
 import zio.elasticsearch.query.FunctionScoreFunction._
 import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.MultiValueMode.Max
