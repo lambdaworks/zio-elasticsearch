@@ -26,12 +26,21 @@ import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
+import zio.elasticsearch.query.ElasticIntervalQuery.intervalRange
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
+import zio.elasticsearch.query.{
+  Bound,
+  Distance,
+  ExclusiveBound,
+  FunctionScoreBoostMode,
+  FunctionScoreFunction,
+  InclusiveBound,
+  InnerHits
+}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{FilterAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
 import zio.elasticsearch.script.{Painless, Script}
@@ -50,6 +59,37 @@ object HttpExecutorSpec extends IntegrationSpec {
   def spec: Spec[TestEnvironment, Any] = {
     suite("Executor")(
       suite("HTTP Executor")(
+        suite("IntervalQuery integration tests")(
+          test("search for a document using an interval range query on stringField") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (lowId, lowDoc, highId, highDoc) =>
+                val lowValue    = "banana"
+                val highValue   = "zebra"
+                val indexedLow  = lowDoc.copy(stringField = lowValue)
+                val indexedHigh = highDoc.copy(stringField = highValue)
+
+                val query =
+                  intervalRange[
+                    TestDocument,
+                    InclusiveBound.type,
+                    ExclusiveBound.type
+                  ](
+                    lower = Some(Bound("a", InclusiveBound)),
+                    upper = Some(Bound("c", ExclusiveBound)),
+                    useField = Some(TestDocument.stringField)
+                  )
+
+                for {
+                  _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, lowId, indexedLow))
+                  _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, highId, indexedHigh).refreshTrue)
+                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                } yield assert(res)(contains(indexedLow) && not(contains(indexedHigh)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
+        ),
         suite("aggregation")(
           test("aggregate using avg aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
