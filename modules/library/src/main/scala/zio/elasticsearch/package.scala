@@ -127,18 +127,6 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
-     *   [[result.RangeAggregationResult]].
-     */
-    def asRangeAggregation(name: String): RIO[R, Option[RangeAggregationResult]] =
-      aggregationAs[RangeAggregationResult](name)
-
-    /**
-     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
-     *
-     * @param name
-     *   the name of the aggregation to retrieve
-     * @return
-     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.MissingAggregationResult]].
      */
     def asMissingAggregation(name: String): RIO[R, Option[MissingAggregationResult]] =
@@ -167,6 +155,18 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      */
     def asPercentilesAggregation(name: String): RIO[R, Option[PercentilesAggregationResult]] =
       aggregationAs[PercentilesAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.RangeAggregationResult]].
+     */
+    def asRangeAggregation(name: String): RIO[R, Option[RangeAggregationResult]] =
+      aggregationAs[RangeAggregationResult](name)
 
     /**
      * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].

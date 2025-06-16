@@ -86,14 +86,14 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("min#") =>
                       MinAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("range#") =>
-                      RangeAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("missing#") =>
                       MissingAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("percentile_ranks#") =>
                       PercentileRanksAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("percentiles#") =>
                       PercentilesAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("range#") =>
+                      RangeAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("stats#") =>
                       StatsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("sum#") =>

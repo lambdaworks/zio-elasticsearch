@@ -57,6 +57,14 @@ final case class MaxAggregationResult private[elasticsearch] (value: Double) ext
 
 final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
+final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
+
+final case class PercentileRanksAggregationResult private[elasticsearch] (values: Map[String, Double])
+    extends AggregationResult
+
+final case class PercentilesAggregationResult private[elasticsearch] (values: Map[String, Double])
+    extends AggregationResult
+
 private[elasticsearch] sealed trait RangeAggregationResult extends AggregationResult
 
 private[elasticsearch] final case class RegularRangeAggregationBucketResult(
@@ -79,14 +87,6 @@ private[elasticsearch] final case class RegularRangeAggregationResult(
 private[elasticsearch] final case class KeyedRangeAggregationResult(
   buckets: Map[String, KeyedRangeAggregationBucketResult]
 ) extends RangeAggregationResult
-
-final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
-
-final case class PercentileRanksAggregationResult private[elasticsearch] (values: Map[String, Double])
-    extends AggregationResult
-
-final case class PercentilesAggregationResult private[elasticsearch] (values: Map[String, Double])
-    extends AggregationResult
 
 final case class StatsAggregationResult private[elasticsearch] (
   count: Int,
