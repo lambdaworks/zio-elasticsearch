@@ -1,12 +1,15 @@
 /*
  * Copyright 2022 LambdaWorks
- *
+ *
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *
+
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -549,25 +552,6 @@ object ElasticQuery {
     Ids(values = Chunk.fromIterable(value +: values))
 
   /**
-   * Constructs an intervals query by combining a field and an interval query.
-   *
-   * The resulting query wraps the specified interval query under the given field in the intervals query structure.
-   *
-   * @param field
-   *   the name of the field to be queried.
-   * @param rule
-   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule.
-   * @return
-   *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
-   */
-
-  final def intervals(
-    field: String,
-    rule: IntervalRule
-  ): ElasticQuery[Any] =
-    Intervals(field, rule)
-
-  /**
    * Constructs a type-safe intervals query by combining a field and an interval query.
    *
    * The resulting query wraps the specified interval query under the given type-safe field in the intervals query
@@ -588,6 +572,25 @@ object ElasticQuery {
     rule: IntervalRule
   ): ElasticQuery[S] =
     Intervals(field.toString, rule)
+
+  /**
+   * Constructs an intervals query by combining a field and an interval query.
+   *
+   * The resulting query wraps the specified interval query under the given field in the intervals query structure.
+   *
+   * @param field
+   *   the name of the field to be queried.
+   * @param rule
+   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule.
+   * @return
+   *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
+   */
+
+  final def intervals(
+    field: String,
+    rule: IntervalRule
+  ): ElasticQuery[Any] =
+    Intervals(field, rule)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.

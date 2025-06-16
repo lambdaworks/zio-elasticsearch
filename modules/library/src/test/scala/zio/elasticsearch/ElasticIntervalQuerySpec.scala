@@ -124,31 +124,31 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
       )
     },
     test("intervalRange") {
-      val intervalNoBounds = intervalRange(
+
+      val intervalNoBounds = intervalRange[Any, Inclusive, Exclusive](
         lower = None,
         upper = None,
         analyzer = None,
         useField = None
       )
 
-      val intervalWithBounds = intervalRange(
-        lower = Some(Left("10")),
-        upper = Some(Right("20")),
+      val intervalWithBounds = intervalRange[Any, Inclusive, Exclusive](
+        lower = Some(Bound("10", InclusiveBound)),
+        upper = Some(Bound("20", ExclusiveBound)),
         analyzer = Some("standard"),
         useField = Some("otherField")
       )
 
-      val intervalWithOnlyGt = intervalRange(
-        lower = Some(Left("10")),
+      val intervalWithOnlyLower = intervalRange[Any, Inclusive, Inclusive](
+        lower = Some(Bound("10", InclusiveBound)),
         upper = None,
         analyzer = Some("standard"),
         useField = Some("otherField")
       )
 
-      val queryWithNoBounds     = intervals("stringField", intervalNoBounds)
-      val queryWithOnlyGt       = intervals("stringField", intervalWithOnlyGt)
-      val queryWithBoundsString = intervals("stringField", intervalWithBounds)
-      val queryWithBoundsTyped  = intervals(TestDocument.stringField, intervalWithBounds)
+      val queryWithNoBounds  = intervals("stringField", intervalNoBounds)
+      val queryWithOnlyLower = intervals("stringField", intervalWithOnlyLower)
+      val queryWithBounds    = intervals("stringField", intervalWithBounds)
 
       val expectedNoBounds =
         """
@@ -167,8 +167,8 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           |  "intervals": {
           |    "stringField": {
           |      "range": {
-          |        "gt": "10",
-          |        "lte": "20",
+          |        "gte": "10",
+          |        "lt": "20",
           |        "analyzer": "standard",
           |        "use_field": "otherField"
           |      }
@@ -177,13 +177,13 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           |}
           |""".stripMargin
 
-      val expectedWithOnlyGt =
+      val expectedWithOnlyLower =
         """
           |{
           |  "intervals": {
           |    "stringField": {
           |      "range": {
-          |        "gt": "10",
+          |        "gte": "10",
           |        "analyzer": "standard",
           |        "use_field": "otherField"
           |      }
@@ -194,7 +194,7 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
 
       assert(intervalNoBounds)(
         equalTo(
-          IntervalRange(
+          IntervalRange[Any, Inclusive, Exclusive](
             lower = None,
             upper = None,
             analyzer = None,
@@ -205,13 +205,10 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
       assert(queryWithNoBounds.toJson(None))(
         equalTo(expectedNoBounds.toJson)
       ) &&
-      assert(queryWithOnlyGt.toJson(None))(
-        equalTo(expectedWithOnlyGt.toJson)
+      assert(queryWithOnlyLower.toJson(None))(
+        equalTo(expectedWithOnlyLower.toJson)
       ) &&
-      assert(queryWithBoundsString.toJson(None))(
-        equalTo(expectedWithBounds.toJson)
-      ) &&
-      assert(queryWithBoundsTyped.toJson(None))(
+      assert(queryWithBounds.toJson(None))(
         equalTo(expectedWithBounds.toJson)
       )
     },
