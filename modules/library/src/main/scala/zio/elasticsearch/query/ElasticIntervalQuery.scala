@@ -1,10 +1,26 @@
+/*
+ * Copyright 2022 LambdaWorks
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package zio.elasticsearch.query
 
-import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.query.options.{HasAnalyzer, HasUseField}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
+import zio.{Chunk, NonEmptyChunk}
 
 sealed trait IntervalRule {
   private[elasticsearch] def toJson: Json
@@ -27,8 +43,8 @@ private[elasticsearch] final case class IntervalAllOf[S](
 
   def filter(f: IntervalFilter[S]): IntervalAllOf[S] = copy(filter = Some(f))
   def maxGaps(g: Int): IntervalAllOf[S]              = copy(maxGaps = Some(g))
-  def orderedOn()                                    = copy(ordered = Some(true))
-  def orderedOff()                                   = copy(ordered = Some(false))
+  def orderedOn(): IntervalAllOf[S]                  = copy(ordered = Some(true))
+  def orderedOff(): IntervalAllOf[S]                 = copy(ordered = Some(false))
   private[elasticsearch] def toJson: Json            =
     Obj(
       "all_of" -> Obj(
