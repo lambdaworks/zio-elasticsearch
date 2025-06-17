@@ -11,6 +11,7 @@ import zio.elasticsearch.query.ElasticIntervalQuery.{
   intervalWildcard
 }
 import zio.elasticsearch.query._
+import zio.elasticsearch.request.Document
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -21,8 +22,7 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
       test("intervalMatchQuery") {
         val intervalNoOptions: IntervalMatch[String] = intervalMatch("lambda works")
 
-        val intervalWithOptions: IntervalMatch[String] = intervalMatch("lambda works")
-          .orderedOn()
+        val intervalWithOptions: IntervalMatch[String] = intervalMatch("lambda works").orderedOn
           .maxGaps(2)
           .analyzer("standard")
 
@@ -31,8 +31,7 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           after = Some(intervalMatch("after_term"))
         )
 
-        val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works")
-          .orderedOff()
+        val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works").orderedOff
           .maxGaps(2)
           .analyzer("standard")
           .filter(filter)
@@ -124,22 +123,30 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
         )
       },
       test("intervalRange") {
-        val intervalWithBounds = intervalRange[Any, Inclusive, Exclusive](
-          lower = Some(Bound("10", InclusiveBound)),
-          upper = Some(Bound("20", ExclusiveBound)),
+        val intervalWithBounds = intervalRange[Any](
+          lower = Some(GreaterThanInterval("10")),
+          upper = Some(LessThanInterval("20")),
           analyzer = Some("standard"),
-          useField = Some("otherField")
+          useField = Some(TestDocument.stringField)
         )
 
-        val intervalWithOnlyLower = intervalRange[Any, Inclusive, Inclusive](
-          lower = Some(Bound("10", InclusiveBound)),
+        val intervalWithOnlyLower = intervalRange[Any](
+          lower = Some(GreaterThanInterval("10")),
           upper = None,
           analyzer = Some("standard"),
-          useField = Some("otherField")
+          useField = Some(TestDocument.stringField)
         )
 
-        val queryWithOnlyLower = intervals("stringField", intervalWithOnlyLower)
-        val queryWithBounds    = intervals("stringField", intervalWithBounds)
+        val intervalWithOnlyUpper = intervalRange[Any](
+          lower = None,
+          upper = Some(LessThanInterval("20")),
+          analyzer = Some("standard"),
+          useField = Some(TestDocument.stringField)
+        )
+
+        val queryWithBounds = intervals(TestDocument.stringField, intervalWithBounds)
+        val queryWithLower  = intervals(TestDocument.stringField, intervalWithOnlyLower)
+        val queryWithUpper  = intervals(TestDocument.stringField, intervalWithOnlyUpper)
 
         val expectedWithBounds =
           """
@@ -148,16 +155,16 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
             |    "stringField": {
             |      "range": {
             |        "gte": "10",
-            |        "lt": "20",
+            |        "lte": "20",
             |        "analyzer": "standard",
-            |        "use_field": "otherField"
+            |        "use_field": "stringField"
             |      }
             |    }
             |  }
             |}
             |""".stripMargin
 
-        val expectedWithOnlyLower =
+        val expectedWithLower =
           """
             |{
             |  "intervals": {
@@ -165,18 +172,36 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
             |      "range": {
             |        "gte": "10",
             |        "analyzer": "standard",
-            |        "use_field": "otherField"
+            |        "use_field": "stringField"
             |      }
             |    }
             |  }
             |}
             |""".stripMargin
 
-        assert(queryWithOnlyLower.toJson(None))(
-          equalTo(expectedWithOnlyLower.toJson)
-        ) &&
+        val expectedWithUpper =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "range": {
+            |        "lte": "20",
+            |        "analyzer": "standard",
+            |        "use_field": "stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
         assert(queryWithBounds.toJson(None))(
           equalTo(expectedWithBounds.toJson)
+        ) &&
+        assert(queryWithLower.toJson(None))(
+          equalTo(expectedWithLower.toJson)
+        ) &&
+        assert(queryWithUpper.toJson(None))(
+          equalTo(expectedWithUpper.toJson)
         )
       },
       test("intervalWildcard") {
