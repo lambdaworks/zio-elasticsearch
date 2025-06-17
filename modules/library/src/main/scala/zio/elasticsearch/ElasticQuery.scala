@@ -1,19 +1,3 @@
-/*
- * Copyright 2022 LambdaWorks
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package zio.elasticsearch
 
 import zio.Chunk
@@ -42,8 +26,9 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.BoostingQuery]] that represents the boost query to be performed.
    */
+
   final def boosting[S: Schema](
-    negativeBoost: Float,
+    negativeBoost: BoostRange,
     negativeQuery: ElasticQuery[S],
     positiveQuery: ElasticQuery[S]
   ): BoostingQuery[S] =
@@ -65,7 +50,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.BoostingQuery]] that represents the boost query to be performed.
    */
   final def boosting(
-    negativeBoost: Float,
+    negativeBoost: BoostRange,
     negativeQuery: ElasticQuery[Any],
     positiveQuery: ElasticQuery[Any]
   ): BoostingQuery[Any] =

@@ -1,22 +1,3 @@
-/*
- * Copyright 2022 LambdaWorks
- *
-
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
-
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package zio.elasticsearch.query
 
 import zio.Chunk
@@ -25,7 +6,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -131,6 +112,14 @@ sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] wi
   def should(queries: ElasticQuery[Any]*): BoolQuery[S]
 }
 
+private[elasticsearch] final case class BoostRange(value: Float) {
+  def validate: Option[BoostRange] =
+    if (value >= 0 && value <= 1) Some(this)
+    else None
+
+  def toJson: Json = Json.Str(value.toString)
+}
+
 private[elasticsearch] final case class Bool[S](
   filter: Chunk[ElasticQuery[S]],
   must: Chunk[ElasticQuery[S]],
@@ -188,13 +177,13 @@ private[elasticsearch] final case class Bool[S](
 sealed trait BoostingQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Boosting[S](
-  negativeBoost: Float,
+  negativeBoost: BoostRange,
   negativeQuery: ElasticQuery[S],
   positiveQuery: ElasticQuery[S]
 ) extends BoostingQuery[S] { self =>
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val negativeBoostJson = Obj("negative_boost" -> negativeBoost.toJson)
+    val negativeBoostJson = Obj("negative_boost" -> Str(negativeBoost.value.toString))
     val negativeQueryJson = Obj("negative" -> negativeQuery.toJson(fieldPath))
     val positiveQueryJson = Obj("positive" -> positiveQuery.toJson(fieldPath))
 

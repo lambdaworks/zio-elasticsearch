@@ -1,22 +1,3 @@
-/*
- * Copyright 2022 LambdaWorks
- *
-
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
-
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
-
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package zio.elasticsearch
 
 import zio.Chunk
@@ -338,13 +319,15 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           }
         ),
         test("boosting") {
-          val query   = boosting(0.5f, exists("testField"), terms("booleanField", true, false))
-          val queryTs = boosting(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+          val validBoost = BoostRange(0.5f)
+          val query      = boosting(validBoost, exists("testField"), terms("booleanField", true, false))
+          val queryTs    =
+            boosting(validBoost, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
 
           assert(query)(
             equalTo(
               Boosting[Any](
-                negativeBoost = 0.5f,
+                negativeBoost = validBoost,
                 negativeQuery = exists("testField"),
                 positiveQuery = terms("booleanField", true, false)
               )
@@ -352,7 +335,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           ) && assert(queryTs)(
             equalTo(
               Boosting[TestDocument](
-                negativeBoost = 0.5f,
+                negativeBoost = validBoost,
                 negativeQuery = exists(TestDocument.stringField),
                 positiveQuery = terms(TestDocument.booleanField, true, false)
               )
@@ -2621,30 +2604,38 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           }
         ),
         test("boosting") {
-          val query   = boosting(0.5f, exists("stringField"), terms("booleanField", true, false))
-          val queryTs = boosting(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+          val boostRange = BoostRange(0.5f)
+
+          val query =
+            boosting(boostRange, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+
+          val queryTs = boosting(boostRange, exists("stringField"), terms("booleanField", true, false))
 
           val expected =
             """
               |{
               |  "boosting": {
-              |    "positive": {
-              |      "terms": {
-              |       "booleanField": [ true, false ]
-              |       }
-              |    },
+              |    "negative_boost": "0.5",
               |    "negative": {
               |      "exists": {
-              |       "field": "stringField"
+              |        "field": "stringField"
               |      }
               |    },
-              |    "negative_boost": 0.5
+              |    "positive": {
+              |      "terms": {
+              |        "booleanField": [true, false]
+              |      }
+              |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
-          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
+          assert(query.toJson(fieldPath = None))(
+            equalTo(expected.toJson)
+          ) &&
+          assert(queryTs.toJson(fieldPath = None))(
+            equalTo(expected.toJson)
+          )
         },
         test("constantScore") {
           val query          = constantScore(matchPhrase("stringField", "test"))
