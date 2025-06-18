@@ -77,6 +77,19 @@ object AggregationResponse {
             (key, toResult(response))
           })
         )
+      case IpRangeAggregationResponse(buckets) =>
+        IpRangeAggregationResult(
+          buckets.map(b =>
+            IpRangeAggregationBucketResult(
+              key = b.key,
+              from = b.from,
+              to = b.to,
+              docCount = b.docCount,
+              subAggregations = Map.empty
+            )
+          )
+        )
+
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>

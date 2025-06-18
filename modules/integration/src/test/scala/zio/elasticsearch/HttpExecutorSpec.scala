@@ -21,7 +21,7 @@ import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.aggregation.AggregationOrder
+import zio.elasticsearch.aggregation.{AggregationOrder, IpRange}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
@@ -462,6 +462,43 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .asSumAggregation("aggregationInt")
                 } yield assert(aggsRes.head.value)(equalTo(223.0))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using ip range aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) { (docIdA, docA, docIdB, docB) =>
+              val updatedA = docA.copy(stringField = "192.168.1.10")
+              val updatedB = docB.copy(stringField = "192.168.1.200")
+
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+
+                _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdA, updatedA))
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, docIdB, updatedB)
+                         .refreshTrue
+                     )
+
+                aggregation = IpRange(
+                                name = "ip_range_agg",
+                                field = "ipField",
+                                ranges = Chunk(
+                                  IpRange.IpRangeBound(to = Some("192.168.1.100")),
+                                  IpRange.IpRangeBound(
+                                    from = Some("192.168.1.100"),
+                                    to = Some("192.168.1.255")
+                                  )
+                                ),
+                                keyed = None,
+                                subAggregations = Chunk.empty
+                              )
+
+                result <- Executor.execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
+                agg    <- result.aggregation("ip_range_agg")
+              } yield assertTrue(agg.nonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1064,7 +1101,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   _                    <- Executor.execute(ElasticRequest.bulk(req1, req2, req3).refreshTrue)
                   query                 = ElasticQuery.kNN(TestDocument.vectorField, 2, 3, Chunk(-5.0, 9.0, -12.0))
                   res                  <- Executor.execute(ElasticRequest.knnSearch(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield (assert(res)(equalTo(Chunk(firstDocumentUpdated, thirdDocumentUpdated))))
+                } yield assert(res)(equalTo(Chunk(firstDocumentUpdated, thirdDocumentUpdated)))
             }
           } @@ around(
             Executor.execute(
