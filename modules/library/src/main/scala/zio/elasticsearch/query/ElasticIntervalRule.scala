@@ -141,7 +141,7 @@ private[elasticsearch] final case class IntervalFuzzy[S](
           transpositions.map("transpositions" -> _.toJson),
           fuzziness.map("fuzziness" -> _.toJson),
           analyzer.map("analyzer" -> _.toJson),
-          useField.map("use_field" -> _.toString.toJson)
+          useField.map("use_field" -> _.toJson)
         ).flatten: _*
       )
     )
@@ -178,7 +178,7 @@ private[elasticsearch] final case class IntervalMatch[S](
         Chunk(
           Some("query" -> Str(query)),
           analyzer.map("analyzer" -> _.toJson),
-          useField.map("use_field" -> _.toString.toJson),
+          useField.map("use_field" -> _.toJson),
           maxGaps.map("max_gaps" -> _.toJson),
           ordered.map("ordered" -> _.toJson),
           filter.map("filter" -> _.toJson)
@@ -207,7 +207,7 @@ private[elasticsearch] final case class IntervalPrefix[S](
         Chunk(
           Some("prefix" -> Str(prefix)),
           analyzer.map(a => "analyzer" -> Str(a)),
-          useField.map("use_field" -> _.toString.toJson)
+          useField.map("use_field" -> _.toJson)
         ).flatten: _*
       )
     )
@@ -251,7 +251,7 @@ private[elasticsearch] final case class IntervalRange[S](
           lower.map("gte" -> _.toJson),
           upper.map("lte" -> _.toJson),
           analyzer.map("analyzer" -> Str(_)),
-          useField.map("use_field" -> _.toString.toJson)
+          useField.map("use_field" -> _.toJson)
         ).flatten: _*
       )
     )
@@ -277,7 +277,7 @@ private[elasticsearch] final case class IntervalRegexp[S](
         Chunk(
           Some("pattern" -> pattern.toJson(None)),
           analyzer.map("analyzer" -> _.toJson),
-          useField.map("use_field" -> _.toString.toJson)
+          useField.map("use_field" -> _.toJson)
         ).flatten: _*
       )
     )
@@ -303,7 +303,7 @@ private[elasticsearch] final case class IntervalWildcard[S](
         Chunk(
           Some("pattern" -> pattern.toJson),
           analyzer.map("analyzer" -> _.toJson),
-          useField.map("use_field" -> _.toString.toJson)
+          useField.map("use_field" -> _.toJson)
         ).flatten: _*
       )
     )
