@@ -1,12 +1,12 @@
 /*
  * Copyright 2022 LambdaWorks
- *
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -493,11 +493,45 @@ object HttpExecutorSpec extends IntegrationSpec {
                                   )
                                 ),
                                 keyed = None,
-                                subAggregations = Chunk.empty
+                                subAggregations = None
                               )
 
                 result <- Executor.execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
                 agg    <- result.aggregation("ip_range_agg")
+              } yield assertTrue(agg.nonEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using ip range aggregation with CIDR masks") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) { (docId1, doc1, docId2, doc2) =>
+              val updated1 = doc1.copy(stringField = "10.0.0.10")
+              val updated2 = doc2.copy(stringField = "10.0.0.120")
+
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+
+                _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docId1, updated1))
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, docId2, updated2)
+                         .refreshTrue
+                     )
+
+                aggregation = IpRange(
+                                name = "cidr_agg",
+                                field = "ipField",
+                                ranges = Chunk(
+                                  IpRange.IpRangeBound(mask = Some("10.0.0.0/25")),
+                                  IpRange.IpRangeBound(mask = Some("10.0.0.128/25"))
+                                ),
+                                keyed = None,
+                                subAggregations = None
+                              )
+
+                result <- Executor.execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
+                agg    <- result.aggregation("cidr_agg")
               } yield assertTrue(agg.nonEmpty)
             }
           } @@ around(

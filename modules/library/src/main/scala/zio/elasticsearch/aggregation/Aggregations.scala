@@ -212,23 +212,26 @@ final case class IpRange(
   field: String,
   ranges: Chunk[IpRange.IpRangeBound],
   keyed: Option[Boolean],
-  subAggregations: Chunk[SingleElasticAggregation]
+  subAggregations: Option[Chunk[SingleElasticAggregation]]
 ) extends IpRangeAggregation { self =>
 
-  def keyed(value: Boolean): IpRangeAggregation =
-    self.copy(keyed = Some(value))
+  def keyed(value: Boolean): IpRangeAggregation = self.copy(keyed = Some(value))
 
   def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, aggregation)
 
   def withSubAgg(aggregation: SingleElasticAggregation): IpRangeAggregation =
-    self.copy(subAggregations = aggregation +: subAggregations)
+    self.copy(subAggregations = Some(aggregation +: subAggregations.getOrElse(Chunk.empty)))
 
   private[elasticsearch] def toJson: Json = {
-    val rangesJson = ranges.map(_.toJson)
 
+    val rangesJson  = ranges.map(_.toJson)
     val keyedJson   = keyed.fold(Obj())(k => Obj("keyed" -> k.toJson))
-    val subAggsJson = subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
+    val subAggsJson = subAggregations match {
+      case Some(aggs) if aggs.nonEmpty =>
+        Obj("aggs" -> aggs.map(_.toJson).reduce(_ merge _))
+      case _ => Obj()
+    }
 
     Obj(
       name -> (

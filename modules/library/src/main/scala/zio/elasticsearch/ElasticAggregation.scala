@@ -169,7 +169,7 @@ object ElasticAggregation {
    * @param field
    *   The field for which the IP range aggregation will be executed
    * @param ranges
-   *   A chunk of IP range bounds specifying the ranges.
+   *   A chunk of IP range bounds specifying the ranges
    * @param subAggregations
    *   Optional map of sub-aggregations to nest within this aggregation
    * @return
@@ -180,24 +180,24 @@ object ElasticAggregation {
     field: Field[_, String],
     ranges: Chunk[IpRange.IpRangeBound]
   ): IpRangeAggregation =
-    IpRange(name = name, field = field.toString, ranges = ranges, keyed = None, subAggregations = Chunk.empty)
+    IpRange(name = name, field = field.toString, ranges = ranges, keyed = None, subAggregations = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.IpRangeAggregation]] using the specified parameters.
    *
    * @param name
-   *   Aggregation name.
+   *   Aggregation name
    * @param field
-   *   The field (as string) for which the IP range aggregation will be executed.
+   *   The field (as string) for which the IP range aggregation will be executed
    * @param ranges
-   *   A chunk of IP range bounds specifying the ranges.
+   *   A chunk of IP range bounds specifying the ranges
    * @param subAggregations
-   *   Optional map of sub-aggregations to nest within this aggregation.
+   *   Optional map of sub-aggregations to nest within this aggregation
    * @return
    *   An instance of [[IpRangeAggregation]] configured with the provided parameters.
    */
   def ipRangeAggregation(name: String, field: String, ranges: Chunk[IpRange.IpRangeBound]): IpRangeAggregation =
-    IpRange(name = name, field = field, ranges = ranges, keyed = None, subAggregations = Chunk.empty)
+    IpRange(name = name, field = field, ranges = ranges, keyed = None, subAggregations = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
