@@ -89,7 +89,6 @@ object AggregationResponse {
             )
           )
         )
-
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>
