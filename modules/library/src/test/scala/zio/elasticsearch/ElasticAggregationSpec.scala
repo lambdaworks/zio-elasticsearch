@@ -150,6 +150,32 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0)))
           )
         },
+        test("ipRange") {
+          val aggregation =
+            ipRangeAggregation(
+              name = "ip_range_agg",
+              field = "ipField",
+              ranges = Chunk(
+                IpRange.IpRangeBound(to = Some("10.0.0.5")),
+                IpRange.IpRangeBound(from = Some("10.0.0.5"))
+              )
+            )
+
+          assert(aggregation)(
+            equalTo(
+              IpRange(
+                name = "ip_range_agg",
+                field = "ipField",
+                ranges = Chunk(
+                  IpRange.IpRangeBound(to = Some("10.0.0.5")),
+                  IpRange.IpRangeBound(from = Some("10.0.0.5"))
+                ),
+                keyed = None,
+                subAggregations = None
+              )
+            )
+          )
+        },
         test("filter") {
           val query                         = term(TestDocument.stringField, "test")
           val aggregation                   = filterAggregation("aggregation", query)
@@ -966,6 +992,73 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
           assert(aggregationWithMultipleSubAggregations.toJson)(equalTo(expectedWithMultipleSubAggregations.toJson))
+        },
+        test("ip_range aggregation with from/to ") {
+          val agg = IpRange(
+            name = "ip_range_agg",
+            field = "ip",
+            ranges = Chunk(
+              IpRange.IpRangeBound(to = Some("10.0.0.5")),
+              IpRange.IpRangeBound(from = Some("10.0.0.5"))
+            ),
+            keyed = None,
+            subAggregations = None
+          )
+
+          val expectedJson =
+            """
+              |{
+              |  "ip_range_agg": {
+              |    "ip_range": {
+              |      "field": "ip",
+              |      "ranges": [
+              |        {
+              |          "to": "10.0.0.5"
+              |        },
+              |        {
+              |          "from": "10.0.0.5"
+              |        }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(agg.toJson)(equalTo(expectedJson.toJson))
+        },
+        test("ip_range aggregation with CIDR masks and keyed = true") {
+          val agg = IpRange(
+            name = "ip_range_agg",
+            field = "ip",
+            ranges = Chunk(
+              IpRange.IpRangeBound(mask = Some("10.0.0.0/25")),
+              IpRange.IpRangeBound(mask = Some("10.0.0.127/25"))
+            ),
+            keyed = Some(true),
+            subAggregations = None
+          )
+
+          val expectedJson =
+            """
+              |{
+              |  "ip_range_agg": {
+              |    "ip_range": {
+              |      "field": "ip",
+              |      "ranges": [
+              |        {
+              |          "mask": "10.0.0.0/25"
+              |        },
+              |        {
+              |          "mask": "10.0.0.127/25"
+              |        }
+              |      ],
+              |      "keyed": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(agg.toJson)(equalTo(expectedJson.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")
