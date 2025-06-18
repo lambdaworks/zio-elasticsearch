@@ -777,13 +777,13 @@ sealed trait IntervalsQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Intervals[S](
   field: String,
-  query: IntervalRule
+  rule: IntervalRule
 ) extends IntervalsQuery[S] { self =>
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "intervals" -> Obj(
-        fieldPath.fold(field)(_ + "." + field) -> query.toJson
+        fieldPath.fold(field)(_ + "." + field) -> rule.toJson
       )
     )
 }

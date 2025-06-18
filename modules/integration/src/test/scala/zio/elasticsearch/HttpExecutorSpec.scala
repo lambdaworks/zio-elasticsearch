@@ -2764,9 +2764,8 @@ object HttpExecutorSpec extends IntegrationSpec {
               (idMatch, docMatch, targetWord, idNoMatch, docNoMatch) =>
                 val docShouldMatch    = docMatch.copy(stringField = s"prefix $targetWord suffix")
                 val docShouldNotMatch = docNoMatch.copy(stringField = "completely unrelated text")
-
-                val field = TestDocument.stringField.toString
-                val query = intervals(field, intervalMatch(targetWord))
+                val field             = TestDocument.stringField.toString
+                val query             = intervals(field, intervalMatch(targetWord))
 
                 for {
                   _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))

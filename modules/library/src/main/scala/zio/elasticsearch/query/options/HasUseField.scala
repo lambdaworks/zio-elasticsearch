@@ -10,7 +10,7 @@ private[elasticsearch] trait HasUseField[Q <: HasUseField[Q]] {
    * @param value
    *   the name of the field to use
    * @return
-   *   a new instance of the query with the `use_field` value set
+   *   a new instance of the query with the `use_field` value set.
    */
   def useField(field: Field[_, _]): Q
 }

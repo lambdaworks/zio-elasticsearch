@@ -534,21 +534,20 @@ object ElasticQuery {
     Ids(values = Chunk.fromIterable(value +: values))
 
   /**
-   * Constructs a type-safe intervals query by combining a field and an interval query.
+   * Constructs a type-safe intervals query by combining a field and an interval rule.
    *
    * The resulting query wraps the specified interval query under the given type-safe field in the intervals query
    * structure.
    *
    * @param field
-   *   the type-safe field on which the query is executed.
+   *   the type-safe field on which the query is executed
    * @param rule
-   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule.
+   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule
    * @tparam S
-   *   the document type for which the query is defined.
+   *   the document type for which the query is defined
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
-
   final def intervals[S](field: Field[S, _], rule: IntervalRule): ElasticQuery[S] = Intervals(field.toString, rule)
 
   /**
@@ -557,14 +556,13 @@ object ElasticQuery {
    * The resulting query wraps the specified interval query under the given field in the intervals query structure.
    *
    * @param field
-   *   the name of the field to be queried.
+   *   the name of the field to be queried
    * @param rule
-   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule.
+   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
-
-  final def intervals(field: String, rule: IntervalRule): ElasticQuery[Any] = Intervals(field, rule)
+  final def intervals(field: String, rule: IntervalRule): ElasticQuery[Any] = Intervals(field = field, rule = rule)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.
