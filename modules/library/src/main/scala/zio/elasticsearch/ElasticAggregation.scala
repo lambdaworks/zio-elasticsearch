@@ -160,6 +160,16 @@ object ElasticAggregation {
   final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
     Filter(name = name, query = query, subAggregations = Chunk.empty)
 
+  def ipRangeAggregation(
+    name: String,
+    field: Field[_, String],
+    ranges: Chunk[IpRange.IpRangeBound]
+  ): IpRangeAggregation =
+    IpRange(name = name, field = field.toString, ranges = ranges, keyed = None, subAggregations = Chunk.empty)
+
+  def ipRangeAggregation(name: String, field: String, ranges: Chunk[IpRange.IpRangeBound]): IpRangeAggregation =
+    IpRange(name = name, field = field, ranges = ranges, keyed = None, subAggregations = Chunk.empty)
+
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
    *

@@ -205,6 +205,59 @@ private[elasticsearch] final case class Filter(
   }
 }
 
+sealed trait IpRangeAggregation extends SingleElasticAggregation with WithAgg with WithSubAgg[IpRangeAggregation]
+
+final case class IpRange(
+  name: String,
+  field: String,
+  ranges: Chunk[IpRange.IpRangeBound],
+  keyed: Option[Boolean],
+  subAggregations: Chunk[SingleElasticAggregation]
+) extends IpRangeAggregation { self =>
+
+  def keyed(value: Boolean): IpRangeAggregation =
+    self.copy(keyed = Some(value))
+
+  def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, aggregation)
+
+  def withSubAgg(aggregation: SingleElasticAggregation): IpRangeAggregation =
+    self.copy(subAggregations = aggregation +: subAggregations)
+
+  private[elasticsearch] def toJson: Json = {
+    val rangesJson = ranges.map(_.toJson)
+
+    val keyedJson   = keyed.fold(Obj())(k => Obj("keyed" -> k.toJson))
+    val subAggsJson = subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
+
+    Obj(
+      name -> (
+        Obj("ip_range" -> (Obj("field" -> field.toJson, "ranges" -> Arr(rangesJson)) merge keyedJson)) merge subAggsJson
+      )
+    )
+  }
+}
+
+object IpRange {
+
+  final case class IpRangeBound(
+    from: Option[String] = None,
+    to: Option[String] = None,
+    mask: Option[String] = None,
+    key: Option[String] = None
+  ) {
+    def toJson: Json = {
+      val baseFields = Chunk.empty[(String, Json)] ++
+        from.map("from" -> _.toJson) ++
+        to.map("to" -> _.toJson) ++
+        mask.map("mask" -> _.toJson) ++
+        key.map("key" -> _.toJson)
+
+      Obj(baseFields: _*)
+    }
+  }
+}
+
 sealed trait MaxAggregation extends SingleElasticAggregation with HasMissing[MaxAggregation] with WithAgg
 
 private[elasticsearch] final case class Max(name: String, field: String, missing: Option[Double])

@@ -157,6 +157,8 @@ private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) e
             )
           case str if str.contains("filter#") =>
             Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
+          case str if str.contains("ip_range#") =>
+            Some(field -> data.unsafeAs[IpRangeAggregationResponse](IpRangeAggregationResponse.decoder))
           case str if str.contains("max#") =>
             Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
           case str if str.contains("min#") =>
@@ -202,6 +204,8 @@ private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) e
           (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
         case str if str.contains("filter#") =>
           (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
+        case str if str.contains("ip_range#") =>
+          (field.split("#")(1), data.asInstanceOf[IpRangeAggregationResponse])
         case str if str.contains("max#") =>
           (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
         case str if str.contains("min#") =>
@@ -283,6 +287,27 @@ private[elasticsearch] sealed trait JsonDecoderOps {
         case Right(decoded) => decoded
       }
   }
+}
+
+private[elasticsearch] final case class IpRangeAggregationBucket(
+  key: String,
+  from: Option[String],
+  to: Option[String],
+  @jsonField("doc_count")
+  docCount: Int
+) extends AggregationBucket
+
+private[elasticsearch] object IpRangeAggregationBucket {
+  implicit val decoder: JsonDecoder[IpRangeAggregationBucket] = DeriveJsonDecoder.gen[IpRangeAggregationBucket]
+}
+
+private[elasticsearch] final case class IpRangeAggregationResponse(
+  buckets: Chunk[IpRangeAggregationBucket]
+) extends AggregationResponse
+
+private[elasticsearch] object IpRangeAggregationResponse {
+  implicit val decoder: JsonDecoder[IpRangeAggregationResponse] =
+    DeriveJsonDecoder.gen[IpRangeAggregationResponse]
 }
 
 private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse

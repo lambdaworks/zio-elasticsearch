@@ -53,6 +53,17 @@ final case class FilterAggregationResult private[elasticsearch] (
     }
 }
 
+final case class IpRangeAggregationBucketResult private[elasticsearch] (
+  key: String,
+  from: Option[String],
+  to: Option[String],
+  docCount: Int
+) extends AggregationResult
+
+final case class IpRangeAggregationResult private[elasticsearch] (
+  buckets: Chunk[IpRangeAggregationBucketResult]
+) extends AggregationResult
+
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
