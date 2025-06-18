@@ -6,7 +6,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj, Str}
+import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -112,14 +112,6 @@ sealed trait BoolQuery[S] extends ElasticQuery[S] with HasBoost[BoolQuery[S]] wi
   def should(queries: ElasticQuery[Any]*): BoolQuery[S]
 }
 
-private[elasticsearch] final case class BoostRange(value: Float) {
-  def validate: Option[BoostRange] =
-    if (value >= 0 && value <= 1) Some(this)
-    else None
-
-  def toJson: Json = Json.Str(value.toString)
-}
-
 private[elasticsearch] final case class Bool[S](
   filter: Chunk[ElasticQuery[S]],
   must: Chunk[ElasticQuery[S]],
@@ -177,13 +169,13 @@ private[elasticsearch] final case class Bool[S](
 sealed trait BoostingQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Boosting[S](
-  negativeBoost: BoostRange,
+  negativeBoost: Float,
   negativeQuery: ElasticQuery[S],
   positiveQuery: ElasticQuery[S]
 ) extends BoostingQuery[S] { self =>
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val negativeBoostJson = Obj("negative_boost" -> Str(negativeBoost.value.toString))
+    val negativeBoostJson = Obj("negative_boost" -> negativeBoost.toJson)
     val negativeQueryJson = Obj("negative" -> negativeQuery.toJson(fieldPath))
     val positiveQueryJson = Obj("positive" -> positiveQuery.toJson(fieldPath))
 

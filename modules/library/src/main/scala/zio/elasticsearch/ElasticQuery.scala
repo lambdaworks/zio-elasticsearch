@@ -28,7 +28,7 @@ object ElasticQuery {
    */
 
   final def boosting[S: Schema](
-    negativeBoost: BoostRange,
+    negativeBoost: Float,
     negativeQuery: ElasticQuery[S],
     positiveQuery: ElasticQuery[S]
   ): BoostingQuery[S] =
@@ -50,7 +50,7 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.BoostingQuery]] that represents the boost query to be performed.
    */
   final def boosting(
-    negativeBoost: BoostRange,
+    negativeBoost: Float,
     negativeQuery: ElasticQuery[Any],
     positiveQuery: ElasticQuery[Any]
   ): BoostingQuery[Any] =

@@ -11,7 +11,6 @@ import zio.elasticsearch.query.ElasticIntervalQuery.{
   intervalWildcard
 }
 import zio.elasticsearch.query._
-import zio.elasticsearch.request.Document
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
@@ -127,21 +126,21 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           lower = Some(GreaterThanInterval("10")),
           upper = Some(LessThanInterval("20")),
           analyzer = Some("standard"),
-          useField = Some(TestDocument.stringField)
+          useField = Some("stringField")
         )
 
         val intervalWithOnlyLower = intervalRange[Any](
           lower = Some(GreaterThanInterval("10")),
           upper = None,
           analyzer = Some("standard"),
-          useField = Some(TestDocument.stringField)
+          useField = Some("stringField")
         )
 
         val intervalWithOnlyUpper = intervalRange[Any](
           lower = None,
           upper = Some(LessThanInterval("20")),
           analyzer = Some("standard"),
-          useField = Some(TestDocument.stringField)
+          useField = Some("stringField")
         )
 
         val queryWithBounds = intervals(TestDocument.stringField, intervalWithBounds)

@@ -1,11 +1,11 @@
 package zio.elasticsearch.query
 
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.Field
 import zio.elasticsearch.query.options.{HasAnalyzer, HasUseField}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.{Chunk, NonEmptyChunk}
-import zio.elasticsearch.Field
 
 sealed trait BoundType
 sealed trait Inclusive extends BoundType
@@ -115,14 +115,16 @@ private[elasticsearch] final case class IntervalFuzzy[S](
   transpositions: Option[Boolean],
   fuzziness: Option[String],
   analyzer: Option[String],
-  useField: Option[Field[_, _]]
+  useField: Option[String]
 ) extends IntervalRule
     with HasAnalyzer[IntervalFuzzy[S]]
     with HasUseField[IntervalFuzzy[S]] {
 
   def analyzer(value: String): IntervalFuzzy[S] = copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalFuzzy[S] = copy(useField = Some(field))
+  def useField(field: Field[_, _]): IntervalFuzzy[S] = copy(useField = Some(field.toString))
+
+  def useField(field: String): IntervalFuzzy[S] = copy(useField = Some(Field(None, field).toString))
 
   def prefixLength(length: Int): IntervalFuzzy[S] = copy(prefixLength = Some(length))
 
@@ -148,7 +150,7 @@ private[elasticsearch] final case class IntervalFuzzy[S](
 private[elasticsearch] final case class IntervalMatch[S](
   query: String,
   analyzer: Option[String],
-  useField: Option[Field[_, _]],
+  useField: Option[String],
   maxGaps: Option[Int],
   ordered: Option[Boolean],
   filter: Option[IntervalFilter[S]]
@@ -166,7 +168,9 @@ private[elasticsearch] final case class IntervalMatch[S](
 
   def orderedOff: IntervalMatch[S] = copy(ordered = Some(false))
 
-  def useField(field: Field[_, _]): IntervalMatch[S] = copy(useField = Some(field))
+  def useField(field: Field[_, _]): IntervalMatch[S] = copy(useField = Some(field.toString))
+
+  def useField(field: String): IntervalMatch[S] = copy(useField = Some(Field(None, field).toString))
 
   override private[elasticsearch] def toJson: Json =
     Obj(
@@ -186,14 +190,16 @@ private[elasticsearch] final case class IntervalMatch[S](
 private[elasticsearch] final case class IntervalPrefix[S](
   prefix: String,
   analyzer: Option[String],
-  useField: Option[Field[_, _]]
+  useField: Option[String]
 ) extends IntervalRule
     with HasAnalyzer[IntervalPrefix[S]]
     with HasUseField[IntervalPrefix[S]] {
 
   def analyzer(value: String): IntervalPrefix[S] = copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalPrefix[S] = copy(useField = Some(field))
+  def useField(field: Field[_, _]): IntervalPrefix[S] = copy(useField = Some(field.toString))
+
+  def useField(field: String): IntervalPrefix[S] = copy(useField = Some(Field(None, field).toString))
 
   override private[elasticsearch] def toJson: Json =
     Obj(
@@ -211,7 +217,7 @@ private[elasticsearch] final case class IntervalRange[S](
   lower: Option[IntervalRule] = None,
   upper: Option[IntervalRule] = None,
   analyzer: Option[String] = None,
-  useField: Option[Field[_, _]] = None
+  useField: Option[String] = None
 ) extends IntervalRule
     with HasAnalyzer[IntervalRange[S]]
     with HasUseField[IntervalRange[S]] {
@@ -222,7 +228,9 @@ private[elasticsearch] final case class IntervalRange[S](
 
   def upper[B <: BoundType](b: Bound[B]): IntervalRange[S] = copy(upper = Some(LessThanInterval(b.value)))
 
-  def useField(field: Field[_, _]): IntervalRange[S] = copy(useField = Some(field))
+  def useField(field: Field[_, _]): IntervalRange[S] = copy(useField = Some(field.toString))
+
+  def useField(field: String): IntervalRange[S] = copy(useField = Some(Field(None, field).toString))
 
   def gte[B <: BoundType](value: String): IntervalRange[S] =
     copy(lower = Some(GreaterThanOrEqualToInterval(value)))
@@ -252,14 +260,16 @@ private[elasticsearch] final case class IntervalRange[S](
 private[elasticsearch] final case class IntervalRegexp[S](
   pattern: Regexp[S],
   analyzer: Option[String],
-  useField: Option[Field[_, _]]
+  useField: Option[String]
 ) extends IntervalRule
     with HasAnalyzer[IntervalRegexp[S]]
     with HasUseField[IntervalRegexp[S]] {
 
   def analyzer(value: String): IntervalRegexp[S] = copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalRegexp[S] = copy(useField = Some(field))
+  def useField(field: Field[_, _]): IntervalRegexp[S] = copy(useField = Some(field.toString))
+
+  def useField(field: String): IntervalRegexp[S] = copy(useField = Some(Field(None, field).toString))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -276,14 +286,16 @@ private[elasticsearch] final case class IntervalRegexp[S](
 private[elasticsearch] final case class IntervalWildcard[S](
   pattern: String,
   analyzer: Option[String],
-  useField: Option[Field[_, _]]
+  useField: Option[String]
 ) extends IntervalRule
     with HasAnalyzer[IntervalWildcard[S]]
     with HasUseField[IntervalWildcard[S]] {
 
   def analyzer(value: String): IntervalWildcard[S] = copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalWildcard[S] = copy(useField = Some(field))
+  def useField(field: Field[_, _]): IntervalWildcard[S] = copy(useField = Some(field.toString))
+
+  def useField(field: String): IntervalWildcard[S] = copy(useField = Some(Field(None, field).toString))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -372,7 +384,7 @@ object ElasticIntervalQuery {
     lower: Option[IntervalRule] = None,
     upper: Option[IntervalRule] = None,
     analyzer: Option[String] = None,
-    useField: Option[Field[_, _]] = None
+    useField: Option[String] = None
   ): IntervalRange[S] =
     IntervalRange(lower = lower, upper = upper, analyzer = analyzer, useField = useField)
 

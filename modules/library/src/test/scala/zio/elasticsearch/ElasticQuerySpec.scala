@@ -319,15 +319,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           }
         ),
         test("boosting") {
-          val validBoost = BoostRange(0.5f)
-          val query      = boosting(validBoost, exists("testField"), terms("booleanField", true, false))
-          val queryTs    =
-            boosting(validBoost, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
+          val query   = boosting(0.5f, exists("testField"), terms("booleanField", true, false))
+          val queryTs = boosting(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
 
           assert(query)(
             equalTo(
               Boosting[Any](
-                negativeBoost = validBoost,
+                negativeBoost = 0.5f,
                 negativeQuery = exists("testField"),
                 positiveQuery = terms("booleanField", true, false)
               )
@@ -335,7 +333,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           ) && assert(queryTs)(
             equalTo(
               Boosting[TestDocument](
-                negativeBoost = validBoost,
+                negativeBoost = 0.5f,
                 negativeQuery = exists(TestDocument.stringField),
                 positiveQuery = terms(TestDocument.booleanField, true, false)
               )
@@ -2604,38 +2602,30 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           }
         ),
         test("boosting") {
-          val boostRange = BoostRange(0.5f)
-
-          val query =
-            boosting(boostRange, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
-
-          val queryTs = boosting(boostRange, exists("stringField"), terms("booleanField", true, false))
+          val query   = boosting(0.5f, exists("stringField"), terms("booleanField", true, false))
+          val queryTs = boosting(0.5f, exists(TestDocument.stringField), terms(TestDocument.booleanField, true, false))
 
           val expected =
             """
               |{
               |  "boosting": {
-              |    "negative_boost": "0.5",
+              |    "positive": {
+              |      "terms": {
+              |        "booleanField": [true, false]
+              |      }
+              |    },
               |    "negative": {
               |      "exists": {
               |        "field": "stringField"
               |      }
               |    },
-              |    "positive": {
-              |      "terms": {
-              |        "booleanField": [true, false]
-              |      }
-              |    }
+              |    "negative_boost": 0.5
               |  }
               |}
               |""".stripMargin
 
-          assert(query.toJson(fieldPath = None))(
-            equalTo(expected.toJson)
-          ) &&
-          assert(queryTs.toJson(fieldPath = None))(
-            equalTo(expected.toJson)
-          )
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("constantScore") {
           val query          = constantScore(matchPhrase("stringField", "test"))
