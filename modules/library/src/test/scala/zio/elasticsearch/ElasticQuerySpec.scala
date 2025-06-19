@@ -2627,7 +2627,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |  "boosting": {
               |    "positive": {
               |      "terms": {
-              |        "booleanField": [ true, false ]
+              |       "booleanField": [ true, false ]
               |       }
               |    },
               |    "negative": {
