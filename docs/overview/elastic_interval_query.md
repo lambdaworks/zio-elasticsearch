@@ -16,21 +16,15 @@ You can create a basic `Intervals` query` using the `intervals` method:
 val query: IntervalQuery[Any] = intervals(field = "content", rule = intervalMatch("targetWord"))
 ```
 
-If you want to specify which fields should be searched, you can use the `useField` method:
-```scala
-val queryWithField: IntervalQuery[Document] =
-  intervals(field = "content", rule = intervalMatch("targetWord").useField(Document.stringField))
-```
-
 To define `field` in a type-safe manner, use the overloaded `useField` method with field definitions from your document:
 ```scala
 val queryWithSafeField: IntervalQuery[Document] =
   intervals(field = Document.stringField, rule = intervalMatch("targetWord"))
 ```
 
-Alternatively, you can pass a `Field` object directly:
+If you want to specify which fields should be searched, you can use the `useField` method:
 ```scala
-val queryWithFieldObject: IntervalQuery[Document] =
+val queryWithField: IntervalQuery[Document] =
   intervals(field = "content", rule = intervalMatch("targetWord").useField(Document.stringField))
 ```
 
@@ -64,4 +58,3 @@ val queryManually: IntervalQuery[Document] =
       .analyzer("standard")
   )
 ```
-
