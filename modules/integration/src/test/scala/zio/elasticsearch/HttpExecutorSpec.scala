@@ -33,7 +33,16 @@ import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
-import zio.elasticsearch.result.{FilterAggregationResult, Item, MaxAggregationResult, UpdateByQueryResult}
+import zio.elasticsearch.result.{
+  FilterAggregationResult,
+  Item,
+  MaxAggregationResult,
+  SamplerAggregationResult,
+  SumAggregationResult,
+  TermsAggregationBucketResult,
+  TermsAggregationResult,
+  UpdateByQueryResult
+}
 import zio.elasticsearch.script.{Painless, Script}
 import zio.json.ast.Json.{Arr, Str}
 import zio.schema.codec.JsonCodec
@@ -403,6 +412,74 @@ object HttpExecutorSpec extends IntegrationSpec {
                       .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                       .aggregations
                 } yield assert(aggsRes)(isNonEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("aggregate using sampler aggregation with sum and terms sub aggregations") {
+            (
+              "sampler_agg",
+              SamplerAggregationResult(
+                docCount = 4,
+                subAggregations = Map(
+                  "total_sum_field"   -> SumAggregationResult(value = 50.0),
+                  "string_categories" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(key = "abc", docCount = 1, subAggregations = Map.empty),
+                      TermsAggregationBucketResult(key = "def", docCount = 1, subAggregations = Map.empty),
+                      TermsAggregationBucketResult(key = "ghi", docCount = 1, subAggregations = Map.empty),
+                      TermsAggregationBucketResult(key = "jkl", docCount = 1, subAggregations = Map.empty)
+                    )
+                  )
+                )
+              )
+            )
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (docIdA, docA, docIdB, docB, docIdC, docC) =>
+                for {
+                  _        <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  documentA = docA.copy(stringField = "abc", intField = 10)
+                  documentB = docB.copy(stringField = "def", intField = 20)
+                  documentC = docC.copy(stringField = "ghi", intField = 15)
+                  _        <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdA, documentA))
+                  _        <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdB, documentB))
+                  _        <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdC, documentC).refreshTrue
+                       )
+                  aggregation = samplerAggregation(
+                                  "sampler_agg",
+                                  sumAggregation("total_sum_field", TestDocument.intField)
+                                ).withSubAgg(termsAggregation("string_categories", TestDocument.stringField.keyword))
+                                  .maxDocumentsPerShard(100)
+                  aggsRes <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                      .aggregations
+                      .map(_.head)
+
+                  expectedResult =
+                    (
+                      "sampler_agg",
+                      SamplerAggregationResult(
+                        docCount = 3,
+                        subAggregations = Map(
+                          "total_sum_field"   -> SumAggregationResult(value = 45.0),
+                          "string_categories" -> TermsAggregationResult(
+                            docErrorCount = 0,
+                            sumOtherDocCount = 0,
+                            buckets = Chunk(
+                              TermsAggregationBucketResult(key = "abc", docCount = 1, subAggregations = Map.empty),
+                              TermsAggregationBucketResult(key = "def", docCount = 1, subAggregations = Map.empty),
+                              TermsAggregationBucketResult(key = "ghi", docCount = 1, subAggregations = Map.empty)
+                            )
+                          )
+                        )
+                      )
+                    )
+                } yield assert(aggsRes)(equalTo(expectedResult))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -790,6 +867,57 @@ object HttpExecutorSpec extends IntegrationSpec {
                   aggs <- res.aggregations
                 } yield assert(docs)(equalTo(Chunk(secondDocumentWithFixedIntField, firstDocumentWithFixedIntField))) &&
                   assert(aggs)(isNonEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("search using sampler aggregation") {
+            val expectedAggResult = SamplerAggregationResult(
+              docCount = 2,
+              subAggregations = Map(
+                "sampled_strings" -> TermsAggregationResult(
+                  docErrorCount = 0,
+                  sumOtherDocCount = 0,
+                  buckets = Chunk(
+                    TermsAggregationBucketResult(key = "zio", docCount = 1, subAggregations = Map.empty),
+                    TermsAggregationBucketResult(key = "zio-elasticsearch", docCount = 1, subAggregations = Map.empty)
+                  )
+                )
+              )
+            )
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (docIdA, docA, docIdB, docB, docIdC, docC) =>
+                val documentA          = docA.copy(stringField = "zio")
+                val documentB          = docB.copy(stringField = "elasticsearch")
+                val documentC          = docC.copy(stringField = "zio-elasticsearch")
+                val expectedSearchDocs = Chunk(documentA, documentC)
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdA, documentA))
+                  _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdB, documentB))
+                  _ <- Executor.execute(
+                         ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdC, documentC).refreshTrue
+                       )
+                  searchQuery = matches(TestDocument.stringField, "zio")
+                  aggregation = samplerAggregation(
+                                  "sampler_agg",
+                                  termsAggregation("sampled_strings", TestDocument.stringField.keyword)
+                                )
+                                  .maxDocumentsPerShard(2)
+                  res <- Executor.execute(
+                           ElasticRequest
+                             .search(
+                               selectors = firstSearchIndex,
+                               query = searchQuery,
+                               aggregation = aggregation
+                             )
+                         )
+                  docs       <- res.documentAs[TestDocument]
+                  samplerAgg <- res.aggregation("sampler_agg")
+                } yield assert(docs.length)(equalTo(2)) &&
+                  assert(docs.toSet)(equalTo(expectedSearchDocs.toSet)) &&
+                  assert(samplerAgg)(isSome(equalTo(expectedAggResult)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

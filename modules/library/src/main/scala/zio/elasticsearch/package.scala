@@ -163,6 +163,18 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      *   the name of the aggregation to retrieve
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
+     *   [[result.SamplerAggregationResult]].
+     */
+    def asSamplerAggregation(name: String): RIO[R, Option[SamplerAggregationResult]] =
+      aggregationAs[SamplerAggregationResult](name)
+
+    /**
+     * Executes the [[ElasticRequest.SearchRequest]] or the [[ElasticRequest.SearchAndAggregateRequest]].
+     *
+     * @param name
+     *   the name of the aggregation to retrieve
+     * @return
+     *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of
      *   [[result.StatsAggregationResult]].
      */
     def asStatsAggregation(name: String): RIO[R, Option[StatsAggregationResult]] =
