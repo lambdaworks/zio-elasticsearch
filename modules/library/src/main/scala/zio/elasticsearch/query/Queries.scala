@@ -623,7 +623,6 @@ private[elasticsearch] final case class GeoPolygon[S](
         ).flatten: _*
       )
     )
-
 }
 
 sealed trait HasChildQuery[S]
