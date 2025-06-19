@@ -308,6 +308,48 @@ object ElasticQuery {
     Fuzzy(field = field, value = value, fuzziness = None, maxExpansions = None, prefixLength = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] using the specified parameters.
+   *
+   * @param field
+   *   the type-safe GeoPoint field for which the bounding box query is specified
+   * @param topLeft
+   *   the geo-point representing the top-left corner of the bounding box
+   * @param bottomRight
+   *   the geo-point representing the bottom-right corner of the bounding box
+   * @tparam S
+   *   the type of document on which the query is defined
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] that represents the `geo_bounding_box` query to be
+   *   performed.
+   */
+  final def geoBoundingBoxQuery[S](
+    field: Field[S, GeoPoint],
+    topLeft: GeoPoint,
+    bottomRight: GeoPoint
+  ): GeoBoundingBoxQuery[S] =
+    GeoBoundingBox(field.toString, topLeft, bottomRight)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] using the specified parameters.
+   *
+   * @param field
+   *   the name of the GeoPoint field for which the bounding box query is specified
+   * @param topLeft
+   *   the geo-point representing the top-left corner of the bounding box
+   * @param bottomRight
+   *   the geo-point representing the bottom-right corner of the bounding box
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] that represents the `geo_bounding_box` query to be
+   *   performed.
+   */
+  final def geoBoundingBoxQuery[S](
+    field: String,
+    topLeft: GeoPoint,
+    bottomRight: GeoPoint
+  ): GeoBoundingBoxQuery[S] =
+    GeoBoundingBox(field, topLeft, bottomRight)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
    *
    * @param field
