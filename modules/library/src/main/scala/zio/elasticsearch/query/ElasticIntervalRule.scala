@@ -1,12 +1,15 @@
 /*
  * Copyright 2022 LambdaWorks
  *
+
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
+
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
+
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,12 +26,12 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.{Chunk, NonEmptyChunk}
 
-sealed trait BoundType
-sealed trait Inclusive extends BoundType
-sealed trait Exclusive extends BoundType
+private[elasticsearch] sealed trait BoundType
+private[elasticsearch] sealed trait Inclusive extends BoundType
+private[elasticsearch] sealed trait Exclusive extends BoundType
 
-case object InclusiveBound extends Inclusive
-case object ExclusiveBound extends Exclusive
+private[elasticsearch] case object InclusiveBound extends Inclusive
+private[elasticsearch] case object ExclusiveBound extends Exclusive
 
 private[elasticsearch] final case class Bound[B <: BoundType](value: String, boundType: B)
 
@@ -363,21 +366,10 @@ object ElasticIntervalQuery {
       script = script
     )
 
-    if (
-      List(
-        after,
-        before,
-        containedBy,
-        containing,
-        notContainedBy,
-        notContaining,
-        notOverlapping,
-        overlapping,
-        script
-      ).forall(_.isEmpty)
-    ) None
-    else Some(filter)
-
+    Some(filter).filterNot(_ =>
+      List(after, before, containedBy, containing, notContainedBy, notContaining, notOverlapping, overlapping, script)
+        .forall(_.isEmpty)
+    )
   }
 
   def intervalFuzzy[S](term: String): IntervalFuzzy[S] =

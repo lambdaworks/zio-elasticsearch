@@ -174,8 +174,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                            )
                            .refreshTrue
                        )
-                  query =
-                    term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
+                  query       = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
                   aggregation =
                     filterAggregation(name = "aggregation", query = query).withSubAgg(
                       maxAggregation("subAggregation", TestDocument.intField)
@@ -2757,7 +2756,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoPolygonIndex)).orDie)
         ),
-        suite("interval-match query")(
+        suite("intervals query")(
           test("intervalMatch returns only matching document") {
             checkOnce(genDocumentId, genTestDocument, Gen.alphaNumericString, genDocumentId, genTestDocument) {
               (idMatch, docMatch, targetWord, idNoMatch, docNoMatch) =>
