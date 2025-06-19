@@ -522,7 +522,7 @@ sealed trait GeoBoundingBoxQuery[S] extends ElasticQuery[S] {
    * @return
    *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] enriched with the `ignoreUnmapped` parameter.
    */
-  def ignoreUnmapped(value: Boolean): GeoBoundingBoxQuery[S]
+  def ignoreUnmapped(value: Boolean = false): GeoBoundingBoxQuery[S]
 
   /**
    * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoBoundingBoxQuery]]. Represents the optional
@@ -564,7 +564,7 @@ private[elasticsearch] final case class GeoBoundingBox[S](
   def boost(value: Double): GeoBoundingBoxQuery[S] =
     self.copy(boost = Some(value))
 
-  def ignoreUnmapped(value: Boolean): GeoBoundingBoxQuery[S] =
+  def ignoreUnmapped(value: Boolean = false): GeoBoundingBoxQuery[S] =
     self.copy(ignoreUnmapped = Some(value))
 
   def name(value: String): GeoBoundingBoxQuery[S] =
@@ -573,7 +573,7 @@ private[elasticsearch] final case class GeoBoundingBox[S](
   def validationMethod(value: ValidationMethod): GeoBoundingBoxQuery[S] =
     self.copy(validationMethod = Some(value))
 
-  override def toJson(fieldPath: Option[String]): Json =
+  private[elasticsearch] override def toJson(fieldPath: Option[String]): Json =
     Obj(
       "geo_bounding_box" -> Obj(
         Chunk(
@@ -585,8 +585,8 @@ private[elasticsearch] final case class GeoBoundingBox[S](
               ).flatten: _*
             )
           ),
-          boost.map("boost" -> Json.Num(_)),
-          ignoreUnmapped.map("ignore_unmapped" -> Json.Bool(_)),
+          boost.map("boost" -> _.toJson),
+          ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
           queryName.map("_name" -> _.toJson),
           validationMethod.map("validation_method" -> _.toString.toJson)
         ).flatten: _*

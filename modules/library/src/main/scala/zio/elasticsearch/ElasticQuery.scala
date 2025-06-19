@@ -327,7 +327,15 @@ object ElasticQuery {
     topLeft: GeoPoint,
     bottomRight: GeoPoint
   ): GeoBoundingBoxQuery[S] =
-    GeoBoundingBox(field.toString, topLeft, bottomRight)
+    GeoBoundingBox(
+      field = field.toString,
+      topLeft = topLeft,
+      bottomRight = bottomRight,
+      boost = None,
+      ignoreUnmapped = None,
+      queryName = None,
+      validationMethod = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] using the specified parameters.
@@ -342,12 +350,20 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] that represents the `geo_bounding_box` query to be
    *   performed.
    */
-  final def geoBoundingBoxQuery[S](
+  final def geoBoundingBoxQuery(
     field: String,
     topLeft: GeoPoint,
     bottomRight: GeoPoint
-  ): GeoBoundingBoxQuery[S] =
-    GeoBoundingBox(field, topLeft, bottomRight)
+  ): GeoBoundingBoxQuery[Any] =
+    GeoBoundingBox(
+      field = field,
+      topLeft = topLeft,
+      bottomRight = bottomRight,
+      boost = None,
+      ignoreUnmapped = None,
+      queryName = None,
+      validationMethod = None
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.GeoDistanceQuery]] using the specified parameters.
