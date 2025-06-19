@@ -25,6 +25,7 @@ module.exports = {
                     'overview/queries/elastic_query_geo_polygon',
                     'overview/queries/elastic_query_has_child',
                     'overview/queries/elastic_query_has_parent',
+                    'overview/queries/elastic_query_interval.md',
                     'overview/queries/elastic_query_match',
                     'overview/queries/elastic_query_match_all',
                     'overview/queries/elastic_query_match_boolean_prefix',
