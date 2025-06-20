@@ -2773,16 +2773,22 @@ object HttpExecutorSpec extends IntegrationSpec {
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoPolygonIndex)).orDie)
         ),
         suite("intervals query")(
-          test("intervalMatch returns only matching document") {
+          test("intervalMatch query returns only matching document") {
             checkOnce(genDocumentId, genTestDocument, Gen.alphaNumericString.filter(_.nonEmpty)) {
               (idMatch, docMatch, targetWord) =>
                 val docShouldMatch = docMatch.copy(stringField = s"prefix $targetWord suffix")
-                val query          = intervals(TestDocument.stringField, intervalMatch(targetWord))
 
                 for {
                   _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
                   _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, idMatch, docShouldMatch).refreshTrue)
-                  res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                  res <- Executor
+                           .execute(
+                             ElasticRequest.search(
+                               firstSearchIndex,
+                               intervals(TestDocument.stringField, intervalMatch(targetWord))
+                             )
+                           )
+                           .documentAs[TestDocument]
                 } yield assert(res)(Assertion.hasSameElements(Chunk(docShouldMatch)))
             }
           } @@ around(
