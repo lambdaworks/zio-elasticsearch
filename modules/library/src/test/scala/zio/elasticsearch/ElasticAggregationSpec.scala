@@ -1,8 +1,8 @@
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticQuery.term
+import zio.elasticsearch.aggregation.IpRange.IpRangeBound
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
@@ -11,6 +11,7 @@ import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
+import zio.{Chunk, NonEmptyChunk}
 
 object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
@@ -155,9 +156,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             ipRangeAggregation(
               name = "ip_range_agg",
               field = "ipField",
-              ranges = Chunk(
-                IpRange.IpRangeBound(to = Some("10.0.0.5")),
-                IpRange.IpRangeBound(from = Some("10.0.0.5"))
+              ranges = NonEmptyChunk(
+                IpRangeBound(to = Some("10.0.0.5")),
+                IpRangeBound(from = Some("10.0.0.5"))
               )
             )
 
@@ -166,9 +167,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "ip_range_agg",
                 field = "ipField",
-                ranges = Chunk(
-                  IpRange.IpRangeBound(to = Some("10.0.0.5")),
-                  IpRange.IpRangeBound(from = Some("10.0.0.5"))
+                ranges = NonEmptyChunk(
+                  IpRangeBound(to = Some("10.0.0.5")),
+                  IpRangeBound(from = Some("10.0.0.5"))
                 ),
                 keyed = None,
                 subAggregations = None
@@ -993,19 +994,19 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
           assert(aggregationWithMultipleSubAggregations.toJson)(equalTo(expectedWithMultipleSubAggregations.toJson))
         },
-        test("ip_range aggregation with from/to ") {
-          val agg = IpRange(
+        test("ipRange") {
+          val aggFromTo = IpRange(
             name = "ip_range_agg",
             field = "ip",
-            ranges = Chunk(
-              IpRange.IpRangeBound(to = Some("10.0.0.5")),
-              IpRange.IpRangeBound(from = Some("10.0.0.5"))
+            ranges = NonEmptyChunk(
+              IpRangeBound(to = Some("10.0.0.5")),
+              IpRangeBound(from = Some("10.0.0.5"))
             ),
             keyed = None,
             subAggregations = None
           )
 
-          val expectedJson =
+          val expectedJsonFromTo =
             """
               |{
               |  "ip_range_agg": {
@@ -1024,21 +1025,18 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(agg.toJson)(equalTo(expectedJson.toJson))
-        },
-        test("ip_range aggregation with CIDR masks and keyed = true") {
-          val agg = IpRange(
+          val aggMaskKeyed = IpRange(
             name = "ip_range_agg",
             field = "ip",
-            ranges = Chunk(
-              IpRange.IpRangeBound(mask = Some("10.0.0.0/25")),
-              IpRange.IpRangeBound(mask = Some("10.0.0.127/25"))
+            ranges = NonEmptyChunk(
+              IpRangeBound(mask = Some("10.0.0.0/25")),
+              IpRangeBound(mask = Some("10.0.0.127/25"))
             ),
             keyed = Some(true),
             subAggregations = None
           )
 
-          val expectedJson =
+          val expectedJsonMaskKeyed =
             """
               |{
               |  "ip_range_agg": {
@@ -1058,7 +1056,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
-          assert(agg.toJson)(equalTo(expectedJson.toJson))
+          assert(aggFromTo.toJson)(equalTo(expectedJsonFromTo.toJson)) &&
+          assert(aggMaskKeyed.toJson)(equalTo(expectedJsonMaskKeyed.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")

@@ -24,7 +24,7 @@ val aggregation: IpRangeAggregation =
   )
 ```
 
-You can create an IpRangeAggregation using the ipRangeAggregation method in the following way:
+You can create an `IpRange` aggregation using the `IpRangeAggregation` method this way:
 ```scala
 val aggregation: IpRangeAggregation =
   ipRangeAggregation(
@@ -54,6 +54,7 @@ If you want to explicitly set the keyed property:
 ```scala
 val multipleAggregations =
   ipRangeAggregation("ip_range_agg", "ipField", Chunk(IpRange.IpRangeBound(to = Some("10.0.0.5"))))
+    .keyedOn
     .withAgg(maxAggregation("maxAgg", "someField"))
 ```
 

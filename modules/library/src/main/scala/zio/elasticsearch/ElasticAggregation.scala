@@ -16,10 +16,11 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.elasticsearch.aggregation.IpRange.IpRangeBound
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script
+import zio.{Chunk, NonEmptyChunk}
 
 object ElasticAggregation {
 
@@ -178,7 +179,7 @@ object ElasticAggregation {
   def ipRangeAggregation(
     name: String,
     field: Field[_, String],
-    ranges: Chunk[IpRange.IpRangeBound]
+    ranges: NonEmptyChunk[IpRangeBound]
   ): IpRangeAggregation =
     IpRange(name = name, field = field.toString, ranges = ranges, keyed = None, subAggregations = None)
 
@@ -196,7 +197,7 @@ object ElasticAggregation {
    * @return
    *   An instance of [[IpRangeAggregation]] configured with the provided parameters.
    */
-  def ipRangeAggregation(name: String, field: String, ranges: Chunk[IpRange.IpRangeBound]): IpRangeAggregation =
+  def ipRangeAggregation(name: String, field: String, ranges: NonEmptyChunk[IpRangeBound]): IpRangeAggregation =
     IpRange(name = name, field = field, ranges = ranges, keyed = None, subAggregations = None)
 
   /**

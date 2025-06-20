@@ -16,11 +16,11 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
+import zio.elasticsearch.aggregation.IpRange.IpRangeBound
 import zio.elasticsearch.aggregation.{AggregationOrder, IpRange}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
@@ -41,6 +41,7 @@ import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+import zio.{Chunk, NonEmptyChunk}
 
 import java.time.LocalDate
 import scala.util.Random
@@ -467,51 +468,51 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using ip range aggregation") {
-            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) { (docIdA, docA, docIdB, docB) =>
-              val updatedA = docA.copy(stringField = "192.168.1.10")
-              val updatedB = docB.copy(stringField = "192.168.1.200")
+          test("aggregate using IpRange aggregation") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+              (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+                val updatedA = firstDocument.copy(stringField = "10.0.0.10")
+                val updatedB = secondDocument.copy(stringField = "10.0.0.200")
 
-              for {
-                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                for {
+                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
 
-                _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docIdA, updatedA))
-                _ <- Executor.execute(
-                       ElasticRequest
-                         .upsert[TestDocument](firstSearchIndex, docIdB, updatedB)
-                         .refreshTrue
-                     )
+                  _ <-
+                    Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, updatedA))
+                  _ <- Executor.execute(
+                         ElasticRequest
+                           .upsert[TestDocument](firstSearchIndex, secondDocumentId, updatedB)
+                           .refreshTrue
+                       )
 
-                aggregation = IpRange(
-                                name = "ip_range_agg",
-                                field = "ipField",
-                                ranges = Chunk(
-                                  IpRange.IpRangeBound(to = Some("192.168.1.100")),
-                                  IpRange.IpRangeBound(
-                                    from = Some("192.168.1.100"),
-                                    to = Some("192.168.1.255")
-                                  )
-                                ),
-                                keyed = None,
-                                subAggregations = None
-                              )
+                  aggregation = IpRange(
+                                  name = "ip_ranges",
+                                  field = "ipField",
+                                  ranges = NonEmptyChunk(
+                                    IpRangeBound(to = Some("10.0.0.5")),
+                                    IpRangeBound(from = Some("10.0.0.5"))
+                                  ),
+                                  keyed = None,
+                                  subAggregations = None
+                                )
 
-                result <- Executor.execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
-                agg    <- result.aggregation("ip_range_agg")
-              } yield assertTrue(agg.nonEmpty)
+                  result <-
+                    Executor
+                      .execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
+                      .aggregations
+                } yield assert(result)(isNonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using ip range aggregation with CIDR masks") {
+          test("aggregate using Ip range aggregation with CIDR masks") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) { (docId1, doc1, docId2, doc2) =>
               val updated1 = doc1.copy(stringField = "10.0.0.10")
               val updated2 = doc2.copy(stringField = "10.0.0.120")
 
               for {
                 _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-
                 _ <- Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, docId1, updated1))
                 _ <- Executor.execute(
                        ElasticRequest
@@ -522,17 +523,18 @@ object HttpExecutorSpec extends IntegrationSpec {
                 aggregation = IpRange(
                                 name = "cidr_agg",
                                 field = "ipField",
-                                ranges = Chunk(
-                                  IpRange.IpRangeBound(mask = Some("10.0.0.0/25")),
-                                  IpRange.IpRangeBound(mask = Some("10.0.0.128/25"))
+                                ranges = NonEmptyChunk(
+                                  IpRangeBound(mask = Some("10.0.0.0/25")),
+                                  IpRangeBound(mask = Some("10.0.0.128/25"))
                                 ),
                                 keyed = None,
                                 subAggregations = None
                               )
 
-                result <- Executor.execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
-                agg    <- result.aggregation("cidr_agg")
-              } yield assertTrue(agg.nonEmpty)
+                result <- Executor
+                            .execute(ElasticRequest.aggregate(firstSearchIndex, aggregation))
+                            .aggregations
+              } yield assert(result)(isNonEmpty)
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

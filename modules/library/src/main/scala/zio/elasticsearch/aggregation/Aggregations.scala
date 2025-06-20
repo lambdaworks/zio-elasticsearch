@@ -16,15 +16,16 @@
 
 package zio.elasticsearch.aggregation
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.aggregation.IpRange.IpRangeBound
 import zio.elasticsearch.aggregation.options._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
+import zio.{Chunk, NonEmptyChunk}
 
 sealed trait ElasticAggregation { self =>
   private[elasticsearch] def toJson: Json
@@ -207,15 +208,15 @@ private[elasticsearch] final case class Filter(
 
 sealed trait IpRangeAggregation extends SingleElasticAggregation with WithAgg with WithSubAgg[IpRangeAggregation]
 
-final case class IpRange(
+private[elasticsearch] final case class IpRange(
   name: String,
   field: String,
-  ranges: Chunk[IpRange.IpRangeBound],
+  ranges: NonEmptyChunk[IpRangeBound],
   keyed: Option[Boolean],
   subAggregations: Option[Chunk[SingleElasticAggregation]]
 ) extends IpRangeAggregation { self =>
 
-  def keyed(value: Boolean): IpRangeAggregation = self.copy(keyed = Some(value))
+  def keyedOn: IpRangeAggregation = self.copy(keyed = Some(true))
 
   def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, aggregation)
@@ -248,7 +249,16 @@ object IpRange {
     to: Option[String] = None,
     mask: Option[String] = None,
     key: Option[String] = None
-  ) {
+  ) { self =>
+
+    def from(value: String): IpRangeBound = self.copy(from = Some(value))
+
+    def to(value: String): IpRangeBound = self.copy(to = Some(value))
+
+    def mask(value: String): IpRangeBound = self.copy(mask = Some(value))
+
+    def key(value: String): IpRangeBound = self.copy(key = Some(value))
+
     def toJson: Json = {
       val baseFields = Chunk.empty[(String, Json)] ++
         from.map("from" -> _.toJson) ++
