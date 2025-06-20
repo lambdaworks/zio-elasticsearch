@@ -16,10 +16,11 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.elasticsearch.aggregation.IpRange.IpRangeBound
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script
+import zio.{Chunk, NonEmptyChunk}
 
 object ElasticAggregation {
 
@@ -159,6 +160,45 @@ object ElasticAggregation {
    */
   final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
     Filter(name = name, query = query, subAggregations = Chunk.empty)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.IpRangeAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   Aggregation name.
+   * @param field
+   *   The field for which the IP range aggregation will be executed
+   * @param ranges
+   *   A chunk of IP range bounds specifying the ranges
+   * @param subAggregations
+   *   Optional map of sub-aggregations to nest within this aggregation
+   * @return
+   *   An instance of [[IpRangeAggregation]] that represents filter aggregation to be performed.
+   */
+  def ipRangeAggregation(
+    name: String,
+    field: Field[_, String],
+    ranges: NonEmptyChunk[IpRangeBound]
+  ): IpRangeAggregation =
+    IpRange(name = name, field = field.toString, ranges = ranges, keyed = None, subAggregations = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.IpRangeAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   Aggregation name
+   * @param field
+   *   The field (as string) for which the IP range aggregation will be executed
+   * @param ranges
+   *   A chunk of IP range bounds specifying the ranges
+   * @param subAggregations
+   *   Optional map of sub-aggregations to nest within this aggregation
+   * @return
+   *   An instance of [[IpRangeAggregation]] configured with the provided parameters.
+   */
+  def ipRangeAggregation(name: String, field: String, ranges: NonEmptyChunk[IpRangeBound]): IpRangeAggregation =
+    IpRange(name = name, field = field, ranges = ranges, keyed = None, subAggregations = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.

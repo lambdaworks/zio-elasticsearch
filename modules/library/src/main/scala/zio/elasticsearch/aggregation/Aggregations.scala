@@ -16,15 +16,16 @@
 
 package zio.elasticsearch.aggregation
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.multipleAggregations
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
+import zio.elasticsearch.aggregation.IpRange.IpRangeBound
 import zio.elasticsearch.aggregation.options._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.query.sort.Sort
 import zio.elasticsearch.script.Script
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
+import zio.{Chunk, NonEmptyChunk}
 
 sealed trait ElasticAggregation { self =>
   private[elasticsearch] def toJson: Json
@@ -202,6 +203,71 @@ private[elasticsearch] final case class Filter(
       self.subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
 
     Obj(name -> (Obj("filter" -> query.toJson(fieldPath = None)) merge subAggsJson))
+  }
+}
+
+sealed trait IpRangeAggregation extends SingleElasticAggregation with WithAgg with WithSubAgg[IpRangeAggregation]
+
+private[elasticsearch] final case class IpRange(
+  name: String,
+  field: String,
+  ranges: NonEmptyChunk[IpRangeBound],
+  keyed: Option[Boolean],
+  subAggregations: Option[Chunk[SingleElasticAggregation]]
+) extends IpRangeAggregation { self =>
+
+  def keyedOn: IpRangeAggregation = self.copy(keyed = Some(true))
+
+  def withAgg(aggregation: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, aggregation)
+
+  def withSubAgg(aggregation: SingleElasticAggregation): IpRangeAggregation =
+    self.copy(subAggregations = Some(aggregation +: subAggregations.getOrElse(Chunk.empty)))
+
+  private[elasticsearch] def toJson: Json = {
+
+    val rangesJson  = ranges.map(_.toJson)
+    val keyedJson   = keyed.fold(Obj())(k => Obj("keyed" -> k.toJson))
+    val subAggsJson = subAggregations match {
+      case Some(aggs) if aggs.nonEmpty =>
+        Obj("aggs" -> aggs.map(_.toJson).reduce(_ merge _))
+      case _ => Obj()
+    }
+
+    Obj(
+      name -> (
+        Obj("ip_range" -> (Obj("field" -> field.toJson, "ranges" -> Arr(rangesJson)) merge keyedJson)) merge subAggsJson
+      )
+    )
+  }
+}
+
+object IpRange {
+
+  final case class IpRangeBound(
+    from: Option[String] = None,
+    to: Option[String] = None,
+    mask: Option[String] = None,
+    key: Option[String] = None
+  ) { self =>
+
+    def from(value: String): IpRangeBound = self.copy(from = Some(value))
+
+    def to(value: String): IpRangeBound = self.copy(to = Some(value))
+
+    def mask(value: String): IpRangeBound = self.copy(mask = Some(value))
+
+    def key(value: String): IpRangeBound = self.copy(key = Some(value))
+
+    def toJson: Json = {
+      val baseFields = Chunk.empty[(String, Json)] ++
+        from.map("from" -> _.toJson) ++
+        to.map("to" -> _.toJson) ++
+        mask.map("mask" -> _.toJson) ++
+        key.map("key" -> _.toJson)
+
+      Obj(baseFields: _*)
+    }
   }
 }
 
