@@ -37,7 +37,7 @@ val queryWithMaxGaps: IntervalQuery[Document] =
 If you want to specify the word order requirement, use the `orderedOn` method:
 ```scala
 val queryWithOrder: IntervalQuery[Document] =
-  intervals(field = "content", rule = intervalMatch("targetWord").orderedOn())
+  intervals(field = "content", rule = intervalMatch("targetWord").orderedOn)
 ```
 
 You can also apply additional filters to the query:
@@ -53,7 +53,7 @@ val queryManually: IntervalQuery[Document] =
     field = "content",
     rule = intervalMatch("targetWord")
       .maxGaps(2)
-      .orderedOn()
+      .orderedOn
       .filter(IntervalFilter.someFilter)
       .analyzer("standard")
   )

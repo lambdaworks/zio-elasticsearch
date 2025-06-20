@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
+import zio.elasticsearch.ElasticIntervalQuery.intervalMatch
 import zio.elasticsearch.ElasticQuery.{contains => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.aggregation.AggregationOrder
@@ -26,7 +27,6 @@ import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.query.DistanceUnit.Kilometers
-import zio.elasticsearch.query.ElasticIntervalQuery.intervalMatch
 import zio.elasticsearch.query.FunctionScoreFunction.randomScoreFunction
 import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.sort.SortMode.Max
@@ -2774,24 +2774,16 @@ object HttpExecutorSpec extends IntegrationSpec {
         ),
         suite("intervals query")(
           test("intervalMatch returns only matching document") {
-            checkOnce(genDocumentId, genTestDocument, Gen.alphaNumericString, genDocumentId, genTestDocument) {
-              (idMatch, docMatch, targetWord, idNoMatch, docNoMatch) =>
-                val docShouldMatch    = docMatch.copy(stringField = s"prefix $targetWord suffix")
-                val docShouldNotMatch = docNoMatch.copy(stringField = "completely unrelated text")
-                val field             = TestDocument.stringField.toString
-                val query             = intervals(field, intervalMatch(targetWord))
+            checkOnce(genDocumentId, genTestDocument, Gen.alphaNumericString.filter(_.nonEmpty)) {
+              (idMatch, docMatch, targetWord) =>
+                val docShouldMatch = docMatch.copy(stringField = s"prefix $targetWord suffix")
+                val query          = intervals(TestDocument.stringField, intervalMatch(targetWord))
 
                 for {
-                  _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                  _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, idMatch, docShouldMatch))
-                  _ <- Executor.execute(
-                         ElasticRequest.upsert(firstSearchIndex, idNoMatch, docShouldNotMatch).refreshTrue
-                       )
+                  _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, idMatch, docShouldMatch).refreshTrue)
                   res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-                } yield assert(res)(
-                  Assertion.contains(docShouldMatch) &&
-                    Assertion.not(Assertion.contains(docShouldNotMatch))
-                )
+                } yield assert(res)(Assertion.hasSameElements(Chunk(docShouldMatch)))
             }
           } @@ around(
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

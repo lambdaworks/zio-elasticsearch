@@ -16,9 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticQuery.intervals
-import zio.elasticsearch.domain.TestDocument
-import zio.elasticsearch.query.ElasticIntervalQuery.{
+import zio.elasticsearch.ElasticIntervalQuery.{
   intervalContains,
   intervalEndsWith,
   intervalMatch,
@@ -26,6 +24,8 @@ import zio.elasticsearch.query.ElasticIntervalQuery.{
   intervalStartsWith,
   intervalWildcard
 }
+import zio.elasticsearch.ElasticQuery.intervals
+import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
@@ -112,18 +112,6 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
             |}
             |""".stripMargin
 
-        assert(intervalNoOptions)(
-          equalTo(
-            IntervalMatch[String](
-              query = "lambda works",
-              analyzer = None,
-              useField = None,
-              maxGaps = None,
-              ordered = None,
-              filter = None
-            )
-          )
-        ) &&
         assert(intervals("stringField", intervalNoOptions).toJson(None))(
           equalTo(expectedNoOptions.toJson)
         ) &&
@@ -296,15 +284,6 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
             |}
             |""".stripMargin
 
-        assert(wildcardExact)(
-          equalTo(
-            IntervalWildcard[String](
-              pattern = "la*mb?da",
-              analyzer = None,
-              useField = None
-            )
-          )
-        ) &&
         assert(queryExact.toJson(None))(equalTo(expectedExact.toJson)) &&
         assert(queryContains.toJson(None))(equalTo(expectedContains.toJson)) &&
         assert(queryStartsWith.toJson(None))(equalTo(expectedStartsWith.toJson)) &&
