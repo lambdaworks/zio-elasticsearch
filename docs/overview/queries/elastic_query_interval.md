@@ -2,6 +2,7 @@
 id: elastic_interval_query
 title: "Overview"
 ---
+
 The `Intervals` query allows for advanced search queries based on intervals between words in specific fields.
 This query provides flexibility for conditions.
 

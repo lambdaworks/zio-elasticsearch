@@ -16,12 +16,12 @@
 
 package zio.elasticsearch.query
 
+import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.Field
 import zio.elasticsearch.query.options.{HasAnalyzer, HasUseField}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
-import zio.Chunk
 
 private[elasticsearch] sealed trait BoundType
 private[elasticsearch] sealed trait Inclusive extends BoundType
