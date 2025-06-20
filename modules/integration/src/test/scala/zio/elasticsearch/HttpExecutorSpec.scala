@@ -19,7 +19,7 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
-import zio.elasticsearch.ElasticIntervalQuery.intervalMatch
+import zio.elasticsearch.ElasticIntervalRule.intervalMatch
 import zio.elasticsearch.ElasticQuery.{contains => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.aggregation.AggregationOrder

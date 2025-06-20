@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.elasticsearch.ElasticIntervalQuery.{
+import zio.elasticsearch.ElasticIntervalRule.{
   intervalContains,
   intervalEndsWith,
   intervalMatch,
@@ -31,10 +31,10 @@ import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
 
-object ElasticIntervalQuerySpec extends ZIOSpecDefault {
-  def spec: Spec[TestEnvironment, Any] =
-    suite("ElasticIntervalQuerySpec")(
-      test("intervalMatchQuery") {
+object ElasticIntervalRuleSpec extends ZIOSpecDefault {
+  def spec: Spec[TestEnvironment, Any] = {
+    suite("ElasticIntervalRuleSpec")(
+      test("intervalMatch") {
         val intervalNoOptions: IntervalMatch[String] = intervalMatch("lambda works")
 
         val intervalWithOptions: IntervalMatch[String] = intervalMatch("lambda works").orderedOn
@@ -46,14 +46,8 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           after = Some(intervalMatch("after_term"))
         )
 
-        val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works")
-          .maxGaps(2)
-          .analyzer("standard")
-          .filter(filter)
-
         val queryWithStringField = intervals("stringField", intervalWithOptions)
         val queryWithTypedField  = intervals(TestDocument.stringField, intervalWithOptions)
-        val queryWithFilter      = intervals("stringField", intervalWithFilter)
 
         val expectedNoOptions =
           """
@@ -84,34 +78,6 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
             |}
             |""".stripMargin
 
-        val expectedWithFilter =
-          """
-            |{
-            |  "intervals": {
-            |    "stringField": {
-            |      "match": {
-            |        "query": "lambda works",
-            |        "analyzer": "standard",
-            |        "max_gaps": 2,
-            |        "ordered": false,
-            |        "filter": {
-            |          "before": {
-            |            "match": {
-            |              "query": "before_term"
-            |            }
-            |          },
-            |          "after": {
-            |            "match": {
-            |              "query": "after_term"
-            |            }
-            |          }
-            |        }
-            |      }
-            |    }
-            |  }
-            |}
-            |""".stripMargin
-
         assert(intervals("stringField", intervalNoOptions).toJson(None))(
           equalTo(expectedNoOptions.toJson)
         ) &&
@@ -120,9 +86,6 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
         ) &&
         assert(queryWithTypedField.toJson(None))(
           equalTo(expectedWithOptions.toJson)
-        ) &&
-        assert(queryWithFilter.toJson(None))(
-          equalTo(expectedWithFilter.toJson)
         )
       },
       test("intervalRange") {
@@ -288,6 +251,68 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
         assert(queryContains.toJson(None))(equalTo(expectedContains.toJson)) &&
         assert(queryStartsWith.toJson(None))(equalTo(expectedStartsWith.toJson)) &&
         assert(queryEndsWith.toJson(None))(equalTo(expectedEndsWith.toJson))
+      },
+      test("interval query") {
+        val query1 = intervals(TestDocument.stringField, intervalMatch("test query"))
+
+        val query2 = intervals(
+          TestDocument.stringField,
+          intervalMatch("another test")
+            .maxGaps(3)
+            .orderedOn
+        )
+
+        val query3 = intervals(
+          TestDocument.stringField,
+          intervalMatch("sample text")
+            .analyzer("standard")
+        )
+        val expectedJson1 =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "match": {
+            |        "query": "test query"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedJson2 =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "match": {
+            |        "query": "another test",
+            |        "max_gaps": 3,
+            |        "ordered": true
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedJson3 =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "match": {
+            |        "query": "sample text",
+            |        "analyzer": "standard"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query1.toJson(None))(equalTo(expectedJson1.toJson)) &&
+        assert(query2.toJson(None))(equalTo(expectedJson2.toJson)) &&
+        assert(query3.toJson(None))(equalTo(expectedJson3.toJson))
       }
     )
+  }
 }

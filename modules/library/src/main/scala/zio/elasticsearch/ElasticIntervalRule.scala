@@ -32,7 +32,7 @@ import zio.elasticsearch.query.{
 }
 import zio.json.ast.Json
 
-object ElasticIntervalQuery {
+object ElasticIntervalRule {
 
   def intervalAllOf[S](intervals: NonEmptyChunk[IntervalRule]): IntervalAllOf[S] =
     IntervalAllOf(intervals = intervals, maxGaps = None, ordered = None, filter = None)
