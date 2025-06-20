@@ -2800,15 +2800,20 @@ object HttpExecutorSpec extends IntegrationSpec {
               val term        = "apple"
               val docWithTerm = doc.copy(stringField = s"$term banana orange")
 
-              val query = intervals(
-                "stringField",
-                intervalMatch(term)
-              )
-
               for {
                 _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, docWithTerm))
                 _   <- Executor.execute(ElasticRequest.refresh(firstSearchIndex))
-                res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                res <- Executor
+                         .execute(
+                           ElasticRequest.search(
+                             firstSearchIndex,
+                             intervals(
+                               TestDocument.stringField,
+                               intervalMatch(term)
+                             )
+                           )
+                         )
+                         .documentAs[TestDocument]
               } yield assert(res)(Assertion.contains(docWithTerm))
             }
           } @@ around(
@@ -2817,15 +2822,20 @@ object HttpExecutorSpec extends IntegrationSpec {
           ),
           test("intervalMatch query does not find document if term is absent") {
             checkOnce(genDocumentId, genTestDocument) { (docId, doc) =>
-              val query = intervals(
-                "stringField",
-                intervalMatch("nonexistentterm")
-              )
-
               for {
                 _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, doc))
                 _   <- Executor.execute(ElasticRequest.refresh(firstSearchIndex))
-                res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+                res <- Executor
+                         .execute(
+                           ElasticRequest.search(
+                             firstSearchIndex,
+                             intervals(
+                               TestDocument.stringField,
+                               intervalMatch("nonexistentterm")
+                             )
+                           )
+                         )
+                         .documentAs[TestDocument]
               } yield assert(res)(Assertion.isEmpty)
             }
           } @@ around(

@@ -65,8 +65,6 @@ private[elasticsearch] final case class IntervalAllOf[S](
 
   def orderedOn: IntervalAllOf[S] = copy(ordered = Some(true))
 
-  def orderedOff: IntervalAllOf[S] = copy(ordered = Some(false))
-
   private[elasticsearch] def toJson: Json =
     Obj(
       "all_of" -> Obj(
@@ -87,7 +85,7 @@ private[elasticsearch] final case class IntervalAnyOf[S](
 
   def filter(f: IntervalFilter[S]): IntervalAnyOf[S] = copy(filter = Some(f))
 
-  override private[elasticsearch] def toJson: Json =
+  private[elasticsearch] def toJson: Json =
     Obj(
       "any_of" -> Obj(
         Chunk(
@@ -138,15 +136,15 @@ private[elasticsearch] final case class IntervalFuzzy[S](
 
   def analyzer(value: String): IntervalFuzzy[S] = copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalFuzzy[S] = copy(useField = Some(field.name))
-
-  def useField(field: String): IntervalFuzzy[S] = copy(useField = Some(field))
-
   def prefixLength(length: Int): IntervalFuzzy[S] = copy(prefixLength = Some(length))
+
+  def transpositionsDisabled: IntervalFuzzy[S] = copy(transpositions = Some(false))
 
   def transpositionsEnabled: IntervalFuzzy[S] = copy(transpositions = Some(true))
 
-  def transpositionsDisabled: IntervalFuzzy[S] = copy(transpositions = Some(false))
+  def useField(field: Field[_, _]): IntervalFuzzy[S] = copy(useField = Some(field.name))
+
+  def useField(field: String): IntervalFuzzy[S] = copy(useField = Some(field))
 
   private[elasticsearch] def toJson: Json =
     Obj(
@@ -182,13 +180,11 @@ private[elasticsearch] final case class IntervalMatch[S](
 
   def orderedOn: IntervalMatch[S] = copy(ordered = Some(true))
 
-  def orderedOff: IntervalMatch[S] = copy(ordered = Some(false))
-
   def useField(field: Field[_, _]): IntervalMatch[S] = copy(useField = Some(field.name))
 
   def useField(field: String): IntervalMatch[S] = copy(useField = Some(field))
 
-  override private[elasticsearch] def toJson: Json =
+  private[elasticsearch] def toJson: Json =
     Obj(
       "match" -> Obj(
         Chunk(
@@ -217,7 +213,7 @@ private[elasticsearch] final case class IntervalPrefix[S](
 
   def useField(field: String): IntervalPrefix[S] = copy(useField = Some(field))
 
-  override private[elasticsearch] def toJson: Json =
+  private[elasticsearch] def toJson: Json =
     Obj(
       "prefix" -> Obj(
         Chunk(

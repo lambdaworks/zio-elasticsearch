@@ -46,7 +46,7 @@ object ElasticIntervalQuerySpec extends ZIOSpecDefault {
           after = Some(intervalMatch("after_term"))
         )
 
-        val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works").orderedOff
+        val intervalWithFilter: IntervalMatch[String] = intervalMatch("lambda works")
           .maxGaps(2)
           .analyzer("standard")
           .filter(filter)
