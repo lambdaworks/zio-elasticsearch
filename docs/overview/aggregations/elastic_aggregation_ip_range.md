@@ -17,7 +17,7 @@ val aggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "ip_range_agg",
     field = Document.stringField,
-    ranges = Chunk(
+    ranges = NonEmptyChunk(
       IpRange.IpRangeBound(to = Some("10.0.0.5")),
       IpRange.IpRangeBound(from = Some("10.0.0.5"))
     )
@@ -30,7 +30,7 @@ val aggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "ip_range_agg",
     field = "ipField",
-    ranges = Chunk(
+    ranges = NonEmptyChunk(
       IpRange.IpRangeBound(to = Some("10.0.0.5")),
       IpRange.IpRangeBound(from = Some("10.0.0.5"))
     )
@@ -43,7 +43,7 @@ val cidrAggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "cidr_agg",
     field = "ipField",
-    ranges = Chunk(
+    ranges = NonEmptyChunk(
       IpRange.IpRangeBound(mask = Some("10.0.0.0/25")),
       IpRange.IpRangeBound(mask = Some("10.0.0.128/25"))
     )
@@ -53,7 +53,7 @@ val cidrAggregation: IpRangeAggregation =
 If you want to explicitly set the keyed property:
 ```scala
 val multipleAggregations =
-  ipRangeAggregation("ip_range_agg", "ipField", Chunk(IpRange.IpRangeBound(to = Some("10.0.0.5"))))
+  ipRangeAggregation("ip_range_agg", "ipField", NonEmptyChunk(IpRange.IpRangeBound(to = Some("10.0.0.5"))))
     .keyedOn
     .withAgg(maxAggregation("maxAgg", "someField"))
 ```
