@@ -92,6 +92,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       PercentileRanksAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("percentiles#") =>
                       PercentilesAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("range#") =>
+                      RangeAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("stats#") =>
                       StatsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("sum#") =>
