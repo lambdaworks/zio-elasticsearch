@@ -351,6 +351,40 @@ private[elasticsearch] final case class Percentiles(
   }
 }
 
+sealed trait SamplerAggregation extends SingleElasticAggregation with WithSubAgg[SamplerAggregation] {
+
+  /**
+   * Sets the `shard_size` parameter for the [[zio.elasticsearch.aggregation.SamplerAggregation]]. This parameter
+   * controls the maximum number of documents to be returned per shard.
+   *
+   * @param value
+   *   the maximum number of documents per shard
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.SamplerAggregation]] enriched with the `shard_size` parameter.
+   */
+  def maxDocumentsPerShard(value: Int): SamplerAggregation
+}
+
+private[elasticsearch] final case class Sampler(
+  name: String,
+  shardSizeValue: Int,
+  subAggregations: Seq[SingleElasticAggregation]
+) extends SamplerAggregation {
+  self =>
+  def maxDocumentsPerShard(value: Int): SamplerAggregation =
+    self.copy(shardSizeValue = value)
+
+  def withSubAgg(aggregation: SingleElasticAggregation): SamplerAggregation =
+    self.copy(subAggregations = aggregation +: subAggregations)
+
+  private[elasticsearch] def toJson: Json = {
+    val samplerParamsContent: Obj = Obj("sampler" -> Obj("shard_size" -> shardSizeValue.toJson))
+    val subAggsJson: Obj          = Obj("aggs" -> subAggregations.map(_.toJson).reduce(_ merge _))
+
+    Obj(name -> (samplerParamsContent merge subAggsJson))
+  }
+}
+
 sealed trait StatsAggregation extends SingleElasticAggregation with HasMissing[StatsAggregation] with WithAgg
 
 private[elasticsearch] final case class Stats(name: String, field: String, missing: Option[Double])

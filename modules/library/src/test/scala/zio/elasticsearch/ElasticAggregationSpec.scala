@@ -340,6 +340,50 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("sampler") {
+          val aggWithSubAgg =
+            samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
+          val aggWithSubAggsAndMaxDocumentsPerShardParam =
+            samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
+              .maxDocumentsPerShard(50)
+              .withSubAgg(ElasticAggregation.avgAggregation("avg_length", "length"))
+
+          assert(aggWithSubAgg)(
+            equalTo(
+              Sampler(
+                name = "aggregation2",
+                shardSizeValue = 100,
+                subAggregations = Seq(
+                  Terms(
+                    name = "keywords",
+                    field = "text",
+                    order = Chunk.empty,
+                    subAggregations = Chunk.empty,
+                    size = None
+                  )
+                )
+              )
+            )
+          ) &&
+          assert(aggWithSubAggsAndMaxDocumentsPerShardParam)(
+            equalTo(
+              Sampler(
+                name = "aggregation2",
+                shardSizeValue = 50,
+                subAggregations = Seq(
+                  Avg(name = "avg_length", field = "length", missing = None),
+                  Terms(
+                    name = "keywords",
+                    field = "text",
+                    order = Chunk.empty,
+                    subAggregations = Chunk.empty,
+                    size = None
+                  )
+                )
+              )
+            )
+          )
+        },
         test("stats") {
           val aggregation            = statsAggregation("aggregation", "testField")
           val aggregationTs          = statsAggregation("aggregation", TestDocument.intField)
@@ -1265,6 +1309,60 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithPercents.toJson)(equalTo(expectedWithPercents.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
           assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("sampler") {
+          val aggWithSubAgg = ElasticAggregation.samplerAggregation(
+            "sample_with_sub_agg",
+            ElasticAggregation.termsAggregation("keywords", "text")
+          )
+          val aggWithSubAggsAndMaxDocumentsPerShardParam = ElasticAggregation
+            .samplerAggregation("sample_with_multiple_aggs", ElasticAggregation.avgAggregation("avg_length", "length"))
+            .maxDocumentsPerShard(50)
+            .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
+
+          val expectedWithSubAgg =
+            """
+              |{
+              |  "sample_with_sub_agg": {
+              |    "sampler": {
+              |      "shard_size": 100
+              |    },
+              |    "aggs": {
+              |      "keywords": {
+              |        "terms": {
+              |          "field": "text"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMultipleSubAggs =
+            """
+              |{
+              |  "sample_with_multiple_aggs": {
+              |    "sampler": {
+              |      "shard_size": 50
+              |    },
+              |    "aggs": {
+              |      "avg_length": {
+              |        "avg": {
+              |          "field": "length"
+              |        }
+              |      },
+              |      "keywords": {
+              |        "terms": {
+              |          "field": "text"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggWithSubAgg.toJson)(equalTo(expectedWithSubAgg.toJson)) &&
+          assert(aggWithSubAggsAndMaxDocumentsPerShardParam.toJson)(equalTo(expectedWithMultipleSubAggs.toJson))
         },
         test("stats") {
           val aggregation            = statsAggregation("aggregation", "testField")
