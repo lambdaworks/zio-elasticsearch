@@ -353,7 +353,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Sampler(
                 name = "aggregation2",
                 shardSizeValue = 100,
-                subAggregations = Chunk(
+                subAggregations = Seq(
                   Terms(
                     name = "keywords",
                     field = "text",
@@ -370,7 +370,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Sampler(
                 name = "aggregation2",
                 shardSizeValue = 50,
-                subAggregations = Chunk(
+                subAggregations = Seq(
                   Avg(name = "avg_length", field = "length", missing = None),
                   Terms(
                     name = "keywords",

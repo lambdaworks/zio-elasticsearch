@@ -368,7 +368,7 @@ sealed trait SamplerAggregation extends SingleElasticAggregation with WithSubAgg
 private[elasticsearch] final case class Sampler(
   name: String,
   shardSizeValue: Int,
-  subAggregations: Chunk[SingleElasticAggregation]
+  subAggregations: Seq[SingleElasticAggregation]
 ) extends SamplerAggregation {
   self =>
   def maxDocumentsPerShard(value: Int): SamplerAggregation =

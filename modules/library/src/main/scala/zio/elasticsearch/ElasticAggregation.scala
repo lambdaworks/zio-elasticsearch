@@ -361,9 +361,9 @@ object ElasticAggregation {
   final def samplerAggregation(
     name: String,
     agg: SingleElasticAggregation,
-    aggs: Chunk[SingleElasticAggregation]*
+    aggs: SingleElasticAggregation*
   ): SamplerAggregation =
-    Sampler(name = name, shardSizeValue = 100, subAggregations = Chunk(agg) ++ aggs.flatten)
+    Sampler(name = name, shardSizeValue = 100, subAggregations = agg +: aggs)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified
