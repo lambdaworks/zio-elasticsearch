@@ -1,7 +1,7 @@
 addSbtPlugin("ch.epfl.scala"     % "sbt-scalafix"   % "0.14.3")
 addSbtPlugin("com.eed3si9n"      % "sbt-buildinfo"  % "0.13.1")
 addSbtPlugin("com.github.sbt"    % "sbt-ci-release" % "1.11.2")
-addSbtPlugin("com.github.sbt"    % "sbt-unidoc"     % "0.5.0")
+addSbtPlugin("com.github.sbt"    % "sbt-unidoc"     % "0.6.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header"     % "5.10.0")
 addSbtPlugin("io.spray"          % "sbt-revolver"   % "0.10.0")
 addSbtPlugin("org.scalameta"     % "sbt-mdoc"       % "2.7.2")
