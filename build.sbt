@@ -47,8 +47,8 @@ lazy val library =
         "com.softwaremill.sttp.client4" %% "zio-json"        % "4.0.10",
         "dev.zio"                       %% "zio-json"        % "0.7.44",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC41",
-        "dev.zio"                       %% "zio-schema"      % "1.7.4",
-        "dev.zio"                       %% "zio-schema-json" % "1.7.4",
+        "dev.zio"                       %% "zio-schema"      % "1.7.5",
+        "dev.zio"                       %% "zio-schema-json" % "1.7.5",
         "org.apache.commons"             % "commons-lang3"   % "3.18.0",
         "dev.zio"                       %% "zio-test"        % "2.1.21" % Test,
         "dev.zio"                       %% "zio-test-sbt"    % "2.1.21" % Test
@@ -81,8 +81,8 @@ lazy val example =
         "dev.zio" %% "zio-config-typesafe" % "4.0.4",
         "dev.zio" %% "zio-http"            % "3.4.1",
         "dev.zio" %% "zio-json"            % "0.7.44",
-        "dev.zio" %% "zio-schema"          % "1.7.4",
-        "dev.zio" %% "zio-schema-json"     % "1.7.4"
+        "dev.zio" %% "zio-schema"          % "1.7.5",
+        "dev.zio" %% "zio-schema-json"     % "1.7.5"
       )
     )
     .dependsOn(library)
