@@ -529,57 +529,56 @@ object ElasticRequest {
     def routing(value: Routing): BulkRequest =
       self.copy(routing = Some(value))
 
-    lazy val body: String = requests.flatMap { r =>
-      (r: @unchecked) match {
-        case Create(index, document, _, routing) =>
-          Chunk(
-            getActionAndMeta(
-              requestType = "create",
-              parameters = Chunk(("_index", index.orElse(this.index)), ("routing", routing))
-            ),
-            document.json
+    lazy val body: String = requests.flatMap {
+      case Create(index, document, _, routing) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "create",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("routing", routing))
+          ),
+          document.json
+        )
+      case CreateWithId(index, id, document, _, routing) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "create",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+          ),
+          document.json
+        )
+      case CreateOrUpdate(index, id, document, _, routing) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "index",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+          ),
+          document.json
+        )
+      case DeleteById(index, id, _, routing) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "delete",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           )
-        case CreateWithId(index, id, document, _, routing) =>
-          Chunk(
-            getActionAndMeta(
-              requestType = "create",
-              parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-            ),
-            document.json
-          )
-        case CreateOrUpdate(index, id, document, _, routing) =>
-          Chunk(
-            getActionAndMeta(
-              requestType = "index",
-              parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-            ),
-            document.json
-          )
-        case DeleteById(index, id, _, routing) =>
-          Chunk(
-            getActionAndMeta(
-              requestType = "delete",
-              parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-            )
-          )
-        case Update(index, id, Some(document), _, routing, None, _) =>
-          Chunk(
-            getActionAndMeta(
-              requestType = "update",
-              parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-            ),
-            Obj("doc" -> document.json)
-          )
-        case Update(index, id, None, _, routing, Some(script), _) =>
-          Chunk(
-            getActionAndMeta(
-              requestType = "update",
-              parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-            ),
-            Obj("script" -> script.toJson)
-          )
-        case _ => throw new IllegalStateException("Unsupported bulkable request type in Bulk request")
-      }
+        )
+      case Update(index, id, Some(document), _, routing, None, _) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "update",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+          ),
+          Obj("doc" -> document.json)
+        )
+      case Update(index, id, _, _, routing, Some(script), _) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "update",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+          ),
+          Obj("script" -> script.toJson)
+        )
+      case Update(_, _, None, _, _, None, _) =>
+        Chunk.empty
     }.mkString(start = "", sep = "\n", end = "\n")
   }
 
