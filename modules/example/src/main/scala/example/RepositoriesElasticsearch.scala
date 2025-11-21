@@ -29,72 +29,54 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
     elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
 
   def findById(organization: String, id: String): IO[RepositoryError, Option[GitHubRepo]] =
-    (for {
-      routing <- routingOf(organization).mapError(Left(_))
+    for {
+      routing <- routingOf(organization)
       res     <- elasticsearch
                .execute(ElasticRequest.getById(Index, DocumentId(id)).routing(routing))
                .documentAs[GitHubRepo]
-               .mapError(Right(_))
-    } yield res).mapError {
-      case Left(domainError) => domainError
-      case Right(throwable)  => ElasticsearchError(throwable)
-    }
+               .mapError(ElasticsearchError(_))
+    } yield res
 
   def create(repository: GitHubRepo): IO[RepositoryError, CreationOutcome] =
-    (for {
-      routing <- routingOf(repository.organization).mapError(Left(_))
+    for {
+      routing <- routingOf(repository.organization)
       res     <- elasticsearch.execute(
                ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
-             ).mapError(Right(_))
-    } yield res).mapError {
-      case Left(domainError) => domainError
-      case Right(throwable)  => ElasticsearchError(throwable)
-    }
+             ).mapError(ElasticsearchError(_))
+    } yield res
 
   def createAll(repositories: Chunk[GitHubRepo]): IO[RepositoryError, Unit] =
-    (for {
-      routing <- routingOf(organization).mapError(Left(_))
+    for {
+      routing <- routingOf(organization)
       _       <- elasticsearch.execute(
              ElasticRequest
                .bulk(repositories.map { repository =>
                  ElasticRequest.create[GitHubRepo](Index, DocumentId(repository.id), repository)
                }: _*)
                .routing(routing)
-           ).mapError(Right(_))
-    } yield ()).mapError {
-      case Left(domainError) => domainError
-      case Right(throwable)  => RepositoryError.ElasticsearchError(throwable)
-    }
+           ).mapError(ElasticsearchError(_))
+    } yield ()
 
   def upsertBulk(organization: String, repositories: Chunk[GitHubRepo]): IO[RepositoryError, Unit] =
-    (for {
-      routing     <- routingOf(organization).mapError(Left(_))
+    for {
+      routing     <- routingOf(organization)
       bulkRequests = repositories.map(repo => ElasticRequest.upsert(DocumentId(repo.id), repo).routing(routing))
-      _           <- elasticsearch.execute(ElasticRequest.bulk(Index, bulkRequests: _*)).mapError(Right(_))
-    } yield ()).mapError {
-      case Left(domainError) => domainError
-      case Right(throwable)  => RepositoryError.ElasticsearchError(throwable)
-    }
+      _           <- elasticsearch.execute(ElasticRequest.bulk(Index, bulkRequests: _*)).mapError(ElasticsearchError(_))
+    } yield ()
 
   def upsert(id: String, repository: GitHubRepo): IO[RepositoryError, Unit] =
-    (for {
-      routing <- routingOf(repository.organization).mapError(Left(_))
+    for {
+      routing <- routingOf(repository.organization)
       _       <- elasticsearch.execute(
              ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
-           ).mapError(Right(_))
-    } yield ()).mapError {
-      case Left(domainError) => domainError
-      case Right(throwable)  => RepositoryError.ElasticsearchError(throwable)
-    }
+           ).mapError(ElasticsearchError(_))
+    } yield ()
 
   def remove(organization: String, id: String): IO[RepositoryError, DeletionOutcome] =
-    (for {
-      routing <- routingOf(organization).mapError(Left(_))
-      res     <- elasticsearch.execute(ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse).mapError(Right(_))
-    } yield res).mapError {
-      case Left(domainError) => domainError
-      case Right(throwable)  => ElasticsearchError(throwable)
-    }
+    for {
+      routing <- routingOf(organization)
+      res     <- elasticsearch.execute(ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse).mapError(ElasticsearchError(_))
+    } yield res
 
   def search(query: ElasticQuery[_], from: Int, size: Int): Task[Chunk[GitHubRepo]] =
     elasticsearch.execute(ElasticRequest.search(Index, query).from(from).size(size)).documentAs[GitHubRepo]
