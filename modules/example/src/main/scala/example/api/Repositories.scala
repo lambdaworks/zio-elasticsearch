@@ -106,7 +106,6 @@ object Repositories {
                 .map(repositories => Response.json(repositories.toJson))
           }
       }.orDie,
-
       Method.PUT / BasePath / string("id") -> handler { (id: String, req: Request) =>
         (req.body.asString
           .map(JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _, JsonCodecConfig.default))
@@ -172,5 +171,4 @@ object Repositories {
           case StringFilterOperator.Pattern    => ElasticQuery.wildcard(field.toString, value)
         }
     }
-
 }
