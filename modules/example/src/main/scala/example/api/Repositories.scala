@@ -16,7 +16,8 @@
 
 package example.api
 
-import example.{GitHubRepo, RepositoriesElasticsearch}
+import example.RepositoryError.{ElasticsearchError, InvalidRouting}
+import example.{GitHubRepo, RepositoriesElasticsearch, RepositoryError}
 import zio.elasticsearch._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
@@ -39,6 +40,16 @@ object Repositories {
 
   private final val BasePath = Root / "api" / "repositories"
 
+  private def handleRepositoryError(error: RepositoryError): Response =
+    error match {
+      case InvalidRouting(message) =>
+        Response.json(ErrorResponse.fromReasons(s"Invalid routing value: $message").toJson).status(HttpBadRequest)
+      case ElasticsearchError(cause) =>
+        Response
+          .json(ErrorResponse.fromReasons(s"Elasticsearch operation failed: ${cause.getMessage}").toJson)
+          .status(HttpBadRequest)
+    }
+
   final val routes: Routes[RepositoriesElasticsearch, Nothing] =
     Routes(
       Method.GET / BasePath -> handler(
@@ -54,7 +65,8 @@ object Repositories {
               case None =>
                 Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).status(HttpNotFound)
             }
-      }.orDie,
+            .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
+      },
       Method.POST / BasePath -> handler { (req: Request) =>
         req.body.asString
           .map(JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _, JsonCodecConfig.default))
@@ -62,12 +74,15 @@ object Repositories {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).status(HttpBadRequest))
             case Right(repo) =>
-              RepositoriesElasticsearch.create(repo).map {
-                case CreationOutcome.Created =>
-                  Response.json(repo.toJson).status(HttpCreated)
-                case CreationOutcome.AlreadyExists =>
-                  Response.json("A repository with a given ID already exists.").status(HttpBadRequest)
-              }
+              RepositoriesElasticsearch
+                .create(repo)
+                .map {
+                  case CreationOutcome.Created =>
+                    Response.json(repo.toJson).status(HttpCreated)
+                  case CreationOutcome.AlreadyExists =>
+                    Response.json("A repository with a given ID already exists.").status(HttpBadRequest)
+                }
+                .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
           }
       }.orDie,
       Method.POST / BasePath / string("organization") / "bulk-upsert" -> handler {
@@ -81,13 +96,7 @@ object Repositories {
                 RepositoriesElasticsearch
                   .upsertBulk(organization, repositories)
                   .map(_ => Response.status(HttpNoContent))
-                  .catchAll(e =>
-                    ZIO.succeed(
-                      Response
-                        .json(ErrorResponse.fromReasons(s"Bulk operation failed: ${e.getMessage}").toJson)
-                        .status(HttpBadRequest)
-                    )
-                  )
+                  .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
             }
       }.orDie,
       Method.POST / BasePath / "search" -> handler { (req: Request) =>
@@ -103,7 +112,7 @@ object Repositories {
           }
       }.orDie,
       Method.PUT / BasePath / string("id") -> handler { (id: String, req: Request) =>
-        req.body.asString
+        (req.body.asString
           .map(JsonDecoder.decode[GitHubRepo](GitHubRepo.schema, _, JsonCodecConfig.default))
           .flatMap {
             case Left(e) =>
@@ -123,9 +132,10 @@ object Repositories {
                   Response.json(updated.toJson)
                 case None =>
                   Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).status(HttpBadRequest)
-              }
-          }
-      }.orDie,
+              }.catchAll(error => ZIO.succeed(handleRepositoryError(error)))
+          })
+          .orDie
+      },
       Method.DELETE / BasePath / string("organization") / string("id") -> handler {
         (organization: String, id: String, _: Request) =>
           RepositoriesElasticsearch
@@ -136,7 +146,8 @@ object Repositories {
               case DeletionOutcome.NotFound =>
                 Response.json(ErrorResponse.fromReasons(s"Repository $id does not exist.").toJson).status(HttpNotFound)
             }
-      }.orDie
+            .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
+      }
     )
 
   private def createElasticQuery(query: Criteria): ElasticQuery[Any] =
@@ -166,5 +177,4 @@ object Repositories {
           case StringFilterOperator.Pattern    => ElasticQuery.wildcard(field.toString, value)
         }
     }
-
 }
