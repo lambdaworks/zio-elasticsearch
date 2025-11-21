@@ -45,7 +45,9 @@ object Repositories {
       case InvalidRouting(message) =>
         Response.json(ErrorResponse.fromReasons(s"Invalid routing value: $message").toJson).status(HttpBadRequest)
       case ElasticsearchError(cause) =>
-        Response.json(ErrorResponse.fromReasons(s"Elasticsearch operation failed: ${cause.getMessage}").toJson).status(HttpBadRequest)
+        Response
+          .json(ErrorResponse.fromReasons(s"Elasticsearch operation failed: ${cause.getMessage}").toJson)
+          .status(HttpBadRequest)
     }
 
   final val routes: Routes[RepositoriesElasticsearch, Nothing] =
@@ -72,12 +74,15 @@ object Repositories {
             case Left(e) =>
               ZIO.succeed(Response.json(ErrorResponse.fromReasons(e.message).toJson).status(HttpBadRequest))
             case Right(repo) =>
-              RepositoriesElasticsearch.create(repo).map {
-                case CreationOutcome.Created =>
-                  Response.json(repo.toJson).status(HttpCreated)
-                case CreationOutcome.AlreadyExists =>
-                  Response.json("A repository with a given ID already exists.").status(HttpBadRequest)
-              }.catchAll(error => ZIO.succeed(handleRepositoryError(error)))
+              RepositoriesElasticsearch
+                .create(repo)
+                .map {
+                  case CreationOutcome.Created =>
+                    Response.json(repo.toJson).status(HttpCreated)
+                  case CreationOutcome.AlreadyExists =>
+                    Response.json("A repository with a given ID already exists.").status(HttpBadRequest)
+                }
+                .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
           }
       }.orDie,
       Method.POST / BasePath / string("organization") / "bulk-upsert" -> handler {
@@ -128,7 +133,8 @@ object Repositories {
                 case None =>
                   Response.json(ErrorResponse.fromReasons("Operation failed.").toJson).status(HttpBadRequest)
               }.catchAll(error => ZIO.succeed(handleRepositoryError(error)))
-          }).orDie
+          })
+          .orDie
       },
       Method.DELETE / BasePath / string("organization") / string("id") -> handler {
         (organization: String, id: String, _: Request) =>

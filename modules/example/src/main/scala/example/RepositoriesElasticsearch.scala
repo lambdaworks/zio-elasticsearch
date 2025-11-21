@@ -40,21 +40,25 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def create(repository: GitHubRepo): IO[RepositoryError, CreationOutcome] =
     for {
       routing <- routingOf(repository.organization)
-      res     <- elasticsearch.execute(
-               ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
-             ).mapError(ElasticsearchError(_))
+      res     <- elasticsearch
+               .execute(
+                 ElasticRequest.create(Index, DocumentId(repository.id), repository).routing(routing).refreshTrue
+               )
+               .mapError(ElasticsearchError(_))
     } yield res
 
   def createAll(repositories: Chunk[GitHubRepo]): IO[RepositoryError, Unit] =
     for {
       routing <- routingOf(organization)
-      _       <- elasticsearch.execute(
-             ElasticRequest
-               .bulk(repositories.map { repository =>
-                 ElasticRequest.create[GitHubRepo](Index, DocumentId(repository.id), repository)
-               }: _*)
-               .routing(routing)
-           ).mapError(ElasticsearchError(_))
+      _       <- elasticsearch
+             .execute(
+               ElasticRequest
+                 .bulk(repositories.map { repository =>
+                   ElasticRequest.create[GitHubRepo](Index, DocumentId(repository.id), repository)
+                 }: _*)
+                 .routing(routing)
+             )
+             .mapError(ElasticsearchError(_))
     } yield ()
 
   def upsertBulk(organization: String, repositories: Chunk[GitHubRepo]): IO[RepositoryError, Unit] =
@@ -67,15 +71,19 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
   def upsert(id: String, repository: GitHubRepo): IO[RepositoryError, Unit] =
     for {
       routing <- routingOf(repository.organization)
-      _       <- elasticsearch.execute(
-             ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
-           ).mapError(ElasticsearchError(_))
+      _       <- elasticsearch
+             .execute(
+               ElasticRequest.upsert(Index, DocumentId(id), repository).routing(routing).refresh(value = true)
+             )
+             .mapError(ElasticsearchError(_))
     } yield ()
 
   def remove(organization: String, id: String): IO[RepositoryError, DeletionOutcome] =
     for {
       routing <- routingOf(organization)
-      res     <- elasticsearch.execute(ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse).mapError(ElasticsearchError(_))
+      res     <- elasticsearch
+               .execute(ElasticRequest.deleteById(Index, DocumentId(id)).routing(routing).refreshFalse)
+               .mapError(ElasticsearchError(_))
     } yield res
 
   def search(query: ElasticQuery[_], from: Int, size: Int): Task[Chunk[GitHubRepo]] =
@@ -99,7 +107,10 @@ object RepositoriesElasticsearch {
   def createAll(repositories: Chunk[GitHubRepo]): ZIO[RepositoriesElasticsearch, RepositoryError, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.createAll(repositories))
 
-  def upsertBulk(organization: String, repositories: Chunk[GitHubRepo]): ZIO[RepositoriesElasticsearch, RepositoryError, Unit] =
+  def upsertBulk(
+    organization: String,
+    repositories: Chunk[GitHubRepo]
+  ): ZIO[RepositoriesElasticsearch, RepositoryError, Unit] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.upsertBulk(organization, repositories))
 
   def upsert(id: String, repository: GitHubRepo): ZIO[RepositoriesElasticsearch, RepositoryError, Unit] =

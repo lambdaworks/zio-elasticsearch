@@ -22,4 +22,3 @@ object RepositoryError {
   final case class InvalidRouting(message: String)      extends RepositoryError
   final case class ElasticsearchError(cause: Throwable) extends RepositoryError
 }
-

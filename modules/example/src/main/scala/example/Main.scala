@@ -65,9 +65,9 @@ object Main extends ZIOAppDefault {
         repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
         _            <- RepositoriesElasticsearch.createAll(repositories).mapError {
-                      case InvalidRouting(msg) => new IllegalArgumentException(s"Invalid routing: $msg")
-                      case ElasticsearchError(cause) => cause
-                    }
+               case InvalidRouting(msg)       => new IllegalArgumentException(s"Invalid routing: $msg")
+               case ElasticsearchError(cause) => cause
+             }
       } yield ()).provideSome(RepositoriesElasticsearch.live)
 
     deleteIndex *> createIndex *> populate
