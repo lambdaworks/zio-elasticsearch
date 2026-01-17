@@ -43,8 +43,8 @@ lazy val library =
     .settings(scalacOptions += "-language:higherKinds")
     .settings(
       libraryDependencies ++= List(
-        "com.softwaremill.sttp.client4" %% "zio"             % "4.0.13",
-        "com.softwaremill.sttp.client4" %% "zio-json"        % "4.0.13",
+        "com.softwaremill.sttp.client4" %% "zio"             % "4.0.14",
+        "com.softwaremill.sttp.client4" %% "zio-json"        % "4.0.14",
         "dev.zio"                       %% "zio-json"        % "0.7.45",
         "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC45",
         "dev.zio"                       %% "zio-schema"      % "1.7.5",
