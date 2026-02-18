@@ -16,7 +16,7 @@ The following versions are supported:
 - Scala: 2.12, 2.13 and 3
 - ZIO: 2
 - Elasticsearch: 7, 8
-- JVM 11+
+- JVM 17+
 
 ## Installation
 
@@ -200,4 +200,4 @@ See the [Code of Conduct](https://lambdaworks.github.io/zio-elasticsearch/about/
 [License](LICENSE)
 
 
-[scala-version-badge]: https://img.shields.io/badge/scala-2.13.16-blue?logo=scala&color=red
+[scala-version-badge]: https://img.shields.io/badge/scala-2.13.18-blue?logo=scala&color=red
