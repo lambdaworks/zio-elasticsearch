@@ -82,6 +82,8 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
                       ExtendedStatsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("filter#") =>
                       FilterAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
+                    case str if str.contains("ip_range#") =>
+                      IpRangeAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("max#") =>
                       MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
                     case str if str.contains("min#") =>
