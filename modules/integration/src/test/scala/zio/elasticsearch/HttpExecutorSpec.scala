@@ -19,7 +19,8 @@ package zio.elasticsearch
 import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
-import zio.elasticsearch.ElasticQuery.{script => _, _}
+import zio.elasticsearch.ElasticIntervalRule.intervalMatch
+import zio.elasticsearch.ElasticQuery.{contains => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.aggregation.AggregationOrder
 import zio.elasticsearch.data.GeoPoint
@@ -2949,6 +2950,77 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(r1)(equalTo(Chunk(document)))
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoPolygonIndex)).orDie)
+        ),
+        suite("intervals query")(
+          test("intervalMatch query returns only matching document") {
+            checkOnce(genDocumentId, genTestDocument, Gen.alphaNumericString.filter(_.nonEmpty)) {
+              (idMatch, docMatch, targetWord) =>
+                val docShouldMatch = docMatch.copy(stringField = s"prefix $targetWord suffix")
+
+                for {
+                  _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                  _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, idMatch, docShouldMatch).refreshTrue)
+                  res <- Executor
+                           .execute(
+                             ElasticRequest.search(
+                               firstSearchIndex,
+                               intervals(TestDocument.stringField, intervalMatch(targetWord))
+                             )
+                           )
+                           .documentAs[TestDocument]
+                } yield assert(res)(Assertion.hasSameElements(Chunk(docShouldMatch)))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("intervalMatch query finds document with exact matching term") {
+            checkOnce(genDocumentId, genTestDocument) { (docId, doc) =>
+              val term        = "apple"
+              val docWithTerm = doc.copy(stringField = s"$term banana orange")
+
+              for {
+                _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, docWithTerm))
+                _   <- Executor.execute(ElasticRequest.refresh(firstSearchIndex))
+                res <- Executor
+                         .execute(
+                           ElasticRequest.search(
+                             firstSearchIndex,
+                             intervals(
+                               TestDocument.stringField,
+                               intervalMatch(term)
+                             )
+                           )
+                         )
+                         .documentAs[TestDocument]
+              } yield assert(res)(Assertion.contains(docWithTerm))
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          ),
+          test("intervalMatch query does not find document if term is absent") {
+            checkOnce(genDocumentId, genTestDocument) { (docId, doc) =>
+              for {
+                _   <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, doc))
+                _   <- Executor.execute(ElasticRequest.refresh(firstSearchIndex))
+                res <- Executor
+                         .execute(
+                           ElasticRequest.search(
+                             firstSearchIndex,
+                             intervals(
+                               TestDocument.stringField,
+                               intervalMatch("nonexistentterm")
+                             )
+                           )
+                         )
+                         .documentAs[TestDocument]
+              } yield assert(res)(Assertion.isEmpty)
+            }
+          } @@ around(
+            Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+            Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+          )
         ),
         suite("search for documents using FunctionScore query")(
           test("using randomScore function") {
