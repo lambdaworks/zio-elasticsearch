@@ -16,8 +16,7 @@
 
 package example
 
-sealed abstract class RepositoryError(message: String, cause: Throwable = null)
-    extends Exception(message, cause)
+sealed abstract class RepositoryError(message: String, cause: Throwable = null) extends Exception(message, cause)
 
 object RepositoryError {
   final case class InvalidRouting(message: String)      extends RepositoryError(message)
