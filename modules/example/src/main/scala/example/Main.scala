@@ -16,7 +16,6 @@
 
 package example
 
-import example.RepositoryError.{ElasticsearchError, InvalidRouting}
 import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import example.external.github.RepoFetcher
@@ -64,10 +63,7 @@ object Main extends ZIOAppDefault {
       (for {
         repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
-        _            <- RepositoriesElasticsearch.createAll(repositories).mapError {
-               case InvalidRouting(msg)       => new IllegalArgumentException(s"Invalid routing: $msg")
-               case ElasticsearchError(cause) => cause
-             }
+        _            <- RepositoriesElasticsearch.createAll(repositories).orDie
       } yield ()).provideSome(RepositoriesElasticsearch.live)
 
     deleteIndex *> createIndex *> populate

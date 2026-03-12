@@ -25,8 +25,8 @@ import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 
 final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
-  def findAll(): Task[Chunk[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo]
+  def findAll(): IO[RepositoryError, Chunk[GitHubRepo]] =
+    elasticsearch.execute(ElasticRequest.search(Index, matchAll)).documentAs[GitHubRepo].mapError(ElasticsearchError(_))
 
   def findById(organization: String, id: String): IO[RepositoryError, Option[GitHubRepo]] =
     for {
@@ -86,8 +86,11 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
                .mapError(ElasticsearchError(_))
     } yield res
 
-  def search(query: ElasticQuery[_], from: Int, size: Int): Task[Chunk[GitHubRepo]] =
-    elasticsearch.execute(ElasticRequest.search(Index, query).from(from).size(size)).documentAs[GitHubRepo]
+  def search(query: ElasticQuery[_], from: Int, size: Int): IO[RepositoryError, Chunk[GitHubRepo]] =
+    elasticsearch
+      .execute(ElasticRequest.search(Index, query).from(from).size(size))
+      .documentAs[GitHubRepo]
+      .mapError(ElasticsearchError(_))
 
   private def routingOf(value: String): IO[RepositoryError, Routing.Type] =
     Routing.make(value).toZIO.mapError(e => InvalidRouting(e))
@@ -95,7 +98,7 @@ final case class RepositoriesElasticsearch(elasticsearch: Elasticsearch) {
 
 object RepositoriesElasticsearch {
 
-  def findAll(): RIO[RepositoriesElasticsearch, Chunk[GitHubRepo]] =
+  def findAll(): ZIO[RepositoriesElasticsearch, RepositoryError, Chunk[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.findAll())
 
   def findById(organization: String, id: String): ZIO[RepositoriesElasticsearch, RepositoryError, Option[GitHubRepo]] =
@@ -119,7 +122,11 @@ object RepositoriesElasticsearch {
   def remove(organization: String, id: String): ZIO[RepositoriesElasticsearch, RepositoryError, DeletionOutcome] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.remove(organization, id))
 
-  def search(query: ElasticQuery[_], from: Int, size: Int): RIO[RepositoriesElasticsearch, Chunk[GitHubRepo]] =
+  def search(
+    query: ElasticQuery[_],
+    from: Int,
+    size: Int
+  ): ZIO[RepositoriesElasticsearch, RepositoryError, Chunk[GitHubRepo]] =
     ZIO.serviceWithZIO[RepositoriesElasticsearch](_.search(query, from, size))
 
   lazy val live: URLayer[Elasticsearch, RepositoriesElasticsearch] =

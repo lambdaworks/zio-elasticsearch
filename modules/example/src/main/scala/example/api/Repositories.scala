@@ -24,6 +24,7 @@ import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.http.Status.{
   BadRequest => HttpBadRequest,
   Created => HttpCreated,
+  InternalServerError => HttpInternalServerError,
   NoContent => HttpNoContent,
   NotFound => HttpNotFound
 }
@@ -47,14 +48,17 @@ object Repositories {
       case ElasticsearchError(cause) =>
         Response
           .json(ErrorResponse.fromReasons(s"Elasticsearch operation failed: ${cause.getMessage}").toJson)
-          .status(HttpBadRequest)
+          .status(HttpInternalServerError)
     }
 
   final val routes: Routes[RepositoriesElasticsearch, Nothing] =
     Routes(
       Method.GET / BasePath -> handler(
-        RepositoriesElasticsearch.findAll().map(repositories => Response.json(repositories.toJson))
-      ).orDie,
+        RepositoriesElasticsearch
+          .findAll()
+          .map(repositories => Response.json(repositories.toJson))
+          .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
+      ),
       Method.GET / BasePath / string("organization") / string("id") -> handler {
         (organization: String, id: String, _: Request) =>
           RepositoriesElasticsearch
@@ -109,6 +113,7 @@ object Repositories {
               RepositoriesElasticsearch
                 .search(createElasticQuery(queryBody), req.offset, req.limit)
                 .map(repositories => Response.json(repositories.toJson))
+                .catchAll(error => ZIO.succeed(handleRepositoryError(error)))
           }
       }.orDie,
       Method.PUT / BasePath / string("id") -> handler { (id: String, req: Request) =>

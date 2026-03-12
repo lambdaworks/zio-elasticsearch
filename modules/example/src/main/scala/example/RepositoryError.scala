@@ -16,9 +16,10 @@
 
 package example
 
-sealed trait RepositoryError extends Product with Serializable
+sealed abstract class RepositoryError(message: String, cause: Throwable = null)
+    extends Exception(message, cause)
 
 object RepositoryError {
-  final case class InvalidRouting(message: String)      extends RepositoryError
-  final case class ElasticsearchError(cause: Throwable) extends RepositoryError
+  final case class InvalidRouting(message: String)      extends RepositoryError(message)
+  final case class ElasticsearchError(cause: Throwable) extends RepositoryError(cause.getMessage, cause)
 }
