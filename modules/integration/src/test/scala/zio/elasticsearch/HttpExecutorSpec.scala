@@ -57,10 +57,9 @@ import scala.util.Random
 object HttpExecutorSpec extends IntegrationSpec {
 
   def spec: Spec[TestEnvironment, Any] = {
-    suite("Executor")(
-      suite("HTTP Executor")(
+    (suite("Executor")(
         suite("aggregation")(
-          test("aggregate using avg aggregation") {
+          test("avg aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -87,7 +86,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using cardinality aggregation") {
+          test("cardinality aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -113,7 +112,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using extended stats aggregation") {
+          test("extended stats aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -155,7 +154,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using filter aggregation with max aggregation as a sub aggregation") {
+          test("filter aggregation with max sub aggregation") {
             val expectedResult = (
               "aggregation",
               FilterAggregationResult(
@@ -214,7 +213,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using max aggregation") {
+          test("max aggregation") {
             val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
@@ -240,7 +239,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using min aggregation") {
+          test("min aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -265,7 +264,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using percentile ranks aggregation") {
+          test("percentile ranks aggregation") {
             val expectedResult = Map("500.0" -> 55.55555555555555, "600.0" -> 100.0)
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
@@ -297,7 +296,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using percentiles aggregation") {
+          test("percentiles aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -323,7 +322,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using percentiles aggregation with multi index") {
+          test("percentiles aggregation with multi index") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -357,7 +356,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("aggregate using percentiles aggregation with index pattern") {
+          test("percentiles aggregation with index pattern") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -391,7 +390,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("aggregate using percentiles aggregation as sub aggregation") {
+          test("percentiles aggregation as sub aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -417,7 +416,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using sampler aggregation with sum and terms sub aggregations") {
+          test("sampler aggregation with sum and terms sub aggregations") {
             (
               "sampler_agg",
               SamplerAggregationResult(
@@ -485,7 +484,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using stats aggregation") {
+          test("stats aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -519,7 +518,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using sum aggregation") {
+          test("sum aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -544,7 +543,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using terms aggregation with max aggregation as a sub aggregation") {
+          test("terms aggregation with max sub aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -571,7 +570,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using missing aggregations") {
+          test("missing aggregations") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -603,7 +602,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using multiple terms aggregations") {
+          test("multiple terms aggregations") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -635,7 +634,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using terms aggregation with nested max aggregation and bucket sort aggregation") {
+          test("terms aggregation with nested max and bucket sort") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -673,7 +672,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using value count aggregation") {
+          test("value count aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -709,7 +708,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("aggregate using weighted avg aggregation") {
+          test("weighted avg aggregation") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -750,7 +749,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ),
         suite("search with aggregation")(
-          test("search for first result using match all query with multiple terms aggregations") {
+          test("match all with multiple terms aggregations") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -786,9 +785,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test(
-            "search for first result using match all query with multiple terms aggregations and search after parameter"
-          ) {
+          test("match all with terms aggregations and search after") {
             checkOnce(genTestDocument) { firstDocument =>
               for {
                 _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
@@ -832,7 +829,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search using match all query with multiple terms aggregations with descending sort on one field") {
+          test("match all with terms aggregations and descending sort") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 val firstDocumentWithFixedIntField  = firstDocument.copy(intField = 25)
@@ -872,7 +869,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search using sampler aggregation") {
+          test("sampler aggregation") {
             val expectedAggResult = SamplerAggregationResult(
               docCount = 2,
               subAggregations = Map(
@@ -923,9 +920,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test(
-            "search using match all query with terms aggregations, nested max aggregation and nested bucketSelector aggregation"
-          ) {
+          test("terms aggregations with nested max and bucketSelector") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -972,8 +967,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("counting documents")(
-          test("successfully count documents with given query") {
+        suite("counting")(
+          test("count with query") {
             checkOnce(genTestDocument) { document =>
               for {
                 _ <- Executor.execute(ElasticRequest.deleteByQuery(firstCountIndex, matchAll))
@@ -987,7 +982,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstCountIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstCountIndex)).orDie
           ),
-          test("successfully count documents without given query") {
+          test("count without query") {
             checkOnce(genTestDocument) { document =>
               for {
                 _ <- Executor.execute(ElasticRequest.deleteByQuery(secondCountIndex, matchAll))
@@ -1003,7 +998,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ) @@ shrinks(0),
         suite("creating document")(
-          test("successfully create document") {
+          test("create document") {
             checkOnce(genTestDocument) { document =>
               for {
                 docId <- Executor.execute(ElasticRequest.create[TestDocument](index, document))
@@ -1011,14 +1006,14 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(res)(isSome(equalTo(document)))
             }
           },
-          test("successfully create document with ID given") {
+          test("create document with ID") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               assertZIO(Executor.execute(ElasticRequest.create[TestDocument](index, documentId, document)))(
                 equalTo(CreationOutcome.Created)
               )
             }
           },
-          test("return 'AlreadyExists' if document with given ID already exists") {
+          test("return AlreadyExists for existing document") {
             checkOnce(genDocumentId, genTestDocument, genTestDocument) { (documentId, firstDocument, secondDocument) =>
               for {
                 _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, firstDocument))
@@ -1028,86 +1023,65 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         ),
         suite("creating index")(
-          test("successfully create index") {
-            assertZIO(Executor.execute(ElasticRequest.createIndex(createIndexTestName)))(
-              equalTo(CreationOutcome.Created)
-            )
-          },
-          test("return 'AlreadyExists' if index already exists") {
+          test("create index and return AlreadyExists for existing") {
             for {
-              _   <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
-              res <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
-            } yield assert(res)(equalTo(CreationOutcome.AlreadyExists))
+              res1 <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
+              res2 <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
+            } yield assert(res1)(equalTo(CreationOutcome.Created)) &&
+              assert(res2)(equalTo(CreationOutcome.AlreadyExists))
           }
         ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
-        suite("creating or updating document")(
-          test("successfully create document") {
-            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
-              for {
-                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
-                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
-              } yield assert(doc)(isSome(equalTo(document)))
-            }
-          },
-          test("successfully update document") {
+        suite("upserting document")(
+          test("upsert create and update") {
             checkOnce(genDocumentId, genTestDocument, genTestDocument) { (documentId, firstDocument, secondDocument) =>
               for {
-                _   <- Executor.execute(ElasticRequest.create[TestDocument](index, documentId, firstDocument))
-                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, secondDocument))
-                doc <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
-              } yield assert(doc)(isSome(equalTo(secondDocument)))
+                _    <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, firstDocument))
+                doc1 <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
+                _    <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, secondDocument))
+                doc2 <- Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument]
+              } yield assert(doc1)(isSome(equalTo(firstDocument))) &&
+                assert(doc2)(isSome(equalTo(secondDocument)))
             }
           }
         ),
-        suite("deleting document by ID")(
-          test("successfully delete existing document") {
-            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+        suite("deleting by ID")(
+          test("delete existing and return NotFound for missing") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId) { (documentId, document, missingId) =>
               for {
-                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
-                res <- Executor.execute(ElasticRequest.deleteById(index, documentId))
-              } yield assert(res)(equalTo(DeletionOutcome.Deleted))
-            }
-          },
-          test("return 'NotFound' if the document does not exist") {
-            checkOnce(genDocumentId) { documentId =>
-              assertZIO(Executor.execute(ElasticRequest.deleteById(index, documentId)))(
-                equalTo(DeletionOutcome.NotFound)
-              )
+                _    <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
+                res1 <- Executor.execute(ElasticRequest.deleteById(index, documentId))
+                res2 <- Executor.execute(ElasticRequest.deleteById(index, missingId))
+              } yield assert(res1)(equalTo(DeletionOutcome.Deleted)) &&
+                assert(res2)(equalTo(DeletionOutcome.NotFound))
             }
           }
         ),
-        suite("delete index")(
-          test("successfully delete existing index") {
-            checkOnce(genIndexName) { name =>
+        suite("deleting index")(
+          test("delete existing and return NotFound for missing") {
+            checkOnce(genIndexName, genIndexName) { (name, missingName) =>
               for {
-                _   <- Executor.execute(ElasticRequest.createIndex(name))
-                res <- Executor.execute(ElasticRequest.deleteIndex(name))
-              } yield assert(res)(equalTo(DeletionOutcome.Deleted))
-            }
-          },
-          test("return 'NotFound' if index does not exists") {
-            checkOnce(genIndexName) { name =>
-              assertZIO(Executor.execute(ElasticRequest.deleteIndex(name)))(equalTo(DeletionOutcome.NotFound))
+                _    <- Executor.execute(ElasticRequest.createIndex(name))
+                res1 <- Executor.execute(ElasticRequest.deleteIndex(name))
+                res2 <- Executor.execute(ElasticRequest.deleteIndex(missingName))
+              } yield assert(res1)(equalTo(DeletionOutcome.Deleted)) &&
+                assert(res2)(equalTo(DeletionOutcome.NotFound))
             }
           }
         ),
         suite("finding document")(
-          test("return true if the document exists") {
-            checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+          test("exists and not exists") {
+            checkOnce(genDocumentId, genTestDocument, genDocumentId) { (documentId, document, missingId) =>
               for {
-                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
-                res <- Executor.execute(ElasticRequest.exists(index, documentId))
-              } yield assert(res)(isTrue)
-            }
-          },
-          test("return false if the document does not exist") {
-            checkOnce(genDocumentId) { documentId =>
-              assertZIO(Executor.execute(ElasticRequest.exists(index, documentId)))(isFalse)
+                _    <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
+                res1 <- Executor.execute(ElasticRequest.exists(index, documentId))
+                res2 <- Executor.execute(ElasticRequest.exists(index, missingId))
+              } yield assert(res1)(isTrue) &&
+                assert(res2)(isFalse)
             }
           }
         ),
-        suite("retrieving document by ID")(
-          test("successfully return document") {
+        suite("retrieving by ID")(
+          test("return document") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               for {
                 _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
@@ -1115,12 +1089,12 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(res)(isSome(equalTo(document)))
             }
           },
-          test("return None if the document does not exist") {
+          test("return None for missing document") {
             checkOnce(genDocumentId) { documentId =>
               assertZIO(Executor.execute(ElasticRequest.getById(index, documentId)).documentAs[TestDocument])(isNone)
             }
           },
-          test("fail with throwable if decoding fails") {
+          test("fail on decoding error") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               val result = for {
                 _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
@@ -1133,25 +1107,22 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
-        suite("refresh index")(
-          test("successfully refresh existing index") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(index)))(isTrue)
-          },
-          test("successfully refresh more existing indices") {
+        suite("refreshing")(
+          test("refresh single, multiple, all indices and return false for missing") {
             for {
-              _   <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
-              res <- Executor.execute(ElasticRequest.refresh(MultiIndex.names(index, createIndexTestName)))
-            } yield assert(res)(isTrue)
-          },
-          test("successfully refresh all indices") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(IndexPatternAll)))(isTrue)
-          },
-          test("return false if index does not exists") {
-            assertZIO(Executor.execute(ElasticRequest.refresh(refreshFailIndex)))(isFalse)
+              res1 <- Executor.execute(ElasticRequest.refresh(index))
+              _    <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
+              res2 <- Executor.execute(ElasticRequest.refresh(MultiIndex.names(index, createIndexTestName)))
+              res3 <- Executor.execute(ElasticRequest.refresh(IndexPatternAll))
+              res4 <- Executor.execute(ElasticRequest.refresh(refreshFailIndex))
+            } yield assert(res1)(isTrue) &&
+              assert(res2)(isTrue) &&
+              assert(res3)(isTrue) &&
+              assert(res4)(isFalse)
           }
         ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
-        suite("retrieving document by IDs")(
-          test("find documents by ids") {
+        suite("retrieving by IDs")(
+          test("find by IDs") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1178,7 +1149,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           )
         ),
         suite("kNN search")(
-          test("search for top two results") {
+          test("top two results") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -1203,7 +1174,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for top two results with filters") {
+          test("top two results with filters") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -1232,8 +1203,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents")(
-          test("search for a document using a boosting query") {
+        suite("search")(
+          test("boosting query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1270,7 +1241,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a constant score query") {
+          test("constant score query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1296,7 +1267,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for first 2 documents using range query") {
+          test("range query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -1322,7 +1293,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for first 2 documents using range query with date format") {
+          test("range query with date format") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 val firstDocumentUpdated  = firstDocument.copy(dateField = LocalDate.now.minusDays(2))
@@ -1349,7 +1320,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for documents with source filtering") {
+          test("source filtering") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -1384,7 +1355,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("fail if an excluded source field is attempted to be decoded") {
+          test("fail on excluded source field decode") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 val result =
@@ -1419,7 +1390,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("fail if any of results cannot be decoded") {
+          test("fail on decode error") {
             checkOnce(genDocumentId, genDocumentId, genTestDocument, genTestSubDocument) {
               (documentId, subDocumentId, document, subDocument) =>
                 val result =
@@ -1448,7 +1419,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("search for a document which contains a specific prefix using a prefix query") {
+          test("prefix query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1474,7 +1445,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a disjunction max query") {
+          test("disjunction max query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1512,7 +1483,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a fuzzy query") {
+          test("fuzzy query") {
             checkOnce(genDocumentId, genTestDocument) { (firstDocumentId, firstDocument) =>
               for {
                 _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
@@ -1535,7 +1506,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a simple query string query") {
+          test("simple query string query") {
             checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
                 val firstDoc = firstDocument.copy(stringField = multiWordString)
@@ -1554,7 +1525,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a simple query string query with empty fields") {
+          test("simple query string with empty fields") {
             checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
                 val firstDoc = firstDocument.copy(stringField = multiWordString)
@@ -1573,7 +1544,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a simple query string query with non-existent field") {
+          test("simple query string with non-existent field") {
             checkOnce(genDocumentId, genTestDocument, genMultiWordString()) { (docId, doc, multiWordString) =>
               val docWithMultiWord = doc.copy(stringField = multiWordString)
 
@@ -1588,7 +1559,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document which contains a term using a wildcard query") {
+          test("wildcard contains query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1613,7 +1584,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document which starts with a term using a wildcard query") {
+          test("wildcard startsWith query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1638,7 +1609,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document which conforms to a pattern using a wildcard query") {
+          test("wildcard pattern query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1663,7 +1634,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a match all query with index pattern") {
+          test("match all with index pattern") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1697,7 +1668,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("search for a document using a match boolean prefix query") {
+          test("match boolean prefix query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1718,7 +1689,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a match phrase query with multi index") {
+          test("match phrase query with multi index") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1756,7 +1727,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("search for a document using a match phrase query") {
+          test("match phrase query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1780,7 +1751,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a match phrase prefix query") {
+          test("match phrase prefix query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1804,7 +1775,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a multi match query") {
+          test("multi match query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1827,7 +1798,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a terms query") {
+          test("terms query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -1859,7 +1830,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a terms set query with minimumShouldMatchField") {
+          test("terms set query with minimumShouldMatchField") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1895,7 +1866,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using a terms set query with minimumShouldMatchScript") {
+          test("terms set query with minimumShouldMatchScript") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1930,7 +1901,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using nested query") {
+          test("nested query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1959,7 +1930,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using should with satisfying minimumShouldMatch condition") {
+          test("should with satisfying minimumShouldMatch") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -1985,7 +1956,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using script query") {
+          test("script query") {
             checkN(4)(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2007,7 +1978,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document that doesn't exist using regexp query without case insensitive ") {
+          test("regexp query without case insensitive") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2035,7 +2006,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using regexp query with case insensitive") {
+          test("regexp query with case insensitive") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2065,7 +2036,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for a document using should with unsatisfying minimumShouldMatch condition") {
+          test("should with unsatisfying minimumShouldMatch") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2092,8 +2063,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents with inner hits")(
-          test("search for a document using nested query with inner hits") {
+        suite("search with inner hits")(
+          test("nested query with inner hits") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2127,8 +2098,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents with highlights")(
-          test("successfully find document with highlight") {
+        suite("search with highlights")(
+          test("highlight") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2155,7 +2126,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find inner hit document with highlight") {
+          test("inner hit highlight") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2204,7 +2175,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document with highlight using field accessor") {
+          test("highlight with field accessor") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2231,7 +2202,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document with highlights and return highlights map successfully") {
+          test("highlights map") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2258,7 +2229,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document with highlight while using global config") {
+          test("highlight with global config") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2291,7 +2262,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("successfully find document with highlight while using local config to overwrite global config") {
+          test("highlight with local config overwriting global") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 for {
@@ -2328,8 +2299,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ),
-        suite("searching for sorted documents")(
-          test("search for document sorted by descending age and by ascending birthDate using range query") {
+        suite("search with sorting")(
+          test("sort by descending age and ascending date") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 val firstDocumentWithFixedIntField =
@@ -2370,7 +2341,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for document sorted by script where age is ascending using range query") {
+          test("sort by script ascending") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstEmployee, secondDocumentId, secondEmployee) =>
                 val firstDocumentWithFixedIntField =
@@ -2409,7 +2380,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for document sorted descending with 'max' mode by one field using matchAll query") {
+          test("sort descending with max mode") {
             checkOnce(genDocumentId, genTestSubDocument, genDocumentId, genTestSubDocument) {
               (firstDocumentId, firstSubDocument, secondDocumentId, secondSubDocument) =>
                 val firstSubDocumentWithFixedIntList  = firstSubDocument.copy(intFieldList = List(11, 4, 37))
@@ -2446,8 +2417,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents using scroll API and returning them as a stream")(
-          test("search for documents using range query") {
+        suite("search with scroll API")(
+          test("range query") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
                 val sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
@@ -2470,7 +2441,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("search for documents using range query with multiple pages") {
+          test("range query with multiple pages") {
             checkOnce(genTestDocument) { document =>
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
 
@@ -2495,7 +2466,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("search for documents using range query with multiple pages and return type") {
+          test("range query with multiple pages and return type") {
             checkOnce(genTestDocument) { document =>
               def sink: Sink[Throwable, TestDocument, Nothing, Chunk[TestDocument]] =
                 ZSink.collectAll[TestDocument]
@@ -2519,7 +2490,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("search for documents using range query - empty stream") {
+          test("empty stream") {
             val sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
 
             for {
@@ -2532,8 +2503,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents using PIT (point in time) and returning them as a stream")(
-          test("successfully create PIT and return stream results") {
+        suite("search with PIT")(
+          test("PIT stream results") {
             checkOnce(genTestDocument) { document =>
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
                 ZSink.collectAll[Item]
@@ -2557,9 +2528,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test(
-            "successfully create PIT and return stream results with changed page size and different keep alive parameters"
-          ) {
+          test("PIT stream with custom page size and keep alive") {
             checkOnce(genTestDocument) { document =>
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
                 ZSink.collectAll[Item]
@@ -2586,7 +2555,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("successfully create PIT(point in time) and return stream results as specific type") {
+          test("PIT stream as specific type") {
             checkOnce(genTestDocument) { document =>
               def sink: Sink[Throwable, TestDocument, Nothing, Chunk[TestDocument]] =
                 ZSink.collectAll[TestDocument]
@@ -2613,7 +2582,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           ),
-          test("successfully create point in time and return empty stream if there is no valid results") {
+          test("PIT empty stream") {
             checkOnce(genTestDocument) { document =>
               def sink: Sink[Throwable, Item, Nothing, Chunk[Item]] =
                 ZSink.collectAll[Item]
@@ -2639,8 +2608,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
           )
         ) @@ shrinks(0),
-        suite("searching for documents using SearchAfter Query")(
-          test("search for document sorted by ascending age while using search after query") {
+        suite("search with SearchAfter")(
+          test("search after with ascending sort") {
             checkOnce(genTestDocument) { firstDocument =>
               for {
                 _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
@@ -2683,7 +2652,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           ) @@ shrinks(0)
         ),
         suite("deleting by query")(
-          test("successfully delete all matched documents") {
+          test("delete all matched documents") {
             checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
               (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
                 for {
@@ -2724,7 +2693,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.createIndex(deleteByQueryIndex)),
             Executor.execute(ElasticRequest.deleteIndex(deleteByQueryIndex)).orDie
           ),
-          test("returns NotFound when provided index is missing") {
+          test("return NotFound for missing index") {
             checkOnce(genIndexName) { missingIndex =>
               assertZIO(Executor.execute(ElasticRequest.deleteByQuery(missingIndex, matchAll)))(
                 equalTo(DeletionOutcome.NotFound)
@@ -2732,8 +2701,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
-        suite("bulk query")(
-          test("successfully execute bulk query") {
+        suite("bulk")(
+          test("execute bulk query") {
             checkOnce(genDocumentId, genDocumentId, genDocumentId, genTestDocument) {
               (firstDocumentId, secondDocumentId, thirdDocumentId, document) =>
                 for {
@@ -2779,7 +2748,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         ),
         suite("updating document")(
-          test("successfully update document with script") {
+          test("update with script") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               val intField = document.intField
               val factor   = 2
@@ -2796,7 +2765,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(doc)(isSome(equalTo(document.copy(intField = intField + factor))))
             }
           },
-          test("successfully create document if it does not exist") {
+          test("create if not exists") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               for {
                 _ <- Executor.execute(
@@ -2812,7 +2781,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(doc)(isSome(equalTo(document)))
             }
           },
-          test("successfully update document with doc") {
+          test("update with doc") {
             checkOnce(genDocumentId, genTestDocument, genTestDocument) { (documentId, firstDocument, secondDocument) =>
               for {
                 _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, firstDocument))
@@ -2822,8 +2791,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
-        suite("updating document by query")(
-          test("successfully update document with only script") {
+        suite("updating by query")(
+          test("update with script only") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               val stringField = "StringField"
               for {
@@ -2848,7 +2817,7 @@ object HttpExecutorSpec extends IntegrationSpec {
               ) && assert(doc)(isSome(equalTo(document.copy(stringField = stringField))))
             }
           },
-          test("successfully update document with script and query") {
+          test("update with script and query") {
             checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
               val newDocument = document.copy(stringField = "StringField")
               for {
@@ -2875,8 +2844,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
-        suite("geo-distance query")(
-          test("using geo-distance query") {
+        suite("geo-distance")(
+          test("geo-distance query") {
             checkOnce(genTestDocument) { document =>
               val indexDefinition =
                 """
@@ -2914,8 +2883,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoDistanceIndex)).orDie)
         ),
-        suite("geo-polygon query")(
-          test("using geo-polygon query") {
+        suite("geo-polygon")(
+          test("geo-polygon query") {
             checkOnce(genTestDocument) { document =>
               val indexDefinition =
                 """
@@ -2950,8 +2919,8 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoPolygonIndex)).orDie)
         ),
-        suite("search for documents using FunctionScore query")(
-          test("using randomScore function") {
+        suite("search with FunctionScore")(
+          test("randomScore function") {
             checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>
               val secondDocumentUpdated = secondDocument.copy(stringField = firstDocument.stringField)
               for {
@@ -2990,7 +2959,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             ),
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           ),
-          test("using randomScore function and weight function") {
+          test("randomScore and weight functions") {
             checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>
               val secondDocumentUpdated = secondDocument.copy(stringField = firstDocument.stringField)
               for {
@@ -3035,10 +3004,9 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
           )
         )
-      ) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests @@ afterAll(
-        Executor.execute(ElasticRequest.deleteIndex(index)).orDie
-      )
-    ).provideShared(
+    ) @@ nondeterministic @@ sequential @@ prepareElasticsearchIndexForTests @@ afterAll(
+      Executor.execute(ElasticRequest.deleteIndex(index)).orDie
+    )).provideShared(
       elasticsearchLayer
     )
   }
