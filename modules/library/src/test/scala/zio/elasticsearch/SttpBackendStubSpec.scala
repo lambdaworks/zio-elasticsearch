@@ -91,6 +91,31 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val bulkWithErrorRequestStub: StubMapping = StubMapping(
+     
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/_bulk",
+    response = ResponseStub.adjust(
+      """
+        |{
+        | "took" : 3,
+        | "errors" : true,
+        | "items" : [
+        |   {
+        |     "update": {
+        |       "_index": "repositories",
+        |       "_id": "123",
+        |       "status": 400,
+        |       "error": {
+        |         "type": "mapper_parsing_exception",
+        |         "reason": "failed to parse field [name] of type [integer]"
+        |       }
+        |     }
+        |   }
+        | ]
+        |}""".stripMargin
+    )
+  )
+
   private val countRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_count?routing=routing",
     response = ResponseStub.adjust(
@@ -435,6 +460,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   private val stubs: List[StubMapping] = List(
     bulkRequestStub,
+    bulkWithErrorRequestStub,
     countRequestStub,
     createDocumentRequestStub,
     createIndexRequestWithMappingStub,

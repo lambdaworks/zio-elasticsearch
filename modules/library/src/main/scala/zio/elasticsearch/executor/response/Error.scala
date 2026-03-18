@@ -22,9 +22,9 @@ final case class Error private[elasticsearch] (
   `type`: String,
   reason: String,
   @jsonField("index_uuid")
-  indexUuid: String,
-  shard: String,
-  index: String
+  indexUuid: Option[String],
+  shard: Option[String],
+  index: Option[String]
 )
 
 private[elasticsearch] object Error {

@@ -21,7 +21,7 @@ import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{kNN, matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Shards}
+import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Error, Shards, UpdateBulkResponse}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.Proceed
@@ -67,6 +67,36 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 shards = Some(Shards(total = 1, successful = 1, failed = 0)),
                 status = Some(201),
                 error = None
+              )
+            )
+          )
+
+        assertZIO(executorBulk)(equalTo(expectedBulkResponse))
+      },
+      test("bulk with error response missing optional error fields") {
+        val executorBulk = Executor.execute(ElasticRequest.bulk(ElasticRequest.upsert(index, DocumentId("123"), doc)))
+
+        val expectedBulkResponse =
+          BulkResponse(
+            took = 3,
+            errors = true,
+            items = Chunk(
+              UpdateBulkResponse(
+                index = "repositories",
+                id = "123",
+                version = None,
+                result = None,
+                shards = None,
+                status = Some(400),
+                error = Some(
+                  Error(
+                    `type` = "mapper_parsing_exception",
+                    reason = "failed to parse field [name] of type [integer]",
+                    indexUuid = None,
+                    shard = None,
+                    index = None
+                  )
+                )
               )
             )
           )
