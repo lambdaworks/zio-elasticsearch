@@ -92,7 +92,6 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
   )
 
   private val bulkWithErrorRequestStub: StubMapping = StubMapping(
-     
     request = r => r.method == Method.POST && r.uri.toString == s"$url/_bulk",
     response = ResponseStub.adjust(
       """
