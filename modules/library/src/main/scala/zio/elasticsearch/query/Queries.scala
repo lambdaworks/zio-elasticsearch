@@ -528,7 +528,7 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    * incorrect coordinates.
    *
    * @param value
-   *   defines how to handle invalid latitude nad longitude:
+   *   defines how to handle invalid latitude and longitude:
    *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
    *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
    *     longitude
@@ -569,7 +569,6 @@ private[elasticsearch] final case class GeoDistance[S](
         ).flatten: _*
       )
     )
-
 }
 
 sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
@@ -590,7 +589,7 @@ sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
    * incorrect coordinates.
    *
    * @param value
-   *   defines how to handle invalid latitude nad longitude:
+   *   defines how to handle invalid latitude and longitude:
    *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
    *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
    *     longitude
@@ -624,7 +623,6 @@ private[elasticsearch] final case class GeoPolygon[S](
         ).flatten: _*
       )
     )
-
 }
 
 sealed trait HasChildQuery[S]
@@ -780,6 +778,21 @@ private[elasticsearch] final case class Ids[S](values: Chunk[String]) extends Id
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj("ids" -> Obj("values" -> Arr(values.map(_.toJson))))
+}
+
+sealed trait IntervalsQuery[S] extends ElasticQuery[S]
+
+private[elasticsearch] final case class Intervals[S](
+  field: String,
+  rule: IntervalRule
+) extends IntervalsQuery[S] { self =>
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "intervals" -> Obj(
+        fieldPath.fold(field)(_ + "." + field) -> rule.toJson
+      )
+    )
 }
 
 sealed trait MatchQuery[S] extends ElasticQuery[S]
