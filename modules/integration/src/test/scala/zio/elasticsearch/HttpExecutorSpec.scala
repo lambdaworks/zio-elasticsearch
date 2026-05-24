@@ -2875,6 +2875,46 @@ object HttpExecutorSpec extends IntegrationSpec {
             }
           }
         ),
+        suite("geo-bounding-box query")(
+          test("using geo-bounding-box query") {
+            checkOnce(genTestDocument) { document =>
+              val indexDefinition =
+                """
+                  |{
+                  |  "mappings": {
+                  |    "properties": {
+                  |      "geoPointField": {
+                  |        "type": "geo_point"
+                  |      }
+                  |    }
+                  |  }
+                  |}
+                  |""".stripMargin
+
+              for {
+                _ <- Executor.execute(ElasticRequest.createIndex(firstSearchIndex, indexDefinition))
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.create[TestDocument](firstSearchIndex, document).refreshTrue
+                     )
+                result <- Executor
+                            .execute(
+                              ElasticRequest.search(
+                                firstSearchIndex,
+                                ElasticQuery.geoBoundingBoxQuery(
+                                  "geoPointField",
+                                  topLeft =
+                                    GeoPoint(document.geoPointField.lat + 0.1, document.geoPointField.lon - 0.1),
+                                  bottomRight =
+                                    GeoPoint(document.geoPointField.lat - 0.1, document.geoPointField.lon + 0.1)
+                                )
+                              )
+                            )
+                            .documentAs[TestDocument]
+              } yield assert(result)(equalTo(Chunk(document)))
+            }
+          } @@ after(Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie)
+        ),
         suite("geo-distance query")(
           test("using geo-distance query") {
             checkOnce(genTestDocument) { document =>

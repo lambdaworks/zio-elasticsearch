@@ -19,6 +19,7 @@ package zio.elasticsearch.query
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.Field
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
@@ -495,6 +496,116 @@ private[elasticsearch] final case class Fuzzy[S](
 
     Obj("fuzzy" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(fuzzyFields))))
   }
+}
+
+sealed trait GeoBoundingBoxQuery[S] extends ElasticQuery[S] {
+
+  /**
+   * Sets the `boost` parameter for the [[zio.elasticsearch.query.GeoBoundingBoxQuery]]. Boosts the relevance score of
+   * the query.
+   *
+   * @param value
+   *   the boost factor as a [[Double]]. Values greater than 1.0 increase relevance, values between 0 and 1.0 decrease
+   *   it.
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] enriched with the `boost` parameter.
+   */
+  def boost(value: Double): GeoBoundingBoxQuery[S]
+
+  /**
+   * Sets the `ignoreUnmapped` parameter for the [[zio.elasticsearch.query.GeoBoundingBoxQuery]]. Determines how to
+   * handle unmapped fields.
+   *
+   * @param value
+   *   - true: unmapped fields are ignored and the query returns no matches for them
+   *   - false: query will throw an exception if the field is unmapped
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] enriched with the `ignoreUnmapped` parameter.
+   */
+  def ignoreUnmapped(value: Boolean = false): GeoBoundingBoxQuery[S]
+
+  /**
+   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoBoundingBoxQuery]]. Represents the optional
+   * name used to identify the query.
+   *
+   * @param value
+   *   the [[String]] name used to tag and identify this query in responses
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoBoundingBoxQuery]] enriched with the `queryName` parameter.
+   */
+  def name(value: String): GeoBoundingBoxQuery[S]
+
+  /**
+   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoBoundingBoxQuery]]. Defines handling of
+   * incorrect coordinates.
+   *
+   * @param value
+   *   defines how to handle invalid latitude and longitude:
+   *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
+   *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
+   *     longitude
+   *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
+   * @return
+   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `validationMethod` parameter.
+   */
+  def validationMethod(value: ValidationMethod): GeoBoundingBoxQuery[S]
+}
+
+private[elasticsearch] final case class GeoBoundingBox[S](
+  field: String,
+  topLeft: GeoPoint,
+  bottomRight: GeoPoint,
+  boost: Option[Double] = None,
+  ignoreUnmapped: Option[Boolean] = None,
+  queryName: Option[String] = None,
+  validationMethod: Option[ValidationMethod] = None
+) extends GeoBoundingBoxQuery[S] { self =>
+
+  def boost(value: Double): GeoBoundingBoxQuery[S] =
+    self.copy(boost = Some(value))
+
+  def ignoreUnmapped(value: Boolean = false): GeoBoundingBoxQuery[S] =
+    self.copy(ignoreUnmapped = Some(value))
+
+  def name(value: String): GeoBoundingBoxQuery[S] =
+    self.copy(queryName = Some(value))
+
+  def validationMethod(value: ValidationMethod): GeoBoundingBoxQuery[S] =
+    self.copy(validationMethod = Some(value))
+
+  private[elasticsearch] override def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "geo_bounding_box" -> Obj(
+        Chunk(
+          Some(
+            field -> Obj(
+              Chunk(
+                Some(
+                  "top_left" -> Obj(
+                    Chunk(
+                      Some("lat" -> topLeft.lat.toJson),
+                      Some("lon" -> topLeft.lon.toJson)
+                    ).flatten: _*
+                  )
+                ),
+                Some(
+                  "bottom_right" -> Obj(
+                    Chunk(
+                      Some("lat" -> bottomRight.lat.toJson),
+                      Some("lon" -> bottomRight.lon.toJson)
+                    ).flatten: _*
+                  )
+                )
+              ).flatten: _*
+            )
+          ),
+          boost.map("boost" -> _.toJson),
+          ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
+          queryName.map("_name" -> _.toJson),
+          validationMethod.map("validation_method" -> _.toString.toJson)
+        ).flatten: _*
+      )
+    )
 }
 
 sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
