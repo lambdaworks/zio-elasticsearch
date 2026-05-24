@@ -53,6 +53,26 @@ final case class FilterAggregationResult private[elasticsearch] (
     }
 }
 
+final case class IpRangeAggregationResult private[elasticsearch] (
+  buckets: Chunk[IpRangeAggregationBucketResult]
+) extends AggregationResult
+
+final case class IpRangeAggregationBucketResult private[elasticsearch] (
+  key: String,
+  from: Option[String],
+  to: Option[String],
+  docCount: Int,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationResult {
+
+  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+    subAggregations.get(aggName) match {
+      case Some(agg: A) => Right(Some(agg))
+      case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+      case None         => Right(None)
+    }
+}
+
 final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
