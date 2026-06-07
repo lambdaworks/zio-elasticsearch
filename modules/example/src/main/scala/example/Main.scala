@@ -63,7 +63,7 @@ object Main extends ZIOAppDefault {
       (for {
         repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
-        _            <- RepositoriesElasticsearch.createAll(repositories)
+        _            <- RepositoriesElasticsearch.createAll(repositories).orDie
       } yield ()).provideSome(RepositoriesElasticsearch.live)
 
     deleteIndex *> createIndex *> populate
