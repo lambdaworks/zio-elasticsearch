@@ -1514,6 +1514,69 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("queryString") {
+          val queryNoFields        = queryString("(new york city) OR (big apple)")
+          val queryWithFields      = queryString("(new york city) OR (big apple)").fields("title", "description")
+          val queryWithTypedFields =
+            queryString("(new york city) OR (big apple)").fields(Chunk(TestDocument.stringField))
+          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(1)
+          val queryAllParams          = queryWithFields.minimumShouldMatch(1).boost(2.0)
+          assert(queryNoFields)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk.empty,
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithFields)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("title", "description"),
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithTypedFields)(
+            equalTo(
+              QueryString[TestDocument](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("stringField"),
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryWithMinShouldMatch)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk.empty,
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = Some(1)
+              )
+            )
+          ) &&
+          assert(queryAllParams)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("title", "description"),
+                defaultField = None,
+                boost = Some(2.0),
+                minimumShouldMatch = Some(1)
+              )
+            )
+          )
+        },
         test("range") {
           val query                    = range("testField")
           val queryString              = range(TestDocument.stringField)
@@ -3999,6 +4062,82 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithCaseInsensitive.toJson(fieldPath = None))(equalTo(expectedWithCaseInsensitive.toJson))
+        },
+        test("queryString") {
+          val queryNoFields           = queryString("(new york city) OR (big apple)")
+          val queryWithFields         = queryString("(new york city) OR (big apple)").fields("title", "description")
+          val queryTyped              = queryString("(new york city) OR (big apple)").fields(Chunk(TestDocument.stringField))
+          val queryWithBoost          = queryNoFields.boost(2.0)
+          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(1)
+          val queryAllParams          = queryWithFields.boost(2.0).minimumShouldMatch(1)
+
+          val expectedNoFields =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFields =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "fields": [ "title", "description" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedTyped =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "fields": [ "stringField" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "boost": 2.0
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMinShouldMatch =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "minimum_should_match": 1
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedAllParams =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "fields": [ "title", "description" ],
+              |    "boost": 2.0,
+              |    "minimum_should_match": 1
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(queryNoFields.toJson(None))(equalTo(expectedNoFields.toJson)) &&
+          assert(queryWithFields.toJson(None))(equalTo(expectedWithFields.toJson)) &&
+          assert(queryTyped.toJson(None))(equalTo(expectedTyped.toJson)) &&
+          assert(queryWithBoost.toJson(None))(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithMinShouldMatch.toJson(None))(equalTo(expectedWithMinShouldMatch.toJson)) &&
+          assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson))
         },
         test("range") {
           val queryEmpty                = range(TestDocument.intField)

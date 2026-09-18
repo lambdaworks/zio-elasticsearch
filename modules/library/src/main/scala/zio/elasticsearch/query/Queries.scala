@@ -22,7 +22,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -1014,6 +1014,53 @@ private[elasticsearch] final case class Prefix[S](
 
     Obj("prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(prefixFields))))
   }
+}
+
+sealed trait QueryStringQuery[S]
+    extends ElasticQuery[S]
+    with HasFields[QueryStringQuery, S]
+    with HasBoost[QueryStringQuery[S]]
+    with HasMinimumShouldMatch[QueryStringQuery[S]]
+
+private[elasticsearch] final case class QueryString[S](
+  defaultField: Option[String],
+  fields: Chunk[String],
+  query: String,
+  boost: Option[Double],
+  minimumShouldMatch: Option[Int]
+) extends QueryStringQuery[S] { self =>
+
+  def boost(value: Double): QueryStringQuery[S] =
+    self.copy(boost = Some(value))
+
+  def fields(field: String, fields: String*): QueryStringQuery[S] =
+    self.copy(fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): QueryStringQuery[S1] =
+    self.copy(fields = fields.map(_.toString))
+
+  def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): QueryStringQuery[S1] =
+    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
+
+  def minimumShouldMatch(value: Int): QueryStringQuery[S] =
+    self.copy(minimumShouldMatch = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(Str(_))))
+      else None
+
+    val params = Chunk(
+      Some("query" -> Str(query)),
+      defaultField.map("default_field" -> Str(_)),
+      fieldsJson,
+      boost.map("boost" -> Json.Num(_)),
+      minimumShouldMatch.map("minimum_should_match" -> Json.Num(_))
+    ).flatten
+
+    Obj("query_string" -> Obj(params))
+  }
+
 }
 
 sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
