@@ -8,7 +8,7 @@ object BuildHelper {
 
   val Scala212: String = "2.12.21"
   val Scala213: String = "2.13.18"
-  val Scala3: String   = "3.8.4"
+  val Scala3: String   = "3.9.0"
 
   def stdSettings(prjName: String) =
     List(
