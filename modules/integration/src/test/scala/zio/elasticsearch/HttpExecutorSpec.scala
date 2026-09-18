@@ -1559,6 +1559,59 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
+        test("query string query") {
+          checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
+              val firstDoc = firstDocument.copy(stringField = multiWordString)
+
+              for {
+                _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDoc))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue
+                     )
+                searchTerm = multiWordString.split("\\s+").head
+                query      = queryString(searchTerm).fields(Chunk(TestDocument.stringField))
+                res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+              } yield assert(res)(Assertion.contains(firstDoc))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("query string query with empty fields") {
+          checkOnce(genDocumentId, genTestDocument, genMultiWordString(), genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, multiWordString, secondDocumentId, secondDocument) =>
+              val firstDoc = firstDocument.copy(stringField = multiWordString)
+
+              for {
+                _ <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, firstDocumentId, firstDoc))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert(firstSearchIndex, secondDocumentId, secondDocument).refreshTrue
+                     )
+                searchTerm = multiWordString.split("\\s+").head
+                query      = queryString(searchTerm)
+                res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+              } yield assert(res)(Assertion.contains(firstDoc))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("query string query with non-existent field") {
+          checkOnce(genDocumentId, genTestDocument, genMultiWordString()) { (docId, doc, multiWordString) =>
+            val docWithMultiWord = doc.copy(stringField = multiWordString)
+
+            for {
+              _         <- Executor.execute(ElasticRequest.upsert(firstSearchIndex, docId, docWithMultiWord).refreshTrue)
+              searchTerm = multiWordString.split("\\s+").head
+              query      = queryString(searchTerm).fields("nonExistentField")
+              res       <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+            } yield assert(res)(Assertion.isEmpty)
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
         test("wildcard contains query") {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

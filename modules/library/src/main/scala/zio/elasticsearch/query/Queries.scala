@@ -1018,6 +1018,7 @@ private[elasticsearch] final case class Prefix[S](
 
 sealed trait QueryStringQuery[S]
     extends ElasticQuery[S]
+    with HasFields[QueryStringQuery, S]
     with HasBoost[QueryStringQuery[S]]
     with HasMinimumShouldMatch[QueryStringQuery[S]]
 
@@ -1035,8 +1036,11 @@ private[elasticsearch] final case class QueryString[S](
   def fields(field: String, fields: String*): QueryStringQuery[S] =
     self.copy(fields = Chunk.fromIterable(field +: fields))
 
-  def fields(fields: Chunk[String]): QueryStringQuery[S] =
-    self.copy(fields = fields)
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): QueryStringQuery[S1] =
+    self.copy(fields = fields.map(_.toString))
+
+  def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): QueryStringQuery[S1] =
+    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
 
   def minimumShouldMatch(value: Int): QueryStringQuery[S] =
     self.copy(minimumShouldMatch = Some(value))
@@ -1054,7 +1058,7 @@ private[elasticsearch] final case class QueryString[S](
       minimumShouldMatch.map("minimum_should_match" -> Json.Num(_))
     ).flatten
 
-    Obj("query" -> Obj("query_string" -> Obj(params)))
+    Obj("query_string" -> Obj(params))
   }
 
 }

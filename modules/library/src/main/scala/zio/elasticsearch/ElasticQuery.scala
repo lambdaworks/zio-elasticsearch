@@ -909,7 +909,7 @@ object ElasticQuery {
    * @return
    *   an instance of [[zio.elasticsearch.query.QueryStringQuery]] that represents the query to be performed.
    */
-  final def queryStringQuery(query: String): QueryString[Any] =
+  final def queryString(query: String): QueryStringQuery[Any] =
     QueryString(
       query = query,
       fields = Chunk.empty,
@@ -923,19 +923,21 @@ object ElasticQuery {
    * [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for searching multiple
    * fields.
    *
-   * @param fields
-   *   the type-safe fields to be searched
    * @param query
    *   the query string to search for
+   * @param field
+   *   the first type-safe field to be searched
+   * @param fields
+   *   remaining type-safe fields to be searched
    * @tparam S
    *   the document type on which the query is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.QueryStringQuery]] that represents the query to be performed.
    */
-  final def queryStringQuery[S: Schema](query: String, fields: Field[S, _]*): QueryStringQuery[S] =
+  final def queryString[S: Schema](query: String, field: Field[S, _], fields: Field[S, _]*): QueryStringQuery[S] =
     QueryString[S](
       query = query,
-      fields = Chunk.fromIterable(fields.map(_.toString)),
+      fields = Chunk.fromIterable((field +: fields).map(_.toString)),
       defaultField = None,
       boost = None,
       minimumShouldMatch = None
