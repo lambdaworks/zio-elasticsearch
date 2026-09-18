@@ -42,7 +42,7 @@ jobs:
         scala:
           - '2.12.21'
           - '2.13.18'
-          - '3.8.2'
+          - '3.8.4'
     steps:
       - name: Checkout current branch
         uses: actions/checkout@v7.0.1
