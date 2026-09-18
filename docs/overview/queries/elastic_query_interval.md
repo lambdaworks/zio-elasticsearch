@@ -1,61 +1,64 @@
 ---
-id: elastic_interval_query
-title: "Overview"
+id: elastic_query_interval
+title: "Interval Query"
 ---
 
-The `Intervals` query allows for advanced search queries based on intervals between words in specific fields.
-This query provides flexibility for conditions.
+The `Intervals` query allows advanced search based on the relative order and proximity of matching terms within a
+field.
 
 To use the `Intervals` query, import the following:
 ```scala
-import zio.elasticsearch.query.IntervalQuery
+import zio.elasticsearch.query.{IntervalRule, IntervalsQuery}
+import zio.elasticsearch.ElasticIntervalRule._
 import zio.elasticsearch.ElasticQuery._
 ```
 
-You can create a basic `Intervals` query` using the `intervals` method:
+You can create an `Intervals` query by combining a field with an interval rule, such as `intervalMatch`:
 ```scala
-val query: IntervalQuery[Any] = intervals(field = "content", rule = intervalMatch("targetWord"))
+val query: IntervalsQuery[Any] = intervals(field = "content", rule = intervalMatch("targetWord"))
 ```
 
-To define `field` in a type-safe manner, use the overloaded `useField` method with field definitions from your document:
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema)
+`Intervals` query using a field definition from your document:
 ```scala
-val queryWithSafeField: IntervalQuery[Document] =
+val queryWithTypedField: IntervalsQuery[Document] =
   intervals(field = Document.stringField, rule = intervalMatch("targetWord"))
 ```
 
-If you want to specify which fields should be searched, you can use the `useField` method:
+Other interval rules are available too, such as `intervalPrefix`, `intervalWildcard`, `intervalFuzzy`, `intervalRange`,
+`intervalRegexp`, `intervalAllOf` and `intervalAnyOf`:
 ```scala
-val queryWithField: IntervalQuery[Document] =
-  intervals(field = "content", rule = intervalMatch("targetWord").useField(Document.stringField))
+val queryWithPrefix: IntervalsQuery[Any]   = intervals(field = "content", rule = intervalPrefix("tar"))
+val queryWithWildcard: IntervalsQuery[Any] = intervals(field = "content", rule = intervalWildcard("t?rget*"))
+val queryWithRange: IntervalsQuery[Any]    = intervals(field = "content", rule = intervalRange.gte("apple").lt("banana"))
 ```
 
-If you want to define the `maxGaps` parameter, use the `maxGaps` method:
+If you want to require the matching terms to appear in the order specified, use the `orderedOn` method:
 ```scala
-val queryWithMaxGaps: IntervalQuery[Document] =
-  intervals(field = "content", rule = intervalMatch("targetWord").maxGaps(2))
+val queryWithOrder: IntervalsQuery[Any] = intervals(field = "content", rule = intervalMatch("targetWord").orderedOn)
 ```
 
-If you want to specify the word order requirement, use the `orderedOn` method:
+If you want to limit the maximum number of positions allowed between the matching terms, use the `maxGaps` method:
 ```scala
-val queryWithOrder: IntervalQuery[Document] =
-  intervals(field = "content", rule = intervalMatch("targetWord").orderedOn)
+val queryWithMaxGaps: IntervalsQuery[Any] = intervals(field = "content", rule = intervalMatch("targetWord").maxGaps(2))
 ```
 
-You can also apply additional filters to the query:
+If the terms for a rule should be extracted from a different field than the one the `Intervals` query targets, use the
+`useField` method:
 ```scala
-val queryWithFilter: IntervalQuery[Document] =
-  intervals(field = "content", rule = intervalMatch("targetWord").filter(IntervalFilter.someFilter))
+val queryWithRuleField: IntervalsQuery[Any] =
+  intervals(field = "content", rule = intervalMatch("targetWord").useField("otherField"))
 ```
 
-Alternatively, you can construct the query manually with all parameters:
+You can also restrict matches using another interval rule with the `filter` method, for example to exclude documents
+where the matched interval is immediately followed by another term:
 ```scala
-val queryManually: IntervalQuery[Document] =
-  IntervalQuery(
+val queryWithFilter: IntervalsQuery[Any] =
+  intervals(
     field = "content",
-    rule = intervalMatch("targetWord")
-      .maxGaps(2)
-      .orderedOn
-      .filter(IntervalFilter.someFilter)
-      .analyzer("standard")
+    rule = intervalMatch("targetWord").filter(intervalFilter(notContaining = Some(intervalMatch("excludedWord"))))
   )
 ```
+
+You can find more information about the `Intervals` query
+[here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-intervals-query.html).

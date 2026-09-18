@@ -563,7 +563,7 @@ object ElasticQuery {
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
-  final def intervals[S](field: Field[S, _], rule: IntervalRule): ElasticQuery[S] = Intervals(field.toString, rule)
+  final def intervals[S](field: Field[S, _], rule: IntervalRule): IntervalsQuery[S] = Intervals(field.toString, rule)
 
   /**
    * Constructs an intervals query by combining a field and an interval query.
@@ -577,7 +577,7 @@ object ElasticQuery {
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
-  final def intervals(field: String, rule: IntervalRule): ElasticQuery[Any] = Intervals(field = field, rule = rule)
+  final def intervals(field: String, rule: IntervalRule): IntervalsQuery[Any] = Intervals(field = field, rule = rule)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.

@@ -21,7 +21,7 @@ import zio.elasticsearch.Field
 private[elasticsearch] trait HasUseField[Q <: HasUseField[Q]] {
 
   /**
-   * Sets the `use_field` parameter for this [[zio.elasticsearch.query.ElasticIntervalQuery]] query.
+   * Sets the `use_field` parameter for this [[zio.elasticsearch.query.IntervalRule]].
    *
    * @param field
    *   the type-safe field to use from the document definition
