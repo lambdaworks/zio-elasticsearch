@@ -31,6 +31,8 @@ Other interval rules are available too, such as `intervalPrefix`, `intervalWildc
 val queryWithPrefix: IntervalsQuery[Any]   = intervals(field = "content", rule = intervalPrefix("tar"))
 val queryWithWildcard: IntervalsQuery[Any] = intervals(field = "content", rule = intervalWildcard("t?rget*"))
 val queryWithRange: IntervalsQuery[Any]    = intervals(field = "content", rule = intervalRange.gte("apple").lt("banana"))
+val queryWithRegexp: IntervalsQuery[Any]   = intervals(field = "content", rule = intervalRegexp("t.*get"))
+val queryWithFuzzy: IntervalsQuery[Any]    = intervals(field = "content", rule = intervalFuzzy("target").fuzziness("AUTO"))
 ```
 
 If you want to require the matching terms to appear in the order specified, use the `orderedOn` method:

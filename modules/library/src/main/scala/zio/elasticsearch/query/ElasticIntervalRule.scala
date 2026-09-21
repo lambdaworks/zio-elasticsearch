@@ -162,6 +162,16 @@ sealed trait IntervalFuzzyRule[S]
   def prefixLength(length: Int): IntervalFuzzyRule[S]
 
   /**
+   * Sets the `fuzziness` parameter for this `fuzzy` interval rule, the maximum edit distance allowed for matching.
+   *
+   * @param value
+   *   the maximum edit distance, either a number of edits (e.g. `"1"`) or `"AUTO"`
+   * @return
+   *   a new instance of the interval rule with the `fuzziness` value set.
+   */
+  def fuzziness(value: String): IntervalFuzzyRule[S]
+
+  /**
    * Disables the `transpositions` parameter for this `fuzzy` interval rule, so that transposing two adjacent characters
    * is not treated as a single edit.
    *
@@ -190,6 +200,8 @@ private[elasticsearch] final case class IntervalFuzzy[S](
 ) extends IntervalFuzzyRule[S] { self =>
 
   def analyzer(value: String): IntervalFuzzyRule[S] = self.copy(analyzer = Some(value))
+
+  def fuzziness(value: String): IntervalFuzzyRule[S] = self.copy(fuzziness = Some(value))
 
   def prefixLength(length: Int): IntervalFuzzyRule[S] = self.copy(prefixLength = Some(length))
 
@@ -364,8 +376,8 @@ sealed trait IntervalRangeRule[S]
 }
 
 private[elasticsearch] final case class IntervalRange[S](
-  lower: Option[IntervalRule],
-  upper: Option[IntervalRule],
+  lower: Option[IntervalRangeBound],
+  upper: Option[IntervalRangeBound],
   analyzer: Option[String],
   useField: Option[String]
 ) extends IntervalRangeRule[S] { self =>
@@ -388,8 +400,8 @@ private[elasticsearch] final case class IntervalRange[S](
     Obj(
       "range" -> Obj(
         Chunk(
-          lower.map("gte" -> _.toJson),
-          upper.map("lte" -> _.toJson),
+          lower.map(bound => bound.key -> bound.toJson),
+          upper.map(bound => bound.key -> bound.toJson),
           analyzer.map("analyzer" -> Str(_)),
           useField.map("use_field" -> _.toJson)
         ).flatten: _*
@@ -397,20 +409,27 @@ private[elasticsearch] final case class IntervalRange[S](
     )
 }
 
-private[elasticsearch] final case class GreaterThanInterval(value: String) extends IntervalRule {
+private[elasticsearch] sealed trait IntervalRangeBound extends IntervalRule {
+  def key: String
+  def value: String
+
   private[elasticsearch] def toJson: Json = Str(value)
 }
 
-private[elasticsearch] final case class GreaterThanOrEqualToInterval(value: String) extends IntervalRule {
-  private[elasticsearch] def toJson: Json = Str(value)
+private[elasticsearch] final case class GreaterThanInterval(value: String) extends IntervalRangeBound {
+  val key: String = "gt"
 }
 
-private[elasticsearch] final case class LessThanInterval(value: String) extends IntervalRule {
-  private[elasticsearch] def toJson: Json = Str(value)
+private[elasticsearch] final case class GreaterThanOrEqualToInterval(value: String) extends IntervalRangeBound {
+  val key: String = "gte"
 }
 
-private[elasticsearch] final case class LessThanOrEqualToInterval(value: String) extends IntervalRule {
-  private[elasticsearch] def toJson: Json = Str(value)
+private[elasticsearch] final case class LessThanInterval(value: String) extends IntervalRangeBound {
+  val key: String = "lt"
+}
+
+private[elasticsearch] final case class LessThanOrEqualToInterval(value: String) extends IntervalRangeBound {
+  val key: String = "lte"
 }
 
 sealed trait IntervalRegexpRule[S]
@@ -419,7 +438,7 @@ sealed trait IntervalRegexpRule[S]
     with HasUseField[IntervalRegexpRule[S]]
 
 private[elasticsearch] final case class IntervalRegexp[S](
-  pattern: RegexpQuery[S],
+  pattern: String,
   analyzer: Option[String],
   useField: Option[String]
 ) extends IntervalRegexpRule[S] { self =>
@@ -434,7 +453,7 @@ private[elasticsearch] final case class IntervalRegexp[S](
     Obj(
       "regexp" -> Obj(
         Chunk(
-          Some("pattern" -> pattern.toJson(None)),
+          Some("pattern" -> pattern.toJson),
           analyzer.map("analyzer" -> _.toJson),
           useField.map("use_field" -> _.toJson)
         ).flatten: _*

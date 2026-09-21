@@ -35,8 +35,7 @@ import zio.elasticsearch.query.{
   IntervalRegexpRule,
   IntervalRule,
   IntervalWildcard,
-  IntervalWildcardRule,
-  RegexpQuery
+  IntervalWildcardRule
 }
 import zio.json.ast.Json
 
@@ -215,13 +214,13 @@ object ElasticIntervalRule {
    * expression `pattern`.
    *
    * @param pattern
-   *   an instance of [[zio.elasticsearch.query.RegexpQuery]] representing the regular expression to match
+   *   the regular expression to match
    * @tparam S
    *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `regexp` interval rule.
    */
-  def intervalRegexp[S](pattern: RegexpQuery[S]): IntervalRegexpRule[S] =
+  def intervalRegexp[S](pattern: String): IntervalRegexpRule[S] =
     IntervalRegexp(pattern = pattern, analyzer = None, useField = None)
 
   /**

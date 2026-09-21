@@ -19,8 +19,10 @@ package zio.elasticsearch
 import zio.elasticsearch.ElasticIntervalRule.{
   intervalContains,
   intervalEndsWith,
+  intervalFuzzy,
   intervalMatch,
   intervalRange,
+  intervalRegexp,
   intervalStartsWith,
   intervalWildcard
 }
@@ -188,6 +190,70 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
         assert(queryWithUpper.toJson(None))(
           equalTo(expectedWithUpper.toJson)
         )
+      },
+      test("intervalRange with exclusive bounds") {
+        val query = intervals("stringField", intervalRange[Any].gt("10").lt("20"))
+
+        val expected =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "range": {
+            |        "gt": "10",
+            |        "lt": "20"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query.toJson(None))(equalTo(expected.toJson))
+      },
+      test("intervalRegexp") {
+        val query = intervals("stringField", intervalRegexp[Any]("la.*da").analyzer("standard").useField("otherField"))
+
+        val expected =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "regexp": {
+            |        "pattern": "la.*da",
+            |        "analyzer": "standard",
+            |        "use_field": "otherField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query.toJson(None))(equalTo(expected.toJson))
+      },
+      test("intervalFuzzy") {
+        val query = intervals(
+          "stringField",
+          intervalFuzzy[Any]("lambda").fuzziness("AUTO").prefixLength(1).transpositionsEnabled.analyzer("standard")
+        )
+
+        val expected =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "fuzzy": {
+            |        "term": "lambda",
+            |        "prefix_length": 1,
+            |        "transpositions": true,
+            |        "fuzziness": "AUTO",
+            |        "analyzer": "standard"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query.toJson(None))(equalTo(expected.toJson))
       },
       test("intervalWildcard") {
         val wildcardExact: IntervalWildcardRule[String] =
