@@ -22,7 +22,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj, Str}
+import zio.json.ast.Json.{Arr, Obj}
 import zio.schema.Schema
 
 sealed trait ElasticQuery[-S] { self =>
@@ -1020,7 +1020,19 @@ sealed trait QueryStringQuery[S]
     extends ElasticQuery[S]
     with HasFields[QueryStringQuery, S]
     with HasBoost[QueryStringQuery[S]]
-    with HasMinimumShouldMatch[QueryStringQuery[S]]
+    with HasMinimumShouldMatch[QueryStringQuery[S]] {
+
+  /**
+   * Sets the `default_field` parameter for the [[zio.elasticsearch.query.QueryStringQuery]]. It is the field searched
+   * when the query string does not specify one.
+   *
+   * @param value
+   *   the [[scala.Predef.String]] value for `default_field` parameter
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.QueryStringQuery]] enriched with the `default_field` parameter.
+   */
+  def defaultField(value: String): QueryStringQuery[S]
+}
 
 private[elasticsearch] final case class QueryString[S](
   defaultField: Option[String],
@@ -1032,6 +1044,9 @@ private[elasticsearch] final case class QueryString[S](
 
   def boost(value: Double): QueryStringQuery[S] =
     self.copy(boost = Some(value))
+
+  def defaultField(value: String): QueryStringQuery[S] =
+    self.copy(defaultField = Some(value))
 
   def fields(field: String, fields: String*): QueryStringQuery[S] =
     self.copy(fields = Chunk.fromIterable(field +: fields))
@@ -1047,15 +1062,15 @@ private[elasticsearch] final case class QueryString[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val fieldsJson =
-      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(Str(_))))
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
       else None
 
     val params = Chunk(
-      Some("query" -> Str(query)),
-      defaultField.map("default_field" -> Str(_)),
+      Some("query" -> query.toJson),
+      defaultField.map("default_field" -> _.toJson),
       fieldsJson,
-      boost.map("boost" -> Json.Num(_)),
-      minimumShouldMatch.map("minimum_should_match" -> Json.Num(_))
+      boost.map("boost" -> _.toJson),
+      minimumShouldMatch.map("minimum_should_match" -> _.toJson)
     ).flatten
 
     Obj("query_string" -> Obj(params))

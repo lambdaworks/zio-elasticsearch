@@ -1,3 +1,8 @@
+---
+id: elastic_query_query_string
+title: "Query String Query"
+---
+
 The `QueryString` query returns documents based on a provided query string, using a parser with a strict syntax.
 
 To use the `QueryString` query, import the following:
@@ -47,14 +52,17 @@ val query: QueryStringQuery[Any] =
 queryString(query = "name").minimumShouldMatch(2)
 ```
 
-You can also construct the query manually with all parameters:
+If you want to define the `default_field` parameter, use the `defaultField` method:
+```scala
+val query: QueryStringQuery[Any] =
+queryString(query = "name").defaultField("stringField")
+```
+
+You can combine all parameters:
 ```scala
 val query: QueryStringQuery[Document] =
-QueryString(
-  query = "name",
-  fields = Chunk("stringField"),
-  defaultField = None,
-  boost = Some(2.0),
-  minimumShouldMatch = Some(2)
-)
+queryString(query = "name", Document.stringField1, Document.stringField2)
+  .defaultField("stringField1")
+  .boost(2.0)
+  .minimumShouldMatch(2)
 ```

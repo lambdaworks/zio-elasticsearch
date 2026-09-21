@@ -1520,7 +1520,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithTypedFields =
             queryString("(new york city) OR (big apple)").fields(Chunk(TestDocument.stringField))
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(1)
-          val queryAllParams          = queryWithFields.minimumShouldMatch(1).boost(2.0)
+          val queryWithDefaultField   = queryNoFields.defaultField("title")
+          val queryAllParams          = queryWithFields.defaultField("title").minimumShouldMatch(1).boost(2.0)
           assert(queryNoFields)(
             equalTo(
               QueryString[Any](
@@ -1565,12 +1566,23 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               )
             )
           ) &&
+          assert(queryWithDefaultField)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk.empty,
+                defaultField = Some("title"),
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
           assert(queryAllParams)(
             equalTo(
               QueryString[Any](
                 query = "(new york city) OR (big apple)",
                 fields = Chunk("title", "description"),
-                defaultField = None,
+                defaultField = Some("title"),
                 boost = Some(2.0),
                 minimumShouldMatch = Some(1)
               )
