@@ -17,18 +17,21 @@
 package zio.elasticsearch.query.options
 
 import zio.elasticsearch.Field
+import zio.schema.Schema
 
-private[elasticsearch] trait HasUseField[Q <: HasUseField[Q]] {
+private[elasticsearch] trait HasUseField[Q[_], S] {
 
   /**
-   * Sets the `use_field` parameter for this [[zio.elasticsearch.query.IntervalRule]].
+   * Sets the type-safe `use_field` parameter for this [[zio.elasticsearch.query.IntervalRule]].
    *
    * @param field
    *   the type-safe field to use from the document definition
+   * @tparam S1
+   *   a subtype of the base document type `S` representing the schema that contains the selected field
    * @return
    *   a new instance of the query with the `use_field` value set.
    */
-  def useField(field: Field[_, _]): Q
+  def useField[S1 <: S: Schema](field: Field[S1, _]): Q[S1]
 
   /**
    * Sets the `use_field` parameter using a plain string.
@@ -38,5 +41,5 @@ private[elasticsearch] trait HasUseField[Q <: HasUseField[Q]] {
    * @return
    *   a new instance of the query with the `use_field` value set.
    */
-  def useField(field: String): Q
+  def useField(field: String): Q[S]
 }

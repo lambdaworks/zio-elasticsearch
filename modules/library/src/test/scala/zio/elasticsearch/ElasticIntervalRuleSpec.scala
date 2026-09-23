@@ -21,13 +21,14 @@ import zio.elasticsearch.ElasticIntervalRule.{
   intervalEndsWith,
   intervalFuzzy,
   intervalMatch,
+  intervalPrefix,
   intervalRange,
   intervalRegexp,
   intervalStartsWith,
   intervalWildcard
 }
 import zio.elasticsearch.ElasticQuery.intervals
-import zio.elasticsearch.domain.TestDocument
+import zio.elasticsearch.domain.{TestDocument, TestNestedField, TestSubDocument}
 import zio.elasticsearch.query._
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
@@ -229,6 +230,129 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             |""".stripMargin
 
         assert(query.toJson(None))(equalTo(expected.toJson))
+      },
+      test("intervalRule with type-safe useField") {
+        val fuzzyRule: IntervalFuzzyRule[TestDocument] =
+          intervalFuzzy[Any]("lambda").useField(TestDocument.stringField)
+        val matchRule: IntervalMatchRule[TestSubDocument] =
+          intervalMatch[Any]("lambda works").useField(TestSubDocument.nestedField / TestNestedField.stringField)
+        val prefixRule: IntervalPrefixRule[TestDocument] =
+          intervalPrefix[Any]("lamb").useField(TestDocument.stringField)
+        val rangeRule: IntervalRangeRule[TestDocument] =
+          intervalRange[Any].gte("10").useField(TestDocument.stringField)
+        val regexpRule: IntervalRegexpRule[TestDocument] =
+          intervalRegexp[Any]("la.*da").useField(TestDocument.stringField)
+        val wildcardRule: IntervalWildcardRule[TestDocument] =
+          intervalWildcard[Any]("la*da").useField(TestDocument.stringField)
+
+        val expectedFuzzy =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "fuzzy": {
+            |        "term": "lambda",
+            |        "use_field": "stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedMatch =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "match": {
+            |        "query": "lambda works",
+            |        "use_field": "nestedField.stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedPrefix =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "prefix": {
+            |        "prefix": "lamb",
+            |        "use_field": "stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedRange =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "range": {
+            |        "gte": "10",
+            |        "use_field": "stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedRegexp =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "regexp": {
+            |        "pattern": "la.*da",
+            |        "use_field": "stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedWildcard =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "wildcard": {
+            |        "pattern": "la*da",
+            |        "use_field": "stringField"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(intervals(TestDocument.stringField, fuzzyRule).toJson(None))(equalTo(expectedFuzzy.toJson)) &&
+        assert(intervals(TestSubDocument.stringField, matchRule).toJson(None))(equalTo(expectedMatch.toJson)) &&
+        assert(intervals(TestDocument.stringField, prefixRule).toJson(None))(equalTo(expectedPrefix.toJson)) &&
+        assert(intervals(TestDocument.stringField, rangeRule).toJson(None))(equalTo(expectedRange.toJson)) &&
+        assert(intervals(TestDocument.stringField, regexpRule).toJson(None))(equalTo(expectedRegexp.toJson)) &&
+        assert(intervals(TestDocument.stringField, wildcardRule).toJson(None))(equalTo(expectedWildcard.toJson))
+      },
+      test("intervalRule type-safe useField accepts only fields of the rule's document type") {
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.intervalMatch
+            import zio.elasticsearch.domain.TestDocument
+
+            intervalMatch[TestDocument]("lambda").useField(TestDocument.stringField)
+          """
+        })(Assertion.isRight) &&
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.intervalMatch
+            import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
+
+            intervalMatch[TestDocument]("lambda").useField(TestSubDocument.stringField)
+          """
+        })(Assertion.isLeft)
       },
       test("intervalFuzzy") {
         val query = intervals(

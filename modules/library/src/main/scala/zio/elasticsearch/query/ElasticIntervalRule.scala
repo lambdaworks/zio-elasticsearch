@@ -22,6 +22,7 @@ import zio.elasticsearch.Field
 import zio.elasticsearch.query.options.{HasAnalyzer, HasUseField}
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
+import zio.schema.Schema
 
 sealed trait IntervalRule {
   private[elasticsearch] def toJson: Json
@@ -148,7 +149,7 @@ final case class IntervalFilter[S](
 sealed trait IntervalFuzzyRule[S]
     extends IntervalRule
     with HasAnalyzer[IntervalFuzzyRule[S]]
-    with HasUseField[IntervalFuzzyRule[S]] {
+    with HasUseField[IntervalFuzzyRule, S] {
 
   /**
    * Sets the `prefix_length` parameter for this `fuzzy` interval rule, the number of leading characters that are not
@@ -209,7 +210,8 @@ private[elasticsearch] final case class IntervalFuzzy[S](
 
   def transpositionsEnabled: IntervalFuzzyRule[S] = self.copy(transpositions = Some(true))
 
-  def useField(field: Field[_, _]): IntervalFuzzyRule[S] = self.copy(useField = Some(field.name))
+  def useField[S1 <: S: Schema](field: Field[S1, _]): IntervalFuzzyRule[S1] =
+    self.copy[S1](useField = Some(field.toString))
 
   def useField(field: String): IntervalFuzzyRule[S] = self.copy(useField = Some(field))
 
@@ -231,7 +233,7 @@ private[elasticsearch] final case class IntervalFuzzy[S](
 sealed trait IntervalMatchRule[S]
     extends IntervalRule
     with HasAnalyzer[IntervalMatchRule[S]]
-    with HasUseField[IntervalMatchRule[S]] {
+    with HasUseField[IntervalMatchRule, S] {
 
   /**
    * Sets the `filter` parameter for this `match` interval rule, restricting matches to those that also satisfy the
@@ -281,7 +283,8 @@ private[elasticsearch] final case class IntervalMatch[S](
 
   def orderedOn: IntervalMatchRule[S] = self.copy(ordered = Some(true))
 
-  def useField(field: Field[_, _]): IntervalMatchRule[S] = self.copy(useField = Some(field.name))
+  def useField[S1 <: S: Schema](field: Field[S1, _]): IntervalMatchRule[S1] =
+    self.copy[S1](useField = Some(field.toString), filter = filter.map(_.copy[S1]()))
 
   def useField(field: String): IntervalMatchRule[S] = self.copy(useField = Some(field))
 
@@ -303,7 +306,7 @@ private[elasticsearch] final case class IntervalMatch[S](
 sealed trait IntervalPrefixRule[S]
     extends IntervalRule
     with HasAnalyzer[IntervalPrefixRule[S]]
-    with HasUseField[IntervalPrefixRule[S]]
+    with HasUseField[IntervalPrefixRule, S]
 
 private[elasticsearch] final case class IntervalPrefix[S](
   prefix: String,
@@ -313,7 +316,8 @@ private[elasticsearch] final case class IntervalPrefix[S](
 
   def analyzer(value: String): IntervalPrefixRule[S] = self.copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalPrefixRule[S] = self.copy(useField = Some(field.name))
+  def useField[S1 <: S: Schema](field: Field[S1, _]): IntervalPrefixRule[S1] =
+    self.copy[S1](useField = Some(field.toString))
 
   def useField(field: String): IntervalPrefixRule[S] = self.copy(useField = Some(field))
 
@@ -332,7 +336,7 @@ private[elasticsearch] final case class IntervalPrefix[S](
 sealed trait IntervalRangeRule[S]
     extends IntervalRule
     with HasAnalyzer[IntervalRangeRule[S]]
-    with HasUseField[IntervalRangeRule[S]] {
+    with HasUseField[IntervalRangeRule, S] {
 
   /**
    * Sets the greater-than bound for this `range` interval rule.
@@ -392,7 +396,8 @@ private[elasticsearch] final case class IntervalRange[S](
 
   def lte(value: String): IntervalRangeRule[S] = self.copy(upper = Some(LessThanOrEqualToInterval(value)))
 
-  def useField(field: Field[_, _]): IntervalRangeRule[S] = self.copy(useField = Some(field.name))
+  def useField[S1 <: S: Schema](field: Field[S1, _]): IntervalRangeRule[S1] =
+    self.copy[S1](useField = Some(field.toString))
 
   def useField(field: String): IntervalRangeRule[S] = self.copy(useField = Some(field))
 
@@ -435,7 +440,7 @@ private[elasticsearch] final case class LessThanOrEqualToInterval(value: String)
 sealed trait IntervalRegexpRule[S]
     extends IntervalRule
     with HasAnalyzer[IntervalRegexpRule[S]]
-    with HasUseField[IntervalRegexpRule[S]]
+    with HasUseField[IntervalRegexpRule, S]
 
 private[elasticsearch] final case class IntervalRegexp[S](
   pattern: String,
@@ -445,7 +450,8 @@ private[elasticsearch] final case class IntervalRegexp[S](
 
   def analyzer(value: String): IntervalRegexpRule[S] = self.copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalRegexpRule[S] = self.copy(useField = Some(field.name))
+  def useField[S1 <: S: Schema](field: Field[S1, _]): IntervalRegexpRule[S1] =
+    self.copy[S1](useField = Some(field.toString))
 
   def useField(field: String): IntervalRegexpRule[S] = self.copy(useField = Some(field))
 
@@ -464,7 +470,7 @@ private[elasticsearch] final case class IntervalRegexp[S](
 sealed trait IntervalWildcardRule[S]
     extends IntervalRule
     with HasAnalyzer[IntervalWildcardRule[S]]
-    with HasUseField[IntervalWildcardRule[S]]
+    with HasUseField[IntervalWildcardRule, S]
 
 private[elasticsearch] final case class IntervalWildcard[S](
   pattern: String,
@@ -474,7 +480,8 @@ private[elasticsearch] final case class IntervalWildcard[S](
 
   def analyzer(value: String): IntervalWildcardRule[S] = self.copy(analyzer = Some(value))
 
-  def useField(field: Field[_, _]): IntervalWildcardRule[S] = self.copy(useField = Some(field.name))
+  def useField[S1 <: S: Schema](field: Field[S1, _]): IntervalWildcardRule[S1] =
+    self.copy[S1](useField = Some(field.toString))
 
   def useField(field: String): IntervalWildcardRule[S] = self.copy(useField = Some(field))
 
