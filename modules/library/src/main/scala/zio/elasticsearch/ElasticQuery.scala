@@ -901,8 +901,9 @@ object ElasticQuery {
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.QueryStringQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for searching multiple
-   * fields.
+   * [[zio.elasticsearch.query.QueryStringQuery]] parses the query string using a strict Lucene-like syntax, supporting
+   * operators, wildcards, fuzzy matching and field names within the query string, and returns an error for invalid
+   * syntax.
    *
    * @param query
    *   the query string to search for
@@ -920,8 +921,9 @@ object ElasticQuery {
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.QueryStringQuery]] using the specified parameters.
-   * [[zio.elasticsearch.query.QueryStringQuery]] supports query strings with simple syntax for searching multiple
-   * fields.
+   * [[zio.elasticsearch.query.QueryStringQuery]] parses the query string using a strict Lucene-like syntax, supporting
+   * operators, wildcards, fuzzy matching and field names within the query string, and returns an error for invalid
+   * syntax.
    *
    * @param query
    *   the query string to search for

@@ -58,11 +58,12 @@ val query: QueryStringQuery[Any] =
 queryString(query = "name").defaultField("stringField")
 ```
 
-You can combine all parameters:
+Elasticsearch does not allow `default_field` and `fields` to be used together, so they are mutually exclusive: calling `defaultField` clears any previously set `fields`, and calling `fields` clears any previously set `default_field`.
+
+You can combine `fields` (or `default_field`) with the other parameters:
 ```scala
 val query: QueryStringQuery[Document] =
 queryString(query = "name", Document.stringField1, Document.stringField2)
-  .defaultField("stringField1")
   .boost(2.0)
   .minimumShouldMatch(2)
 ```

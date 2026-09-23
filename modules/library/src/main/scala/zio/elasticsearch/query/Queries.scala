@@ -1026,6 +1026,9 @@ sealed trait QueryStringQuery[S]
    * Sets the `default_field` parameter for the [[zio.elasticsearch.query.QueryStringQuery]]. It is the field searched
    * when the query string does not specify one.
    *
+   * Elasticsearch does not allow `default_field` to be used together with `fields`, so setting `default_field` clears
+   * any previously set `fields`, and setting `fields` clears any previously set `default_field`.
+   *
    * @param value
    *   the [[scala.Predef.String]] value for `default_field` parameter
    * @return
@@ -1046,16 +1049,16 @@ private[elasticsearch] final case class QueryString[S](
     self.copy(boost = Some(value))
 
   def defaultField(value: String): QueryStringQuery[S] =
-    self.copy(defaultField = Some(value))
+    self.copy(defaultField = Some(value), fields = Chunk.empty)
 
   def fields(field: String, fields: String*): QueryStringQuery[S] =
-    self.copy(fields = Chunk.fromIterable(field +: fields))
+    self.copy(defaultField = None, fields = Chunk.fromIterable(field +: fields))
 
   def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): QueryStringQuery[S1] =
-    self.copy(fields = fields.map(_.toString))
+    self.copy(defaultField = None, fields = fields.map(_.toString))
 
   def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): QueryStringQuery[S1] =
-    self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
+    self.copy(defaultField = None, fields = Chunk.fromIterable((field +: fields).map(_.toString)))
 
   def minimumShouldMatch(value: Int): QueryStringQuery[S] =
     self.copy(minimumShouldMatch = Some(value))

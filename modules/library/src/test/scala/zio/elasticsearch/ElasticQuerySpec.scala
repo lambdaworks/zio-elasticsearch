@@ -1521,7 +1521,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             queryString("(new york city) OR (big apple)").fields(Chunk(TestDocument.stringField))
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(1)
           val queryWithDefaultField   = queryNoFields.defaultField("title")
-          val queryAllParams          = queryWithFields.defaultField("title").minimumShouldMatch(1).boost(2.0)
+          val queryFieldsThenDefault  = queryWithFields.defaultField("title")
+          val queryDefaultThenFields  = queryWithDefaultField.fields("title", "description")
+          val queryAllParams          = queryWithFields.minimumShouldMatch(1).boost(2.0)
           assert(queryNoFields)(
             equalTo(
               QueryString[Any](
@@ -1577,12 +1579,34 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               )
             )
           ) &&
+          assert(queryFieldsThenDefault)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk.empty,
+                defaultField = Some("title"),
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
+          assert(queryDefaultThenFields)(
+            equalTo(
+              QueryString[Any](
+                query = "(new york city) OR (big apple)",
+                fields = Chunk("title", "description"),
+                defaultField = None,
+                boost = None,
+                minimumShouldMatch = None
+              )
+            )
+          ) &&
           assert(queryAllParams)(
             equalTo(
               QueryString[Any](
                 query = "(new york city) OR (big apple)",
                 fields = Chunk("title", "description"),
-                defaultField = Some("title"),
+                defaultField = None,
                 boost = Some(2.0),
                 minimumShouldMatch = Some(1)
               )
@@ -4081,7 +4105,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryTyped              = queryString("(new york city) OR (big apple)").fields(Chunk(TestDocument.stringField))
           val queryWithBoost          = queryNoFields.boost(2.0)
           val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(1)
+          val queryWithDefaultField   = queryNoFields.defaultField("title")
           val queryAllParams          = queryWithFields.boost(2.0).minimumShouldMatch(1)
+          val queryDefaultFieldParams = queryWithDefaultField.boost(2.0).minimumShouldMatch(1)
 
           val expectedNoFields =
             """
@@ -4132,6 +4158,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithDefaultField =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "default_field": "title"
+              |  }
+              |}
+              |""".stripMargin
+
           val expectedAllParams =
             """
               |{
@@ -4144,12 +4180,26 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedDefaultFieldParams =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "default_field": "title",
+              |    "boost": 2.0,
+              |    "minimum_should_match": 1
+              |  }
+              |}
+              |""".stripMargin
+
           assert(queryNoFields.toJson(None))(equalTo(expectedNoFields.toJson)) &&
           assert(queryWithFields.toJson(None))(equalTo(expectedWithFields.toJson)) &&
           assert(queryTyped.toJson(None))(equalTo(expectedTyped.toJson)) &&
           assert(queryWithBoost.toJson(None))(equalTo(expectedWithBoost.toJson)) &&
           assert(queryWithMinShouldMatch.toJson(None))(equalTo(expectedWithMinShouldMatch.toJson)) &&
-          assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson))
+          assert(queryWithDefaultField.toJson(None))(equalTo(expectedWithDefaultField.toJson)) &&
+          assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson)) &&
+          assert(queryDefaultFieldParams.toJson(None))(equalTo(expectedDefaultFieldParams.toJson))
         },
         test("range") {
           val queryEmpty                = range(TestDocument.intField)
