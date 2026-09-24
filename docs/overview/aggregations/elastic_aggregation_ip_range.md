@@ -11,23 +11,23 @@ import zio.elasticsearch.aggregation.{IpRangeAggregation, IpRangeBound}
 import zio.elasticsearch.ElasticAggregation.ipRangeAggregation
 ```
 
-You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `IpRangeAggregation` using the `ipRangeAggregation` method this way:
-```scala
-val aggregation: IpRangeAggregation =
-  ipRangeAggregation(
-    name = "ipRangeAggregation",
-    field = Document.ipField,
-    range = IpRangeBound().to("10.0.0.5"),
-    ranges = IpRangeBound().from("10.0.0.5")
-  )
-```
-
 You can create an `IpRangeAggregation` using the `ipRangeAggregation` method this way:
 ```scala
 val aggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "ipRangeAggregation",
     field = "ipField",
+    range = IpRangeBound().to("10.0.0.5"),
+    ranges = IpRangeBound().from("10.0.0.5")
+  )
+```
+
+You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `IpRangeAggregation` using the `ipRangeAggregation` method this way:
+```scala
+val aggregation: IpRangeAggregation =
+  ipRangeAggregation(
+    name = "ipRangeAggregation",
+    field = Document.stringField,
     range = IpRangeBound().to("10.0.0.5"),
     ranges = IpRangeBound().from("10.0.0.5")
   )
