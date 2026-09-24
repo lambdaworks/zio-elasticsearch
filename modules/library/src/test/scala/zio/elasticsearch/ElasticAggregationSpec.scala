@@ -195,27 +195,27 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             ipRangeAggregation(
               name = "aggregation",
               field = "ipField",
-              range = IpRangeBound(to = Some("10.0.0.5")),
-              ranges = IpRangeBound(from = Some("10.0.0.5"))
+              range = IpRangeBound().to("10.0.0.5"),
+              ranges = IpRangeBound().from("10.0.0.5")
             )
           val aggregationTs =
             ipRangeAggregation(
               name = "aggregation",
               field = TestDocument.stringField,
-              range = IpRangeBound(to = Some("10.0.0.5")),
-              ranges = IpRangeBound(from = Some("10.0.0.5"))
+              range = IpRangeBound().to("10.0.0.5"),
+              ranges = IpRangeBound().from("10.0.0.5")
             )
           val aggregationWithKeyed =
             ipRangeAggregation(
               name = "aggregation",
               field = "ipField",
-              range = IpRangeBound(mask = Some("10.0.0.0/25")).key("low")
+              range = IpRangeBound().mask("10.0.0.0/25").key("low")
             ).keyed
           val aggregationWithSubAggregation =
             ipRangeAggregation(
               name = "aggregation",
               field = "ipField",
-              range = IpRangeBound(mask = Some("10.0.0.0/25"))
+              range = IpRangeBound().mask("10.0.0.0/25")
             ).withSubAgg(maxAggregation("subAggregation", "intField"))
 
           assert(aggregation)(
@@ -223,7 +223,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "ipField",
-                ranges = NonEmptyChunk(IpRangeBound(to = Some("10.0.0.5")), IpRangeBound(from = Some("10.0.0.5"))),
+                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
                 isKeyed = false,
                 subAggregations = Chunk.empty
               )
@@ -234,7 +234,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "stringField",
-                ranges = NonEmptyChunk(IpRangeBound(to = Some("10.0.0.5")), IpRangeBound(from = Some("10.0.0.5"))),
+                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
                 isKeyed = false,
                 subAggregations = Chunk.empty
               )
@@ -245,7 +245,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "ipField",
-                ranges = NonEmptyChunk(IpRangeBound(key = Some("low"), mask = Some("10.0.0.0/25"))),
+                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25").key("low")),
                 isKeyed = true,
                 subAggregations = Chunk.empty
               )
@@ -256,7 +256,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "ipField",
-                ranges = NonEmptyChunk(IpRangeBound(mask = Some("10.0.0.0/25"))),
+                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25")),
                 isKeyed = false,
                 subAggregations = Chunk(Max(name = "subAggregation", field = "intField", missing = None))
               )
@@ -1089,21 +1089,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             ipRangeAggregation(
               name = "aggregation",
               field = "ipField",
-              range = IpRangeBound(to = Some("10.0.0.5")),
-              ranges = IpRangeBound(from = Some("10.0.0.5"))
+              range = IpRangeBound().to("10.0.0.5"),
+              ranges = IpRangeBound().from("10.0.0.5")
             )
           val aggregationWithKeyed =
             ipRangeAggregation(
               name = "aggregation",
               field = "ipField",
-              range = IpRangeBound(mask = Some("10.0.0.0/25")).key("low"),
-              ranges = IpRangeBound(mask = Some("10.0.0.128/25")).key("high")
+              range = IpRangeBound().mask("10.0.0.0/25").key("low"),
+              ranges = IpRangeBound().mask("10.0.0.128/25").key("high")
             ).keyed
           val aggregationWithSubAggregation =
             ipRangeAggregation(
               name = "aggregation",
               field = "ipField",
-              range = IpRangeBound(mask = Some("10.0.0.0/25"))
+              range = IpRangeBound().mask("10.0.0.0/25")
             ).withSubAgg(maxAggregation("subAggregation", "intField"))
 
           val expected =

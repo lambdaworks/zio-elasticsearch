@@ -254,8 +254,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                   ipRangeAggregation(
                     name = "aggregation",
                     field = TestDocument.stringField,
-                    range = IpRangeBound(to = Some("10.0.0.100")),
-                    ranges = IpRangeBound(from = Some("10.0.0.100"))
+                    range = IpRangeBound().to("10.0.0.100"),
+                    ranges = IpRangeBound().from("10.0.0.100")
                   ).withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
                 result <- Executor
                             .execute(ElasticRequest.aggregate(selectors = ipRangeIndex, aggregation = aggregation))
@@ -324,8 +324,8 @@ object HttpExecutorSpec extends IntegrationSpec {
                   ipRangeAggregation(
                     name = "aggregation",
                     field = TestDocument.stringField,
-                    range = IpRangeBound(key = Some("low"), mask = Some("10.0.0.0/25")),
-                    ranges = IpRangeBound(key = Some("high"), mask = Some("10.0.0.128/25"))
+                    range = IpRangeBound().mask("10.0.0.0/25").key("low"),
+                    ranges = IpRangeBound().mask("10.0.0.128/25").key("high")
                   ).keyed
                 result <- Executor
                             .execute(ElasticRequest.aggregate(selectors = ipRangeIndex, aggregation = aggregation))

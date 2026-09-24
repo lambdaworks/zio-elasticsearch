@@ -17,8 +17,8 @@ val aggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "ipRangeAggregation",
     field = Document.ipField,
-    range = IpRangeBound(to = Some("10.0.0.5")),
-    ranges = IpRangeBound(from = Some("10.0.0.5"))
+    range = IpRangeBound().to("10.0.0.5"),
+    ranges = IpRangeBound().from("10.0.0.5")
   )
 ```
 
@@ -28,8 +28,8 @@ val aggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "ipRangeAggregation",
     field = "ipField",
-    range = IpRangeBound(to = Some("10.0.0.5")),
-    ranges = IpRangeBound(from = Some("10.0.0.5"))
+    range = IpRangeBound().to("10.0.0.5"),
+    ranges = IpRangeBound().from("10.0.0.5")
   )
 ```
 
@@ -39,8 +39,8 @@ val aggregation: IpRangeAggregation =
   ipRangeAggregation(
     name = "ipRangeAggregation",
     field = "ipField",
-    range = IpRangeBound(mask = Some("10.0.0.0/25")),
-    ranges = IpRangeBound(mask = Some("10.0.0.128/25"))
+    range = IpRangeBound().mask("10.0.0.0/25"),
+    ranges = IpRangeBound().mask("10.0.0.128/25")
   )
 ```
 
@@ -50,15 +50,15 @@ val aggregationWithKeyed: IpRangeAggregation =
   ipRangeAggregation(
     name = "ipRangeAggregation",
     field = "ipField",
-    range = IpRangeBound(mask = Some("10.0.0.0/25")).key("low"),
-    ranges = IpRangeBound(mask = Some("10.0.0.128/25")).key("high")
+    range = IpRangeBound().mask("10.0.0.0/25").key("low"),
+    ranges = IpRangeBound().mask("10.0.0.128/25").key("high")
   ).keyed
 ```
 
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
 val multipleAggregations: MultipleAggregations =
-  ipRangeAggregation(name = "ipRangeAggregation", field = "ipField", range = IpRangeBound(to = Some("10.0.0.5")))
+  ipRangeAggregation(name = "ipRangeAggregation", field = "ipField", range = IpRangeBound().to("10.0.0.5"))
     .keyed
     .withAgg(maxAggregation(name = "maxAggregation", field = "intField"))
 ```
@@ -66,7 +66,7 @@ val multipleAggregations: MultipleAggregations =
 If you want to add another sub-aggregation, you can use `withSubAgg` method:
 ```scala
 val aggregationWithSubAgg: IpRangeAggregation =
-  ipRangeAggregation(name = "ipRangeAggregation", field = "ipField", range = IpRangeBound(to = Some("10.0.0.5")))
+  ipRangeAggregation(name = "ipRangeAggregation", field = "ipField", range = IpRangeBound().to("10.0.0.5"))
     .withSubAgg(maxAggregation(name = "maxAggregation", field = "intField"))
 ```
 
