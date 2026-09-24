@@ -50,6 +50,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val updateByQueryIndex: IndexName = IndexName("update-by-query-index")
 
+  val geoBoundingBoxIndex: IndexName = IndexName("geo-bounding-box-index")
+
   val geoDistanceIndex: IndexName = IndexName("geo-distance-index")
 
   val refreshFailIndex: IndexName = IndexName("refresh-fail")

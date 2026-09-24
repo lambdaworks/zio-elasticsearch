@@ -725,6 +725,135 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("geoBoundingBox") {
+          val queryBasic =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+
+          val queryWithBoost =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .boost(1.5)
+
+          val queryWithIgnoreUnmapped =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            ).ignoreUnmappedTrue
+
+          val queryWithName =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .name("name")
+
+          val queryWithValidationMethod =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .validationMethod(IgnoreMalformed)
+
+          val queryWithAllParams =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .boost(1.5)
+              .ignoreUnmappedTrue
+              .name("name")
+              .validationMethod(IgnoreMalformed)
+
+          assert(queryBasic)(
+            equalTo(
+              GeoBoundingBox[TestDocument](
+                field = "geoPointField",
+                bottomRight = GeoPoint(40.01, -71.12),
+                topLeft = GeoPoint(40.73, -74.1),
+                boost = None,
+                ignoreUnmapped = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              GeoBoundingBox[TestDocument](
+                field = "geoPointField",
+                bottomRight = GeoPoint(40.01, -71.12),
+                topLeft = GeoPoint(40.73, -74.1),
+                boost = Some(1.5),
+                ignoreUnmapped = None,
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryWithIgnoreUnmapped)(
+            equalTo(
+              GeoBoundingBox[TestDocument](
+                field = "geoPointField",
+                bottomRight = GeoPoint(40.01, -71.12),
+                topLeft = GeoPoint(40.73, -74.1),
+                boost = None,
+                ignoreUnmapped = Some(true),
+                queryName = None,
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryWithName)(
+            equalTo(
+              GeoBoundingBox[TestDocument](
+                field = "geoPointField",
+                bottomRight = GeoPoint(40.01, -71.12),
+                topLeft = GeoPoint(40.73, -74.1),
+                boost = None,
+                ignoreUnmapped = None,
+                queryName = Some("name"),
+                validationMethod = None
+              )
+            )
+          ) &&
+          assert(queryWithValidationMethod)(
+            equalTo(
+              GeoBoundingBox[TestDocument](
+                field = "geoPointField",
+                bottomRight = GeoPoint(40.01, -71.12),
+                topLeft = GeoPoint(40.73, -74.1),
+                boost = None,
+                ignoreUnmapped = None,
+                queryName = None,
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          ) &&
+          assert(queryWithAllParams)(
+            equalTo(
+              GeoBoundingBox[TestDocument](
+                field = "geoPointField",
+                bottomRight = GeoPoint(40.01, -71.12),
+                topLeft = GeoPoint(40.73, -74.1),
+                boost = Some(1.5),
+                ignoreUnmapped = Some(true),
+                queryName = Some("name"),
+                validationMethod = Some(IgnoreMalformed)
+              )
+            )
+          )
+        },
         test("geoDistance") {
           val queryWithHash =
             geoDistance(TestDocument.geoPointField, GeoHash("drm3btev3e86"), Distance(200, Kilometers))
@@ -3122,6 +3251,174 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithPrefixLength.toJson(fieldPath = None))(equalTo(expectedWithPrefixLength.toJson)) &&
           assert(queryWithAllParameters.toJson(fieldPath = None))(equalTo(expectedWithAllParameters.toJson)) &&
           assert(queryWithSuffix.toJson(fieldPath = None))(equalTo(expectedWithSuffix.toJson))
+        },
+        test("geoBoundingBox") {
+          val query =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+          val queryWithBoost =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .boost(1.5)
+          val queryWithIgnoreUnmapped =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            ).ignoreUnmappedTrue
+          val queryWithName =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .name("name")
+          val queryWithValidationMethod =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .validationMethod(IgnoreMalformed)
+          val queryWithAllParams =
+            geoBoundingBoxQuery(
+              field = TestDocument.geoPointField,
+              topLeft = GeoPoint(40.73, -74.1),
+              bottomRight = GeoPoint(40.01, -71.12)
+            )
+              .boost(1.5)
+              .ignoreUnmappedTrue
+              .name("name")
+              .validationMethod(IgnoreMalformed)
+
+          val expected =
+            """
+              |{
+              |  "geo_bounding_box": {
+              |    "geoPointField": {
+              |      "top_left": {
+              |        "lat": 40.73,
+              |        "lon": -74.1
+              |      },
+              |      "bottom_right": {
+              |        "lat": 40.01,
+              |        "lon": -71.12
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "geo_bounding_box": {
+              |    "geoPointField": {
+              |      "top_left": {
+              |        "lat": 40.73,
+              |        "lon": -74.1
+              |      },
+              |      "bottom_right": {
+              |        "lat": 40.01,
+              |        "lon": -71.12
+              |      }
+              |    },
+              |    "boost": 1.5
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithIgnoreUnmapped =
+            """
+              |{
+              |  "geo_bounding_box": {
+              |    "geoPointField": {
+              |      "top_left": {
+              |        "lat": 40.73,
+              |        "lon": -74.1
+              |      },
+              |      "bottom_right": {
+              |        "lat": 40.01,
+              |        "lon": -71.12
+              |      }
+              |    },
+              |    "ignore_unmapped": true
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithName =
+            """
+              |{
+              |  "geo_bounding_box": {
+              |    "geoPointField": {
+              |      "top_left": {
+              |        "lat": 40.73,
+              |        "lon": -74.1
+              |      },
+              |      "bottom_right": {
+              |        "lat": 40.01,
+              |        "lon": -71.12
+              |      }
+              |    },
+              |    "_name": "name"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithValidationMethod =
+            """
+              |{
+              |  "geo_bounding_box": {
+              |    "geoPointField": {
+              |      "top_left": {
+              |        "lat": 40.73,
+              |        "lon": -74.1
+              |      },
+              |      "bottom_right": {
+              |        "lat": 40.01,
+              |        "lon": -71.12
+              |      }
+              |    },
+              |    "validation_method": "IGNORE_MALFORMED"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "geo_bounding_box": {
+              |    "geoPointField": {
+              |      "top_left": {
+              |        "lat": 40.73,
+              |        "lon": -74.1
+              |      },
+              |      "bottom_right": {
+              |        "lat": 40.01,
+              |        "lon": -71.12
+              |      }
+              |    },
+              |    "boost": 1.5,
+              |    "ignore_unmapped": true,
+              |    "_name": "name",
+              |    "validation_method": "IGNORE_MALFORMED"
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithIgnoreUnmapped.toJson(fieldPath = None))(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
+          assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
+          assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
         test("geoDistance") {
           val queryWithHash =

@@ -19,6 +19,7 @@ package zio.elasticsearch.query
 import zio.Chunk
 import zio.elasticsearch.ElasticPrimitive._
 import zio.elasticsearch.Field
+import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.query.options._
 import zio.elasticsearch.query.sort.options.HasFormat
 import zio.json.ast.Json
@@ -497,7 +498,58 @@ private[elasticsearch] final case class Fuzzy[S](
   }
 }
 
-sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
+sealed trait GeoBoundingBoxQuery[S]
+    extends ElasticQuery[S]
+    with HasBoost[GeoBoundingBoxQuery[S]]
+    with HasIgnoreUnmapped[GeoBoundingBoxQuery[S]]
+    with HasQueryName[GeoBoundingBoxQuery[S]]
+    with HasValidationMethod[GeoBoundingBoxQuery[S]]
+
+private[elasticsearch] final case class GeoBoundingBox[S](
+  field: String,
+  bottomRight: GeoPoint,
+  topLeft: GeoPoint,
+  boost: Option[Double],
+  ignoreUnmapped: Option[Boolean],
+  queryName: Option[String],
+  validationMethod: Option[ValidationMethod]
+) extends GeoBoundingBoxQuery[S] { self =>
+
+  def boost(value: Double): GeoBoundingBoxQuery[S] =
+    self.copy(boost = Some(value))
+
+  def ignoreUnmapped(value: Boolean): GeoBoundingBoxQuery[S] =
+    self.copy(ignoreUnmapped = Some(value))
+
+  def name(value: String): GeoBoundingBoxQuery[S] =
+    self.copy(queryName = Some(value))
+
+  def validationMethod(value: ValidationMethod): GeoBoundingBoxQuery[S] =
+    self.copy(validationMethod = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "geo_bounding_box" -> Obj(
+        Chunk(
+          Some(
+            field -> Obj(
+              "top_left"     -> Obj("lat" -> topLeft.lat.toJson, "lon" -> topLeft.lon.toJson),
+              "bottom_right" -> Obj("lat" -> bottomRight.lat.toJson, "lon" -> bottomRight.lon.toJson)
+            )
+          ),
+          boost.map("boost" -> _.toJson),
+          ignoreUnmapped.map("ignore_unmapped" -> _.toJson),
+          queryName.map("_name" -> _.toJson),
+          validationMethod.map("validation_method" -> _.toString.toJson)
+        ).flatten: _*
+      )
+    )
+}
+
+sealed trait GeoDistanceQuery[S]
+    extends ElasticQuery[S]
+    with HasQueryName[GeoDistanceQuery[S]]
+    with HasValidationMethod[GeoDistanceQuery[S]] {
 
   /**
    * Sets the `distanceType` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines how to compute the
@@ -511,32 +563,6 @@ sealed trait GeoDistanceQuery[S] extends ElasticQuery[S] {
    *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `distanceType` parameter.
    */
   def distanceType(value: DistanceType): GeoDistanceQuery[S]
-
-  /**
-   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Represents the optional name
-   * field to identify the query
-   *
-   * @param value
-   *   the [[String]] value to represent the name field
-   * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `queryName` parameter.
-   */
-  def name(value: String): GeoDistanceQuery[S]
-
-  /**
-   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoDistanceQuery]]. Defines handling of
-   * incorrect coordinates.
-   *
-   * @param value
-   *   defines how to handle invalid latitude and longitude:
-   *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
-   *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
-   *     longitude
-   *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
-   * @return
-   *   an instance of [[zio.elasticsearch.query.GeoDistanceQuery]] enriched with the `validationMethod` parameter.
-   */
-  def validationMethod(value: ValidationMethod): GeoDistanceQuery[S]
 }
 
 private[elasticsearch] final case class GeoDistance[S](
@@ -571,34 +597,10 @@ private[elasticsearch] final case class GeoDistance[S](
     )
 }
 
-sealed trait GeoPolygonQuery[S] extends ElasticQuery[S] {
-
-  /**
-   * Sets the `queryName` parameter for the [[zio.elasticsearch.query.GeoPolygonQuery]]. Represents the optional name
-   * field to identify the query.
-   *
-   * @param value
-   *   the text value that represents the name field
-   * @return
-   *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] enriched with the `queryName` parameter.
-   */
-  def name(value: String): GeoPolygonQuery[S]
-
-  /**
-   * Sets the `validationMethod` parameter for the [[zio.elasticsearch.query.GeoPolygonQuery]]. Defines handling of
-   * incorrect coordinates.
-   *
-   * @param value
-   *   defines how to handle invalid latitude and longitude:
-   *   - [[zio.elasticsearch.query.ValidationMethod.Strict]]: Default method
-   *   - [[zio.elasticsearch.query.ValidationMethod.IgnoreMalformed]]: Accepts geo points with invalid latitude or
-   *     longitude
-   *   - [[zio.elasticsearch.query.ValidationMethod.Coerce]]: Additionally try and infer correct coordinates
-   * @return
-   *   an instance of [[zio.elasticsearch.query.GeoPolygonQuery]] enriched with the `validationMethod` parameter.
-   */
-  def validationMethod(value: ValidationMethod): GeoPolygonQuery[S]
-}
+sealed trait GeoPolygonQuery[S]
+    extends ElasticQuery[S]
+    with HasQueryName[GeoPolygonQuery[S]]
+    with HasValidationMethod[GeoPolygonQuery[S]]
 
 private[elasticsearch] final case class GeoPolygon[S](
   field: String,
