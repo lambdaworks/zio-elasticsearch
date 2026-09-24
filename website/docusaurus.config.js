@@ -33,6 +33,19 @@ const config = {
       })
     ]
   ],
+  themes: [
+    [
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      {
+        hashed: true,
+        indexBlog: false,
+        indexPages: false,
+        docsRouteBasePath: '/',
+        docsDir: '../modules/docs/target/mdoc',
+        highlightSearchTermsOnTargetPage: true
+      }
+    ]
+  ],
   themeConfig:
     ({
       navbar: {
@@ -56,6 +69,10 @@ const config = {
           {
             href: 'https://github.com/lambdaworks/zio-elasticsearch',
             label: 'GitHub',
+            position: 'right'
+          },
+          {
+            type: 'search',
             position: 'right'
           }
         ]
