@@ -19,7 +19,7 @@ package zio.elasticsearch.query.options
 import zio.elasticsearch.Field
 import zio.schema.Schema
 
-private[elasticsearch] trait HasUseField[Q[_], S] {
+private[elasticsearch] trait HasUseField[Q[-_], -S] {
 
   /**
    * Sets the type-safe `use_field` parameter for this [[zio.elasticsearch.query.IntervalRule]].

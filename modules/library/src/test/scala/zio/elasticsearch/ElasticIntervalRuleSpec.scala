@@ -38,13 +38,13 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] = {
     suite("ElasticIntervalRuleSpec")(
       test("intervalMatch") {
-        val intervalNoOptions: IntervalMatchRule[String] = intervalMatch("lambda works")
+        val intervalNoOptions: IntervalMatchRule[Any] = intervalMatch("lambda works")
 
-        val intervalWithOptions: IntervalMatchRule[String] = intervalMatch("lambda works").orderedOn
+        val intervalWithOptions: IntervalMatchRule[Any] = intervalMatch("lambda works").orderedOn
           .maxGaps(2)
           .analyzer("standard")
 
-        val filter = IntervalFilter[String](
+        val filter = IntervalFilter[Any](
           before = Some(intervalMatch("before_term")),
           after = Some(intervalMatch("after_term"))
         )
@@ -124,13 +124,13 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
       },
       test("intervalRange") {
         val intervalWithBounds =
-          intervalRange[Any].gte("10").lte("20").analyzer("standard").useField("stringField")
+          intervalRange.gte("10").lte("20").analyzer("standard").useField("stringField")
 
         val intervalWithOnlyLower =
-          intervalRange[Any].gte("10").analyzer("standard").useField("stringField")
+          intervalRange.gte("10").analyzer("standard").useField("stringField")
 
         val intervalWithOnlyUpper =
-          intervalRange[Any].lte("20").analyzer("standard").useField("stringField")
+          intervalRange.lte("20").analyzer("standard").useField("stringField")
 
         val queryWithBounds = intervals(TestDocument.stringField, intervalWithBounds)
         val queryWithLower  = intervals(TestDocument.stringField, intervalWithOnlyLower)
@@ -193,7 +193,7 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
         )
       },
       test("intervalRange with exclusive bounds") {
-        val query = intervals("stringField", intervalRange[Any].gt("10").lt("20"))
+        val query = intervals("stringField", intervalRange.gt("10").lt("20"))
 
         val expected =
           """
@@ -212,7 +212,7 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
         assert(query.toJson(None))(equalTo(expected.toJson))
       },
       test("intervalRegexp") {
-        val query = intervals("stringField", intervalRegexp[Any]("la.*da").analyzer("standard").useField("otherField"))
+        val query = intervals("stringField", intervalRegexp("la.*da").analyzer("standard").useField("otherField"))
 
         val expected =
           """
@@ -233,17 +233,17 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
       },
       test("intervalRule with type-safe useField") {
         val fuzzyRule: IntervalFuzzyRule[TestDocument] =
-          intervalFuzzy[Any]("lambda").useField(TestDocument.stringField)
+          intervalFuzzy("lambda").useField(TestDocument.stringField)
         val matchRule: IntervalMatchRule[TestSubDocument] =
-          intervalMatch[Any]("lambda works").useField(TestSubDocument.nestedField / TestNestedField.stringField)
+          intervalMatch("lambda works").useField(TestSubDocument.nestedField / TestNestedField.stringField)
         val prefixRule: IntervalPrefixRule[TestDocument] =
-          intervalPrefix[Any]("lamb").useField(TestDocument.stringField)
+          intervalPrefix("lamb").useField(TestDocument.stringField)
         val rangeRule: IntervalRangeRule[TestDocument] =
-          intervalRange[Any].gte("10").useField(TestDocument.stringField)
+          intervalRange.gte("10").useField(TestDocument.stringField)
         val regexpRule: IntervalRegexpRule[TestDocument] =
-          intervalRegexp[Any]("la.*da").useField(TestDocument.stringField)
+          intervalRegexp("la.*da").useField(TestDocument.stringField)
         val wildcardRule: IntervalWildcardRule[TestDocument] =
-          intervalWildcard[Any]("la*da").useField(TestDocument.stringField)
+          intervalWildcard("la*da").useField(TestDocument.stringField)
 
         val expectedFuzzy =
           """
@@ -342,7 +342,7 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             import zio.elasticsearch.ElasticIntervalRule.intervalMatch
             import zio.elasticsearch.domain.TestDocument
 
-            intervalMatch[TestDocument]("lambda").useField(TestDocument.stringField)
+            intervalMatch("lambda").useField(TestDocument.stringField).useField(TestDocument.stringField)
           """
         })(Assertion.isRight) &&
         assertZIO(typeCheck {
@@ -350,14 +350,64 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             import zio.elasticsearch.ElasticIntervalRule.intervalMatch
             import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
 
-            intervalMatch[TestDocument]("lambda").useField(TestSubDocument.stringField)
+            intervalMatch("lambda").useField(TestDocument.stringField).useField(TestSubDocument.stringField)
+          """
+        })(Assertion.isLeft)
+      },
+      test("intervals accepts only rules defined for the field's document type") {
+        assertZIO(typeCheck {
+          """
+            import zio.NonEmptyChunk
+            import zio.elasticsearch.ElasticIntervalRule.{intervalAllOf, intervalFilter, intervalMatch}
+            import zio.elasticsearch.ElasticQuery.intervals
+            import zio.elasticsearch.domain.TestDocument
+
+            intervals(
+              TestDocument.stringField,
+              intervalAllOf(NonEmptyChunk(intervalMatch("a").useField(TestDocument.stringField), intervalMatch("b")))
+                .filter(intervalFilter(before = Some(intervalMatch("c").useField(TestDocument.stringField))))
+            )
+          """
+        })(Assertion.isRight) &&
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.intervalMatch
+            import zio.elasticsearch.ElasticQuery.intervals
+            import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
+
+            intervals(TestDocument.stringField, intervalMatch("a").useField(TestSubDocument.stringField))
+          """
+        })(Assertion.isLeft) &&
+        assertZIO(typeCheck {
+          """
+            import zio.NonEmptyChunk
+            import zio.elasticsearch.ElasticIntervalRule.{intervalAnyOf, intervalMatch}
+            import zio.elasticsearch.ElasticQuery.intervals
+            import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
+
+            intervals(
+              TestDocument.stringField,
+              intervalAnyOf(NonEmptyChunk(intervalMatch("a").useField(TestSubDocument.stringField), intervalMatch("b")))
+            )
+          """
+        })(Assertion.isLeft) &&
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.{intervalFilter, intervalMatch}
+            import zio.elasticsearch.ElasticQuery.intervals
+            import zio.elasticsearch.domain.{TestDocument, TestSubDocument}
+
+            intervals(
+              TestDocument.stringField,
+              intervalMatch("a").filter(intervalFilter(before = Some(intervalMatch("b").useField(TestSubDocument.stringField))))
+            )
           """
         })(Assertion.isLeft)
       },
       test("intervalFuzzy") {
         val query = intervals(
           "stringField",
-          intervalFuzzy[Any]("lambda").fuzziness("AUTO").prefixLength(1).transpositionsEnabled.analyzer("standard")
+          intervalFuzzy("lambda").fuzziness("AUTO").prefixLength(1).transpositionsEnabled.analyzer("standard")
         )
 
         val expected =
@@ -380,28 +430,28 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
         assert(query.toJson(None))(equalTo(expected.toJson))
       },
       test("intervalWildcard") {
-        val wildcardExact: IntervalWildcardRule[String] =
+        val wildcardExact: IntervalWildcardRule[Any] =
           intervalWildcard("la*mb?da")
 
-        val wildcardContains: IntervalWildcardRule[String] =
+        val wildcardContains: IntervalWildcardRule[Any] =
           intervalContains("lambda")
 
-        val wildcardStartsWith: IntervalWildcardRule[String] =
+        val wildcardStartsWith: IntervalWildcardRule[Any] =
           intervalStartsWith("lambda")
 
-        val wildcardEndsWith: IntervalWildcardRule[String] =
+        val wildcardEndsWith: IntervalWildcardRule[Any] =
           intervalEndsWith("lambda")
 
-        val queryExact: Intervals[String] =
+        val queryExact: Intervals[Any] =
           Intervals("stringField", wildcardExact)
 
-        val queryContains: Intervals[String] =
+        val queryContains: Intervals[Any] =
           Intervals("stringField", wildcardContains)
 
-        val queryStartsWith: Intervals[String] =
+        val queryStartsWith: Intervals[Any] =
           Intervals("stringField", wildcardStartsWith)
 
-        val queryEndsWith: Intervals[String] =
+        val queryEndsWith: Intervals[Any] =
           Intervals("stringField", wildcardEndsWith)
 
         val expectedExact =

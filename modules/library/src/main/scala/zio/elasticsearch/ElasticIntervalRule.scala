@@ -52,7 +52,7 @@ object ElasticIntervalRule {
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `all_of` interval rule.
    */
-  def intervalAllOf[S](intervals: NonEmptyChunk[IntervalRule]): IntervalAllOfRule[S] =
+  def intervalAllOf[S](intervals: NonEmptyChunk[IntervalRule[S]]): IntervalAllOfRule[S] =
     IntervalAllOf(intervals = intervals, maxGaps = None, ordered = None, filter = None)
 
   /**
@@ -66,7 +66,7 @@ object ElasticIntervalRule {
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `any_of` interval rule.
    */
-  def intervalAnyOf[S](intervals: NonEmptyChunk[IntervalRule]): IntervalAnyOfRule[S] =
+  def intervalAnyOf[S](intervals: NonEmptyChunk[IntervalRule[S]]): IntervalAnyOfRule[S] =
     IntervalAnyOf(intervals = intervals, filter = None)
 
   /**
@@ -75,12 +75,10 @@ object ElasticIntervalRule {
    *
    * @param pattern
    *   the substring that a matching term must contain
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
-  def intervalContains[S](pattern: String): IntervalWildcardRule[S] =
+  def intervalContains(pattern: String): IntervalWildcardRule[Any] =
     IntervalWildcard(s"*$pattern*", analyzer = None, useField = None)
 
   /**
@@ -89,12 +87,10 @@ object ElasticIntervalRule {
    *
    * @param pattern
    *   the suffix that a matching term must end with
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
-  def intervalEndsWith[S](pattern: String): IntervalWildcardRule[S] =
+  def intervalEndsWith(pattern: String): IntervalWildcardRule[Any] =
     IntervalWildcard(s"*$pattern", analyzer = None, useField = None)
 
   /**
@@ -126,14 +122,14 @@ object ElasticIntervalRule {
    *   an instance of [[zio.elasticsearch.query.IntervalFilter]] representing the interval filter.
    */
   def intervalFilter[S](
-    after: Option[IntervalRule] = None,
-    before: Option[IntervalRule] = None,
-    containedBy: Option[IntervalRule] = None,
-    containing: Option[IntervalRule] = None,
-    notContainedBy: Option[IntervalRule] = None,
-    notContaining: Option[IntervalRule] = None,
-    notOverlapping: Option[IntervalRule] = None,
-    overlapping: Option[IntervalRule] = None,
+    after: Option[IntervalRule[S]] = None,
+    before: Option[IntervalRule[S]] = None,
+    containedBy: Option[IntervalRule[S]] = None,
+    containing: Option[IntervalRule[S]] = None,
+    notContainedBy: Option[IntervalRule[S]] = None,
+    notContaining: Option[IntervalRule[S]] = None,
+    notOverlapping: Option[IntervalRule[S]] = None,
+    overlapping: Option[IntervalRule[S]] = None,
     script: Option[Json] = None
   ): IntervalFilter[S] =
     IntervalFilter(
@@ -154,12 +150,10 @@ object ElasticIntervalRule {
    *
    * @param term
    *   the term to fuzzy match against
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `fuzzy` interval rule.
    */
-  def intervalFuzzy[S](term: String): IntervalFuzzyRule[S] =
+  def intervalFuzzy(term: String): IntervalFuzzyRule[Any] =
     IntervalFuzzy(
       term = term,
       prefixLength = None,
@@ -175,12 +169,10 @@ object ElasticIntervalRule {
    *
    * @param query
    *   the text to match in the intervals
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `match` interval rule.
    */
-  def intervalMatch[S](query: String): IntervalMatchRule[S] =
+  def intervalMatch(query: String): IntervalMatchRule[Any] =
     IntervalMatch(query = query, analyzer = None, useField = None, maxGaps = None, ordered = None, filter = None)
 
   /**
@@ -189,24 +181,20 @@ object ElasticIntervalRule {
    *
    * @param prefix
    *   the prefix string to match
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `prefix` interval rule.
    */
-  def intervalPrefix[S](prefix: String): IntervalPrefixRule[S] =
+  def intervalPrefix(prefix: String): IntervalPrefixRule[Any] =
     IntervalPrefix(prefix = prefix, analyzer = None, useField = None)
 
   /**
    * Constructs an unbounded instance of [[zio.elasticsearch.query.IntervalRule]] that matches terms within a range. The
    * bounds can be set using the `gt`, `gte`, `lt` and `lte` methods.
    *
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `range` interval rule.
    */
-  def intervalRange[S]: IntervalRangeRule[S] =
+  def intervalRange: IntervalRangeRule[Any] =
     IntervalRange(lower = None, upper = None, analyzer = None, useField = None)
 
   /**
@@ -215,12 +203,10 @@ object ElasticIntervalRule {
    *
    * @param pattern
    *   the regular expression to match
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `regexp` interval rule.
    */
-  def intervalRegexp[S](pattern: String): IntervalRegexpRule[S] =
+  def intervalRegexp(pattern: String): IntervalRegexpRule[Any] =
     IntervalRegexp(pattern = pattern, analyzer = None, useField = None)
 
   /**
@@ -229,12 +215,10 @@ object ElasticIntervalRule {
    *
    * @param pattern
    *   the prefix that a matching term must start with
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
-  def intervalStartsWith[S](pattern: String): IntervalWildcardRule[S] =
+  def intervalStartsWith(pattern: String): IntervalWildcardRule[Any] =
     IntervalWildcard(s"$pattern*", analyzer = None, useField = None)
 
   /**
@@ -243,11 +227,9 @@ object ElasticIntervalRule {
    *
    * @param pattern
    *   the wildcard pattern to match, using `*` to match zero or more characters and `?` to match a single character
-   * @tparam S
-   *   the document type on which the interval rule is executed
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
-  def intervalWildcard[S](pattern: String): IntervalWildcardRule[S] =
+  def intervalWildcard(pattern: String): IntervalWildcardRule[Any] =
     IntervalWildcard(pattern = pattern, analyzer = None, useField = None)
 }

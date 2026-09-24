@@ -52,10 +52,12 @@ val queryWithRuleField: IntervalsQuery[Any] =
   intervals(field = "content", rule = intervalMatch("targetWord").useField("otherField"))
 ```
 
-The type-safe `useField` variant accepts only fields of the rule's document type (or its subtype):
+You can also use the type-safe `useField` variant, which narrows the rule to the field's document type. A type-safe
+`Intervals` query only accepts rules defined for the same document type as its field, so mixing fields from different
+documents is a compile error:
 ```scala
 val queryWithTypedRuleField: IntervalsQuery[Document] =
-  intervals(field = Document.stringField, rule = intervalMatch[Document]("targetWord").useField(Document.otherField))
+  intervals(field = Document.stringField, rule = intervalMatch("targetWord").useField(Document.otherField))
 ```
 
 You can also restrict matches using another interval rule with the `filter` method, for example to exclude documents

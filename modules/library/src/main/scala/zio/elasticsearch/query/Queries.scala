@@ -784,7 +784,7 @@ sealed trait IntervalsQuery[S] extends ElasticQuery[S]
 
 private[elasticsearch] final case class Intervals[S](
   field: String,
-  rule: IntervalRule
+  rule: IntervalRule[S]
 ) extends IntervalsQuery[S] { self =>
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =

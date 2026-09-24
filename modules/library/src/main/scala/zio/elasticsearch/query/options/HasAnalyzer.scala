@@ -16,7 +16,7 @@
 
 package zio.elasticsearch.query.options
 
-private[elasticsearch] trait HasAnalyzer[Q <: HasAnalyzer[Q]] {
+private[elasticsearch] trait HasAnalyzer[+Q <: HasAnalyzer[Q]] {
 
   /**
    * Sets the `analyzer` parameter for this [[zio.elasticsearch.query.IntervalRule]].

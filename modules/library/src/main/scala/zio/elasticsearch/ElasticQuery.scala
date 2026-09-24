@@ -557,13 +557,15 @@ object ElasticQuery {
    * @param field
    *   the type-safe field on which the query is executed
    * @param rule
-   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule
+   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule, defined for the
+   *   same document type as the `field`
    * @tparam S
-   *   the document type for which the query is defined
+   *   the document type for which the query is defined. An implicit `Schema` instance must be in scope
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
-  final def intervals[S](field: Field[S, _], rule: IntervalRule): IntervalsQuery[S] = Intervals(field.toString, rule)
+  final def intervals[S: Schema](field: Field[S, _], rule: IntervalRule[S]): IntervalsQuery[S] =
+    Intervals(field = field.toString, rule = rule)
 
   /**
    * Constructs an intervals query by combining a field and an interval query.
@@ -577,7 +579,8 @@ object ElasticQuery {
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */
-  final def intervals(field: String, rule: IntervalRule): IntervalsQuery[Any] = Intervals(field = field, rule = rule)
+  final def intervals(field: String, rule: IntervalRule[Any]): IntervalsQuery[Any] =
+    Intervals(field = field, rule = rule)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.
