@@ -560,7 +560,8 @@ object ElasticQuery {
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule, defined for the
    *   same document type as the `field`
    * @tparam S
-   *   the document type for which the query is defined. An implicit `Schema` instance must be in scope
+   *   the document type for which the query is defined. An implicit `Schema` instance must be in scope; it ensures that
+   *   the `field` and the `rule` are defined for the same document type
    * @return
    *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
    */

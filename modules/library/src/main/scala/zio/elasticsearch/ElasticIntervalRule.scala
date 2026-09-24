@@ -35,9 +35,10 @@ import zio.elasticsearch.query.{
   IntervalRegexpRule,
   IntervalRule,
   IntervalWildcard,
-  IntervalWildcardRule
+  IntervalWildcardRule,
+  Unbounded
 }
-import zio.json.ast.Json
+import zio.elasticsearch.script.Script
 
 object ElasticIntervalRule {
 
@@ -74,24 +75,24 @@ object ElasticIntervalRule {
    * `pattern`.
    *
    * @param pattern
-   *   the substring that a matching term must contain
+   *   the substring that a matching term must contain (wildcard characters `*` and `?` are matched literally)
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
   def intervalContains(pattern: String): IntervalWildcardRule[Any] =
-    IntervalWildcard(s"*$pattern*", analyzer = None, useField = None)
+    IntervalWildcard(s"*${escapeWildcard(pattern)}*", analyzer = None, useField = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.IntervalRule]] that matches terms ending with the specified
    * `pattern`.
    *
    * @param pattern
-   *   the suffix that a matching term must end with
+   *   the suffix that a matching term must end with (wildcard characters `*` and `?` are matched literally)
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
   def intervalEndsWith(pattern: String): IntervalWildcardRule[Any] =
-    IntervalWildcard(s"*$pattern", analyzer = None, useField = None)
+    IntervalWildcard(s"*${escapeWildcard(pattern)}", analyzer = None, useField = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.IntervalFilter]], used to restrict the intervals matched by
@@ -130,7 +131,7 @@ object ElasticIntervalRule {
     notContaining: Option[IntervalRule[S]] = None,
     notOverlapping: Option[IntervalRule[S]] = None,
     overlapping: Option[IntervalRule[S]] = None,
-    script: Option[Json] = None
+    script: Option[Script] = None
   ): IntervalFilter[S] =
     IntervalFilter(
       after = after,
@@ -194,8 +195,8 @@ object ElasticIntervalRule {
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `range` interval rule.
    */
-  def intervalRange: IntervalRangeRule[Any] =
-    IntervalRange(lower = None, upper = None, analyzer = None, useField = None)
+  def intervalRange: IntervalRangeRule[Any, Unbounded.type, Unbounded.type] =
+    IntervalRange(lower = Unbounded, upper = Unbounded, analyzer = None, useField = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.IntervalRule]] that matches terms using the specified regular
@@ -214,12 +215,12 @@ object ElasticIntervalRule {
    * `pattern`.
    *
    * @param pattern
-   *   the prefix that a matching term must start with
+   *   the prefix that a matching term must start with (wildcard characters `*` and `?` are matched literally)
    * @return
    *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the `wildcard` interval rule.
    */
   def intervalStartsWith(pattern: String): IntervalWildcardRule[Any] =
-    IntervalWildcard(s"$pattern*", analyzer = None, useField = None)
+    IntervalWildcard(s"${escapeWildcard(pattern)}*", analyzer = None, useField = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.query.IntervalRule]] that matches terms using the specified wildcard
@@ -232,4 +233,7 @@ object ElasticIntervalRule {
    */
   def intervalWildcard(pattern: String): IntervalWildcardRule[Any] =
     IntervalWildcard(pattern = pattern, analyzer = None, useField = None)
+
+  private def escapeWildcard(value: String): String =
+    value.replace("\\", "\\\\").replace("*", "\\*").replace("?", "\\?")
 }

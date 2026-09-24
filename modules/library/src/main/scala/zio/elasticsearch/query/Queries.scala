@@ -790,7 +790,7 @@ private[elasticsearch] final case class Intervals[S](
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "intervals" -> Obj(
-        fieldPath.fold(field)(_ + "." + field) -> rule.toJson
+        fieldPath.foldRight(field)(_ + "." + _) -> rule.toJson(fieldPath)
       )
     )
 }

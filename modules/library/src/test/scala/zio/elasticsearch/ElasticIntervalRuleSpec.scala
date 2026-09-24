@@ -19,6 +19,7 @@ package zio.elasticsearch
 import zio.elasticsearch.ElasticIntervalRule.{
   intervalContains,
   intervalEndsWith,
+  intervalFilter,
   intervalFuzzy,
   intervalMatch,
   intervalPrefix,
@@ -27,10 +28,12 @@ import zio.elasticsearch.ElasticIntervalRule.{
   intervalStartsWith,
   intervalWildcard
 }
-import zio.elasticsearch.ElasticQuery.intervals
+import zio.elasticsearch.ElasticQuery.{intervals, nested}
 import zio.elasticsearch.domain.{TestDocument, TestNestedField, TestSubDocument}
 import zio.elasticsearch.query._
+import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
+import zio.json.ast.Json.{Obj, Str}
 import zio.test.Assertion.equalTo
 import zio.test._
 
@@ -238,7 +241,7 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
           intervalMatch("lambda works").useField(TestSubDocument.nestedField / TestNestedField.stringField)
         val prefixRule: IntervalPrefixRule[TestDocument] =
           intervalPrefix("lamb").useField(TestDocument.stringField)
-        val rangeRule: IntervalRangeRule[TestDocument] =
+        val rangeRule: IntervalRangeRule[TestDocument, GreaterThanOrEqualTo[String], Unbounded.type] =
           intervalRange.gte("10").useField(TestDocument.stringField)
         val regexpRule: IntervalRegexpRule[TestDocument] =
           intervalRegexp("la.*da").useField(TestDocument.stringField)
@@ -403,6 +406,110 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             )
           """
         })(Assertion.isLeft)
+      },
+      test("intervalRange accepts only one lower and one upper bound") {
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.intervalRange
+
+            intervalRange.gt("10").lte("20")
+          """
+        })(Assertion.isRight) &&
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.intervalRange
+
+            intervalRange.gt("10").gte("20")
+          """
+        })(Assertion.isLeft) &&
+        assertZIO(typeCheck {
+          """
+            import zio.elasticsearch.ElasticIntervalRule.intervalRange
+
+            intervalRange.lt("10").lte("20")
+          """
+        })(Assertion.isLeft)
+      },
+      test("intervalFilter with script") {
+        val query = intervals(
+          "stringField",
+          intervalMatch("lambda").filter(
+            intervalFilter(script = Some(Script("interval.start > 10 && interval.gaps == 0").params("limit" -> 2)))
+          )
+        )
+
+        val expected =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "match": {
+            |        "query": "lambda",
+            |        "filter": {
+            |          "script": {
+            |            "source": "interval.start > 10 && interval.gaps == 0",
+            |            "params": {
+            |              "limit": 2
+            |            }
+            |          }
+            |        }
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query.toJson(None))(equalTo(expected.toJson))
+      },
+      test("intervals inside nested query prefixes use_field with the nested path") {
+        val query = nested(
+          TestDocument.subDocumentList,
+          intervals(
+            TestSubDocument.stringField,
+            intervalMatch("lambda")
+              .useField(TestSubDocument.intField)
+              .filter(intervalFilter(before = Some(intervalPrefix("wor").useField("stringField"))))
+          )
+        )
+
+        val expected =
+          """
+            |{
+            |  "nested": {
+            |    "path": "subDocumentList",
+            |    "query": {
+            |      "intervals": {
+            |        "subDocumentList.stringField": {
+            |          "match": {
+            |            "query": "lambda",
+            |            "use_field": "subDocumentList.intField",
+            |            "filter": {
+            |              "before": {
+            |                "prefix": {
+            |                  "prefix": "wor",
+            |                  "use_field": "subDocumentList.stringField"
+            |                }
+            |              }
+            |            }
+            |          }
+            |        }
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query.toJson(None))(equalTo(expected.toJson))
+      },
+      test("intervalContains, intervalStartsWith and intervalEndsWith match wildcard characters literally") {
+        def expected(pattern: String) =
+          Obj("intervals" -> Obj("stringField" -> Obj("wildcard" -> Obj("pattern" -> Str(pattern)))))
+
+        assert(intervals("stringField", intervalContains("a*b?c\\d")).toJson(None))(
+          equalTo(expected("*a\\*b\\?c\\\\d*"))
+        ) &&
+        assert(intervals("stringField", intervalStartsWith("a*b")).toJson(None))(equalTo(expected("a\\*b*"))) &&
+        assert(intervals("stringField", intervalEndsWith("a?b")).toJson(None))(equalTo(expected("*a\\?b")))
       },
       test("intervalFuzzy") {
         val query = intervals(
