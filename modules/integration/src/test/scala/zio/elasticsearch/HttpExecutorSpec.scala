@@ -2067,9 +2067,10 @@ object HttpExecutorSpec extends IntegrationSpec {
                 _ <- Executor.execute(
                        ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
                      )
-                _ <- Executor.execute(
+                secondDocumentCopy = secondDocument.copy(stringField = "12345")
+                _                 <- Executor.execute(
                        ElasticRequest
-                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentCopy)
                          .refreshTrue
                      )
                 query = ElasticQuery
@@ -2082,7 +2083,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                          .execute(ElasticRequest.search(firstSearchIndex, query))
                          .documentAs[TestDocument]
               } yield assert(res)(Assertion.contains(firstDocument)) && assert(res)(
-                !Assertion.contains(secondDocument)
+                !Assertion.contains(secondDocumentCopy)
               )
           }
         } @@ around(
