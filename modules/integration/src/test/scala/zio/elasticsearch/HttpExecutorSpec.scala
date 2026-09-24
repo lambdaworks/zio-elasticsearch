@@ -22,7 +22,7 @@ import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticIntervalRule.intervalMatch
 import zio.elasticsearch.ElasticQuery.{contains => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.aggregation.AggregationOrder
+import zio.elasticsearch.aggregation.{AggregationOrder, IpRangeBound}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
@@ -36,6 +36,8 @@ import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreF
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{
   FilterAggregationResult,
+  IpRangeAggregationBucketResult,
+  IpRangeAggregationResult,
   Item,
   MaxAggregationResult,
   SamplerAggregationResult,
@@ -214,6 +216,125 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
+        test("IP range aggregation with max sub aggregation") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              val indexDefinition =
+                """
+                  |{
+                  |  "mappings": {
+                  |    "properties": {
+                  |      "stringField": {
+                  |        "type": "ip"
+                  |      }
+                  |    }
+                  |  }
+                  |}
+                  |""".stripMargin
+
+              for {
+                _ <- Executor.execute(ElasticRequest.createIndex(ipRangeIndex, indexDefinition))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](
+                         ipRangeIndex,
+                         firstDocumentId,
+                         firstDocument.copy(stringField = "10.0.0.10", intField = 7)
+                       )
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](
+                           ipRangeIndex,
+                           secondDocumentId,
+                           secondDocument.copy(stringField = "10.0.0.200", intField = 3)
+                         )
+                         .refreshTrue
+                     )
+                aggregation =
+                  ipRangeAggregation(
+                    name = "aggregation",
+                    field = TestDocument.stringField,
+                    range = IpRangeBound(to = Some("10.0.0.100")),
+                    ranges = IpRangeBound(from = Some("10.0.0.100"))
+                  ).withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
+                result <- Executor
+                            .execute(ElasticRequest.aggregate(selectors = ipRangeIndex, aggregation = aggregation))
+                            .asIpRangeAggregation("aggregation")
+              } yield assert(result)(
+                isSome(
+                  equalTo(
+                    IpRangeAggregationResult(
+                      buckets = Chunk(
+                        IpRangeAggregationBucketResult(
+                          key = "*-10.0.0.100",
+                          from = None,
+                          to = Some("10.0.0.100"),
+                          docCount = 1,
+                          subAggregations = Map("subAggregation" -> MaxAggregationResult(value = 7.0))
+                        ),
+                        IpRangeAggregationBucketResult(
+                          key = "10.0.0.100-*",
+                          from = Some("10.0.0.100"),
+                          to = None,
+                          docCount = 1,
+                          subAggregations = Map("subAggregation" -> MaxAggregationResult(value = 3.0))
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+          }
+        } @@ after(Executor.execute(ElasticRequest.deleteIndex(ipRangeIndex)).orDie),
+        test("IP range aggregation with CIDR masks") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              val indexDefinition =
+                """
+                  |{
+                  |  "mappings": {
+                  |    "properties": {
+                  |      "stringField": {
+                  |        "type": "ip"
+                  |      }
+                  |    }
+                  |  }
+                  |}
+                  |""".stripMargin
+
+              for {
+                _ <- Executor.execute(ElasticRequest.createIndex(ipRangeIndex, indexDefinition))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](
+                         ipRangeIndex,
+                         firstDocumentId,
+                         firstDocument.copy(stringField = "10.0.0.10")
+                       )
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](
+                           ipRangeIndex,
+                           secondDocumentId,
+                           secondDocument.copy(stringField = "10.0.0.200")
+                         )
+                         .refreshTrue
+                     )
+                aggregation =
+                  ipRangeAggregation(
+                    name = "aggregation",
+                    field = TestDocument.stringField,
+                    range = IpRangeBound(key = Some("low"), mask = Some("10.0.0.0/25")),
+                    ranges = IpRangeBound(key = Some("high"), mask = Some("10.0.0.128/25"))
+                  ).keyed
+                result <- Executor
+                            .execute(ElasticRequest.aggregate(selectors = ipRangeIndex, aggregation = aggregation))
+                            .asIpRangeAggregation("aggregation")
+              } yield assert(result.map(_.buckets.map(bucket => (bucket.key, bucket.docCount))))(
+                isSome(hasSameElements(Chunk("low" -> 1, "high" -> 1)))
+              )
+          }
+        } @@ after(Executor.execute(ElasticRequest.deleteIndex(ipRangeIndex)).orDie),
         test("max aggregation") {
           val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
