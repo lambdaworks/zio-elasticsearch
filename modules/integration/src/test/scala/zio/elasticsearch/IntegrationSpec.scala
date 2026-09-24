@@ -54,6 +54,8 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   val geoDistanceIndex: IndexName = IndexName("geo-distance-index")
 
+  val ipRangeIndex: IndexName = IndexName("ip-range-index")
+
   val refreshFailIndex: IndexName = IndexName("refresh-fail")
 
   val IndexPatternAll: IndexPattern = IndexPattern("_all")

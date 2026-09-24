@@ -1,6 +1,5 @@
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticQuery.term
 import zio.elasticsearch.aggregation._
@@ -11,6 +10,7 @@ import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test._
+import zio.{Chunk, NonEmptyChunk}
 
 object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
@@ -186,6 +186,79 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   minAggregation("minSubAggregation", TestDocument.doubleField),
                   maxAggregation("maxSubAggregation", TestDocument.intField)
                 )
+              )
+            )
+          )
+        },
+        test("ipRange") {
+          val aggregation =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = "ipField",
+              range = IpRangeBound().to("10.0.0.5"),
+              ranges = IpRangeBound().from("10.0.0.5")
+            )
+          val aggregationTs =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = TestDocument.stringField,
+              range = IpRangeBound().to("10.0.0.5"),
+              ranges = IpRangeBound().from("10.0.0.5")
+            )
+          val aggregationWithKeyed =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = "ipField",
+              range = IpRangeBound().mask("10.0.0.0/25").key("low")
+            ).keyed
+          val aggregationWithSubAggregation =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = "ipField",
+              range = IpRangeBound().mask("10.0.0.0/25")
+            ).withSubAgg(maxAggregation("subAggregation", "intField"))
+
+          assert(aggregation)(
+            equalTo(
+              IpRange(
+                name = "aggregation",
+                field = "ipField",
+                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
+                isKeyed = false,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              IpRange(
+                name = "aggregation",
+                field = "stringField",
+                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
+                isKeyed = false,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithKeyed)(
+            equalTo(
+              IpRange(
+                name = "aggregation",
+                field = "ipField",
+                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25").key("low")),
+                isKeyed = true,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithSubAggregation)(
+            equalTo(
+              IpRange(
+                name = "aggregation",
+                field = "ipField",
+                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25")),
+                isKeyed = false,
+                subAggregations = Chunk(Max(name = "subAggregation", field = "intField", missing = None))
               )
             )
           )
@@ -1010,6 +1083,96 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
           assert(aggregationWithMultipleSubAggregations.toJson)(equalTo(expectedWithMultipleSubAggregations.toJson))
+        },
+        test("ipRange") {
+          val aggregation =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = "ipField",
+              range = IpRangeBound().to("10.0.0.5"),
+              ranges = IpRangeBound().from("10.0.0.5")
+            )
+          val aggregationWithKeyed =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = "ipField",
+              range = IpRangeBound().mask("10.0.0.0/25").key("low"),
+              ranges = IpRangeBound().mask("10.0.0.128/25").key("high")
+            ).keyed
+          val aggregationWithSubAggregation =
+            ipRangeAggregation(
+              name = "aggregation",
+              field = "ipField",
+              range = IpRangeBound().mask("10.0.0.0/25")
+            ).withSubAgg(maxAggregation("subAggregation", "intField"))
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "ip_range": {
+              |      "field": "ipField",
+              |      "ranges": [
+              |        {
+              |          "to": "10.0.0.5"
+              |        },
+              |        {
+              |          "from": "10.0.0.5"
+              |        }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithKeyed =
+            """
+              |{
+              |  "aggregation": {
+              |    "ip_range": {
+              |      "field": "ipField",
+              |      "ranges": [
+              |        {
+              |          "key": "low",
+              |          "mask": "10.0.0.0/25"
+              |        },
+              |        {
+              |          "key": "high",
+              |          "mask": "10.0.0.128/25"
+              |        }
+              |      ],
+              |      "keyed": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSubAggregation =
+            """
+              |{
+              |  "aggregation": {
+              |    "ip_range": {
+              |      "field": "ipField",
+              |      "ranges": [
+              |        {
+              |          "mask": "10.0.0.0/25"
+              |        }
+              |      ]
+              |    },
+              |    "aggs": {
+              |      "subAggregation": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithKeyed.toJson)(equalTo(expectedWithKeyed.toJson)) &&
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("max") {
           val aggregation            = maxAggregation("aggregation", "testField")

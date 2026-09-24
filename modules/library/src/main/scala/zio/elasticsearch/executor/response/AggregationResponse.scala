@@ -19,7 +19,7 @@ package zio.elasticsearch.executor.response
 import zio.Chunk
 import zio.elasticsearch.result._
 import zio.json.ast.Json
-import zio.json.ast.Json.Obj
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] sealed trait AggregationBucket
@@ -75,6 +75,19 @@ object AggregationResponse {
           docCount = docCount,
           subAggregations =
             subAggregations.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
+        )
+      case IpRangeAggregationResponse(buckets) =>
+        IpRangeAggregationResult(
+          buckets = buckets.map(b =>
+            IpRangeAggregationBucketResult(
+              key = b.key,
+              from = b.from,
+              to = b.to,
+              docCount = b.docCount,
+              subAggregations =
+                b.subAggregations.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
+            )
+          )
         )
       case MaxAggregationResponse(value) =>
         MaxAggregationResult(value)
@@ -160,6 +173,8 @@ private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) e
             )
           case str if str.contains("filter#") =>
             Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
+          case str if str.contains("ip_range#") =>
+            Some(field -> data.unsafeAs[IpRangeAggregationResponse](IpRangeAggregationResponse.decoder))
           case str if str.contains("max#") =>
             Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
           case str if str.contains("min#") =>
@@ -207,6 +222,8 @@ private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) e
           (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
         case str if str.contains("filter#") =>
           (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
+        case str if str.contains("ip_range#") =>
+          (field.split("#")(1), data.asInstanceOf[IpRangeAggregationResponse])
         case str if str.contains("max#") =>
           (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
         case str if str.contains("min#") =>
@@ -289,6 +306,63 @@ private[elasticsearch] sealed trait JsonDecoderOps {
       (json.as[A]: @unchecked) match {
         case Right(decoded) => decoded
       }
+  }
+}
+
+private[elasticsearch] final case class IpRangeAggregationBucket(
+  key: String,
+  from: Option[String],
+  to: Option[String],
+  docCount: Int,
+  subAggregations: Option[Map[String, AggregationResponse]]
+) extends AggregationBucket
+
+private[elasticsearch] object IpRangeAggregationBucket {
+  implicit val decoder: JsonDecoder[IpRangeAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
+    val bucketDecoder = BucketDecoder(fields.filterNot { case (field, _) => field == "from" || field == "to" })
+    val allFields     = bucketDecoder.allFields
+    val docCount      = allFields("doc_count").asInstanceOf[Int]
+    val key           = allFields("key").asInstanceOf[String]
+    val subAggs       = bucketDecoder.subAggs
+
+    Right(
+      IpRangeAggregationBucket(
+        key = key,
+        from = fields.collectFirst { case ("from", Str(value)) => value },
+        to = fields.collectFirst { case ("to", Str(value)) => value },
+        docCount = docCount,
+        subAggregations = Option(subAggs).filter(_.nonEmpty)
+      )
+    )
+  }
+}
+
+private[elasticsearch] final case class IpRangeAggregationResponse(buckets: Chunk[IpRangeAggregationBucket])
+    extends AggregationResponse
+
+private[elasticsearch] object IpRangeAggregationResponse {
+  implicit val decoder: JsonDecoder[IpRangeAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
+    val buckets: Chunk[Json] = fields.collectFirst { case ("buckets", buckets) => buckets } match {
+      case Some(Arr(buckets)) =>
+        buckets
+      case Some(Obj(keyedBuckets)) =>
+        keyedBuckets.map {
+          case (key, Obj(bucketFields)) if !bucketFields.exists(_._1 == "key") =>
+            Obj(("key" -> Str(key)) +: bucketFields)
+          case (_, bucket) => bucket
+        }
+      case _ =>
+        Chunk.empty
+    }
+
+    buckets
+      .foldLeft[Either[String, Chunk[IpRangeAggregationBucket]]](Right(Chunk.empty)) { (acc, bucket) =>
+        for {
+          decoded <- acc
+          next    <- bucket.as[IpRangeAggregationBucket]
+        } yield decoded :+ next
+      }
+      .map(IpRangeAggregationResponse(_))
   }
 }
 
