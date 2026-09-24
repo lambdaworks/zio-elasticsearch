@@ -549,6 +549,41 @@ object ElasticQuery {
     Ids(values = Chunk.fromIterable(value +: values))
 
   /**
+   * Constructs a type-safe intervals query by combining a field and an interval rule.
+   *
+   * The resulting query wraps the specified interval query under the given type-safe field in the intervals query
+   * structure.
+   *
+   * @param field
+   *   the type-safe field on which the query is executed
+   * @param rule
+   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule, defined for the
+   *   same document type as the `field`
+   * @tparam S
+   *   the document type for which the query is defined. An implicit `Schema` instance must be in scope; it ensures that
+   *   the `field` and the `rule` are defined for the same document type
+   * @return
+   *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
+   */
+  final def intervals[S: Schema](field: Field[S, _], rule: IntervalRule[S]): IntervalsQuery[S] =
+    Intervals(field = field.toString, rule = rule)
+
+  /**
+   * Constructs an intervals query by combining a field and an interval query.
+   *
+   * The resulting query wraps the specified interval query under the given field in the intervals query structure.
+   *
+   * @param field
+   *   the name of the field to be queried
+   * @param rule
+   *   an instance of [[zio.elasticsearch.query.IntervalRule]] representing the interval query rule
+   * @return
+   *   an [[zio.elasticsearch.ElasticQuery]] instance representing the intervals query.
+   */
+  final def intervals(field: String, rule: IntervalRule[Any]): IntervalsQuery[Any] =
+    Intervals(field = field, rule = rule)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.query.KNNQuery]] using the specified parameters.
    * [[zio.elasticsearch.query.KNNQuery]] is used to perform a k-nearest neighbor (kNN) search and returns the matching
    * documents.
