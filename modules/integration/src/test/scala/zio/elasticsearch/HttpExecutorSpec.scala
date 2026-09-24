@@ -2899,6 +2899,50 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         }
       ),
+      suite("geo-bounding-box")(
+        test("geo-bounding-box query") {
+          checkOnce(genTestDocument) { document =>
+            val indexDefinition =
+              """
+                |{
+                |  "mappings": {
+                |    "properties": {
+                |      "geoPointField": {
+                |        "type": "geo_point"
+                |      }
+                |    }
+                |  }
+                |}
+                |""".stripMargin
+
+            for {
+              _ <- Executor.execute(ElasticRequest.createIndex(geoBoundingBoxIndex, indexDefinition))
+              _ <- Executor.execute(ElasticRequest.deleteByQuery(geoBoundingBoxIndex, matchAll))
+              _ <- Executor.execute(
+                     ElasticRequest.create[TestDocument](geoBoundingBoxIndex, document).refreshTrue
+                   )
+              result <- Executor
+                          .execute(
+                            ElasticRequest.search(
+                              geoBoundingBoxIndex,
+                              ElasticQuery.geoBoundingBoxQuery(
+                                field = "geoPointField",
+                                topLeft = GeoPoint(
+                                  math.min(document.geoPointField.lat + 0.1, 90.0),
+                                  document.geoPointField.lon - 0.1
+                                ),
+                                bottomRight = GeoPoint(
+                                  math.max(document.geoPointField.lat - 0.1, -90.0),
+                                  document.geoPointField.lon + 0.1
+                                )
+                              )
+                            )
+                          )
+                          .documentAs[TestDocument]
+            } yield assert(result)(equalTo(Chunk(document)))
+          }
+        } @@ after(Executor.execute(ElasticRequest.deleteIndex(geoBoundingBoxIndex)).orDie)
+      ),
       suite("geo-distance")(
         test("geo-distance query") {
           checkOnce(genTestDocument) { document =>
