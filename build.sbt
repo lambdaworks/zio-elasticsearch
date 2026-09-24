@@ -4,8 +4,8 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 inThisBuild(
   List(
-    homepage         := Some(url("https://github.com/lambdaworks/zio-elasticsearch/")),
-    licenses         := List("Apache-2.0" -> url("https://www.apache.org/licenses/LICENSE-2.0")),
+    homepage         := Some(uri("https://github.com/lambdaworks/zio-elasticsearch/")),
+    licenses         := List("Apache-2.0" -> uri("https://www.apache.org/licenses/LICENSE-2.0")),
     organization     := "io.lambdaworks",
     organizationName := "LambdaWorks",
     startYear        := Some(2022),
@@ -14,7 +14,7 @@ inThisBuild(
         "lambdaworks",
         "LambdaWorks' Team",
         "admin@lambdaworks.io",
-        url("https://github.com/lambdaworks")
+        uri("https://github.com/lambdaworks")
       )
     )
   )
@@ -36,7 +36,6 @@ lazy val root =
 lazy val library =
   project
     .in(file("modules/library"))
-    .disablePlugins(RevolverPlugin)
     .enablePlugins(BuildInfoPlugin)
     .settings(stdSettings("zio-elasticsearch"))
     .settings(buildInfoSettings("zio.elasticsearch"))
@@ -59,7 +58,6 @@ lazy val library =
 lazy val integration =
   project
     .in(file("modules/integration"))
-    .disablePlugins(RevolverPlugin)
     .settings(stdSettings("integration"))
     .dependsOn(library % "test->test")
     .settings(
@@ -94,11 +92,11 @@ lazy val docs =
   project
     .in(file("modules/docs"))
     .enablePlugins(MdocPlugin, DocusaurusPlugin, ScalaUnidocPlugin)
-    .disablePlugins(RevolverPlugin)
     .dependsOn(library)
     .settings(
       publish / skip := true,
       moduleName     := "docs",
+      mdocOut        := baseDirectory.value / "target" / "mdoc",
       scalacOptions -= "-Yno-imports",
       scalacOptions -= "-Xfatal-warnings",
       ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(library),

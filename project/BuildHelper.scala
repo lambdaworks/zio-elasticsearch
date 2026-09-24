@@ -18,9 +18,8 @@ object BuildHelper {
       scalacOptions            := stdOptions ++ extraOptions(scalaVersion.value),
       semanticdbEnabled        := scalaVersion.value != Scala3, // enable SemanticDB
       semanticdbOptions += "-P:semanticdb:synthetics:on",
-      semanticdbVersion                      := scalafixSemanticdb.revision,
-      ThisBuild / scalafixScalaBinaryVersion := CrossVersion.binaryScalaVersion(scalaVersion.value),
-      Test / parallelExecution               := true,
+      semanticdbVersion        := scalafixSemanticdb.revision,
+      Test / parallelExecution := true,
       incOptions ~= (_.withLogRecompileOnMacro(false)),
       autoAPIMappings := true
     )
@@ -77,7 +76,12 @@ object BuildHelper {
 
   def buildInfoSettings(packageName: String) =
     Seq(
-      buildInfoKeys    := Seq[BuildInfoKey](organization, name, version, isSnapshot),
+      buildInfoKeys := Seq(
+        BuildInfoKey(organization),
+        BuildInfoKey(name),
+        BuildInfoKey(version),
+        BuildInfoKey(isSnapshot)
+      ),
       buildInfoPackage := packageName
     )
 }
