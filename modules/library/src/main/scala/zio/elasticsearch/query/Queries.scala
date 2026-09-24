@@ -1016,6 +1016,71 @@ private[elasticsearch] final case class Prefix[S](
   }
 }
 
+sealed trait QueryStringQuery[S]
+    extends ElasticQuery[S]
+    with HasFields[QueryStringQuery, S]
+    with HasBoost[QueryStringQuery[S]]
+    with HasMinimumShouldMatch[QueryStringQuery[S]] {
+
+  /**
+   * Sets the `default_field` parameter for the [[zio.elasticsearch.query.QueryStringQuery]]. It is the field searched
+   * when the query string does not specify one.
+   *
+   * Elasticsearch does not allow `default_field` to be used together with `fields`, so setting `default_field` clears
+   * any previously set `fields`, and setting `fields` clears any previously set `default_field`.
+   *
+   * @param value
+   *   the [[scala.Predef.String]] value for `default_field` parameter
+   * @return
+   *   an instance of the [[zio.elasticsearch.query.QueryStringQuery]] enriched with the `default_field` parameter.
+   */
+  def defaultField(value: String): QueryStringQuery[S]
+}
+
+private[elasticsearch] final case class QueryString[S](
+  defaultField: Option[String],
+  fields: Chunk[String],
+  query: String,
+  boost: Option[Double],
+  minimumShouldMatch: Option[Int]
+) extends QueryStringQuery[S] { self =>
+
+  def boost(value: Double): QueryStringQuery[S] =
+    self.copy(boost = Some(value))
+
+  def defaultField(value: String): QueryStringQuery[S] =
+    self.copy(defaultField = Some(value), fields = Chunk.empty)
+
+  def fields(field: String, fields: String*): QueryStringQuery[S] =
+    self.copy(defaultField = None, fields = Chunk.fromIterable(field +: fields))
+
+  def fields[S1 <: S: Schema](fields: Chunk[Field[S1, _]]): QueryStringQuery[S1] =
+    self.copy(defaultField = None, fields = fields.map(_.toString))
+
+  def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): QueryStringQuery[S1] =
+    self.copy(defaultField = None, fields = Chunk.fromIterable((field +: fields).map(_.toString)))
+
+  def minimumShouldMatch(value: Int): QueryStringQuery[S] =
+    self.copy(minimumShouldMatch = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+      else None
+
+    val params = Chunk(
+      Some("query" -> query.toJson),
+      defaultField.map("default_field" -> _.toJson),
+      fieldsJson,
+      boost.map("boost" -> _.toJson),
+      minimumShouldMatch.map("minimum_should_match" -> _.toJson)
+    ).flatten
+
+    Obj("query_string" -> Obj(params))
+  }
+
+}
+
 sealed trait RangeQuery[S, A, LB <: LowerBound, UB <: UpperBound]
     extends ElasticQuery[S]
     with HasBoost[RangeQuery[S, A, LB, UB]]
