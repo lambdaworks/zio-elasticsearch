@@ -2927,9 +2927,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                               geoBoundingBoxIndex,
                               ElasticQuery.geoBoundingBoxQuery(
                                 field = "geoPointField",
-                                topLeft = GeoPoint(document.geoPointField.lat + 0.1, document.geoPointField.lon - 0.1),
-                                bottomRight =
-                                  GeoPoint(document.geoPointField.lat - 0.1, document.geoPointField.lon + 0.1)
+                                topLeft = GeoPoint(
+                                  math.min(document.geoPointField.lat + 0.1, 90.0),
+                                  document.geoPointField.lon - 0.1
+                                ),
+                                bottomRight = GeoPoint(
+                                  math.max(document.geoPointField.lat - 0.1, -90.0),
+                                  document.geoPointField.lon + 0.1
+                                )
                               )
                             )
                           )

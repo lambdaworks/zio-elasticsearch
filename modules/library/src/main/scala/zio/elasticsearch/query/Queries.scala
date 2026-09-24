@@ -532,7 +532,7 @@ private[elasticsearch] final case class GeoBoundingBox[S](
       "geo_bounding_box" -> Obj(
         Chunk(
           Some(
-            field -> Obj(
+            fieldPath.foldRight(field)(_ + "." + _) -> Obj(
               "top_left"     -> Obj("lat" -> topLeft.lat.toJson, "lon" -> topLeft.lon.toJson),
               "bottom_right" -> Obj("lat" -> bottomRight.lat.toJson, "lon" -> bottomRight.lon.toJson)
             )
