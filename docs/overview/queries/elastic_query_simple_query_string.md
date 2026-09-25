@@ -1,3 +1,8 @@
+---
+id: elastic_query_simple_query_string
+title: "Simple Query String Query"
+---
+
 The `SimpleQueryString` query provides a simple query syntax for performing searches across multiple fields.
 
 To use the `SimpleQueryString` query, import the following:

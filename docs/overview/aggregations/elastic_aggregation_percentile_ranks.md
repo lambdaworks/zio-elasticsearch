@@ -1,6 +1,6 @@
 ---
 id: elastic_aggregation_percentile_ranks
-title: "Percentiles Aggregation"
+title: "Percentile Ranks Aggregation"
 ---
 
 The `Percentile ranks` aggregation is a multi-value metrics aggregation that calculates percentile of values at or below a threshold grouped by a specified value.

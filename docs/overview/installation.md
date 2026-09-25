@@ -15,7 +15,7 @@ However, if you want to use the latest version of the ZIO Elasticsearch library,
 
 ```scala mdoc:passthrough
 println(s"""```scala""")
-println(s"""resolvers += "Sonatype OSS Snapshots" at "https://s01.oss.sonatype.org/content/repositories/snapshots"""")
+println(s"""resolvers += "Sonatype Central Snapshots" at "https://central.sonatype.com/repository/maven-snapshots"""")
 println()
 println(s"""libraryDependencies += "${zio.elasticsearch.BuildInfo.organization}" %% "${zio.elasticsearch.BuildInfo.name}" % "${zio.elasticsearch.BuildInfo.version.replaceAll("\\+[0-9]{8}-[0-9]{4}", "")}"""")
 println(s"""```""")
