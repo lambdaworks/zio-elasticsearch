@@ -514,7 +514,15 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
       test("intervalFuzzy") {
         val query = intervals(
           "stringField",
-          intervalFuzzy("lambda").fuzziness("AUTO").prefixLength(1).transpositionsEnabled.analyzer("standard")
+          intervalFuzzy("lambda").fuzziness(Fuzziness.Auto).prefixLength(1).transpositionsEnabled.analyzer("standard")
+        )
+        val queryWithFuzzinessAutoRange = intervals(
+          "stringField",
+          intervalFuzzy("lambda").fuzziness(Fuzziness.AutoLength(3, 6))
+        )
+        val queryWithFuzzinessEditDistance = intervals(
+          "stringField",
+          intervalFuzzy("lambda").fuzziness(Fuzziness.EditDistance(2))
         )
 
         val expected =
@@ -534,7 +542,37 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             |}
             |""".stripMargin
 
-        assert(query.toJson(None))(equalTo(expected.toJson))
+        val expectedWithFuzzinessAutoRange =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "fuzzy": {
+            |        "term": "lambda",
+            |        "fuzziness": "AUTO:3,6"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        val expectedWithFuzzinessEditDistance =
+          """
+            |{
+            |  "intervals": {
+            |    "stringField": {
+            |      "fuzzy": {
+            |        "term": "lambda",
+            |        "fuzziness": "2"
+            |      }
+            |    }
+            |  }
+            |}
+            |""".stripMargin
+
+        assert(query.toJson(None))(equalTo(expected.toJson)) &&
+        assert(queryWithFuzzinessAutoRange.toJson(None))(equalTo(expectedWithFuzzinessAutoRange.toJson)) &&
+        assert(queryWithFuzzinessEditDistance.toJson(None))(equalTo(expectedWithFuzzinessEditDistance.toJson))
       },
       test("intervalWildcard") {
         val wildcardExact: IntervalWildcardRule[Any] =

@@ -8,7 +8,7 @@ field.
 
 To use the `Intervals` query, import the following:
 ```scala
-import zio.elasticsearch.query.{IntervalRule, IntervalsQuery}
+import zio.elasticsearch.query.{Fuzziness, IntervalRule, IntervalsQuery}
 import zio.elasticsearch.ElasticIntervalRule._
 import zio.elasticsearch.ElasticQuery._
 ```
@@ -32,7 +32,7 @@ val queryWithPrefix: IntervalsQuery[Any]   = intervals(field = "content", rule =
 val queryWithWildcard: IntervalsQuery[Any] = intervals(field = "content", rule = intervalWildcard("t?rget*"))
 val queryWithRange: IntervalsQuery[Any]    = intervals(field = "content", rule = intervalRange.gte("apple").lt("banana"))
 val queryWithRegexp: IntervalsQuery[Any]   = intervals(field = "content", rule = intervalRegexp("t.*get"))
-val queryWithFuzzy: IntervalsQuery[Any]    = intervals(field = "content", rule = intervalFuzzy("target").fuzziness("AUTO"))
+val queryWithFuzzy: IntervalsQuery[Any]    = intervals(field = "content", rule = intervalFuzzy("target").fuzziness(Fuzziness.Auto))
 ```
 
 If you want to require the matching terms to appear in the order specified, use the `orderedOn` method:
