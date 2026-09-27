@@ -1924,6 +1924,55 @@ object ElasticQuerySpec extends ZIOSpecDefault {
             )
           )
         },
+        test("scriptScore") {
+          val query             = scriptScore(matches("stringField", "test"), Script("doc['field'].value > 1"))
+          val queryTs           = scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1"))
+          val queryWithBoost    =
+            scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).boost(2.0)
+          val queryWithMinScore =
+            scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).minScore(5.0)
+
+          assert(query)(
+            equalTo(
+              ScriptScore[Any](
+                query = Match("stringField", "test"),
+                script = Script(source = "doc['field'].value > 1", params = Map.empty, lang = None),
+                boost = None,
+                minScore = None
+              )
+            )
+          ) &&
+          assert(queryTs)(
+            equalTo(
+              ScriptScore[TestDocument](
+                query = Match("stringField", "test"),
+                script = Script(source = "doc['field'].value > 1", params = Map.empty, lang = None),
+                boost = None,
+                minScore = None
+              )
+            )
+          ) &&
+          assert(queryWithBoost)(
+            equalTo(
+              ScriptScore[TestDocument](
+                query = Match("stringField", "test"),
+                script = Script(source = "doc['field'].value > 1", params = Map.empty, lang = None),
+                boost = Some(2.0),
+                minScore = None
+              )
+            )
+          ) &&
+          assert(queryWithMinScore)(
+            equalTo(
+              ScriptScore[TestDocument](
+                query = Match("stringField", "test"),
+                script = Script(source = "doc['field'].value > 1", params = Map.empty, lang = None),
+                boost = None,
+                minScore = Some(5.0)
+              )
+            )
+          )
+        },
         test("simpleQueryString") {
           val queryNoFields           = simpleQueryString("test")
           val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
@@ -4700,6 +4749,67 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
+        },
+        test("scriptScore") {
+          val query             = scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1"))
+          val queryWithBoost    =
+            scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).boost(2.0)
+          val queryWithMinScore =
+            scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).minScore(5.0)
+
+          val expected =
+            """
+              |{
+              |  "script_score": {
+              |    "query": {
+              |      "match": {
+              |        "stringField": "test"
+              |      }
+              |    },
+              |    "script": {
+              |      "source": "doc['field'].value > 1"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithBoost =
+            """
+              |{
+              |  "script_score": {
+              |    "query": {
+              |      "match": {
+              |        "stringField": "test"
+              |      }
+              |    },
+              |    "script": {
+              |      "source": "doc['field'].value > 1"
+              |    },
+              |    "boost": 2.0
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMinScore =
+            """
+              |{
+              |  "script_score": {
+              |    "query": {
+              |      "match": {
+              |        "stringField": "test"
+              |      }
+              |    },
+              |    "script": {
+              |      "source": "doc['field'].value > 1"
+              |    },
+              |    "min_score": 5.0
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
+          assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
+          assert(queryWithMinScore.toJson(fieldPath = None))(equalTo(expectedWithMinScore.toJson))
         },
         test("simpleQueryString") {
           val queryNoFields           = simpleQueryString("test")
