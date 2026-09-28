@@ -2157,21 +2157,21 @@ object HttpExecutorSpec extends IntegrationSpec {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
               for {
-                _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                document = firstDocument.copy(stringField = "this is a test")
-                _       <-
-                  Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
+                _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                lowScoreDocument  = firstDocument.copy(intField = 500)
+                highScoreDocument = secondDocument.copy(intField = 1500)
+                _                <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, lowScoreDocument)
+                     )
                 _ <- Executor.execute(
                        ElasticRequest
-                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, highScoreDocument)
                          .refreshTrue
                      )
-                query = scriptScore(
-                          matchPhrase(field = TestDocument.stringField, value = "test"),
-                          Script("_score * 2")
-                        )
-                res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-              } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
+                query = scriptScore(matchAll, Script("doc['intField'].value")).minScore(1000)
+                res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+              } yield assert(res)(Assertion.contains(highScoreDocument)) &&
+                assert(res)(!Assertion.contains(lowScoreDocument))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

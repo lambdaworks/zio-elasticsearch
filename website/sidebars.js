@@ -39,6 +39,7 @@ module.exports = {
                     'overview/queries/elastic_query_query_string',
                     'overview/queries/elastic_query_range',
                     'overview/queries/elastic_query_regexp',
+                    'overview/queries/elastic_query_script_score',
                     'overview/queries/elastic_query_simple_query_string',
                     'overview/queries/elastic_query_term',
                     'overview/queries/elastic_query_terms',
