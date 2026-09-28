@@ -516,13 +516,13 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
           "stringField",
           intervalFuzzy("lambda").fuzziness(Fuzziness.Auto).prefixLength(1).transpositionsEnabled.analyzer("standard")
         )
-        val queryWithFuzzinessAutoRange = intervals(
+        val queryWithFuzzinessAutoLength = intervals(
           "stringField",
           intervalFuzzy("lambda").fuzziness(Fuzziness.AutoLength(3, 6))
         )
         val queryWithFuzzinessEditDistance = intervals(
           "stringField",
-          intervalFuzzy("lambda").fuzziness(Fuzziness.EditDistance(2))
+          intervalFuzzy("lambda").fuzziness(Fuzziness.EditDistance.Two)
         )
 
         val expected =
@@ -542,7 +542,7 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             |}
             |""".stripMargin
 
-        val expectedWithFuzzinessAutoRange =
+        val expectedWithFuzzinessAutoLength =
           """
             |{
             |  "intervals": {
@@ -571,7 +571,7 @@ object ElasticIntervalRuleSpec extends ZIOSpecDefault {
             |""".stripMargin
 
         assert(query.toJson(None))(equalTo(expected.toJson)) &&
-        assert(queryWithFuzzinessAutoRange.toJson(None))(equalTo(expectedWithFuzzinessAutoRange.toJson)) &&
+        assert(queryWithFuzzinessAutoLength.toJson(None))(equalTo(expectedWithFuzzinessAutoLength.toJson)) &&
         assert(queryWithFuzzinessEditDistance.toJson(None))(equalTo(expectedWithFuzzinessEditDistance.toJson))
       },
       test("intervalWildcard") {

@@ -152,7 +152,7 @@ sealed trait IntervalFuzzyRule[-S]
    *   - [[Fuzziness.Auto]]: chooses an edit distance based on the length of the term
    *   - [[Fuzziness.AutoLength]]: chooses an edit distance based on the length of the term, using the provided low and
    *     high length thresholds
-   *   - [[Fuzziness.EditDistance]]: uses the provided maximum edit distance
+   *   - [[Fuzziness.EditDistance]]: uses a fixed maximum edit distance of `0`, `1` or `2`
    * @return
    *   a new instance of the interval rule with the `fuzziness` value set.
    */

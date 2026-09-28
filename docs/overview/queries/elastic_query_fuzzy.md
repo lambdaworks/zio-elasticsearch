@@ -24,6 +24,10 @@ val query: FuzzyQuery = fuzzy(field = Document.name, value = "test")
 If you want to change the `fuzziness`, you can use `fuzziness` method, which accepts a value of type `Fuzziness` (`Fuzziness.Auto`, `Fuzziness.AutoLength`, or `Fuzziness.EditDistance`):
 ```scala
 val queryWithFuzzinessAuto: FuzzyQuery = fuzzy(field = Document.name, value = "test").fuzziness(Fuzziness.Auto)
+val queryWithFuzzinessAutoLength: FuzzyQuery =
+  fuzzy(field = Document.name, value = "test").fuzziness(Fuzziness.AutoLength(lowLength = 3, highLength = 6))
+val queryWithFuzzinessEditDistance: FuzzyQuery =
+  fuzzy(field = Document.name, value = "test").fuzziness(Fuzziness.EditDistance.Two)
 ```
 
 If you want to change the `maxExpansions`, you can use `maxExpansions` method:
