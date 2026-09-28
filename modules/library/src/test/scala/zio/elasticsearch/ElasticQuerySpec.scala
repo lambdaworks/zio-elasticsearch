@@ -1925,9 +1925,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("scriptScore") {
-          val query             = scriptScore(matches("stringField", "test"), Script("doc['field'].value > 1"))
-          val queryTs           = scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1"))
-          val queryWithBoost    =
+          val query          = scriptScore(matches("stringField", "test"), Script("doc['field'].value > 1"))
+          val queryTs        = scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1"))
+          val queryWithBoost =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).boost(2.0)
           val queryWithMinScore =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).minScore(5.0)
@@ -4751,8 +4751,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
         },
         test("scriptScore") {
-          val query             = scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1"))
-          val queryWithBoost    =
+          val query          = scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1"))
+          val queryWithBoost =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).boost(2.0)
           val queryWithMinScore =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['field'].value > 1")).minScore(5.0)

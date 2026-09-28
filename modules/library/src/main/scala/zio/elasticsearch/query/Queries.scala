@@ -1279,7 +1279,7 @@ private[elasticsearch] final case class ScriptScore[S](
     Obj(
       "script_score" -> Obj(
         Chunk(
-          Some("query" -> query.toJson(fieldPath)),
+          Some("query"  -> query.toJson(fieldPath)),
           Some("script" -> script.toJson),
           boost.map("boost" -> _.toJson),
           minScore.map("min_score" -> _.toJson)
