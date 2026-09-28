@@ -1925,8 +1925,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           )
         },
         test("scriptScore") {
-          val query          = scriptScore(matches("stringField", "test"), Script("doc['intField'].value * 2"))
-          val queryTs        =
+          val query   = scriptScore(matches("stringField", "test"), Script("doc['intField'].value * 2"))
+          val queryTs =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['intField'].value * 2"))
           val queryWithBoost =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['intField'].value * 2")).boost(2.0)
@@ -4752,7 +4752,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson))
         },
         test("scriptScore") {
-          val query          =
+          val query =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['intField'].value * 2"))
           val queryWithBoost =
             scriptScore(matches(TestDocument.stringField, "test"), Script("doc['intField'].value * 2")).boost(2.0)
