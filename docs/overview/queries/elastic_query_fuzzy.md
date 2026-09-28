@@ -7,7 +7,7 @@ The `Fuzzy` query returns documents that contain terms similar to the search ter
 
 In order to use the `Fuzzy` query import the following:
 ```scala
-import zio.elasticsearch.query.FuzzyQuery
+import zio.elasticsearch.query.{Fuzziness, FuzzyQuery}
 import zio.elasticsearch.ElasticQuery._
 ```
 
@@ -21,9 +21,13 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val query: FuzzyQuery = fuzzy(field = Document.name, value = "test")
 ```
 
-If you want to change the `fuzziness`, you can use `fuzziness` method:
+If you want to change the `fuzziness`, you can use `fuzziness` method, which accepts a value of type `Fuzziness` (`Fuzziness.Auto`, `Fuzziness.AutoLength`, or `Fuzziness.EditDistance`):
 ```scala
-val queryWithFuzzinessAuto: FuzzyQuery = fuzzy(field = Document.name, value = "test").fuzziness("AUTO")
+val queryWithFuzzinessAuto: FuzzyQuery = fuzzy(field = Document.name, value = "test").fuzziness(Fuzziness.Auto)
+val queryWithFuzzinessAutoLength: FuzzyQuery =
+  fuzzy(field = Document.name, value = "test").fuzziness(Fuzziness.AutoLength(lowLength = 3, highLength = 6))
+val queryWithFuzzinessEditDistance: FuzzyQuery =
+  fuzzy(field = Document.name, value = "test").fuzziness(Fuzziness.EditDistance.Two)
 ```
 
 If you want to change the `maxExpansions`, you can use `maxExpansions` method:

@@ -443,11 +443,12 @@ sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
    * ability to find results that are similar to, but not exactly the same as, the search term or query.
    *
    * @param value
-   *   the text value to represent the 'fuzziness' field
+   *   the [[zio.elasticsearch.query.Fuzziness]] to use for the [[zio.elasticsearch.query.FuzzyQuery]]; see
+   *   [[zio.elasticsearch.query.Fuzziness]] for the available variants
    * @return
    *   an instance of the [[zio.elasticsearch.query.FuzzyQuery]] enriched with the `fuzziness` parameter.
    */
-  def fuzziness(value: String): FuzzyQuery[S]
+  def fuzziness(value: Fuzziness): FuzzyQuery[S]
 
   /**
    * Sets the `maxExpansions` parameter for this [[zio.elasticsearch.query.ElasticQuery]]. The `maxExpansions` value
@@ -475,12 +476,12 @@ sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
 private[elasticsearch] final case class Fuzzy[S](
   field: String,
   value: String,
-  fuzziness: Option[String],
+  fuzziness: Option[Fuzziness],
   maxExpansions: Option[Int],
   prefixLength: Option[Int]
 ) extends FuzzyQuery[S] { self =>
 
-  def fuzziness(value: String): FuzzyQuery[S] =
+  def fuzziness(value: Fuzziness): FuzzyQuery[S] =
     self.copy(fuzziness = Some(value))
 
   def maxExpansions(value: Int): FuzzyQuery[S] =
@@ -490,7 +491,9 @@ private[elasticsearch] final case class Fuzzy[S](
     self.copy(prefixLength = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val fuzzyFields = Some("value" -> value.toJson) ++ fuzziness.map("fuzziness" -> _.toJson) ++ maxExpansions.map(
+    val fuzzyFields = Some("value" -> value.toJson) ++ fuzziness.map(
+      "fuzziness" -> _.toString.toJson
+    ) ++ maxExpansions.map(
       "max_expansions" -> _.toJson
     ) ++ prefixLength.map("prefix_length" -> _.toJson)
 

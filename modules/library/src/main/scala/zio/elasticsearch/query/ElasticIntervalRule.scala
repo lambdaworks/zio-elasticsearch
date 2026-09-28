@@ -148,11 +148,12 @@ sealed trait IntervalFuzzyRule[-S]
    * Sets the `fuzziness` parameter for this `fuzzy` interval rule, the maximum edit distance allowed for matching.
    *
    * @param value
-   *   the maximum edit distance, either a number of edits (e.g. `"1"`) or `"AUTO"`
+   *   the [[zio.elasticsearch.query.Fuzziness]] to use for this `fuzzy` interval rule; see
+   *   [[zio.elasticsearch.query.Fuzziness]] for the available variants
    * @return
    *   a new instance of the interval rule with the `fuzziness` value set.
    */
-  def fuzziness(value: String): IntervalFuzzyRule[S]
+  def fuzziness(value: Fuzziness): IntervalFuzzyRule[S]
 
   /**
    * Disables the `transpositions` parameter for this `fuzzy` interval rule, so that transposing two adjacent characters
@@ -177,14 +178,14 @@ private[elasticsearch] final case class IntervalFuzzy[S](
   term: String,
   prefixLength: Option[Int],
   transpositions: Option[Boolean],
-  fuzziness: Option[String],
+  fuzziness: Option[Fuzziness],
   analyzer: Option[String],
   useField: Option[String]
 ) extends IntervalFuzzyRule[S] { self =>
 
   def analyzer(value: String): IntervalFuzzyRule[S] = self.copy(analyzer = Some(value))
 
-  def fuzziness(value: String): IntervalFuzzyRule[S] = self.copy(fuzziness = Some(value))
+  def fuzziness(value: Fuzziness): IntervalFuzzyRule[S] = self.copy(fuzziness = Some(value))
 
   def prefixLength(length: Int): IntervalFuzzyRule[S] = self.copy(prefixLength = Some(length))
 
@@ -204,7 +205,7 @@ private[elasticsearch] final case class IntervalFuzzy[S](
           Some("term" -> term.toJson),
           prefixLength.map("prefix_length" -> _.toJson),
           transpositions.map("transpositions" -> _.toJson),
-          fuzziness.map("fuzziness" -> _.toJson),
+          fuzziness.map("fuzziness" -> _.toString.toJson),
           analyzer.map("analyzer" -> _.toJson),
           IntervalRule.useFieldToJson(useField, fieldPath)
         ).flatten: _*
