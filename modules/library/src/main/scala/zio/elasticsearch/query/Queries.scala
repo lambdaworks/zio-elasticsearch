@@ -443,11 +443,8 @@ sealed trait FuzzyQuery[S] extends ElasticQuery[S] {
    * ability to find results that are similar to, but not exactly the same as, the search term or query.
    *
    * @param value
-   *   the [[zio.elasticsearch.query.Fuzziness]] to use for the [[zio.elasticsearch.query.FuzzyQuery]]
-   *   - [[Fuzziness.Auto]]: chooses an edit distance based on the length of the term
-   *   - [[Fuzziness.AutoLength]]: chooses an edit distance based on the length of the term, using the provided low and
-   *     high length thresholds
-   *   - [[Fuzziness.EditDistance]]: uses a fixed maximum edit distance of `0`, `1` or `2`
+   *   the [[zio.elasticsearch.query.Fuzziness]] to use for the [[zio.elasticsearch.query.FuzzyQuery]]; see
+   *   [[zio.elasticsearch.query.Fuzziness]] for the available variants
    * @return
    *   an instance of the [[zio.elasticsearch.query.FuzzyQuery]] enriched with the `fuzziness` parameter.
    */

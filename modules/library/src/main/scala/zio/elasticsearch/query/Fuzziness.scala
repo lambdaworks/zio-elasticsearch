@@ -26,20 +26,23 @@ object Fuzziness {
 
   /**
    * Chooses an edit distance automatically based on the length of the term, using Elasticsearch's default length
-   * thresholds.
+   * thresholds (equivalent to `AutoLength(lowLength = 3, highLength = 6)`).
    */
   case object Auto extends Fuzziness {
     override def toString: String = "AUTO"
   }
 
   /**
-   * Chooses an edit distance automatically based on the length of the term, using the given length thresholds.
+   * Chooses an edit distance automatically based on the length of the term, using the given length thresholds. Terms
+   * shorter than `lowLength` must match exactly. Terms with a length from `lowLength` up to (but not including)
+   * `highLength` are allowed an edit distance of 1. Terms of at least `highLength` are allowed an edit distance of 2.
+   *
+   * Elasticsearch expects `0 <= lowLength <= highLength`; this is not validated by this type.
    *
    * @param lowLength
-   *   terms shorter than this length must match exactly
+   *   the length below which terms must match exactly
    * @param highLength
-   *   terms longer than this length are allowed an edit distance of 2; terms with a length between `lowLength` and
-   *   `highLength` are allowed an edit distance of 1
+   *   the length at or above which terms are allowed an edit distance of 2
    */
   final case class AutoLength(lowLength: Int, highLength: Int) extends Fuzziness {
     override def toString: String = s"AUTO:$lowLength,$highLength"
