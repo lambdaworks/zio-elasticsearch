@@ -1105,6 +1105,38 @@ object ElasticQuery {
     query.Script(script = script, boost = None)
 
   /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.query.ScriptScoreQuery]] with a specified query and script.
+   * [[zio.elasticsearch.query.ScriptScoreQuery]] uses a script to provide a custom score for the returned documents.
+   *
+   * @param query
+   *   query to be wrapped inside a script score query
+   * @param script
+   *   the script that is used to compute the score of matching documents
+   * @tparam S
+   *   document for which field query is specified for. An implicit `Schema` instance must be provided in the scope
+   * @return
+   *   an instance of [[zio.elasticsearch.query.ScriptScoreQuery]] that represents the script score query to be
+   *   performed.
+   */
+  final def scriptScore[S: Schema](query: ElasticQuery[S], script: Script): ScriptScoreQuery[S] =
+    ScriptScore[S](query = query, script = script, boost = None, minScore = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.query.ScriptScoreQuery]] with a specified query and script.
+   * [[zio.elasticsearch.query.ScriptScoreQuery]] uses a script to provide a custom score for the returned documents.
+   *
+   * @param query
+   *   query to be wrapped inside a script score query
+   * @param script
+   *   the script that is used to compute the score of matching documents
+   * @return
+   *   an instance of [[zio.elasticsearch.query.ScriptScoreQuery]] that represents the script score query to be
+   *   performed.
+   */
+  final def scriptScore(query: ElasticQuery[Any], script: Script): ScriptScoreQuery[Any] =
+    ScriptScore[Any](query = query, script = script, boost = None, minScore = None)
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.query.BoolQuery]] with queries that should satisfy the criteria using
    * the specified parameters.
    *

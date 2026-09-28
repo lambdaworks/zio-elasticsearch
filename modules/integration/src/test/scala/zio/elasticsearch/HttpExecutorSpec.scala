@@ -2153,6 +2153,30 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
+        test("script score query") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              for {
+                _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                lowScoreDocument  = firstDocument.copy(intField = 500)
+                highScoreDocument = secondDocument.copy(intField = 1500)
+                _                <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, lowScoreDocument)
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, highScoreDocument)
+                         .refreshTrue
+                     )
+                query = scriptScore(matchAll, Script("doc['intField'].value")).minScore(1000)
+                res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+              } yield assert(res)(Assertion.contains(highScoreDocument)) &&
+                assert(res)(!Assertion.contains(lowScoreDocument))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
         test("regexp query without case insensitive") {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

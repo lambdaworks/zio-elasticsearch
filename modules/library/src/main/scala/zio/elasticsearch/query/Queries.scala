@@ -1248,6 +1248,46 @@ private[elasticsearch] final case class Script(script: zio.elasticsearch.script.
     Obj("script" -> Obj(("script" -> script.toJson) +: Chunk.fromIterable(boost.map("boost" -> _.toJson))))
 }
 
+sealed trait ScriptScoreQuery[S] extends ElasticQuery[S] with HasBoost[ScriptScoreQuery[S]] {
+
+  /**
+   * Sets the `minScore` parameter for the [[zio.elasticsearch.query.ScriptScoreQuery]]. To exclude documents that do
+   * not meet a certain score threshold, the `minScore` parameter can be set to the desired score threshold.
+   *
+   * @param value
+   *   a non-negative real number used for the `minScore`
+   * @return
+   *   an instance of [[zio.elasticsearch.query.ScriptScoreQuery]] enriched with the `minScore` parameter.
+   */
+  def minScore(value: Double): ScriptScoreQuery[S]
+}
+
+private[elasticsearch] final case class ScriptScore[S](
+  query: ElasticQuery[S],
+  script: zio.elasticsearch.script.Script,
+  boost: Option[Double],
+  minScore: Option[Double]
+) extends ScriptScoreQuery[S] { self =>
+
+  def boost(value: Double): ScriptScoreQuery[S] =
+    self.copy(boost = Some(value))
+
+  def minScore(value: Double): ScriptScoreQuery[S] =
+    self.copy(minScore = Some(value))
+
+  private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
+    Obj(
+      "script_score" -> Obj(
+        Chunk(
+          Some("query"  -> query.toJson(fieldPath)),
+          Some("script" -> script.toJson),
+          boost.map("boost" -> _.toJson),
+          minScore.map("min_score" -> _.toJson)
+        ).flatten
+      )
+    )
+}
+
 sealed trait SimpleQueryStringQuery[S]
     extends ElasticQuery[S]
     with HasFields[SimpleQueryStringQuery, S]
