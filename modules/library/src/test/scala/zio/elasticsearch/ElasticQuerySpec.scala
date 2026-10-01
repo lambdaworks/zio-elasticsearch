@@ -16,7 +16,7 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
+import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.data.GeoPoint
@@ -202,7 +202,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                     Exists(field = "booleanField", boost = None)
                   ),
                   boost = None,
-                  minimumShouldMatch = Some(2)
+                  minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
                 )
               )
             ) && assert(queryWithAllParams)(
@@ -217,7 +217,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                     Exists(field = "booleanField", boost = None)
                   ),
                   boost = Some(3.14),
-                  minimumShouldMatch = Some(2)
+                  minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
                 )
               )
             )
@@ -307,7 +307,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                   ),
                   should = Chunk.empty,
                   boost = None,
-                  minimumShouldMatch = Some(2)
+                  minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
                 )
               )
             ) &&
@@ -328,10 +328,71 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                     Match(field = "stringField", value = "test")
                   ),
                   boost = Some(3.14),
-                  minimumShouldMatch = Some(3)
+                  minimumShouldMatch = Some(MinimumShouldMatch.Count(3))
                 )
               )
             )
+          },
+          test("minimumShouldMatch") {
+            val query                = should(matches(TestDocument.stringField, "test"))
+            val queryWithCount       = query.minimumShouldMatch(MinimumShouldMatch.Count(-2))
+            val queryWithPercentage  = query.minimumShouldMatch(MinimumShouldMatch.Percentage(75))
+            val queryWithCombination = query.minimumShouldMatch(
+              MinimumShouldMatch.Combination(MinimumShouldMatch.Condition(3, MinimumShouldMatch.Percentage(90)))
+            )
+            val queryWithCombinations = query.minimumShouldMatch(
+              MinimumShouldMatch.Combination(
+                MinimumShouldMatch.Condition(2, MinimumShouldMatch.Percentage(-25)),
+                MinimumShouldMatch.Condition(9, MinimumShouldMatch.Count(-3))
+              )
+            )
+            val queryWithAddedCondition = query.minimumShouldMatch(
+              MinimumShouldMatch
+                .Combination(MinimumShouldMatch.Condition(2, MinimumShouldMatch.Percentage(-25)))
+                .addCondition(MinimumShouldMatch.Condition(9, MinimumShouldMatch.Count(-3)))
+            )
+            val expectedBool =
+              Bool[TestDocument](
+                filter = Chunk.empty,
+                must = Chunk.empty,
+                mustNot = Chunk.empty,
+                should = Chunk(Match(field = "stringField", value = "test")),
+                boost = None,
+                minimumShouldMatch = None
+              )
+
+            assert(queryWithCount)(
+              equalTo(expectedBool.copy(minimumShouldMatch = Some(MinimumShouldMatch.Count(-2))))
+            ) &&
+            assert(queryWithPercentage)(
+              equalTo(expectedBool.copy(minimumShouldMatch = Some(MinimumShouldMatch.Percentage(75))))
+            ) &&
+            assert(queryWithCombination)(
+              equalTo(
+                expectedBool.copy(minimumShouldMatch =
+                  Some(
+                    MinimumShouldMatch.Combination(
+                      NonEmptyChunk(MinimumShouldMatch.Condition(3, MinimumShouldMatch.Percentage(90)))
+                    )
+                  )
+                )
+              )
+            ) &&
+            assert(queryWithCombinations)(
+              equalTo(
+                expectedBool.copy(minimumShouldMatch =
+                  Some(
+                    MinimumShouldMatch.Combination(
+                      NonEmptyChunk(
+                        MinimumShouldMatch.Condition(2, MinimumShouldMatch.Percentage(-25)),
+                        MinimumShouldMatch.Condition(9, MinimumShouldMatch.Count(-3))
+                      )
+                    )
+                  )
+                )
+              )
+            ) &&
+            assert(queryWithAddedCondition)(equalTo(queryWithCombinations))
           }
         ),
         test("boosting") {
@@ -1370,7 +1431,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               MatchBooleanPrefix[TestDocument, String](
                 field = "stringField",
                 value = "test",
-                minimumShouldMatch = Some(3)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(3))
               )
             )
           )
@@ -1513,7 +1574,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 value = "this is a test",
                 matchingType = None,
                 boost = None,
-                minimumShouldMatch = Some(2)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
               )
             )
           ) &&
@@ -1524,7 +1585,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 value = "this is a test",
                 matchingType = Some(BestFields),
                 boost = Some(2.2),
-                minimumShouldMatch = Some(2)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
               )
             )
           )
@@ -1719,7 +1780,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 fields = Chunk.empty,
                 defaultField = None,
                 boost = None,
-                minimumShouldMatch = Some(1)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(1))
               )
             )
           ) &&
@@ -1763,7 +1824,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
                 fields = Chunk("title", "description"),
                 defaultField = None,
                 boost = Some(2.0),
-                minimumShouldMatch = Some(1)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(1))
               )
             )
           )
@@ -2008,7 +2069,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryAllParams          = SimpleQueryString(
             query = "test",
             fields = Chunk.empty,
-            minimumShouldMatch = Some(1)
+            minimumShouldMatch = Some(MinimumShouldMatch.Count(1))
           )
 
           assert(queryNoFields)(
@@ -2043,7 +2104,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString[Any](
                 query = "test",
                 fields = Chunk.empty,
-                minimumShouldMatch = Some(2)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
               )
             )
           ) &&
@@ -2052,7 +2113,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               SimpleQueryString(
                 query = "test",
                 fields = Chunk.empty,
-                minimumShouldMatch = Some(1)
+                minimumShouldMatch = Some(MinimumShouldMatch.Count(1))
               )
             )
           )
@@ -2976,6 +3037,41 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               equalTo(expectedWithMinimumShouldMatch.toJson)
             ) &&
             assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+          },
+          test("minimumShouldMatch") {
+            val query                = should(matches(TestDocument.stringField, "test"))
+            val queryWithCount       = query.minimumShouldMatch(MinimumShouldMatch.Count(-2))
+            val queryWithPercentage  = query.minimumShouldMatch(MinimumShouldMatch.Percentage(75))
+            val queryWithCombination = query.minimumShouldMatch(
+              MinimumShouldMatch.Combination(MinimumShouldMatch.Condition(3, MinimumShouldMatch.Percentage(90)))
+            )
+            val queryWithCombinations = query.minimumShouldMatch(
+              MinimumShouldMatch.Combination(
+                MinimumShouldMatch.Condition(2, MinimumShouldMatch.Percentage(-25)),
+                MinimumShouldMatch.Condition(9, MinimumShouldMatch.Count(-3))
+              )
+            )
+
+            def expected(minimumShouldMatch: String): String =
+              s"""
+                 |{
+                 |  "bool": {
+                 |    "should": [
+                 |      {
+                 |        "match": {
+                 |          "stringField": "test"
+                 |        }
+                 |      }
+                 |    ],
+                 |    "minimum_should_match": $minimumShouldMatch
+                 |  }
+                 |}
+                 |""".stripMargin
+
+            assert(queryWithCount.toJson(fieldPath = None))(equalTo(expected("-2").toJson)) &&
+            assert(queryWithPercentage.toJson(fieldPath = None))(equalTo(expected("\"75%\"").toJson)) &&
+            assert(queryWithCombination.toJson(fieldPath = None))(equalTo(expected("\"3<90%\"").toJson)) &&
+            assert(queryWithCombinations.toJson(fieldPath = None))(equalTo(expected("\"2<-25% 9<-3\"").toJson))
           }
         ),
         test("boosting") {
@@ -4904,7 +5000,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryAllParams          = SimpleQueryString(
             query = "test",
             fields = Chunk.empty,
-            minimumShouldMatch = Some(1)
+            minimumShouldMatch = Some(MinimumShouldMatch.Count(1))
           )
 
           val expectedNoFields =

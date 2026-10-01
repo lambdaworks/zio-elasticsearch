@@ -32,7 +32,7 @@ import zio.elasticsearch.query.MultiMatchType._
 import zio.elasticsearch.query.sort.SortMode.Max
 import zio.elasticsearch.query.sort.SortOrder._
 import zio.elasticsearch.query.sort.SourceType.NumberType
-import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits}
+import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits, MinimumShouldMatch}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{
   FilterAggregationResult,
@@ -2257,6 +2257,103 @@ object HttpExecutorSpec extends IntegrationSpec {
                         ).minimumShouldMatch(2)
                 res <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
               } yield assert(res)(isEmpty)
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("should with percentage minimumShouldMatch") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <-
+                  Executor.execute(
+                    ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                  )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .refreshTrue
+                     )
+                query = should(
+                          matches(TestDocument.stringField, firstDocument.stringField),
+                          matches(TestDocument.intField, firstDocument.intField),
+                          matches(TestDocument.doubleField, firstDocument.doubleField + 1)
+                        )
+                // 67% of 3 clauses rounds down to 2 required clauses
+                satisfyingRes <- Executor
+                                   .execute(
+                                     ElasticRequest.search(
+                                       firstSearchIndex,
+                                       query.minimumShouldMatch(MinimumShouldMatch.Percentage(67))
+                                     )
+                                   )
+                                   .documentAs[TestDocument]
+                // 100% of 3 clauses means all 3 clauses are required
+                unsatisfyingRes <- Executor
+                                     .execute(
+                                       ElasticRequest.search(
+                                         firstSearchIndex,
+                                         query.minimumShouldMatch(MinimumShouldMatch.Percentage(100))
+                                       )
+                                     )
+                                     .documentAs[TestDocument]
+              } yield assert(satisfyingRes)(Assertion.contains(firstDocument)) && assert(unsatisfyingRes)(isEmpty)
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("should with combination minimumShouldMatch") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <-
+                  Executor.execute(
+                    ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                  )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .refreshTrue
+                     )
+                query = should(
+                          matches(TestDocument.stringField, firstDocument.stringField),
+                          matches(TestDocument.intField, firstDocument.intField),
+                          matches(TestDocument.doubleField, firstDocument.doubleField + 1)
+                        )
+                // with 3 clauses, only the condition with the highest threshold below 3 applies (3 - 1 = 2 required clauses),
+                // while the first condition would require all 3 clauses
+                satisfyingRes <- Executor
+                                   .execute(
+                                     ElasticRequest.search(
+                                       firstSearchIndex,
+                                       query.minimumShouldMatch(
+                                         MinimumShouldMatch
+                                           .Combination(
+                                             MinimumShouldMatch.Condition(1, MinimumShouldMatch.Percentage(100))
+                                           )
+                                           .addCondition(MinimumShouldMatch.Condition(2, MinimumShouldMatch.Count(-1)))
+                                       )
+                                     )
+                                   )
+                                   .documentAs[TestDocument]
+                // with 3 clauses, which is not above the threshold of 3, all 3 clauses are required
+                unsatisfyingRes <- Executor
+                                     .execute(
+                                       ElasticRequest.search(
+                                         firstSearchIndex,
+                                         query.minimumShouldMatch(
+                                           MinimumShouldMatch.Combination(
+                                             MinimumShouldMatch.Condition(3, MinimumShouldMatch.Count(-1))
+                                           )
+                                         )
+                                       )
+                                     )
+                                     .documentAs[TestDocument]
+              } yield assert(satisfyingRes)(Assertion.contains(firstDocument)) && assert(unsatisfyingRes)(isEmpty)
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
