@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.{Chunk, NonEmptyChunk}
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticQuery.{script => _, _}
 import zio.elasticsearch.data.GeoPoint
@@ -32,6 +31,7 @@ import zio.elasticsearch.script.{Painless, Script}
 import zio.elasticsearch.utils._
 import zio.test.Assertion.equalTo
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
+import zio.{Chunk, NonEmptyChunk}
 
 import java.time.LocalDate
 
