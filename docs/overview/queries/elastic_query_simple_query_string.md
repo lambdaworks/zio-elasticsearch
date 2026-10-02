@@ -40,12 +40,14 @@ val query: SimpleQueryStringQuery[Any] =
 simpleQueryString(query = "name").minimumShouldMatch(2)
 ```
 
+The `minimumShouldMatch` method also accepts a `MinimumShouldMatch` value, which supports percentages and conditional combinations as well (e.g. `MinimumShouldMatch.Percentage(75)` or `MinimumShouldMatch.Combination(MinimumShouldMatch.Condition(3, MinimumShouldMatch.Percentage(90)))`). You can find more information about the `minimum_should_match` parameter [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-minimum-should-match.html).
+
 You can also construct the query manually with all parameters:
 ```scala
 val query: SimpleQueryStringQuery[Document] =
 SimpleQueryString(
   query = "name",
   fields = Chunk("stringField"),
-  minimumShouldMatch = Some(2)
+  minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
 )
 ```
