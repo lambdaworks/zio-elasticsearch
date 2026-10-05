@@ -22,9 +22,8 @@ private[elasticsearch] trait HasMinimumShouldMatch[Q <: HasMinimumShouldMatch[Q]
 
   /**
    * Sets the `minimumShouldMatch` parameter for this [[zio.elasticsearch.ElasticQuery]]. The `minimumShouldMatch` value
-   * is the number of should clauses returned documents must match. If the [[zio.elasticsearch.query.BoolQuery]]
-   * includes at least one `should` clause and no `must`/`filter` clauses, the default value is 1. Otherwise, the
-   * default value is 0.
+   * is the minimum number of optional clauses (e.g. `should` clauses of a [[zio.elasticsearch.query.BoolQuery]] or
+   * terms of a full text query) that returned documents must match. Its default value depends on the query type.
    *
    * This is a shorthand for `minimumShouldMatch(MinimumShouldMatch.Count(value))`.
    *
@@ -39,9 +38,8 @@ private[elasticsearch] trait HasMinimumShouldMatch[Q <: HasMinimumShouldMatch[Q]
 
   /**
    * Sets the `minimumShouldMatch` parameter for this [[zio.elasticsearch.ElasticQuery]]. The `minimumShouldMatch` value
-   * is the number of should clauses returned documents must match. If the [[zio.elasticsearch.query.BoolQuery]]
-   * includes at least one `should` clause and no `must`/`filter` clauses, the default value is 1. Otherwise, the
-   * default value is 0.
+   * is the minimum number of optional clauses (e.g. `should` clauses of a [[zio.elasticsearch.query.BoolQuery]] or
+   * terms of a full text query) that returned documents must match. Its default value depends on the query type.
    *
    * @param value
    *   the [[zio.elasticsearch.query.MinimumShouldMatch]] to set `minimumShouldMatch` parameter to, possible values are:

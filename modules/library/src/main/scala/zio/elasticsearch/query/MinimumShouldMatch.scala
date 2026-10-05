@@ -68,25 +68,26 @@ object MinimumShouldMatch {
 
   /**
    * A conditional specification used within a [[zio.elasticsearch.query.MinimumShouldMatch.Combination]]. If the total
-   * number of optional clauses is less than or equal to `the threshold`, all of them are required. Otherwise, the given
+   * number of optional clauses is less than or equal to the `threshold`, all of them are required. Otherwise, the given
    * `value` applies.
    *
    * @param threshold
    *   the number of optional clauses up to which all of them are required
    * @param value
    *   the [[zio.elasticsearch.query.MinimumShouldMatch.Simple]] value that applies when the number of optional clauses
-   *   is greater than `a threshold`
+   *   is greater than the `threshold`
    */
   final case class Condition(threshold: Int, value: Simple) {
     override def toString: String = s"$threshold<$value"
   }
 
   /**
-   * One or more conditional specifications. When multiple conditions are given, each one is only valid for numbers of
-   * optional clauses greater than its `threshold`, so the conditions should be given in ascending order of their
-   * `threshold` values.
+   * One or more conditional specifications, evaluated from left to right. Each condition whose `threshold` is less than
+   * the number of optional clauses overrides the previous one, and the evaluation stops at the first condition whose
+   * `threshold` is greater than or equal to it. If no condition applies, all optional clauses are required.
    *
-   * Elasticsearch expects conditions with distinct `threshold` values; this type does not validate this.
+   * Therefore, the conditions should be given in ascending order of their `threshold` values (e.g. with 5 optional
+   * clauses, `9<-3 2<-25%` requires all 5 of them); this type does not validate this.
    *
    * @param conditions
    *   the non-empty chunk of [[zio.elasticsearch.query.MinimumShouldMatch.Condition]]s

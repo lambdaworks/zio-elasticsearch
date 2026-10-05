@@ -79,6 +79,6 @@ val queryWithAddedCondition: BoolQuery =
     .minimumShouldMatch(Combination(Condition(2, Percentage(-25))).addCondition(Condition(9, Count(-3))))
 ```
 
-You can find more information about the `minimum_should_match` parameter [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-minimum-should-match.html).
+You can find more information about the `minimum_should_match` parameter [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-minimum-should-match.html).
 
 You can find more information about `Bool` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-bool-query.html).

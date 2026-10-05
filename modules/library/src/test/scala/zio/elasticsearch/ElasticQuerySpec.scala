@@ -4317,14 +4317,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryTs.toJson(fieldPath = None))(equalTo(expected.toJson))
         },
         test("multiMatch") {
-          val query                       = multiMatch("this is a test")
-          val queryWithFields             = multiMatch("this is a test").fields("stringField1", "stringField2")
-          val queryWithFieldsTs           = multiMatch("this is a test").fields(TestDocument.stringField)
-          val queryWithFieldsSuffix       = multiMatch("this is a test").fields(TestDocument.stringField.raw)
-          val queryWithType               = multiMatch("this is a test").matchingType(BestFields)
-          val queryWithBoost              = multiMatch("this is a test").boost(2.2)
-          val queryWithMinimumShouldMatch = multiMatch("this is a test").minimumShouldMatch(2)
-          val queryWithAllParams          = multiMatch("this is a test")
+          val query                                 = multiMatch("this is a test")
+          val queryWithFields                       = multiMatch("this is a test").fields("stringField1", "stringField2")
+          val queryWithFieldsTs                     = multiMatch("this is a test").fields(TestDocument.stringField)
+          val queryWithFieldsSuffix                 = multiMatch("this is a test").fields(TestDocument.stringField.raw)
+          val queryWithType                         = multiMatch("this is a test").matchingType(BestFields)
+          val queryWithBoost                        = multiMatch("this is a test").boost(2.2)
+          val queryWithMinimumShouldMatch           = multiMatch("this is a test").minimumShouldMatch(2)
+          val queryWithPercentageMinimumShouldMatch =
+            multiMatch("this is a test").minimumShouldMatch(MinimumShouldMatch.Percentage(75))
+          val queryWithAllParams = multiMatch("this is a test")
             .fields(TestDocument.stringField)
             .matchingType(BestFields)
             .boost(2.2)
@@ -4399,6 +4401,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithPercentageMinimumShouldMatch =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "minimum_should_match": "75%"
+              |  }
+              |}
+              |""".stripMargin
+
           val expectedWithAllParams =
             """
               |{
@@ -4420,6 +4432,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoost.toJson(fieldPath = None))(equalTo(expectedWithBoost.toJson)) &&
           assert(queryWithMinimumShouldMatch.toJson(fieldPath = None))(
             equalTo(expectedWithMinimumShouldMatch.toJson)
+          ) &&
+          assert(queryWithPercentageMinimumShouldMatch.toJson(fieldPath = None))(
+            equalTo(expectedWithPercentageMinimumShouldMatch.toJson)
           ) &&
           assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
         },
@@ -4993,11 +5008,13 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithBoostAndMinScore.toJson(fieldPath = None))(equalTo(expectedWithBoostAndMinScore.toJson))
         },
         test("simpleQueryString") {
-          val queryNoFields           = simpleQueryString("test")
-          val queryWithFields         = simpleQueryString("test").fields("stringField1", "stringField2")
-          val queryTyped              = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
-          val queryWithMinShouldMatch = queryNoFields.minimumShouldMatch(2)
-          val queryAllParams          = SimpleQueryString(
+          val queryNoFields                     = simpleQueryString("test")
+          val queryWithFields                   = simpleQueryString("test").fields("stringField1", "stringField2")
+          val queryTyped                        = simpleQueryString("test").fields(Chunk(TestDocument.stringField))
+          val queryWithMinShouldMatch           = queryNoFields.minimumShouldMatch(2)
+          val queryWithPercentageMinShouldMatch =
+            queryNoFields.minimumShouldMatch(MinimumShouldMatch.Percentage(75))
+          val queryAllParams = SimpleQueryString(
             query = "test",
             fields = Chunk.empty,
             minimumShouldMatch = Some(MinimumShouldMatch.Count(1))
@@ -5042,6 +5059,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithPercentageMinShouldMatch =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test",
+              |    "minimum_should_match": "75%"
+              |  }
+              |}
+              |""".stripMargin
+
           val expectedAllParams =
             """
               |{
@@ -5056,6 +5083,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithFields.toJson(None))(equalTo(expectedWithFields.toJson)) &&
           assert(queryTyped.toJson(None))(equalTo(expectedWithTypedField.toJson)) &&
           assert(queryWithMinShouldMatch.toJson(None))(equalTo(expectedWithMinShouldMatch.toJson)) &&
+          assert(queryWithPercentageMinShouldMatch.toJson(None))(
+            equalTo(expectedWithPercentageMinShouldMatch.toJson)
+          ) &&
           assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson))
 
         },
