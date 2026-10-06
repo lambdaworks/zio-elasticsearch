@@ -135,7 +135,7 @@ private[elasticsearch] final case class Bool[S](
   mustNot: Chunk[ElasticQuery[S]],
   should: Chunk[ElasticQuery[S]],
   boost: Option[Double],
-  minimumShouldMatch: Option[Int]
+  minimumShouldMatch: Option[MinimumShouldMatch]
 ) extends BoolQuery[S] { self =>
 
   def boost(value: Double): BoolQuery[S] =
@@ -147,7 +147,7 @@ private[elasticsearch] final case class Bool[S](
   def filter(queries: ElasticQuery[Any]*): BoolQuery[S] =
     self.copy(filter = filter ++ queries)
 
-  def minimumShouldMatch(value: Int): BoolQuery[S] =
+  def minimumShouldMatch(value: MinimumShouldMatch): BoolQuery[S] =
     self.copy(minimumShouldMatch = Some(value))
 
   def must[S1 <: S: Schema](queries: ElasticQuery[S1]*): BoolQuery[S1] =
@@ -824,10 +824,10 @@ sealed trait MatchBooleanPrefixQuery[S] extends ElasticQuery[S] with HasMinimumS
 private[elasticsearch] final case class MatchBooleanPrefix[S, A: ElasticPrimitive](
   field: String,
   value: A,
-  minimumShouldMatch: Option[Int]
+  minimumShouldMatch: Option[MinimumShouldMatch]
 ) extends MatchBooleanPrefixQuery[S] { self =>
 
-  def minimumShouldMatch(value: Int): MatchBooleanPrefixQuery[S] =
+  def minimumShouldMatch(value: MinimumShouldMatch): MatchBooleanPrefixQuery[S] =
     self.copy(minimumShouldMatch = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
@@ -902,7 +902,7 @@ private[elasticsearch] final case class MultiMatch[S](
   value: String,
   boost: Option[Double],
   matchingType: Option[MultiMatchType],
-  minimumShouldMatch: Option[Int]
+  minimumShouldMatch: Option[MinimumShouldMatch]
 ) extends MultiMatchQuery[S] { self =>
 
   def boost(boost: Double): MultiMatchQuery[S] =
@@ -920,7 +920,7 @@ private[elasticsearch] final case class MultiMatch[S](
   def matchingType(matchingType: MultiMatchType): MultiMatchQuery[S] =
     self.copy(matchingType = Some(matchingType))
 
-  def minimumShouldMatch(minimumShouldMatch: Int): MultiMatchQuery[S] =
+  def minimumShouldMatch(minimumShouldMatch: MinimumShouldMatch): MultiMatchQuery[S] =
     self.copy(minimumShouldMatch = Some(minimumShouldMatch))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
@@ -1060,7 +1060,7 @@ private[elasticsearch] final case class QueryString[S](
   fields: Chunk[String],
   query: String,
   boost: Option[Double],
-  minimumShouldMatch: Option[Int]
+  minimumShouldMatch: Option[MinimumShouldMatch]
 ) extends QueryStringQuery[S] { self =>
 
   def boost(value: Double): QueryStringQuery[S] =
@@ -1078,7 +1078,7 @@ private[elasticsearch] final case class QueryString[S](
   def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): QueryStringQuery[S1] =
     self.copy(defaultField = None, fields = Chunk.fromIterable((field +: fields).map(_.toString)))
 
-  def minimumShouldMatch(value: Int): QueryStringQuery[S] =
+  def minimumShouldMatch(value: MinimumShouldMatch): QueryStringQuery[S] =
     self.copy(minimumShouldMatch = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
@@ -1299,7 +1299,7 @@ sealed trait SimpleQueryStringQuery[S]
 private[elasticsearch] final case class SimpleQueryString[S](
   query: String,
   fields: Chunk[String],
-  minimumShouldMatch: Option[Int]
+  minimumShouldMatch: Option[MinimumShouldMatch]
 ) extends SimpleQueryStringQuery[S] { self =>
 
   def fields(field: String, fields: String*): SimpleQueryStringQuery[S] =
@@ -1311,7 +1311,7 @@ private[elasticsearch] final case class SimpleQueryString[S](
   def fields[S1 <: S: Schema](field: Field[S1, _], fields: Field[S1, _]*): SimpleQueryStringQuery[S1] =
     self.copy(fields = Chunk.fromIterable((field +: fields).map(_.toString)))
 
-  def minimumShouldMatch(value: Int): SimpleQueryString[S] =
+  def minimumShouldMatch(value: MinimumShouldMatch): SimpleQueryStringQuery[S] =
     copy(minimumShouldMatch = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {

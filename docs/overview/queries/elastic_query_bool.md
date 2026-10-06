@@ -55,4 +55,30 @@ If you want to change the `minimum_should_match` parameter, you can use the `min
 val queryWithMinimumShouldMatch: BoolQuery = should(contains(field = Document.name, value = "a")).minimumShouldMatch(2)
 ```
 
+Besides a fixed number of clauses, the `minimumShouldMatch` method also accepts a `MinimumShouldMatch` value, which supports all formats Elasticsearch allows: a (negative) number, a (negative) percentage, or one or more conditional combinations:
+```scala
+import zio.elasticsearch.query.MinimumShouldMatch._
+
+// "minimum_should_match": -2
+val queryWithNegativeCount: BoolQuery = should(contains(field = Document.name, value = "a")).minimumShouldMatch(Count(-2))
+
+// "minimum_should_match": "75%"
+val queryWithPercentage: BoolQuery = should(contains(field = Document.name, value = "a")).minimumShouldMatch(Percentage(75))
+
+// "minimum_should_match": "3<90%"
+val queryWithCombination: BoolQuery = should(contains(field = Document.name, value = "a")).minimumShouldMatch(Combination(Condition(3, Percentage(90))))
+
+// "minimum_should_match": "2<-25% 9<-3"
+val queryWithCombinations: BoolQuery =
+  should(contains(field = Document.name, value = "a"))
+    .minimumShouldMatch(Combination(Condition(2, Percentage(-25)), Condition(9, Count(-3))))
+
+// conditions can also be added one by one using the `addCondition` method
+val queryWithAddedCondition: BoolQuery =
+  should(contains(field = Document.name, value = "a"))
+    .minimumShouldMatch(Combination(Condition(2, Percentage(-25))).addCondition(Condition(9, Count(-3))))
+```
+
+You can find more information about the `minimum_should_match` parameter [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-minimum-should-match.html).
+
 You can find more information about `Bool` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-bool-query.html).
