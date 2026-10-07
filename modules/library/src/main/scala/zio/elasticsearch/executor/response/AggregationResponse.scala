@@ -21,12 +21,48 @@ import zio.elasticsearch.result._
 import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
+import zio.prelude.Validation
 
 private[elasticsearch] sealed trait AggregationBucket
 
 sealed trait AggregationResponse
 
 object AggregationResponse {
+  private[elasticsearch] def decode(field: String, data: Json): Either[String, (String, AggregationResponse)] = {
+    val (tpe, name) = field.span(_ != '#') match { case (tpe, rest) => (tpe, rest.drop(1)) }
+
+    def as[A <: AggregationResponse](implicit decoder: JsonDecoder[A]): Either[String, (String, AggregationResponse)] =
+      data.as[A].map(name -> _).left.map(error => s"$field$error")
+
+    tpe match {
+      case "avg"                               => as[AvgAggregationResponse]
+      case "cardinality"                       => as[CardinalityAggregationResponse]
+      case "extended_stats"                    => as[ExtendedStatsAggregationResponse]
+      case "filter"                            => as[FilterAggregationResponse]
+      case "ip_range"                          => as[IpRangeAggregationResponse]
+      case "max"                               => as[MaxAggregationResponse]
+      case "min"                               => as[MinAggregationResponse]
+      case "missing"                           => as[MissingAggregationResponse]
+      case t if t.endsWith("percentile_ranks") => as[PercentileRanksAggregationResponse]
+      case t if t.endsWith("percentiles")      => as[PercentilesAggregationResponse]
+      case "sampler"                           => as[SamplerAggregationResponse]
+      case "stats"                             => as[StatsAggregationResponse]
+      case "sum"                               => as[SumAggregationResponse]
+      case t if t.endsWith("terms")            => as[TermsAggregationResponse]
+      case "value_count"                       => as[ValueCountAggregationResponse]
+      case "weighted_avg"                      => as[WeightedAvgAggregationResponse]
+      case _                                   => Left(s"Unsupported aggregation: $field")
+    }
+  }
+
+  private[elasticsearch] def decodeAll(
+    fields: Chunk[(String, Json)]
+  ): Either[String, Map[String, AggregationResponse]] =
+    Validation
+      .validateAll(fields.map { case (field, data) => Validation.fromEither(decode(field, data)) })
+      .map(_.toMap)
+      .toEitherWith(_.mkString(", "))
+
   private[elasticsearch] def toResult(aggregationResponse: AggregationResponse): AggregationResult =
     aggregationResponse match {
       case AvgAggregationResponse(value) =>
@@ -128,124 +164,27 @@ object AggregationResponse {
     }
 }
 
-private[elasticsearch] final case class AvgAggregationResponse(value: Double) extends AggregationResponse
+private[elasticsearch] final case class AvgAggregationResponse(value: Option[Double]) extends AggregationResponse
 
 private[elasticsearch] object AvgAggregationResponse {
   implicit val decoder: JsonDecoder[AvgAggregationResponse] = DeriveJsonDecoder.gen[AvgAggregationResponse]
 }
 
-private[elasticsearch] case class BucketDecoder(fields: Chunk[(String, Json)]) extends JsonDecoderOps {
-  val allFields: Map[String, Any] = fields.flatMap { case (field, data) =>
-    field match {
-      case "key" =>
-        Some(field -> data.toString.replaceAll("\"", ""))
-      case "doc_count" =>
-        Some(field -> data.unsafeAs[Int])
-      case _ =>
-        val objFields = data.unsafeAs[Obj].fields.toMap
+private[elasticsearch] final case class BucketDecoder(fields: Chunk[(String, Json)]) {
+  lazy val docCount: Either[String, Int] =
+    fields.collectFirst { case ("doc_count", data) => data.as[Int] }.getOrElse(Left("Missing field: doc_count"))
 
-        (field: @unchecked) match {
-          case str if str.contains("weighted_avg#") =>
-            Some(field -> WeightedAvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
-          case str if str.contains("avg#") =>
-            Some(field -> AvgAggregationResponse(value = objFields("value").unsafeAs[Double]))
-          case str if str.contains("cardinality#") =>
-            Some(field -> CardinalityAggregationResponse(value = objFields("value").unsafeAs[Int]))
-          case str if str.contains("extended_stats#") =>
-            Some(
-              field -> ExtendedStatsAggregationResponse(
-                count = objFields("count").unsafeAs[Int],
-                min = objFields("min").unsafeAs[Double],
-                max = objFields("max").unsafeAs[Double],
-                avg = objFields("avg").unsafeAs[Double],
-                sum = objFields("sum").unsafeAs[Double],
-                sumOfSquares = objFields("sum_of_squares").unsafeAs[Double],
-                variance = objFields("variance").unsafeAs[Double],
-                variancePopulation = objFields("variance_population").unsafeAs[Double],
-                varianceSampling = objFields("variance_sampling").unsafeAs[Double],
-                stdDeviation = objFields("std_deviation").unsafeAs[Double],
-                stdDeviationPopulation = objFields("std_deviation_population").unsafeAs[Double],
-                stdDeviationSampling = objFields("std_deviation_sampling").unsafeAs[Double],
-                stdDeviationBoundsResponse = objFields("std_deviation_sampling").unsafeAs[StdDeviationBoundsResponse](
-                  StdDeviationBoundsResponse.decoder
-                )
-              )
-            )
-          case str if str.contains("filter#") =>
-            Some(field -> data.unsafeAs[FilterAggregationResponse](FilterAggregationResponse.decoder))
-          case str if str.contains("ip_range#") =>
-            Some(field -> data.unsafeAs[IpRangeAggregationResponse](IpRangeAggregationResponse.decoder))
-          case str if str.contains("max#") =>
-            Some(field -> MaxAggregationResponse(value = objFields("value").unsafeAs[Double]))
-          case str if str.contains("min#") =>
-            Some(field -> MinAggregationResponse(value = objFields("value").unsafeAs[Double]))
-          case str if str.contains("missing#") =>
-            Some(field -> MissingAggregationResponse(docCount = objFields("doc_count").unsafeAs[Int]))
-          case str if str.contains("percentile_ranks#") =>
-            Some(
-              field -> PercentileRanksAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]])
-            )
-          case str if str.contains("percentiles#") =>
-            Some(field -> PercentilesAggregationResponse(values = objFields("values").unsafeAs[Map[String, Double]]))
-          case str if str.contains("sampler#") =>
-            Some(field -> data.unsafeAs[SamplerAggregationResponse](SamplerAggregationResponse.decoder))
-          case str if str.contains("stats#") =>
-            Some(
-              field -> StatsAggregationResponse(
-                count = objFields("count").unsafeAs[Int],
-                min = objFields("min").unsafeAs[Double],
-                max = objFields("max").unsafeAs[Double],
-                avg = objFields("avg").unsafeAs[Double],
-                sum = objFields("sum").unsafeAs[Double]
-              )
-            )
-          case str if str.contains("sum#") =>
-            Some(field -> SumAggregationResponse(value = objFields("value").unsafeAs[Double]))
-          case str if str.contains("terms#") =>
-            Some(field -> data.unsafeAs[TermsAggregationResponse](TermsAggregationResponse.decoder))
-          case str if str.contains("value_count#") =>
-            Some(field -> ValueCountAggregationResponse(value = objFields("value").unsafeAs[Int]))
-        }
-    }
-  }.toMap
+  lazy val key: Either[String, String] =
+    fields.collectFirst { case ("key_as_string", Str(value)) => Right(value) }
+      .orElse(fields.collectFirst { case ("key", data) => Right(data.toString.replaceAll("\"", "")) })
+      .getOrElse(Left("Missing field: key"))
 
-  val subAggs: Map[String, AggregationResponse] = allFields.collect {
-    case (field, data) if field != "doc_count" && field != "key" =>
-      (field: @unchecked) match {
-        case str if str.contains("weighted_avg#") =>
-          (field.split("#")(1), data.asInstanceOf[WeightedAvgAggregationResponse])
-        case str if str.contains("avg#") =>
-          (field.split("#")(1), data.asInstanceOf[AvgAggregationResponse])
-        case str if str.contains("cardinality#") =>
-          (field.split("#")(1), data.asInstanceOf[CardinalityAggregationResponse])
-        case str if str.contains("extended_stats#") =>
-          (field.split("#")(1), data.asInstanceOf[ExtendedStatsAggregationResponse])
-        case str if str.contains("filter#") =>
-          (field.split("#")(1), data.asInstanceOf[FilterAggregationResponse])
-        case str if str.contains("ip_range#") =>
-          (field.split("#")(1), data.asInstanceOf[IpRangeAggregationResponse])
-        case str if str.contains("max#") =>
-          (field.split("#")(1), data.asInstanceOf[MaxAggregationResponse])
-        case str if str.contains("min#") =>
-          (field.split("#")(1), data.asInstanceOf[MinAggregationResponse])
-        case str if str.contains("missing#") =>
-          (field.split("#")(1), data.asInstanceOf[MissingAggregationResponse])
-        case str if str.contains("percentile_ranks#") =>
-          (field.split("#")(1), data.asInstanceOf[PercentileRanksAggregationResponse])
-        case str if str.contains("percentiles#") =>
-          (field.split("#")(1), data.asInstanceOf[PercentilesAggregationResponse])
-        case str if str.contains("sampler#") =>
-          (field.split("#")(1), data.asInstanceOf[SamplerAggregationResponse])
-        case str if str.contains("stats#") =>
-          (field.split("#")(1), data.asInstanceOf[StatsAggregationResponse])
-        case str if str.contains("sum#") =>
-          (field.split("#")(1), data.asInstanceOf[SumAggregationResponse])
-        case str if str.contains("terms#") =>
-          (field.split("#")(1), data.asInstanceOf[TermsAggregationResponse])
-        case str if str.contains("value_count#") =>
-          (field.split("#")(1), data.asInstanceOf[ValueCountAggregationResponse])
-      }
-  }
+  lazy val subAggs: Either[String, Map[String, AggregationResponse]] =
+    AggregationResponse.decodeAll(fields.filterNot { case (field, _) => BucketDecoder.metadataFields.contains(field) })
+}
+
+private[elasticsearch] object BucketDecoder {
+  private val metadataFields: Set[String] = Set("doc_count", "doc_count_error_upper_bound", "key", "key_as_string")
 }
 
 private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
@@ -257,23 +196,23 @@ private[elasticsearch] object CardinalityAggregationResponse {
 
 private[elasticsearch] final case class ExtendedStatsAggregationResponse(
   count: Int,
-  min: Double,
-  max: Double,
-  avg: Double,
+  min: Option[Double],
+  max: Option[Double],
+  avg: Option[Double],
   sum: Double,
   @jsonField("sum_of_squares")
-  sumOfSquares: Double,
-  variance: Double,
+  sumOfSquares: Option[Double],
+  variance: Option[Double],
   @jsonField("variance_population")
-  variancePopulation: Double,
+  variancePopulation: Option[Double],
   @jsonField("variance_sampling")
-  varianceSampling: Double,
+  varianceSampling: Option[Double],
   @jsonField("std_deviation")
-  stdDeviation: Double,
+  stdDeviation: Option[Double],
   @jsonField("std_deviation_population")
-  stdDeviationPopulation: Double,
+  stdDeviationPopulation: Option[Double],
   @jsonField("std_deviation_sampling")
-  stdDeviationSampling: Double,
+  stdDeviationSampling: Option[Double],
   @jsonField("std_deviation_bounds")
   stdDeviationBoundsResponse: StdDeviationBoundsResponse
 ) extends AggregationResponse
@@ -292,20 +231,11 @@ private[elasticsearch] final case class FilterAggregationResponse(
 private[elasticsearch] object FilterAggregationResponse {
   implicit val decoder: JsonDecoder[FilterAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val bucketDecoder = BucketDecoder(fields)
-    val allFields     = bucketDecoder.allFields
-    val docCount      = allFields("doc_count").asInstanceOf[Int]
-    val subAggs       = bucketDecoder.subAggs
 
-    Right(FilterAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
-  }
-}
-
-private[elasticsearch] sealed trait JsonDecoderOps {
-  implicit class JsonDecoderOps(json: Json) {
-    def unsafeAs[A](implicit decoder: JsonDecoder[A]): A =
-      (json.as[A]: @unchecked) match {
-        case Right(decoded) => decoded
-      }
+    for {
+      docCount <- bucketDecoder.docCount
+      subAggs  <- bucketDecoder.subAggs
+    } yield FilterAggregationResponse(docCount, Some(subAggs).filter(_.nonEmpty))
   }
 }
 
@@ -320,19 +250,17 @@ private[elasticsearch] final case class IpRangeAggregationBucket(
 private[elasticsearch] object IpRangeAggregationBucket {
   implicit val decoder: JsonDecoder[IpRangeAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val bucketDecoder = BucketDecoder(fields.filterNot { case (field, _) => field == "from" || field == "to" })
-    val allFields     = bucketDecoder.allFields
-    val docCount      = allFields("doc_count").asInstanceOf[Int]
-    val key           = allFields("key").asInstanceOf[String]
-    val subAggs       = bucketDecoder.subAggs
 
-    Right(
-      IpRangeAggregationBucket(
-        key = key,
-        from = fields.collectFirst { case ("from", Str(value)) => value },
-        to = fields.collectFirst { case ("to", Str(value)) => value },
-        docCount = docCount,
-        subAggregations = Option(subAggs).filter(_.nonEmpty)
-      )
+    for {
+      key      <- bucketDecoder.key
+      docCount <- bucketDecoder.docCount
+      subAggs  <- bucketDecoder.subAggs
+    } yield IpRangeAggregationBucket(
+      key = key,
+      from = fields.collectFirst { case ("from", Str(value)) => value },
+      to = fields.collectFirst { case ("to", Str(value)) => value },
+      docCount = docCount,
+      subAggregations = Some(subAggs).filter(_.nonEmpty)
     )
   }
 }
@@ -366,13 +294,13 @@ private[elasticsearch] object IpRangeAggregationResponse {
   }
 }
 
-private[elasticsearch] final case class MaxAggregationResponse(value: Double) extends AggregationResponse
+private[elasticsearch] final case class MaxAggregationResponse(value: Option[Double]) extends AggregationResponse
 
 private[elasticsearch] object MaxAggregationResponse {
   implicit val decoder: JsonDecoder[MaxAggregationResponse] = DeriveJsonDecoder.gen[MaxAggregationResponse]
 }
 
-private[elasticsearch] final case class MinAggregationResponse(value: Double) extends AggregationResponse
+private[elasticsearch] final case class MinAggregationResponse(value: Option[Double]) extends AggregationResponse
 
 private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
@@ -385,7 +313,7 @@ private[elasticsearch] object MissingAggregationResponse {
   implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
 }
 
-private[elasticsearch] final case class PercentileRanksAggregationResponse(values: Map[String, Double])
+private[elasticsearch] final case class PercentileRanksAggregationResponse(values: Map[String, Option[Double]])
     extends AggregationResponse
 
 private[elasticsearch] object PercentileRanksAggregationResponse {
@@ -393,7 +321,7 @@ private[elasticsearch] object PercentileRanksAggregationResponse {
     DeriveJsonDecoder.gen[PercentileRanksAggregationResponse]
 }
 
-private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Double])
+private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Option[Double]])
     extends AggregationResponse
 
 private[elasticsearch] object PercentilesAggregationResponse {
@@ -410,19 +338,19 @@ private[elasticsearch] final case class SamplerAggregationResponse(
 private[elasticsearch] object SamplerAggregationResponse {
   implicit val decoder: JsonDecoder[SamplerAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val bucketDecoder = BucketDecoder(fields)
-    val allFields     = bucketDecoder.allFields
-    val docCount      = allFields("doc_count").asInstanceOf[Int]
-    val subAggs       = bucketDecoder.subAggs
 
-    Right(SamplerAggregationResponse.apply(docCount, Option(subAggs).filter(_.nonEmpty)))
+    for {
+      docCount <- bucketDecoder.docCount
+      subAggs  <- bucketDecoder.subAggs
+    } yield SamplerAggregationResponse(docCount, Some(subAggs).filter(_.nonEmpty))
   }
 }
 
 private[elasticsearch] final case class StatsAggregationResponse(
   count: Int,
-  min: Double,
-  max: Double,
-  avg: Double,
+  min: Option[Double],
+  max: Option[Double],
+  avg: Option[Double],
   sum: Double
 ) extends AggregationResponse
 
@@ -431,16 +359,16 @@ private[elasticsearch] object StatsAggregationResponse {
 }
 
 private[elasticsearch] case class StdDeviationBoundsResponse(
-  upper: Double,
-  lower: Double,
+  upper: Option[Double],
+  lower: Option[Double],
   @jsonField("upper_population")
-  upperPopulation: Double,
+  upperPopulation: Option[Double],
   @jsonField("lower_population")
-  lowerPopulation: Double,
+  lowerPopulation: Option[Double],
   @jsonField("upper_sampling")
-  upperSampling: Double,
+  upperSampling: Option[Double],
   @jsonField("lower_sampling")
-  lowerSampling: Double
+  lowerSampling: Option[Double]
 ) extends AggregationResponse
 
 private[elasticsearch] object StdDeviationBoundsResponse {
@@ -476,12 +404,12 @@ private[elasticsearch] final case class TermsAggregationBucket(
 private[elasticsearch] object TermsAggregationBucket {
   implicit val decoder: JsonDecoder[TermsAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
     val bucketDecoder = BucketDecoder(fields)
-    val allFields     = bucketDecoder.allFields
-    val docCount      = allFields("doc_count").asInstanceOf[Int]
-    val key           = allFields("key").asInstanceOf[String]
-    val subAggs       = bucketDecoder.subAggs
 
-    Right(TermsAggregationBucket.apply(key, docCount, Option(subAggs).filter(_.nonEmpty)))
+    for {
+      key      <- bucketDecoder.key
+      docCount <- bucketDecoder.docCount
+      subAggs  <- bucketDecoder.subAggs
+    } yield TermsAggregationBucket(key, docCount, Some(subAggs).filter(_.nonEmpty))
   }
 }
 
@@ -492,7 +420,8 @@ private[elasticsearch] object ValueCountAggregationResponse {
     DeriveJsonDecoder.gen[ValueCountAggregationResponse]
 }
 
-private[elasticsearch] final case class WeightedAvgAggregationResponse(value: Double) extends AggregationResponse
+private[elasticsearch] final case class WeightedAvgAggregationResponse(value: Option[Double])
+    extends AggregationResponse
 
 private[elasticsearch] object WeightedAvgAggregationResponse {
   implicit val decoder: JsonDecoder[WeightedAvgAggregationResponse] =
