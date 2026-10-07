@@ -389,7 +389,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
         test("percentile ranks aggregation") {
-          val expectedResult = Map("500.0" -> 55.55555555555555, "600.0" -> 100.0)
+          val expectedResult = Map("500.0" -> Some(55.55555555555555), "600.0" -> Some(100.0))
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
               for {

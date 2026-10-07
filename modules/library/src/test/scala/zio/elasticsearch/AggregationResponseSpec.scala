@@ -57,6 +57,26 @@ object AggregationResponseSpec extends ZIOSpecDefault {
             isRight(equalTo(Map("extendedStatsAggregation" -> emptyExtendedStatsResult)))
           )
         },
+        test("percentiles and percentile ranks") {
+          val aggregations =
+            """{
+              |  "tdigest_percentiles#percentilesAggregation": { "values": { "50.0": null, "99.0": null } },
+              |  "tdigest_percentile_ranks#percentileRanksAggregation": { "values": { "500.0": null } }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "percentilesAggregation" -> PercentilesAggregationResult(values =
+                    Map("50.0" -> None, "99.0" -> None)
+                  ),
+                  "percentileRanksAggregation" -> PercentileRanksAggregationResult(values = Map("500.0" -> None))
+                )
+              )
+            )
+          )
+        },
         test("sub aggregations inside a bucket") {
           val aggregations =
             s"""{
@@ -91,6 +111,53 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                         )
                       )
                     )
+                  )
+                )
+              )
+            )
+          )
+        }
+      ),
+      suite("decoding aggregation keys")(
+        test("keep everything after the first '#' as the aggregation name") {
+          val aggregations = """{ "max#max#aggregation": { "value": 1.0 } }"""
+
+          assert(results(aggregations))(
+            isRight(equalTo(Map("max#aggregation" -> MaxAggregationResult(value = Some(1.0)))))
+          )
+        },
+        test("route by aggregation type regardless of the aggregation name") {
+          val aggregations = """{ "value_count#avg#aggregation": { "value": 2 } }"""
+
+          assert(results(aggregations))(
+            isRight(equalTo(Map("avg#aggregation" -> ValueCountAggregationResult(value = 2))))
+          )
+        },
+        test("ignore bucket metadata fields") {
+          val aggregations =
+            """{
+              |  "lterms#termsAggregation": {
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [
+              |      {
+              |        "key": 1,
+              |        "key_as_string": "true",
+              |        "doc_count": 1,
+              |        "doc_count_error_upper_bound": 0
+              |      }
+              |    ]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "termsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(TermsAggregationBucketResult(docCount = 1, key = "1", subAggregations = Map.empty))
                   )
                 )
               )

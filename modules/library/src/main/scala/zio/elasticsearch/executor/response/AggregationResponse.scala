@@ -29,27 +29,29 @@ sealed trait AggregationResponse
 
 object AggregationResponse {
   private[elasticsearch] def decode(field: String, data: Json): Either[String, (String, AggregationResponse)] = {
-    def as[A <: AggregationResponse](implicit decoder: JsonDecoder[A]): Either[String, (String, AggregationResponse)] =
-      data.as[A].map(field.split("#")(1) -> _).left.map(error => s"$field$error")
+    val (tpe, name) = field.span(_ != '#') match { case (tpe, rest) => (tpe, rest.drop(1)) }
 
-    field match {
-      case str if str.contains("weighted_avg#")     => as[WeightedAvgAggregationResponse]
-      case str if str.contains("avg#")              => as[AvgAggregationResponse]
-      case str if str.contains("cardinality#")      => as[CardinalityAggregationResponse]
-      case str if str.contains("extended_stats#")   => as[ExtendedStatsAggregationResponse]
-      case str if str.contains("filter#")           => as[FilterAggregationResponse]
-      case str if str.contains("ip_range#")         => as[IpRangeAggregationResponse]
-      case str if str.contains("max#")              => as[MaxAggregationResponse]
-      case str if str.contains("min#")              => as[MinAggregationResponse]
-      case str if str.contains("missing#")          => as[MissingAggregationResponse]
-      case str if str.contains("percentile_ranks#") => as[PercentileRanksAggregationResponse]
-      case str if str.contains("percentiles#")      => as[PercentilesAggregationResponse]
-      case str if str.contains("sampler#")          => as[SamplerAggregationResponse]
-      case str if str.contains("stats#")            => as[StatsAggregationResponse]
-      case str if str.contains("sum#")              => as[SumAggregationResponse]
-      case str if str.contains("terms#")            => as[TermsAggregationResponse]
-      case str if str.contains("value_count#")      => as[ValueCountAggregationResponse]
-      case _                                        => Left(s"Unsupported aggregation: $field")
+    def as[A <: AggregationResponse](implicit decoder: JsonDecoder[A]): Either[String, (String, AggregationResponse)] =
+      data.as[A].map(name -> _).left.map(error => s"$field$error")
+
+    tpe match {
+      case "avg"                               => as[AvgAggregationResponse]
+      case "cardinality"                       => as[CardinalityAggregationResponse]
+      case "extended_stats"                    => as[ExtendedStatsAggregationResponse]
+      case "filter"                            => as[FilterAggregationResponse]
+      case "ip_range"                          => as[IpRangeAggregationResponse]
+      case "max"                               => as[MaxAggregationResponse]
+      case "min"                               => as[MinAggregationResponse]
+      case "missing"                           => as[MissingAggregationResponse]
+      case t if t.endsWith("percentile_ranks") => as[PercentileRanksAggregationResponse]
+      case t if t.endsWith("percentiles")      => as[PercentilesAggregationResponse]
+      case "sampler"                           => as[SamplerAggregationResponse]
+      case "stats"                             => as[StatsAggregationResponse]
+      case "sum"                               => as[SumAggregationResponse]
+      case t if t.endsWith("terms")            => as[TermsAggregationResponse]
+      case "value_count"                       => as[ValueCountAggregationResponse]
+      case "weighted_avg"                      => as[WeightedAvgAggregationResponse]
+      case _                                   => Left(s"Unsupported aggregation: $field")
     }
   }
 
@@ -177,7 +179,11 @@ private[elasticsearch] final case class BucketDecoder(fields: Chunk[(String, Jso
       .getOrElse(Left("Missing field: key"))
 
   lazy val subAggs: Either[String, Map[String, AggregationResponse]] =
-    AggregationResponse.decodeAll(fields.filterNot { case (field, _) => field == "doc_count" || field == "key" })
+    AggregationResponse.decodeAll(fields.filterNot { case (field, _) => BucketDecoder.metadataFields.contains(field) })
+}
+
+private[elasticsearch] object BucketDecoder {
+  private val metadataFields: Set[String] = Set("doc_count", "doc_count_error_upper_bound", "key", "key_as_string")
 }
 
 private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
@@ -228,7 +234,7 @@ private[elasticsearch] object FilterAggregationResponse {
     for {
       docCount <- bucketDecoder.docCount
       subAggs  <- bucketDecoder.subAggs
-    } yield FilterAggregationResponse(docCount, Option(subAggs).filter(_.nonEmpty))
+    } yield FilterAggregationResponse(docCount, Some(subAggs).filter(_.nonEmpty))
   }
 }
 
@@ -253,7 +259,7 @@ private[elasticsearch] object IpRangeAggregationBucket {
       from = fields.collectFirst { case ("from", Str(value)) => value },
       to = fields.collectFirst { case ("to", Str(value)) => value },
       docCount = docCount,
-      subAggregations = Option(subAggs).filter(_.nonEmpty)
+      subAggregations = Some(subAggs).filter(_.nonEmpty)
     )
   }
 }
@@ -306,7 +312,7 @@ private[elasticsearch] object MissingAggregationResponse {
   implicit val decoder: JsonDecoder[MissingAggregationResponse] = DeriveJsonDecoder.gen[MissingAggregationResponse]
 }
 
-private[elasticsearch] final case class PercentileRanksAggregationResponse(values: Map[String, Double])
+private[elasticsearch] final case class PercentileRanksAggregationResponse(values: Map[String, Option[Double]])
     extends AggregationResponse
 
 private[elasticsearch] object PercentileRanksAggregationResponse {
@@ -314,7 +320,7 @@ private[elasticsearch] object PercentileRanksAggregationResponse {
     DeriveJsonDecoder.gen[PercentileRanksAggregationResponse]
 }
 
-private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Double])
+private[elasticsearch] final case class PercentilesAggregationResponse(values: Map[String, Option[Double]])
     extends AggregationResponse
 
 private[elasticsearch] object PercentilesAggregationResponse {
@@ -335,7 +341,7 @@ private[elasticsearch] object SamplerAggregationResponse {
     for {
       docCount <- bucketDecoder.docCount
       subAggs  <- bucketDecoder.subAggs
-    } yield SamplerAggregationResponse(docCount, Option(subAggs).filter(_.nonEmpty))
+    } yield SamplerAggregationResponse(docCount, Some(subAggs).filter(_.nonEmpty))
   }
 }
 
@@ -402,7 +408,7 @@ private[elasticsearch] object TermsAggregationBucket {
       key      <- bucketDecoder.key
       docCount <- bucketDecoder.docCount
       subAggs  <- bucketDecoder.subAggs
-    } yield TermsAggregationBucket(key, docCount, Option(subAggs).filter(_.nonEmpty))
+    } yield TermsAggregationBucket(key, docCount, Some(subAggs).filter(_.nonEmpty))
   }
 }
 
