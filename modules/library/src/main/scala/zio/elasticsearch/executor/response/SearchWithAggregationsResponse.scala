@@ -20,7 +20,7 @@ import zio.Chunk
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
-import zio.prelude.{Validation, ZValidation}
+import zio.prelude.Validation
 
 private[elasticsearch] final case class SearchWithAggregationsResponse(
   @jsonField("pit_id")
@@ -61,57 +61,11 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
 
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 
-  def aggs: Map[String, AggregationResponse] =
-    aggregations.fold[Map[String, AggregationResponse]](
-      Map.empty[String, AggregationResponse]
-    )(aggregations =>
-      (Obj.decoder.decodeJson(aggregations.toString): @unchecked) match {
-        case Right(res) =>
-          (Validation
-            .validateAll(
-              res.fields.map { case (field, data) =>
-                ZValidation.fromEither(
-                  (field: @unchecked) match {
-                    case str if str.contains("weighted_avg#") =>
-                      WeightedAvgAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("avg#") =>
-                      AvgAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("cardinality#") =>
-                      CardinalityAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("extended_stats#") =>
-                      ExtendedStatsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("filter#") =>
-                      FilterAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("ip_range#") =>
-                      IpRangeAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("max#") =>
-                      MaxAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("min#") =>
-                      MinAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("missing#") =>
-                      MissingAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("percentile_ranks#") =>
-                      PercentileRanksAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("percentiles#") =>
-                      PercentilesAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("sampler#") =>
-                      SamplerAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("stats#") =>
-                      StatsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("sum#") =>
-                      SumAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("terms#") =>
-                      TermsAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                    case str if str.contains("value_count#") =>
-                      ValueCountAggregationResponse.decoder.decodeJson(data.toString).map(field.split("#")(1) -> _)
-                  }
-                )
-              }
-            ): @unchecked) match {
-            case ZValidation.Success(_, value) => value.toMap
-          }
-      }
-    )
+  lazy val aggs: Either[String, Map[String, AggregationResponse]] =
+    aggregations.fold[Either[String, Map[String, AggregationResponse]]](Right(Map.empty)) {
+      case Obj(fields) => AggregationResponse.decodeAll(fields)
+      case other       => Left(s"Expected an object, got: $other")
+    }
 }
 
 private[elasticsearch] object SearchWithAggregationsResponse {

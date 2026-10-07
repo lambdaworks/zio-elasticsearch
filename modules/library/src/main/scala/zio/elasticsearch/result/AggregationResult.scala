@@ -20,23 +20,23 @@ import zio.Chunk
 
 sealed trait AggregationResult
 
-final case class AvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+final case class AvgAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
 
 final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
 
 final case class ExtendedStatsAggregationResult private[elasticsearch] (
   count: Int,
-  min: Double,
-  max: Double,
-  avg: Double,
+  min: Option[Double],
+  max: Option[Double],
+  avg: Option[Double],
   sum: Double,
-  sumOfSquares: Double,
-  variance: Double,
-  variancePopulation: Double,
-  varianceSampling: Double,
-  stdDeviation: Double,
-  stdDeviationPopulation: Double,
-  stdDeviationSampling: Double,
+  sumOfSquares: Option[Double],
+  variance: Option[Double],
+  variancePopulation: Option[Double],
+  varianceSampling: Option[Double],
+  stdDeviation: Option[Double],
+  stdDeviationPopulation: Option[Double],
+  stdDeviationSampling: Option[Double],
   stdDeviationBoundsResult: StdDeviationBoundsResult
 ) extends AggregationResult
 
@@ -73,9 +73,9 @@ final case class IpRangeAggregationBucketResult private[elasticsearch] (
     }
 }
 
-final case class MaxAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+final case class MaxAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
 
-final case class MinAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+final case class MinAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
 
 final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
 
@@ -100,19 +100,19 @@ final case class SamplerAggregationResult private[elasticsearch] (
 
 final case class StatsAggregationResult private[elasticsearch] (
   count: Int,
-  min: Double,
-  max: Double,
-  avg: Double,
+  min: Option[Double],
+  max: Option[Double],
+  avg: Option[Double],
   sum: Double
 ) extends AggregationResult
 
 final case class StdDeviationBoundsResult private[elasticsearch] (
-  upper: Double,
-  lower: Double,
-  upperPopulation: Double,
-  lowerPopulation: Double,
-  upperSampling: Double,
-  lowerSampling: Double
+  upper: Option[Double],
+  lower: Option[Double],
+  upperPopulation: Option[Double],
+  lowerPopulation: Option[Double],
+  upperSampling: Option[Double],
+  lowerSampling: Option[Double]
 ) extends AggregationResult
 
 final case class SumAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
@@ -139,4 +139,4 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
 
 final case class ValueCountAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
 
-final case class WeightedAvgAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
+final case class WeightedAvgAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult

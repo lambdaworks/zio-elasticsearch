@@ -126,9 +126,12 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              ZIO.succeed(new AggregateResult(value.aggs.map { case (key, response) =>
-                (key, toResult(response))
-              }))
+              ZIO
+                .fromEither(value.aggs)
+                .mapBoth(
+                  error => DecodingException(s"Could not parse aggregations: $error"),
+                  aggs => new AggregateResult(aggs.map { case (key, response) => (key, toResult(response)) })
+                )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -533,15 +536,17 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
-              ZIO.succeed(
-                new SearchAndAggregateResult(
-                  itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
-                  value.aggs.map { case (key, response) =>
-                    (key, toResult(response))
-                  },
-                  value
+              ZIO
+                .fromEither(value.aggs)
+                .mapBoth(
+                  error => DecodingException(s"Could not parse aggregations: $error"),
+                  aggs =>
+                    new SearchAndAggregateResult(
+                      itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
+                      aggs.map { case (key, response) => (key, toResult(response)) },
+                      value
+                    )
                 )
-              )
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))

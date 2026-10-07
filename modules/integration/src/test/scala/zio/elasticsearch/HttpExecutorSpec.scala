@@ -41,6 +41,7 @@ import zio.elasticsearch.result.{
   Item,
   MaxAggregationResult,
   SamplerAggregationResult,
+  StatsAggregationResult,
   SumAggregationResult,
   TermsAggregationBucketResult,
   TermsAggregationResult,
@@ -83,7 +84,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   Executor
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asAvgAggregation("aggregationDouble")
-              } yield assert(aggsRes.head.value)(equalTo(15.0))
+              } yield assert(aggsRes.head.value)(isSome(equalTo(15.0)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -135,23 +136,23 @@ object HttpExecutorSpec extends IntegrationSpec {
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asExtendedStatsAggregation("aggregation")
               } yield assert(aggsRes.head.count)(equalTo(2)) &&
-                assert(aggsRes.head.min)(equalTo(50.0)) &&
-                assert(aggsRes.head.max)(equalTo(100.0)) &&
-                assert(aggsRes.head.avg)(equalTo(75.0)) &&
+                assert(aggsRes.head.min)(isSome(equalTo(50.0))) &&
+                assert(aggsRes.head.max)(isSome(equalTo(100.0))) &&
+                assert(aggsRes.head.avg)(isSome(equalTo(75.0))) &&
                 assert(aggsRes.head.sum)(equalTo(150.0)) &&
-                assert(aggsRes.head.sumOfSquares)(equalTo(12500.0)) &&
-                assert(aggsRes.head.variance)(equalTo(625.0)) &&
-                assert(aggsRes.head.variancePopulation)(equalTo(625.0)) &&
-                assert(aggsRes.head.varianceSampling)(equalTo(1250.0)) &&
-                assert(aggsRes.head.stdDeviation)(equalTo(25.0)) &&
-                assert(aggsRes.head.stdDeviationPopulation)(equalTo(25.0)) &&
-                assert(aggsRes.head.stdDeviationSampling)(equalTo(35.35533905932738)) &&
-                assert(aggsRes.head.stdDeviationBoundsResult.upper)(equalTo(150.0)) &&
-                assert(aggsRes.head.stdDeviationBoundsResult.lower)(equalTo(0.0)) &&
-                assert(aggsRes.head.stdDeviationBoundsResult.upperPopulation)(equalTo(150.0)) &&
-                assert(aggsRes.head.stdDeviationBoundsResult.lowerPopulation)(equalTo(0.0)) &&
-                assert(aggsRes.head.stdDeviationBoundsResult.upperSampling)(equalTo(181.06601717798213)) &&
-                assert(aggsRes.head.stdDeviationBoundsResult.lowerSampling)(equalTo(-31.066017177982133))
+                assert(aggsRes.head.sumOfSquares)(isSome(equalTo(12500.0))) &&
+                assert(aggsRes.head.variance)(isSome(equalTo(625.0))) &&
+                assert(aggsRes.head.variancePopulation)(isSome(equalTo(625.0))) &&
+                assert(aggsRes.head.varianceSampling)(isSome(equalTo(1250.0))) &&
+                assert(aggsRes.head.stdDeviation)(isSome(equalTo(25.0))) &&
+                assert(aggsRes.head.stdDeviationPopulation)(isSome(equalTo(25.0))) &&
+                assert(aggsRes.head.stdDeviationSampling)(isSome(equalTo(35.35533905932738))) &&
+                assert(aggsRes.head.stdDeviationBoundsResult.upper)(isSome(equalTo(150.0))) &&
+                assert(aggsRes.head.stdDeviationBoundsResult.lower)(isSome(equalTo(0.0))) &&
+                assert(aggsRes.head.stdDeviationBoundsResult.upperPopulation)(isSome(equalTo(150.0))) &&
+                assert(aggsRes.head.stdDeviationBoundsResult.lowerPopulation)(isSome(equalTo(0.0))) &&
+                assert(aggsRes.head.stdDeviationBoundsResult.upperSampling)(isSome(equalTo(181.06601717798213))) &&
+                assert(aggsRes.head.stdDeviationBoundsResult.lowerSampling)(isSome(equalTo(-31.066017177982133)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -163,7 +164,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             FilterAggregationResult(
               docCount = 2,
               subAggregations = Map(
-                "subAggregation" -> MaxAggregationResult(value = 5.0)
+                "subAggregation" -> MaxAggregationResult(value = Some(5.0))
               )
             )
           )
@@ -264,22 +265,23 @@ object HttpExecutorSpec extends IntegrationSpec {
                 isSome(
                   equalTo(
                     IpRangeAggregationResult(
-                      buckets = Chunk(
-                        IpRangeAggregationBucketResult(
-                          key = "*-10.0.0.100",
-                          from = None,
-                          to = Some("10.0.0.100"),
-                          docCount = 1,
-                          subAggregations = Map("subAggregation" -> MaxAggregationResult(value = 7.0))
-                        ),
-                        IpRangeAggregationBucketResult(
-                          key = "10.0.0.100-*",
-                          from = Some("10.0.0.100"),
-                          to = None,
-                          docCount = 1,
-                          subAggregations = Map("subAggregation" -> MaxAggregationResult(value = 3.0))
+                      buckets =
+                        Chunk(
+                          IpRangeAggregationBucketResult(
+                            key = "*-10.0.0.100",
+                            from = None,
+                            to = Some("10.0.0.100"),
+                            docCount = 1,
+                            subAggregations = Map("subAggregation" -> MaxAggregationResult(value = Some(7.0)))
+                          ),
+                          IpRangeAggregationBucketResult(
+                            key = "10.0.0.100-*",
+                            from = Some("10.0.0.100"),
+                            to = None,
+                            docCount = 1,
+                            subAggregations = Map("subAggregation" -> MaxAggregationResult(value = Some(3.0)))
+                          )
                         )
-                      )
                     )
                   )
                 )
@@ -336,7 +338,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         } @@ after(Executor.execute(ElasticRequest.deleteIndex(ipRangeIndex)).orDie),
         test("max aggregation") {
-          val expectedResponse = ("aggregationInt", MaxAggregationResult(value = 20.0))
+          val expectedResponse = ("aggregationInt", MaxAggregationResult(value = Some(20.0)))
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
               for {
@@ -380,7 +382,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   Executor
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asMinAggregation("aggregationInt")
-              } yield assert(aggsRes.head.value)(equalTo(23.0))
+              } yield assert(aggsRes.head.value)(isSome(equalTo(23.0)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -630,9 +632,9 @@ object HttpExecutorSpec extends IntegrationSpec {
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asStatsAggregation("aggregation")
               } yield assert(aggsRes.head.count)(equalTo(3)) &&
-                assert(aggsRes.head.min)(equalTo(6.0)) &&
-                assert(aggsRes.head.max)(equalTo(10.0)) &&
-                assert(aggsRes.head.avg)(equalTo(7.666666666666667)) &&
+                assert(aggsRes.head.min)(isSome(equalTo(6.0))) &&
+                assert(aggsRes.head.max)(isSome(equalTo(10.0))) &&
+                assert(aggsRes.head.avg)(isSome(equalTo(7.666666666666667))) &&
                 assert(aggsRes.head.sum)(equalTo(23.0))
 
           }
@@ -863,7 +865,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   Executor
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asWeightedAvgAggregation("weightedAggregation")
-              } yield assert(aggsRes.head.value)(equalTo(8.0))
+              } yield assert(aggsRes.head.value)(isSome(equalTo(8.0)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -871,6 +873,39 @@ object HttpExecutorSpec extends IntegrationSpec {
         )
       ),
       suite("search with aggregation")(
+        test("metric aggregations over a query with no matches") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+              _ <- Executor.execute(
+                     ElasticRequest.upsert[TestDocument](firstSearchIndex, documentId, document).refreshTrue
+                   )
+              aggregation =
+                avgAggregation(name = "aggregationAvg", field = TestDocument.doubleField)
+                  .withAgg(statsAggregation(name = "aggregationStats", field = TestDocument.doubleField))
+                  .withAgg(
+                    extendedStatsAggregation(name = "aggregationExtendedStats", field = TestDocument.doubleField)
+                  )
+              res <- Executor.execute(
+                       ElasticRequest.search(
+                         selectors = firstSearchIndex,
+                         query = ids("non-existing-id"),
+                         aggregation = aggregation
+                       )
+                     )
+              avg           <- res.asAvgAggregation("aggregationAvg")
+              stats         <- res.aggregationAs[StatsAggregationResult]("aggregationStats")
+              extendedStats <- res.asExtendedStatsAggregation("aggregationExtendedStats")
+            } yield assert(avg.map(_.value))(isSome(isNone)) &&
+              assert(stats.map(s => (s.count, s.min, s.max, s.avg)))(isSome(equalTo((0, None, None, None)))) &&
+              assert(extendedStats.map(s => (s.count, s.variance, s.stdDeviationBoundsResult.upper)))(
+                isSome(equalTo((0, None, None)))
+              )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
         test("match all with multiple terms aggregations") {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
