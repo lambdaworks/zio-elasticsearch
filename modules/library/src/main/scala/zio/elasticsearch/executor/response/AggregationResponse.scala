@@ -175,7 +175,8 @@ private[elasticsearch] final case class BucketDecoder(fields: Chunk[(String, Jso
     fields.collectFirst { case ("doc_count", data) => data.as[Int] }.getOrElse(Left("Missing field: doc_count"))
 
   lazy val key: Either[String, String] =
-    fields.collectFirst { case ("key", data) => Right(data.toString.replaceAll("\"", "")) }
+    fields.collectFirst { case ("key_as_string", Str(value)) => Right(value) }
+      .orElse(fields.collectFirst { case ("key", data) => Right(data.toString.replaceAll("\"", "")) })
       .getOrElse(Left("Missing field: key"))
 
   lazy val subAggs: Either[String, Map[String, AggregationResponse]] =

@@ -133,7 +133,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
             isRight(equalTo(Map("avg#aggregation" -> ValueCountAggregationResult(value = 2))))
           )
         },
-        test("ignore bucket metadata fields") {
+        test("prefer key as string and ignore bucket metadata fields") {
           val aggregations =
             """{
               |  "lterms#termsAggregation": {
@@ -157,7 +157,8 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                   "termsAggregation" -> TermsAggregationResult(
                     docErrorCount = 0,
                     sumOtherDocCount = 0,
-                    buckets = Chunk(TermsAggregationBucketResult(docCount = 1, key = "1", subAggregations = Map.empty))
+                    buckets =
+                      Chunk(TermsAggregationBucketResult(docCount = 1, key = "true", subAggregations = Map.empty))
                   )
                 )
               )
