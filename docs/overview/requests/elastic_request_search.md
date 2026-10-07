@@ -53,12 +53,12 @@ val request1WithFrom: SearchRequest = search(selectors = IndexName("index"), que
 val request2WithFrom: SearchAndAggregateRequest = search(selectors = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).from(2)
 ```
 
-If you want to change the `highlight`, you can use the `highlights` method on both requests:
+If you want to change the `highlight`, you can use the `highlights` method on both requests (more about highlights [here](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_elastic_highlight)):
 ```scala
 import zio.elasticsearch.ElasticHighlight.highlight
 
-val request1WithHighlights: SearchRequest = search(selectors = IndexName("index"), query = matchAll).highlights("intField")
-val request2WithHighlights: SearchAndAggregateRequest = search(selectors = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).highlights(Document.intField)
+val request1WithHighlights: SearchRequest = search(selectors = IndexName("index"), query = matchAll).highlights(highlight("stringField"))
+val request2WithHighlights: SearchAndAggregateRequest = search(selectors = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).highlights(highlight(Document.stringField))
 ```
 
 If you want to change the `includes`, you can use the `includes` method on both requests:
@@ -96,7 +96,7 @@ val request1WithSize: SearchRequest = search(selectors = IndexName("index"), que
 val request2WithSize: SearchAndAggregateRequest = search(selectors = IndexName("index"), query = matchAll, aggregation = maxAggregation(name = "aggregation", field = "intField")).size(5)
 ```
 
-If you want to change the `sort`, you can use the `sort` method on both requests:
+If you want to change the `sort`, you can use the `sort` method on both requests (more about sorting [here](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_elastic_sort)):
 ```scala
 import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.query.sort.SortOrder.Asc
