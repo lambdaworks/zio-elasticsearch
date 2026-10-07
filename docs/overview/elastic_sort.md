@@ -14,7 +14,6 @@ import zio.elasticsearch.ElasticSort._
 In order to sort by field import the following:
 ```scala
 import zio.elasticsearch.query.sort.SortByField
-import zio.elasticsearch.ElasticSort.sortBy
 ```
 
 You can create a `SortByField` using the `sortBy` method this way:
@@ -54,7 +53,7 @@ val sortWithMissingFirst: SortByField = sortBy(field = Document.intField).missin
 val sortWithMissingLast: SortByField = sortBy(field = Document.intField).missing(Last)
 ```
 
-If you want to change the `mode`, you can use `mode` method:
+If you want to change the `mode` (it only has an effect on multi-valued fields), you can use `mode` method:
 ```scala
 import zio.elasticsearch.query.sort.SortMode._
 
@@ -88,14 +87,13 @@ If you want to change the `unmapped_type`, you can use `unmappedType` method:
 val sortWithUnmappedType: SortByField = sortBy(field = Document.intField).unmappedType("long")
 ```
 
-You can also combine all of the parameters above:
+You can also combine several of the parameters above (`format` is left out, since it only applies to date fields):
 ```scala
-val sortWithAllParams: SortByField =
-  sortBy(field = Document.dateField)
-    .format("strict_date_optional_time_nanos")
+val sortWithMultipleParams: SortByField =
+  sortBy(field = Document.intListField)
     .missing(First)
     .mode(Avg)
-    .numericType(NumericType.Long)
+    .numericType(NumericType.Double)
     .order(Desc)
     .unmappedType("long")
 ```
@@ -106,7 +104,6 @@ In order to sort by script import the following:
 ```scala
 import zio.elasticsearch.query.sort.SortByScript
 import zio.elasticsearch.query.sort.SourceType._
-import zio.elasticsearch.ElasticSort.sortBy
 import zio.elasticsearch.script.Script
 ```
 

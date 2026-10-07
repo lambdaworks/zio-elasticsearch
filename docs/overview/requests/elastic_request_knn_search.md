@@ -5,6 +5,8 @@ title: "kNN Search Request"
 
 The `kNN Search` request performs a k-nearest neighbor (kNN) search: given a query vector, it finds the `k` closest vectors and returns those documents as search hits.
 
+Note that this request uses the `_knn_search` API, which was deprecated in Elasticsearch 8.4 in favour of the `knn` option of the `_search` API. It is still available in 8.x, but may be removed in a future Elasticsearch version.
+
 In order to use the `kNN Search` request, the searched field must be mapped as a `dense_vector` field with indexing enabled, for example:
 ```scala
 import zio.elasticsearch.ElasticRequest.{createIndex, CreateIndexRequest}
@@ -20,8 +22,7 @@ val createIndexRequest: CreateIndexRequest =
 To create a `kNN Search` request do the following:
 ```scala
 import zio.Chunk
-import zio.elasticsearch.ElasticRequest.KNNRequest
-import zio.elasticsearch.ElasticRequest.knnSearch
+import zio.elasticsearch.ElasticRequest.{knnSearch, KNNRequest}
 // this import is required for using `IndexName`, `IndexPattern` and `MultiIndex`
 import zio.elasticsearch._
 import zio.elasticsearch.ElasticQuery._

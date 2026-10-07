@@ -4,17 +4,19 @@ title: "Highlights"
 ---
 
 Highlights allow you to get highlighted snippets from one or more fields in your search results, so you can show users where the query matches are.
-Highlights are described with the `Highlights` data type, which can be constructed from the DSL methods found under the following import:
+Highlights are constructed from the DSL methods found under the following import:
 ```scala
 import zio.elasticsearch.ElasticHighlight._
 ```
 
-You can create `Highlights` for a field using the `highlight` method this way:
+The type of the constructed highlights is internal to the library, so it can't be written out explicitly; let the compiler infer it, as in the examples below.
+
+You can highlight a field using the `highlight` method this way:
 ```scala
 val highlights = highlight(field = "stringField")
 ```
 
-You can create [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Highlights` using the `highlight` method this way:
+You can highlight a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) field using the `highlight` method this way:
 ```scala
 val highlights = highlight(field = Document.stringField)
 ```
@@ -76,14 +78,16 @@ val request: SearchRequest =
 ```
 
 Highlights can also be added to the inner hits of the [`Nested`](https://lambdaworks.github.io/zio-elasticsearch/overview/queries/elastic_query_nested) query.
-In that case, highlighted fields are relative to the nested path (`stringField` below is highlighted as `subDocumentList.stringField`):
+In that case, both the fields of the inner query and the highlighted fields are relative to the nested path (`stringField` below is matched and highlighted as `subDocumentList.stringField`):
 ```scala
 import zio.elasticsearch.ElasticQuery.{matches, nested}
 import zio.elasticsearch.query.{InnerHits, NestedQuery}
 
-val query: NestedQuery[Any] =
-  nested(path = "subDocumentList", query = matches(field = "subDocumentList.stringField", value = "test"))
+val nestedQuery: NestedQuery[Any] =
+  nested(path = "subDocumentList", query = matches(field = "stringField", value = "test"))
     .innerHits(InnerHits().highlights(highlight(field = "stringField")))
+
+val nestedRequest: SearchRequest = search(selectors = IndexName("index"), query = nestedQuery)
 ```
 
 ## Reading highlights
@@ -103,10 +107,13 @@ val allHighlights: RIO[Elasticsearch, Chunk[Option[Map[String, Chunk[String]]]]]
   result.map(_.map(_.highlights))
 ```
 
-Highlights of the inner hits can be read the same way, after getting the inner hits with the `innerHit` method:
+Highlights of the inner hits can be read the same way, after getting the inner hits with the `innerHit` method (highlighted fields of the inner hits are keyed by their full path):
 ```scala
 val innerHitsHighlights: RIO[Elasticsearch, Chunk[Option[Chunk[String]]]] =
-  result.map(_.flatMap(_.innerHit("subDocumentList")).flatten.map(_.highlight("subDocumentList.stringField")))
+  Elasticsearch
+    .execute(nestedRequest)
+    .flatMap(_.items)
+    .map(_.flatMap(_.innerHit("subDocumentList")).flatten.map(_.highlight("subDocumentList.stringField")))
 ```
 
 You can find more information about highlighting [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/highlighting.html).
