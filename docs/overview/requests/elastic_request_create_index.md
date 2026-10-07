@@ -16,12 +16,12 @@ You can create a `CreateIndex` request using the `createIndex` method in the fol
 // this import is required for using `IndexName`
 import zio.elasticsearch._
 
-val request: CreateIndexRequest = createIndex(name = IndexName("index"))
+val request: CreateIndexRequest = createIndex(index = IndexName("index"))
 ```
 
 You can also create a `CreateIndex` request using the `createIndex` method with the specific definition in the following manner:
 ```scala
-val request: CreateIndexRequest = createIndex(name = IndexName("index"), definition = """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }""")
+val request: CreateIndexRequest = createIndex(index = IndexName("index"), definition = """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }""")
 ```
 
 You can find more information about `CreateIndex` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/indices-create-index.html).
