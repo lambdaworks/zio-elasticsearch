@@ -118,6 +118,125 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           )
         }
       ),
+      suite("decoding counts above Int.MaxValue")(
+        test("cardinality and value count") {
+          val aggregations =
+            s"""{
+               |  "cardinality#cardinalityAggregation": { "value": $largeCount },
+               |  "value_count#valueCountAggregation": { "value": $largeCount }
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "cardinalityAggregation" -> CardinalityAggregationResult(value = largeCount),
+                  "valueCountAggregation"  -> ValueCountAggregationResult(value = largeCount)
+                )
+              )
+            )
+          )
+        },
+        test("stats and extended stats") {
+          val extendedStats = emptyExtendedStats.replace(""""count": 0""", s""""count": $largeCount""")
+          val aggregations  =
+            s"""{
+               |  "stats#statsAggregation": { "count": $largeCount, "min": null, "max": null, "avg": null, "sum": 0.0 },
+               |  "extended_stats#extendedStatsAggregation": $extendedStats
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "statsAggregation" -> StatsAggregationResult(
+                    count = largeCount,
+                    min = None,
+                    max = None,
+                    avg = None,
+                    sum = 0.0
+                  ),
+                  "extendedStatsAggregation" -> emptyExtendedStatsResult.copy(count = largeCount)
+                )
+              )
+            )
+          )
+        },
+        test("filter, missing and sampler") {
+          val aggregations =
+            s"""{
+               |  "filter#filterAggregation": { "doc_count": $largeCount },
+               |  "missing#missingAggregation": { "doc_count": $largeCount },
+               |  "sampler#samplerAggregation": { "doc_count": $largeCount }
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "filterAggregation"  -> FilterAggregationResult(docCount = largeCount, subAggregations = Map.empty),
+                  "missingAggregation" -> MissingAggregationResult(docCount = largeCount),
+                  "samplerAggregation" -> SamplerAggregationResult(docCount = largeCount, subAggregations = Map.empty)
+                )
+              )
+            )
+          )
+        },
+        test("terms") {
+          val aggregations =
+            s"""{
+               |  "sterms#termsAggregation": {
+               |    "doc_count_error_upper_bound": $largeCount,
+               |    "sum_other_doc_count": $largeCount,
+               |    "buckets": [{ "key": "name", "doc_count": $largeCount }]
+               |  }
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "termsAggregation" -> TermsAggregationResult(
+                    docErrorCount = largeCount,
+                    sumOtherDocCount = largeCount,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(docCount = largeCount, key = "name", subAggregations = Map.empty)
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("ip range") {
+          val aggregations =
+            s"""{
+               |  "ip_range#ipRangeAggregation": {
+               |    "buckets": [{ "key": "*-10.0.0.5", "to": "10.0.0.5", "doc_count": $largeCount }]
+               |  }
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "ipRangeAggregation" -> IpRangeAggregationResult(
+                    buckets = Chunk(
+                      IpRangeAggregationBucketResult(
+                        key = "*-10.0.0.5",
+                        from = None,
+                        to = Some("10.0.0.5"),
+                        docCount = largeCount,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        }
+      ),
       suite("decoding aggregation keys")(
         test("keep everything after the first '#' as the aggregation name") {
           val aggregations = """{ "max#max#aggregation": { "value": 1.0 } }"""
@@ -192,6 +311,8 @@ object AggregationResponseSpec extends ZIOSpecDefault {
         }
       )
     )
+
+  private val largeCount: Long = Int.MaxValue.toLong + 1
 
   private val emptyExtendedStats: String =
     """{

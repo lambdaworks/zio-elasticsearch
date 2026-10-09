@@ -22,10 +22,10 @@ sealed trait AggregationResult
 
 final case class AvgAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
 
-final case class CardinalityAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
+final case class CardinalityAggregationResult private[elasticsearch] (value: Long) extends AggregationResult
 
 final case class ExtendedStatsAggregationResult private[elasticsearch] (
-  count: Int,
+  count: Long,
   min: Option[Double],
   max: Option[Double],
   avg: Option[Double],
@@ -41,7 +41,7 @@ final case class ExtendedStatsAggregationResult private[elasticsearch] (
 ) extends AggregationResult
 
 final case class FilterAggregationResult private[elasticsearch] (
-  docCount: Int,
+  docCount: Long,
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
@@ -61,7 +61,7 @@ final case class IpRangeAggregationBucketResult private[elasticsearch] (
   key: String,
   from: Option[String],
   to: Option[String],
-  docCount: Int,
+  docCount: Long,
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
@@ -77,7 +77,7 @@ final case class MaxAggregationResult private[elasticsearch] (value: Option[Doub
 
 final case class MinAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
 
-final case class MissingAggregationResult private[elasticsearch] (docCount: Int) extends AggregationResult
+final case class MissingAggregationResult private[elasticsearch] (docCount: Long) extends AggregationResult
 
 final case class PercentileRanksAggregationResult private[elasticsearch] (values: Map[String, Option[Double]])
     extends AggregationResult
@@ -86,7 +86,7 @@ final case class PercentilesAggregationResult private[elasticsearch] (values: Ma
     extends AggregationResult
 
 final case class SamplerAggregationResult private[elasticsearch] (
-  docCount: Int,
+  docCount: Long,
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
@@ -99,7 +99,7 @@ final case class SamplerAggregationResult private[elasticsearch] (
 }
 
 final case class StatsAggregationResult private[elasticsearch] (
-  count: Int,
+  count: Long,
   min: Option[Double],
   max: Option[Double],
   avg: Option[Double],
@@ -118,14 +118,14 @@ final case class StdDeviationBoundsResult private[elasticsearch] (
 final case class SumAggregationResult private[elasticsearch] (value: Double) extends AggregationResult
 
 final case class TermsAggregationResult private[elasticsearch] (
-  docErrorCount: Int,
-  sumOtherDocCount: Int,
+  docErrorCount: Long,
+  sumOtherDocCount: Long,
   buckets: Chunk[TermsAggregationBucketResult]
 ) extends AggregationResult
 
 final case class TermsAggregationBucketResult private[elasticsearch] (
   key: String,
-  docCount: Int,
+  docCount: Long,
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
@@ -137,6 +137,6 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
     }
 }
 
-final case class ValueCountAggregationResult private[elasticsearch] (value: Int) extends AggregationResult
+final case class ValueCountAggregationResult private[elasticsearch] (value: Long) extends AggregationResult
 
 final case class WeightedAvgAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
