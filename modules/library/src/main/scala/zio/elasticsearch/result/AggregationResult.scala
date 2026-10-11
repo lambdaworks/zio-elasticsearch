@@ -125,6 +125,7 @@ final case class TermsAggregationResult private[elasticsearch] (
 
 final case class TermsAggregationBucketResult private[elasticsearch] (
   key: String,
+  keyAsString: Option[String],
   docCount: Long,
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {

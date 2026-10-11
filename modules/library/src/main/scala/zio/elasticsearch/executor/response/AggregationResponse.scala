@@ -152,6 +152,7 @@ object AggregationResponse {
             TermsAggregationBucketResult(
               docCount = b.docCount,
               key = b.key,
+              keyAsString = b.keyAsString,
               subAggregations =
                 b.subAggregations.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
             )
@@ -175,16 +176,16 @@ private[elasticsearch] final case class BucketDecoder(fields: Chunk[(String, Jso
     fields.collectFirst { case ("doc_count", data) => data.as[Long] }.getOrElse(Left("Missing field: doc_count"))
 
   lazy val key: Either[String, String] =
-    fields.collectFirst { case ("key_as_string", Str(value)) => Right(value) }
-      .orElse(fields.collectFirst { case ("key", data) => Right(data.toString.replaceAll("\"", "")) })
-      .getOrElse(Left("Missing field: key"))
+    fields.collectFirst {
+      case ("key", Str(value)) => Right(value)
+      case ("key", data)       => Right(data.toString)
+    }.getOrElse(Left("Missing field: key"))
+
+  lazy val keyAsString: Option[String] =
+    fields.collectFirst { case ("key_as_string", Str(value)) => value }
 
   lazy val subAggs: Either[String, Map[String, AggregationResponse]] =
-    AggregationResponse.decodeAll(fields.filterNot { case (field, _) => BucketDecoder.metadataFields.contains(field) })
-}
-
-private[elasticsearch] object BucketDecoder {
-  private val metadataFields: Set[String] = Set("doc_count", "doc_count_error_upper_bound", "key", "key_as_string")
+    AggregationResponse.decodeAll(fields.filter { case (field, _) => field.contains('#') })
 }
 
 private[elasticsearch] final case class CardinalityAggregationResponse(value: Long) extends AggregationResponse
@@ -249,7 +250,7 @@ private[elasticsearch] final case class IpRangeAggregationBucket(
 
 private[elasticsearch] object IpRangeAggregationBucket {
   implicit val decoder: JsonDecoder[IpRangeAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
-    val bucketDecoder = BucketDecoder(fields.filterNot { case (field, _) => field == "from" || field == "to" })
+    val bucketDecoder = BucketDecoder(fields)
 
     for {
       key      <- bucketDecoder.key
@@ -396,6 +397,8 @@ private[elasticsearch] object TermsAggregationResponse {
 
 private[elasticsearch] final case class TermsAggregationBucket(
   key: String,
+  @jsonField("key_as_string")
+  keyAsString: Option[String],
   @jsonField("doc_count")
   docCount: Long,
   subAggregations: Option[Map[String, AggregationResponse]] = None
@@ -409,7 +412,12 @@ private[elasticsearch] object TermsAggregationBucket {
       key      <- bucketDecoder.key
       docCount <- bucketDecoder.docCount
       subAggs  <- bucketDecoder.subAggs
-    } yield TermsAggregationBucket(key, docCount, Some(subAggs).filter(_.nonEmpty))
+    } yield TermsAggregationBucket(
+      key = key,
+      keyAsString = bucketDecoder.keyAsString,
+      docCount = docCount,
+      subAggregations = Some(subAggs).filter(_.nonEmpty)
+    )
   }
 }
 

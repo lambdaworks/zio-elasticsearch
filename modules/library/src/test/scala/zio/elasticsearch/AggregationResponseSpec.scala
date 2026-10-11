@@ -105,6 +105,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                       TermsAggregationBucketResult(
                         docCount = 1,
                         key = "name",
+                        keyAsString = None,
                         subAggregations = Map(
                           "avgAggregation"           -> AvgAggregationResult(value = None),
                           "extendedStatsAggregation" -> emptyExtendedStatsResult
@@ -199,7 +200,12 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                     docErrorCount = largeCount,
                     sumOtherDocCount = largeCount,
                     buckets = Chunk(
-                      TermsAggregationBucketResult(docCount = largeCount, key = "name", subAggregations = Map.empty)
+                      TermsAggregationBucketResult(
+                        docCount = largeCount,
+                        key = "name",
+                        keyAsString = None,
+                        subAggregations = Map.empty
+                      )
                     )
                   )
                 )
@@ -259,7 +265,12 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                         docErrorCount = 0,
                         sumOtherDocCount = 0,
                         buckets = Chunk(
-                          TermsAggregationBucketResult(docCount = largeCount, key = "name", subAggregations = Map.empty)
+                          TermsAggregationBucketResult(
+                            docCount = largeCount,
+                            key = "name",
+                            keyAsString = None,
+                            subAggregations = Map.empty
+                          )
                         )
                       )
                     )
@@ -285,7 +296,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
             isRight(equalTo(Map("avg#aggregation" -> ValueCountAggregationResult(value = 2))))
           )
         },
-        test("prefer key as string and ignore bucket metadata fields") {
+        test("ignore plain bucket fields and expose key as string") {
           val aggregations =
             """{
               |  "lterms#termsAggregation": {
@@ -295,7 +306,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
               |      {
               |        "key": 1,
               |        "key_as_string": "true",
-              |        "doc_count": 1,
+              |        "doc_count": 2,
               |        "doc_count_error_upper_bound": 0
               |      }
               |    ]
@@ -309,8 +320,101 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                   "termsAggregation" -> TermsAggregationResult(
                     docErrorCount = 0,
                     sumOtherDocCount = 0,
-                    buckets =
-                      Chunk(TermsAggregationBucketResult(docCount = 1, key = "true", subAggregations = Map.empty))
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        docCount = 2,
+                        key = "1",
+                        keyAsString = Some("true"),
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("decode only typed keys inside a bucket as sub aggregations") {
+          val aggregations =
+            """{
+              |  "lterms#termsAggregation": {
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [
+              |      {
+              |        "key": 1696118400000,
+              |        "key_as_string": "2023-10-01T00:00:00.000Z",
+              |        "doc_count": 1,
+              |        "unknown_field": "value",
+              |        "max#maxAggregation": { "value": 1.0 }
+              |      }
+              |    ]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "termsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        docCount = 1,
+                        key = "1696118400000",
+                        keyAsString = Some("2023-10-01T00:00:00.000Z"),
+                        subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = Some(1.0)))
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("decode numeric and string keys without altering their values") {
+          val aggregations =
+            """{
+              |  "dterms#doubleTermsAggregation": {
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [{ "key": 1.5, "doc_count": 1 }]
+              |  },
+              |  "sterms#stringTermsAggregation": {
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [{ "key": "say \"hi\"", "doc_count": 1 }]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "doubleTermsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        docCount = 1,
+                        key = "1.5",
+                        keyAsString = None,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  ),
+                  "stringTermsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        docCount = 1,
+                        key = "say \"hi\"",
+                        keyAsString = None,
+                        subAggregations = Map.empty
+                      )
+                    )
                   )
                 )
               )
