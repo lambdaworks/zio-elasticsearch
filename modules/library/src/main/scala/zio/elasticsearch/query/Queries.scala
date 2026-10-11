@@ -924,13 +924,16 @@ private[elasticsearch] final case class MultiMatch[S](
     self.copy(minimumShouldMatch = Some(minimumShouldMatch))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(field => fieldPath.foldRight(field)(_ + "." + _).toJson)))
+      else None
+
     val multiMatchFields =
-      matchingType.map("type" -> _.toString.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
-                                                        else None) ++
+      matchingType.map("type" -> _.toString.toJson) ++ fieldsJson ++
         boost.map("boost" -> _.toJson) ++ minimumShouldMatch.map("minimum_should_match" -> _.toJson)
 
     Obj(
-      "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge Obj(
+      "multi_match" -> (Obj("query" -> value.toJson) merge Obj(
         Chunk.fromIterable(multiMatchFields)
       ))
     )
@@ -1083,12 +1086,12 @@ private[elasticsearch] final case class QueryString[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val fieldsJson =
-      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(field => fieldPath.foldRight(field)(_ + "." + _).toJson)))
       else None
 
     val params = Chunk(
       Some("query" -> query.toJson),
-      defaultField.map("default_field" -> _.toJson),
+      defaultField.map(field => "default_field" -> fieldPath.foldRight(field)(_ + "." + _).toJson),
       fieldsJson,
       boost.map("boost" -> _.toJson),
       minimumShouldMatch.map("minimum_should_match" -> _.toJson)
@@ -1315,7 +1318,9 @@ private[elasticsearch] final case class SimpleQueryString[S](
     copy(minimumShouldMatch = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val fieldsJson = if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson))) else None
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(field => fieldPath.foldRight(field)(_ + "." + _).toJson)))
+      else None
 
     val params = Chunk(
       Some("query" -> query.toJson),

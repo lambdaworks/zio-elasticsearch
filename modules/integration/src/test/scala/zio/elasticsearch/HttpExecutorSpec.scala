@@ -2140,6 +2140,37 @@ object HttpExecutorSpec extends IntegrationSpec {
           ),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
+        test("nested query with multi match query") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genTestSubDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, subDocument) =>
+              for {
+                _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                document = firstDocument.copy(subDocumentList = List(subDocument.copy(stringField = "test")))
+                _       <-
+                  Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .refreshTrue
+                     )
+                query =
+                  nested(
+                    path = TestDocument.subDocumentList,
+                    query = multiMatch(value = "test").fields(TestSubDocument.stringField)
+                  )
+                res <-
+                  Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
+              } yield assert(res)(equalTo(Chunk(document)))
+          }
+        } @@ around(
+          Executor.execute(
+            ElasticRequest.createIndex(
+              firstSearchIndex,
+              """{ "mappings": { "properties": { "subDocumentList": { "type": "nested" } } } }"""
+            )
+          ),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
         test("should with satisfying minimumShouldMatch") {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>

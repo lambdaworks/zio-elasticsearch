@@ -4424,6 +4424,25 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithFieldPath =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test"
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithFieldsAndFieldPath =
+            """
+              |{
+              |  "multi_match": {
+              |    "query": "this is a test",
+              |    "fields": [ "nested.stringField1", "nested.stringField2" ]
+              |  }
+              |}
+              |""".stripMargin
+
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithFields.toJson(fieldPath = None))(equalTo(expectedWithFields.toJson)) &&
           assert(queryWithFieldsTs.toJson(fieldPath = None))(equalTo(expectedWithFieldsTs.toJson)) &&
@@ -4436,7 +4455,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithPercentageMinimumShouldMatch.toJson(fieldPath = None))(
             equalTo(expectedWithPercentageMinimumShouldMatch.toJson)
           ) &&
-          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson)) &&
+          assert(query.toJson(fieldPath = Some("nested")))(equalTo(expectedWithFieldPath.toJson)) &&
+          assert(queryWithFields.toJson(fieldPath = Some("nested")))(equalTo(expectedWithFieldsAndFieldPath.toJson))
         },
         test("nested") {
           val query                   = nested(TestDocument.subDocumentList, matchAll)
@@ -4457,6 +4478,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           val queryWithAllParams      = nested(TestDocument.subDocumentList, matchAll).ignoreUnmappedFalse
             .innerHits(InnerHits().from(10).size(20).name("innerHitName"))
             .scoreMode(ScoreMode.Min)
+          val queryWithMultiMatch =
+            nested(TestDocument.subDocumentList, multiMatch("this is a test").fields(TestSubDocument.stringField))
 
           val expected =
             """
@@ -4485,6 +4508,21 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |            }
               |          }
               |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithMultiMatch =
+            """
+              |{
+              |  "nested": {
+              |    "path": "subDocumentList",
+              |    "query": {
+              |      "multi_match": {
+              |        "query": "this is a test",
+              |        "fields": [ "subDocumentList.stringField" ]
               |      }
               |    }
               |  }
@@ -4581,6 +4619,7 @@ object ElasticQuerySpec extends ZIOSpecDefault {
 
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryWithNested.toJson(fieldPath = None))(equalTo(expectedWithNested.toJson)) &&
+          assert(queryWithMultiMatch.toJson(fieldPath = None))(equalTo(expectedWithMultiMatch.toJson)) &&
           assert(queryWithIgnoreUnmapped.toJson(fieldPath = None))(equalTo(expectedWithIgnoreUnmapped.toJson)) &&
           assert(queryWithInnerHits.toJson(fieldPath = None))(equalTo(expectedWithInnerHits.toJson)) &&
           assert(queryWithInnerHitsEmpty.toJson(fieldPath = None))(equalTo(expectedWithInnerHitsEmpty.toJson)) &&
@@ -4710,6 +4749,26 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithFieldsAndFieldPath =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "fields": [ "nested.title", "nested.description" ]
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithDefaultFieldAndFieldPath =
+            """
+              |{
+              |  "query_string": {
+              |    "query": "(new york city) OR (big apple)",
+              |    "default_field": "nested.title"
+              |  }
+              |}
+              |""".stripMargin
+
           assert(queryNoFields.toJson(None))(equalTo(expectedNoFields.toJson)) &&
           assert(queryWithFields.toJson(None))(equalTo(expectedWithFields.toJson)) &&
           assert(queryTyped.toJson(None))(equalTo(expectedTyped.toJson)) &&
@@ -4717,7 +4776,9 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithMinShouldMatch.toJson(None))(equalTo(expectedWithMinShouldMatch.toJson)) &&
           assert(queryWithDefaultField.toJson(None))(equalTo(expectedWithDefaultField.toJson)) &&
           assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson)) &&
-          assert(queryDefaultFieldParams.toJson(None))(equalTo(expectedDefaultFieldParams.toJson))
+          assert(queryDefaultFieldParams.toJson(None))(equalTo(expectedDefaultFieldParams.toJson)) &&
+          assert(queryWithFields.toJson(Some("nested")))(equalTo(expectedWithFieldsAndFieldPath.toJson)) &&
+          assert(queryWithDefaultField.toJson(Some("nested")))(equalTo(expectedWithDefaultFieldAndFieldPath.toJson))
         },
         test("range") {
           val queryEmpty                = range(TestDocument.intField)
@@ -5079,6 +5140,16 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithFieldsAndFieldPath =
+            """
+              |{
+              |  "simple_query_string": {
+              |    "query": "test",
+              |    "fields": [ "nested.stringField1", "nested.stringField2" ]
+              |  }
+              |}
+              |""".stripMargin
+
           assert(queryNoFields.toJson(None))(equalTo(expectedNoFields.toJson)) &&
           assert(queryWithFields.toJson(None))(equalTo(expectedWithFields.toJson)) &&
           assert(queryTyped.toJson(None))(equalTo(expectedWithTypedField.toJson)) &&
@@ -5086,7 +5157,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
           assert(queryWithPercentageMinShouldMatch.toJson(None))(
             equalTo(expectedWithPercentageMinShouldMatch.toJson)
           ) &&
-          assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson))
+          assert(queryAllParams.toJson(None))(equalTo(expectedAllParams.toJson)) &&
+          assert(queryWithFields.toJson(Some("nested")))(equalTo(expectedWithFieldsAndFieldPath.toJson))
 
         },
         test("startsWith") {
