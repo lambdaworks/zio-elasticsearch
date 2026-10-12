@@ -397,9 +397,7 @@ private[elasticsearch] object TermsAggregationResponse {
 
 private[elasticsearch] final case class TermsAggregationBucket(
   key: String,
-  @jsonField("key_as_string")
   keyAsString: Option[String],
-  @jsonField("doc_count")
   docCount: Long,
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationBucket
