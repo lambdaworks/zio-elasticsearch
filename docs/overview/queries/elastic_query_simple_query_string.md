@@ -51,3 +51,14 @@ SimpleQueryString(
   minimumShouldMatch = Some(MinimumShouldMatch.Count(2))
 )
 ```
+
+When a `SimpleQueryString` query is used inside a [`Nested`](https://lambdaworks.github.io/zio-elasticsearch/overview/queries/elastic_query_nested) query, the nested path is prepended to every entry in `fields`, so you should pass field names relative to the nested object:
+```scala
+val query: NestedQuery[Document] =
+  nested(path = Document.subDocumentList, query = simpleQueryString(query = "apple").fields(SubDocument.name))
+// "fields": ["subDocumentList.name"]
+```
+
+:::caution
+Earlier versions ignored the nested path for `SimpleQueryString`, so the only way to use it inside `nested` was to pass the full path yourself (e.g. `fields("subDocumentList.name")`). Such field names now get the path twice (`subDocumentList.subDocumentList.name`) and the query silently matches nothing, so drop the path prefix when upgrading.
+:::

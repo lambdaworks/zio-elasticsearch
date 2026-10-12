@@ -30,7 +30,7 @@ sealed trait IntervalRule[-S] {
 
 private[elasticsearch] object IntervalRule {
   def useFieldToJson(useField: Option[String], fieldPath: Option[String]): Option[(String, Json)] =
-    useField.map(field => "use_field" -> fieldPath.foldRight(field)(_ + "." + _).toJson)
+    useField.map(field => "use_field" -> withPath(fieldPath, field).toJson)
 }
 
 sealed trait IntervalAllOfRule[-S] extends IntervalRule[S] with HasIntervalFilter[IntervalAllOfRule, S] {

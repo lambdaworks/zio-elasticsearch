@@ -3711,12 +3711,23 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithFieldPath =
+            """
+              |{
+              |  "geo_distance": {
+              |    "nested.geoPointField": "20.0,21.1",
+              |    "distance": "200.0km"
+              |  }
+              |}
+              |""".stripMargin
+
           assert(queryWithHash.toJson(fieldPath = None))(equalTo(expectedWithHash.toJson)) &&
           assert(queryWithPoint.toJson(fieldPath = None))(equalTo(expectedWithDistance.toJson)) &&
           assert(queryWithDistanceType.toJson(fieldPath = None))(equalTo(expectedWithDistanceType.toJson)) &&
           assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
           assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
-          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson)) &&
+          assert(queryWithPoint.toJson(fieldPath = Some("nested")))(equalTo(expectedWithFieldPath.toJson))
         },
         test("geoPolygon") {
           val query =
@@ -3793,11 +3804,23 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithFieldPath =
+            """
+              |{
+              |  "geo_polygon": {
+              |    "nested.stringField": {
+              |       "points": ["drm3btev3e86", "drm3btev3e87"]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(query.toJson(fieldPath = None))(equalTo(expected.toJson)) &&
           assert(queryTs.toJson(fieldPath = None))(equalTo(expectedTs.toJson)) &&
           assert(queryWithName.toJson(fieldPath = None))(equalTo(expectedWithName.toJson)) &&
           assert(queryWithValidationMethod.toJson(fieldPath = None))(equalTo(expectedWithValidationMethod.toJson)) &&
-          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson))
+          assert(queryWithAllParams.toJson(fieldPath = None))(equalTo(expectedWithAllParams.toJson)) &&
+          assert(queryTs.toJson(fieldPath = Some("nested")))(equalTo(expectedWithFieldPath.toJson))
         },
         test("hasChild") {
           val query                   = hasChild("child", matches(TestDocument.stringField, "test"))
@@ -4424,6 +4447,8 @@ object ElasticQuerySpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          // Without `fields` there is nothing to prefix with the nested path, so Elasticsearch falls back to
+          // `index.query.default_field`. The query text itself is never modified.
           val expectedWithFieldPath =
             """
               |{
