@@ -51,7 +51,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           )
         },
         test("extended stats") {
-          val aggregations = s"""{ "extended_stats#extendedStatsAggregation": $emptyExtendedStats }"""
+          val aggregations = s"""{ "extended_stats#extendedStatsAggregation": ${extendedStats(count = 0)} }"""
 
           assert(results(aggregations))(
             isRight(equalTo(Map("extendedStatsAggregation" -> emptyExtendedStatsResult)))
@@ -88,7 +88,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                |        "key": "name",
                |        "doc_count": 1,
                |        "avg#avgAggregation": { "value": null },
-               |        "extended_stats#extendedStatsAggregation": $emptyExtendedStats
+               |        "extended_stats#extendedStatsAggregation": ${extendedStats(count = 0)}
                |      }
                |    ]
                |  }
@@ -138,11 +138,10 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           )
         },
         test("stats and extended stats") {
-          val extendedStats = emptyExtendedStats.replace(""""count": 0""", s""""count": $largeCount""")
-          val aggregations  =
+          val aggregations =
             s"""{
                |  "stats#statsAggregation": { "count": $largeCount, "min": null, "max": null, "avg": null, "sum": 0.0 },
-               |  "extended_stats#extendedStatsAggregation": $extendedStats
+               |  "extended_stats#extendedStatsAggregation": ${extendedStats(count = largeCount)}
                |}""".stripMargin
 
           assert(results(aggregations))(
@@ -235,6 +234,40 @@ object AggregationResponseSpec extends ZIOSpecDefault {
               )
             )
           )
+        },
+        test("sub aggregations") {
+          val aggregations =
+            s"""{
+               |  "filter#filterAggregation": {
+               |    "doc_count": 1,
+               |    "sterms#termsAggregation": {
+               |      "doc_count_error_upper_bound": 0,
+               |      "sum_other_doc_count": 0,
+               |      "buckets": [{ "key": "name", "doc_count": $largeCount }]
+               |    }
+               |  }
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "filterAggregation" -> FilterAggregationResult(
+                    docCount = 1,
+                    subAggregations = Map(
+                      "termsAggregation" -> TermsAggregationResult(
+                        docErrorCount = 0,
+                        sumOtherDocCount = 0,
+                        buckets = Chunk(
+                          TermsAggregationBucketResult(docCount = largeCount, key = "name", subAggregations = Map.empty)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
         }
       ),
       suite("decoding aggregation keys")(
@@ -314,29 +347,29 @@ object AggregationResponseSpec extends ZIOSpecDefault {
 
   private val largeCount: Long = Int.MaxValue.toLong + 1
 
-  private val emptyExtendedStats: String =
-    """{
-      |  "count": 0,
-      |  "min": null,
-      |  "max": null,
-      |  "avg": null,
-      |  "sum": 0.0,
-      |  "sum_of_squares": null,
-      |  "variance": null,
-      |  "variance_population": null,
-      |  "variance_sampling": null,
-      |  "std_deviation": null,
-      |  "std_deviation_population": null,
-      |  "std_deviation_sampling": null,
-      |  "std_deviation_bounds": {
-      |    "upper": null,
-      |    "lower": null,
-      |    "upper_population": null,
-      |    "lower_population": null,
-      |    "upper_sampling": null,
-      |    "lower_sampling": null
-      |  }
-      |}""".stripMargin
+  private def extendedStats(count: Long): String =
+    s"""{
+       |  "count": $count,
+       |  "min": null,
+       |  "max": null,
+       |  "avg": null,
+       |  "sum": 0.0,
+       |  "sum_of_squares": null,
+       |  "variance": null,
+       |  "variance_population": null,
+       |  "variance_sampling": null,
+       |  "std_deviation": null,
+       |  "std_deviation_population": null,
+       |  "std_deviation_sampling": null,
+       |  "std_deviation_bounds": {
+       |    "upper": null,
+       |    "lower": null,
+       |    "upper_population": null,
+       |    "lower_population": null,
+       |    "upper_sampling": null,
+       |    "lower_sampling": null
+       |  }
+       |}""".stripMargin
 
   private val emptyExtendedStatsResult: ExtendedStatsAggregationResult =
     ExtendedStatsAggregationResult(

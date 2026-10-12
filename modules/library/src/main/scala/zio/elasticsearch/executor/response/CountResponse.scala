@@ -19,7 +19,7 @@ package zio.elasticsearch.executor.response
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class CountResponse(
-  count: Int,
+  count: Long,
   @jsonField("_shards")
   shards: Shards
 )

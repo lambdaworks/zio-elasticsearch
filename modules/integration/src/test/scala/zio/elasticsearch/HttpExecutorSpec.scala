@@ -333,7 +333,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             .execute(ElasticRequest.aggregate(selectors = ipRangeIndex, aggregation = aggregation))
                             .asIpRangeAggregation("aggregation")
               } yield assert(result.map(_.buckets.map(bucket => (bucket.key, bucket.docCount))))(
-                isSome(hasSameElements(Chunk("low" -> 1, "high" -> 1)))
+                isSome(hasSameElements(Chunk("low" -> 1L, "high" -> 1L)))
               )
           }
         } @@ after(Executor.execute(ElasticRequest.deleteIndex(ipRangeIndex)).orDie),
@@ -1133,7 +1133,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                      ElasticRequest.create[TestDocument](firstCountIndex, document).refreshTrue
                    )
               res <- Executor.execute(ElasticRequest.count(firstCountIndex, matchAll))
-            } yield assert(res)(equalTo(1))
+            } yield assert(res)(equalTo(1L))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstCountIndex)),
@@ -1147,7 +1147,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                      ElasticRequest.create[TestDocument](secondCountIndex, document).refreshTrue
                    )
               res <- Executor.execute(ElasticRequest.count(secondCountIndex))
-            } yield assert(res)(equalTo(1))
+            } yield assert(res)(equalTo(1L))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(secondCountIndex)),

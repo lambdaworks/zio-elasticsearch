@@ -20,10 +20,10 @@ import zio.elasticsearch.executor.response.UpdateByQueryResponse
 
 final case class UpdateByQueryResult(
   took: Int,
-  total: Int,
-  updated: Int,
-  deleted: Int,
-  versionConflicts: Int
+  total: Long,
+  updated: Long,
+  deleted: Long,
+  versionConflicts: Long
 )
 
 object UpdateByQueryResult {

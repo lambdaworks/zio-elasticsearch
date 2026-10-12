@@ -582,7 +582,7 @@ object ElasticRequest {
     }.mkString(start = "", sep = "\n", end = "\n")
   }
 
-  sealed trait CountRequest extends ElasticRequest[Int, Executable] with HasRouting[CountRequest]
+  sealed trait CountRequest extends ElasticRequest[Long, Executable] with HasRouting[CountRequest]
 
   private[elasticsearch] final case class Count(
     index: IndexName,
