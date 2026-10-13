@@ -258,7 +258,7 @@ private[elasticsearch] final case class Exists[S](field: String, boost: Option[D
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val boostJson = boost.fold(Obj())(b => Obj("boost" -> b.toJson))
 
-    Obj("exists" -> (Obj("field" -> fieldPath.foldRight(field)(_ + "." + _).toJson) merge boostJson))
+    Obj("exists" -> (Obj("field" -> withPath(fieldPath, field).toJson) merge boostJson))
   }
 }
 
@@ -497,7 +497,7 @@ private[elasticsearch] final case class Fuzzy[S](
       "max_expansions" -> _.toJson
     ) ++ prefixLength.map("prefix_length" -> _.toJson)
 
-    Obj("fuzzy" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(fuzzyFields))))
+    Obj("fuzzy" -> Obj(withPath(fieldPath, field) -> Obj(Chunk.fromIterable(fuzzyFields))))
   }
 }
 
@@ -535,7 +535,7 @@ private[elasticsearch] final case class GeoBoundingBox[S](
       "geo_bounding_box" -> Obj(
         Chunk(
           Some(
-            fieldPath.foldRight(field)(_ + "." + _) -> Obj(
+            withPath(fieldPath, field) -> Obj(
               "top_left"     -> Obj("lat" -> topLeft.lat.toJson, "lon" -> topLeft.lon.toJson),
               "bottom_right" -> Obj("lat" -> bottomRight.lat.toJson, "lon" -> bottomRight.lon.toJson)
             )
@@ -590,8 +590,8 @@ private[elasticsearch] final case class GeoDistance[S](
     Obj(
       "geo_distance" -> Obj(
         Chunk(
-          Some(field      -> point.toJson),
-          Some("distance" -> distance.toString.toJson),
+          Some(withPath(fieldPath, field) -> point.toJson),
+          Some("distance"                 -> distance.toString.toJson),
           distanceType.map("distance_type" -> _.toString.toJson),
           queryName.map("_name" -> _.toJson),
           validationMethod.map("validation_method" -> _.toString.toJson)
@@ -622,7 +622,7 @@ private[elasticsearch] final case class GeoPolygon[S](
     Obj(
       "geo_polygon" -> Obj(
         Chunk(
-          Some(field -> Obj("points" -> Arr(points.map(Json.Str(_)): _*))),
+          Some(withPath(fieldPath, field) -> Obj("points" -> Arr(points.map(Json.Str(_)): _*))),
           queryName.map("_name" -> _.toJson),
           validationMethod.map("validation_method" -> _.toString.toJson)
         ).flatten: _*
@@ -795,7 +795,7 @@ private[elasticsearch] final case class Intervals[S](
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "intervals" -> Obj(
-        fieldPath.foldRight(field)(_ + "." + _) -> rule.toJson(fieldPath)
+        withPath(fieldPath, field) -> rule.toJson(fieldPath)
       )
     )
 }
@@ -805,7 +805,7 @@ sealed trait MatchQuery[S] extends ElasticQuery[S]
 private[elasticsearch] final case class Match[S, A: ElasticPrimitive](field: String, value: A) extends MatchQuery[S] {
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("match" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> value.toJson))
+    Obj("match" -> Obj(withPath(fieldPath, field) -> value.toJson))
 }
 
 sealed trait MatchAllQuery extends ElasticQuery[Any] with HasBoost[MatchAllQuery]
@@ -833,7 +833,7 @@ private[elasticsearch] final case class MatchBooleanPrefix[S, A: ElasticPrimitiv
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "match_bool_prefix" -> Obj(
-        fieldPath.foldRight(field)(_ + "." + _) -> minimumShouldMatch.fold(value.toJson)(m =>
+        withPath(fieldPath, field) -> minimumShouldMatch.fold(value.toJson)(m =>
           Obj("query" -> value.toJson) merge Obj("minimum_should_match" -> m.toJson)
         )
       )
@@ -851,7 +851,7 @@ private[elasticsearch] final case class MatchPhrase[S](field: String, value: Str
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "match_phrase" -> Obj(
-        fieldPath.foldRight(field)(_ + "." + _) -> boost.fold(value.toJson)(b =>
+        withPath(fieldPath, field) -> boost.fold(value.toJson)(b =>
           Obj("query" -> value.toJson) merge Obj("boost" -> b.toJson)
         )
       )
@@ -864,7 +864,7 @@ private[elasticsearch] final case class MatchPhrasePrefix[S](field: String, valu
     extends MatchPhrasePrefixQuery[S] {
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
-    Obj("match_phrase_prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj("query" -> value.toJson)))
+    Obj("match_phrase_prefix" -> Obj(withPath(fieldPath, field) -> Obj("query" -> value.toJson)))
 }
 
 sealed trait MultiMatchQuery[S]
@@ -924,13 +924,16 @@ private[elasticsearch] final case class MultiMatch[S](
     self.copy(minimumShouldMatch = Some(minimumShouldMatch))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(field => withPath(fieldPath, field).toJson)))
+      else None
+
     val multiMatchFields =
-      matchingType.map("type" -> _.toString.toJson) ++ (if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
-                                                        else None) ++
+      matchingType.map("type" -> _.toString.toJson) ++ fieldsJson ++
         boost.map("boost" -> _.toJson) ++ minimumShouldMatch.map("minimum_should_match" -> _.toJson)
 
     Obj(
-      "multi_match" -> (Obj("query" -> fieldPath.foldRight(value)(_ + "." + _).toJson) merge Obj(
+      "multi_match" -> (Obj("query" -> value.toJson) merge Obj(
         Chunk.fromIterable(multiMatchFields)
       ))
     )
@@ -1030,7 +1033,7 @@ private[elasticsearch] final case class Prefix[S](
       "case_insensitive" -> _.toJson
     )
 
-    Obj("prefix" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(prefixFields))))
+    Obj("prefix" -> Obj(withPath(fieldPath, field) -> Obj(Chunk.fromIterable(prefixFields))))
   }
 }
 
@@ -1083,12 +1086,12 @@ private[elasticsearch] final case class QueryString[S](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val fieldsJson =
-      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson)))
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(field => withPath(fieldPath, field).toJson)))
       else None
 
     val params = Chunk(
       Some("query" -> query.toJson),
-      defaultField.map("default_field" -> _.toJson),
+      defaultField.map(field => "default_field" -> withPath(fieldPath, field).toJson),
       fieldsJson,
       boost.map("boost" -> _.toJson),
       minimumShouldMatch.map("minimum_should_match" -> _.toJson)
@@ -1198,7 +1201,7 @@ private[elasticsearch] final case class Range[S, A, LB <: LowerBound, UB <: Uppe
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json =
     Obj(
       "range" -> Obj(
-        fieldPath.foldRight(field)(_ + "." + _) -> Obj(
+        withPath(fieldPath, field) -> Obj(
           Chunk(
             lower.toJson,
             upper.toJson,
@@ -1235,7 +1238,7 @@ private[elasticsearch] final case class Regexp[S](
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val regexpFields = Some("value" -> value.toJson) ++ caseInsensitive.map("case_insensitive" -> _.toJson)
 
-    Obj("regexp" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(regexpFields))))
+    Obj("regexp" -> Obj(withPath(fieldPath, field) -> Obj(Chunk.fromIterable(regexpFields))))
   }
 }
 
@@ -1315,7 +1318,9 @@ private[elasticsearch] final case class SimpleQueryString[S](
     copy(minimumShouldMatch = Some(value))
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
-    val fieldsJson = if (fields.nonEmpty) Some("fields" -> Arr(fields.map(_.toJson))) else None
+    val fieldsJson =
+      if (fields.nonEmpty) Some("fields" -> Arr(fields.map(field => withPath(fieldPath, field).toJson)))
+      else None
 
     val params = Chunk(
       Some("query" -> query.toJson),
@@ -1347,7 +1352,7 @@ private[elasticsearch] final case class Term[S, A: ElasticPrimitive](
       "case_insensitive" -> _.toJson
     )
 
-    Obj("term" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termFields))))
+    Obj("term" -> Obj(withPath(fieldPath, field) -> Obj(Chunk.fromIterable(termFields))))
   }
 }
 
@@ -1364,7 +1369,7 @@ private[elasticsearch] final case class Terms[S, A: ElasticPrimitive](
 
   private[elasticsearch] def toJson(fieldPath: Option[String]): Json = {
     val termsFields =
-      Some(fieldPath.foldRight(field)(_ + "." + _) -> Arr(values.map(_.toJson))) ++ boost.map("boost" -> _.toJson)
+      Some(withPath(fieldPath, field) -> Arr(values.map(_.toJson))) ++ boost.map("boost" -> _.toJson)
 
     Obj("terms" -> Obj(Chunk.fromIterable(termsFields)))
   }
@@ -1389,7 +1394,7 @@ private[elasticsearch] final case class TermsSet[S, A: ElasticPrimitive](
         "minimum_should_match_field" -> _.toJson
       ) ++ minimumShouldMatchScript.map("minimum_should_match_script" -> _.toJson) ++ boost.map("boost" -> _.toJson)
 
-    Obj("terms_set" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(termsSetFields))))
+    Obj("terms_set" -> Obj(withPath(fieldPath, field) -> Obj(Chunk.fromIterable(termsSetFields))))
   }
 }
 
@@ -1416,6 +1421,6 @@ private[elasticsearch] final case class Wildcard[S](
       "case_insensitive" -> _.toJson
     )
 
-    Obj("wildcard" -> Obj(fieldPath.foldRight(field)(_ + "." + _) -> Obj(Chunk.fromIterable(wildcardFields))))
+    Obj("wildcard" -> Obj(withPath(fieldPath, field) -> Obj(Chunk.fromIterable(wildcardFields))))
   }
 }

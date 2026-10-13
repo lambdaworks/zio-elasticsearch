@@ -19,4 +19,7 @@ package zio.elasticsearch
 package object query {
 
   type GeoHash = GeoHash.Type
+
+  private[query] def withPath(fieldPath: Option[String], field: String): String =
+    fieldPath.foldRight(field)(_ + "." + _)
 }

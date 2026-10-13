@@ -69,3 +69,16 @@ queryString(query = "name", Document.stringField1, Document.stringField2)
   .boost(2.0)
   .minimumShouldMatch(2)
 ```
+
+When a `QueryString` query is used inside a [`Nested`](https://lambdaworks.github.io/zio-elasticsearch/overview/queries/elastic_query_nested) query, the nested path is prepended to every entry in `fields` and to `default_field`, so you should pass field names relative to the nested object:
+```scala
+val query: NestedQuery[Document] =
+  nested(path = Document.subDocumentList, query = queryString(query = "apple").fields(SubDocument.name))
+// "fields": ["subDocumentList.name"]
+```
+
+:::caution
+Earlier versions ignored the nested path for `QueryString`, so the only way to use it inside `nested` was to pass the full path yourself (e.g. `fields("subDocumentList.name")`). Such field names now get the path twice (`subDocumentList.subDocumentList.name`) and the query silently matches nothing, so drop the path prefix when upgrading.
+:::
+
+Field names written in the query text itself (e.g. `name:apple AND color:red`) are sent as they are. Inside a `Nested` query, use the full path for them (e.g. `subDocumentList.name:apple`).

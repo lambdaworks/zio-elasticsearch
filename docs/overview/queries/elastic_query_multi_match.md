@@ -45,5 +45,14 @@ import zio.elasticsearch.query.MultiMatchType._
 val queryWithType: MultiMatchQuery = multiMatch(value = "test").fields(Document.stringField1, Document.stringField2).matchingType(MostFields)
 ```
 
+When a `MultiMatch` query is used inside a [`Nested`](https://lambdaworks.github.io/zio-elasticsearch/overview/queries/elastic_query_nested) query, the nested path is prepended to every entry in `fields`, while the query text is sent unchanged:
+```scala
+val query: NestedQuery[Document] =
+  nested(path = Document.subDocumentList, query = multiMatch(value = "test").fields(SubDocument.stringField))
+// "fields": ["subDocumentList.stringField"]
+```
+
+If no `fields` are set, there is nothing to prefix, so Elasticsearch falls back to the `index.query.default_field` setting (which defaults to all eligible fields), just as it does outside a `Nested` query.
+
 You can find more information about `MultiMatch` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/query-dsl-multi-match-query.html#query-dsl-multi-match-query).
 
