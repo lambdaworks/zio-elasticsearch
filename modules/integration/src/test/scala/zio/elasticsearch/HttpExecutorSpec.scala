@@ -551,10 +551,30 @@ object HttpExecutorSpec extends IntegrationSpec {
                   docErrorCount = 0,
                   sumOtherDocCount = 0,
                   buckets = Chunk(
-                    TermsAggregationBucketResult(key = "abc", docCount = 1, subAggregations = Map.empty),
-                    TermsAggregationBucketResult(key = "def", docCount = 1, subAggregations = Map.empty),
-                    TermsAggregationBucketResult(key = "ghi", docCount = 1, subAggregations = Map.empty),
-                    TermsAggregationBucketResult(key = "jkl", docCount = 1, subAggregations = Map.empty)
+                    TermsAggregationBucketResult(
+                      key = "abc",
+                      keyAsString = None,
+                      docCount = 1,
+                      subAggregations = Map.empty
+                    ),
+                    TermsAggregationBucketResult(
+                      key = "def",
+                      keyAsString = None,
+                      docCount = 1,
+                      subAggregations = Map.empty
+                    ),
+                    TermsAggregationBucketResult(
+                      key = "ghi",
+                      keyAsString = None,
+                      docCount = 1,
+                      subAggregations = Map.empty
+                    ),
+                    TermsAggregationBucketResult(
+                      key = "jkl",
+                      keyAsString = None,
+                      docCount = 1,
+                      subAggregations = Map.empty
+                    )
                   )
                 )
               )
@@ -594,9 +614,24 @@ object HttpExecutorSpec extends IntegrationSpec {
                           docErrorCount = 0,
                           sumOtherDocCount = 0,
                           buckets = Chunk(
-                            TermsAggregationBucketResult(key = "abc", docCount = 1, subAggregations = Map.empty),
-                            TermsAggregationBucketResult(key = "def", docCount = 1, subAggregations = Map.empty),
-                            TermsAggregationBucketResult(key = "ghi", docCount = 1, subAggregations = Map.empty)
+                            TermsAggregationBucketResult(
+                              key = "abc",
+                              keyAsString = None,
+                              docCount = 1,
+                              subAggregations = Map.empty
+                            ),
+                            TermsAggregationBucketResult(
+                              key = "def",
+                              keyAsString = None,
+                              docCount = 1,
+                              subAggregations = Map.empty
+                            ),
+                            TermsAggregationBucketResult(
+                              key = "ghi",
+                              keyAsString = None,
+                              docCount = 1,
+                              subAggregations = Map.empty
+                            )
                           )
                         )
                       )
@@ -689,6 +724,74 @@ object HttpExecutorSpec extends IntegrationSpec {
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .aggregations
               } yield assert(aggsRes)(isNonEmpty)
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("terms aggregations on boolean and date fields") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              val date = LocalDate.of(2023, 10, 1)
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](
+                         firstSearchIndex,
+                         firstDocumentId,
+                         firstDocument.copy(booleanField = true, dateField = date)
+                       )
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](
+                           firstSearchIndex,
+                           secondDocumentId,
+                           secondDocument.copy(booleanField = false, dateField = date)
+                         )
+                         .refreshTrue
+                     )
+                aggregation = multipleAggregations.aggregations(
+                                termsAggregation(name = "aggregationBoolean", field = "booleanField"),
+                                termsAggregation(name = "aggregationDate", field = "dateField")
+                              )
+                aggsRes <- Executor
+                             .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                booleanAgg <- aggsRes.asTermsAggregation("aggregationBoolean")
+                dateAgg    <- aggsRes.asTermsAggregation("aggregationDate")
+              } yield assert(booleanAgg.map(_.buckets))(
+                isSome(
+                  equalTo(
+                    Chunk(
+                      TermsAggregationBucketResult(
+                        key = "0",
+                        keyAsString = Some("false"),
+                        docCount = 1,
+                        subAggregations = Map.empty
+                      ),
+                      TermsAggregationBucketResult(
+                        key = "1",
+                        keyAsString = Some("true"),
+                        docCount = 1,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              ) && assert(dateAgg.map(_.buckets))(
+                isSome(
+                  equalTo(
+                    Chunk(
+                      TermsAggregationBucketResult(
+                        key = "1696118400000",
+                        keyAsString = Some("2023-10-01T00:00:00.000Z"),
+                        docCount = 2,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -1034,8 +1137,18 @@ object HttpExecutorSpec extends IntegrationSpec {
                 docErrorCount = 0,
                 sumOtherDocCount = 0,
                 buckets = Chunk(
-                  TermsAggregationBucketResult(key = "zio", docCount = 1, subAggregations = Map.empty),
-                  TermsAggregationBucketResult(key = "zio-elasticsearch", docCount = 1, subAggregations = Map.empty)
+                  TermsAggregationBucketResult(
+                    key = "zio",
+                    keyAsString = None,
+                    docCount = 1,
+                    subAggregations = Map.empty
+                  ),
+                  TermsAggregationBucketResult(
+                    key = "zio-elasticsearch",
+                    keyAsString = None,
+                    docCount = 1,
+                    subAggregations = Map.empty
+                  )
                 )
               )
             )
