@@ -22,7 +22,7 @@ final case class DecodingException(message: String) extends ElasticException(mes
 
 case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
 
-final case class VersionConflictException(succeeded: Int, failed: Int)
+final case class VersionConflictException(succeeded: Long, failed: Long)
     extends ElasticException(
       s"There are $failed documents failed due to version conflict, but $succeeded documents are updated successfully."
     )

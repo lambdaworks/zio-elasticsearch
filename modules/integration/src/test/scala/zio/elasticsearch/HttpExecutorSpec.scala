@@ -110,7 +110,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
 
                 cardinalityAgg <- aggsRes.asCardinalityAggregation("aggregationInt")
-              } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2)))
+              } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2L)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -135,7 +135,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   Executor
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asExtendedStatsAggregation("aggregation")
-              } yield assert(aggsRes.head.count)(equalTo(2)) &&
+              } yield assert(aggsRes.head.count)(equalTo(2L)) &&
                 assert(aggsRes.head.min)(isSome(equalTo(50.0))) &&
                 assert(aggsRes.head.max)(isSome(equalTo(100.0))) &&
                 assert(aggsRes.head.avg)(isSome(equalTo(75.0))) &&
@@ -333,7 +333,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                             .execute(ElasticRequest.aggregate(selectors = ipRangeIndex, aggregation = aggregation))
                             .asIpRangeAggregation("aggregation")
               } yield assert(result.map(_.buckets.map(bucket => (bucket.key, bucket.docCount))))(
-                isSome(hasSameElements(Chunk("low" -> 1, "high" -> 1)))
+                isSome(hasSameElements(Chunk("low" -> 1L, "high" -> 1L)))
               )
           }
         } @@ after(Executor.execute(ElasticRequest.deleteIndex(ipRangeIndex)).orDie),
@@ -631,7 +631,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                   Executor
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asStatsAggregation("aggregation")
-              } yield assert(aggsRes.head.count)(equalTo(3)) &&
+              } yield assert(aggsRes.head.count)(equalTo(3L)) &&
                 assert(aggsRes.head.min)(isSome(equalTo(6.0))) &&
                 assert(aggsRes.head.max)(isSome(equalTo(10.0))) &&
                 assert(aggsRes.head.avg)(isSome(equalTo(7.666666666666667))) &&
@@ -826,7 +826,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asValueCountAggregation("aggregation")
 
-              } yield assert(aggsRes.head.value)(equalTo(2))
+              } yield assert(aggsRes.head.value)(equalTo(2L))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -897,9 +897,9 @@ object HttpExecutorSpec extends IntegrationSpec {
               stats         <- res.aggregationAs[StatsAggregationResult]("aggregationStats")
               extendedStats <- res.asExtendedStatsAggregation("aggregationExtendedStats")
             } yield assert(avg.map(_.value))(isSome(isNone)) &&
-              assert(stats.map(s => (s.count, s.min, s.max, s.avg)))(isSome(equalTo((0, None, None, None)))) &&
+              assert(stats.map(s => (s.count, s.min, s.max, s.avg)))(isSome(equalTo((0L, None, None, None)))) &&
               assert(extendedStats.map(s => (s.count, s.variance, s.stdDeviationBoundsResult.upper)))(
-                isSome(equalTo((0, None, None)))
+                isSome(equalTo((0L, None, None)))
               )
           }
         } @@ around(
@@ -1133,7 +1133,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                      ElasticRequest.create[TestDocument](firstCountIndex, document).refreshTrue
                    )
               res <- Executor.execute(ElasticRequest.count(firstCountIndex, matchAll))
-            } yield assert(res)(equalTo(1))
+            } yield assert(res)(equalTo(1L))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstCountIndex)),
@@ -1147,7 +1147,7 @@ object HttpExecutorSpec extends IntegrationSpec {
                      ElasticRequest.create[TestDocument](secondCountIndex, document).refreshTrue
                    )
               res <- Executor.execute(ElasticRequest.count(secondCountIndex))
-            } yield assert(res)(equalTo(1))
+            } yield assert(res)(equalTo(1L))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(secondCountIndex)),

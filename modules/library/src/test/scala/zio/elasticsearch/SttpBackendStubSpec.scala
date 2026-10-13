@@ -25,6 +25,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   val index: IndexName = IndexName("repositories")
 
+  val largeCountsIndex: IndexName = IndexName("large-counts")
+
   val nestedField: TestNestedField = TestNestedField("StringField", 1)
 
   val subDoc: TestSubDocument =
@@ -121,6 +123,21 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
       """
         |{
         |  "count": 2,
+        |  "_shards": {
+        |    "total": 2,
+        |    "successful": 2,
+        |    "failed": 0
+        |  }
+        |}""".stripMargin
+    )
+  )
+
+  private val countLargeCountsRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.GET && r.uri.toString == s"$url/large-counts/_count",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "count": 3000000000,
         |  "_shards": {
         |    "total": 2,
         |    "successful": 2,
@@ -457,10 +474,26 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val updateByQueryLargeCountsRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/large-counts/_update_by_query",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "took" : 1,
+        |  "total" : 3000000000,
+        |  "updated" : 1500000000,
+        |  "deleted" : 1000000000,
+        |  "version_conflicts" : 500000000
+        |}
+        |""".stripMargin
+    )
+  )
+
   private val stubs: List[StubMapping] = List(
     bulkRequestStub,
     bulkWithErrorRequestStub,
     countRequestStub,
+    countLargeCountsRequestStub,
     createDocumentRequestStub,
     createIndexRequestWithMappingStub,
     createIndexRequestWithoutMappingStub,
@@ -476,7 +509,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     searchRequestStub,
     searchWithAggregationRequestStub,
     updateRequestStub,
-    updateByQueryRequestStub
+    updateByQueryRequestStub,
+    updateByQueryLargeCountsRequestStub
   )
 
   private val sttpBackendStubLayer: ULayer[SttpClient] =

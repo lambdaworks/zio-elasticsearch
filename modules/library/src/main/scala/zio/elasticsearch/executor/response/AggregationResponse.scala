@@ -171,8 +171,8 @@ private[elasticsearch] object AvgAggregationResponse {
 }
 
 private[elasticsearch] final case class BucketDecoder(fields: Chunk[(String, Json)]) {
-  lazy val docCount: Either[String, Int] =
-    fields.collectFirst { case ("doc_count", data) => data.as[Int] }.getOrElse(Left("Missing field: doc_count"))
+  lazy val docCount: Either[String, Long] =
+    fields.collectFirst { case ("doc_count", data) => data.as[Long] }.getOrElse(Left("Missing field: doc_count"))
 
   lazy val key: Either[String, String] =
     fields.collectFirst { case ("key_as_string", Str(value)) => Right(value) }
@@ -187,7 +187,7 @@ private[elasticsearch] object BucketDecoder {
   private val metadataFields: Set[String] = Set("doc_count", "doc_count_error_upper_bound", "key", "key_as_string")
 }
 
-private[elasticsearch] final case class CardinalityAggregationResponse(value: Int) extends AggregationResponse
+private[elasticsearch] final case class CardinalityAggregationResponse(value: Long) extends AggregationResponse
 
 private[elasticsearch] object CardinalityAggregationResponse {
   implicit val decoder: JsonDecoder[CardinalityAggregationResponse] =
@@ -195,7 +195,7 @@ private[elasticsearch] object CardinalityAggregationResponse {
 }
 
 private[elasticsearch] final case class ExtendedStatsAggregationResponse(
-  count: Int,
+  count: Long,
   min: Option[Double],
   max: Option[Double],
   avg: Option[Double],
@@ -224,7 +224,7 @@ private[elasticsearch] object ExtendedStatsAggregationResponse {
 
 private[elasticsearch] final case class FilterAggregationResponse(
   @jsonField("doc_count")
-  docCount: Int,
+  docCount: Long,
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationResponse
 
@@ -243,7 +243,7 @@ private[elasticsearch] final case class IpRangeAggregationBucket(
   key: String,
   from: Option[String],
   to: Option[String],
-  docCount: Int,
+  docCount: Long,
   subAggregations: Option[Map[String, AggregationResponse]]
 ) extends AggregationBucket
 
@@ -306,7 +306,7 @@ private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
 }
 
-private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Int)
+private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Long)
     extends AggregationResponse
 
 private[elasticsearch] object MissingAggregationResponse {
@@ -331,7 +331,7 @@ private[elasticsearch] object PercentilesAggregationResponse {
 
 private[elasticsearch] final case class SamplerAggregationResponse(
   @jsonField("doc_count")
-  docCount: Int,
+  docCount: Long,
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationResponse
 
@@ -347,7 +347,7 @@ private[elasticsearch] object SamplerAggregationResponse {
 }
 
 private[elasticsearch] final case class StatsAggregationResponse(
-  count: Int,
+  count: Long,
   min: Option[Double],
   max: Option[Double],
   avg: Option[Double],
@@ -384,9 +384,9 @@ private[elasticsearch] object SumAggregationResponse {
 
 private[elasticsearch] final case class TermsAggregationResponse(
   @jsonField("doc_count_error_upper_bound")
-  docErrorCount: Int,
+  docErrorCount: Long,
   @jsonField("sum_other_doc_count")
-  sumOtherDocCount: Int,
+  sumOtherDocCount: Long,
   buckets: Chunk[TermsAggregationBucket]
 ) extends AggregationResponse
 
@@ -397,7 +397,7 @@ private[elasticsearch] object TermsAggregationResponse {
 private[elasticsearch] final case class TermsAggregationBucket(
   key: String,
   @jsonField("doc_count")
-  docCount: Int,
+  docCount: Long,
   subAggregations: Option[Map[String, AggregationResponse]] = None
 ) extends AggregationBucket
 
@@ -413,7 +413,7 @@ private[elasticsearch] object TermsAggregationBucket {
   }
 }
 
-private[elasticsearch] final case class ValueCountAggregationResponse(value: Int) extends AggregationResponse
+private[elasticsearch] final case class ValueCountAggregationResponse(value: Long) extends AggregationResponse
 
 private[elasticsearch] object ValueCountAggregationResponse {
   implicit val decoder: JsonDecoder[ValueCountAggregationResponse] =

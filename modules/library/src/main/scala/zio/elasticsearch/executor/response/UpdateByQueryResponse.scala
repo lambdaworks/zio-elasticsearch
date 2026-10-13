@@ -20,11 +20,11 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class UpdateByQueryResponse(
   took: Int,
-  total: Int,
-  updated: Int,
-  deleted: Int,
+  total: Long,
+  updated: Long,
+  deleted: Long,
   @jsonField("version_conflicts")
-  versionConflicts: Int
+  versionConflicts: Long
 )
 
 private[elasticsearch] object UpdateByQueryResponse {

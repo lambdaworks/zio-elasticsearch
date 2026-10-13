@@ -106,7 +106,12 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
       test("count") {
         val executorCount = Executor.execute(ElasticRequest.count(index, matchAll).routing(Routing("routing")))
 
-        assertZIO(executorCount)(equalTo(2))
+        assertZIO(executorCount)(equalTo(2L))
+      },
+      test("count above Int.MaxValue") {
+        val executorCount = Executor.execute(ElasticRequest.count(largeCountsIndex))
+
+        assertZIO(executorCount)(equalTo(3000000000L))
       },
       test("create") {
         val executorCreate =
@@ -296,6 +301,23 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           UpdateByQueryResult(took = 1, total = 10, updated = 8, deleted = 0, versionConflicts = 2)
 
         assertZIO(executorUpdateByQuery)(equalTo(expectedUpdateByQueryResult))
+      },
+      test("updateAllByQuery with counts above Int.MaxValue") {
+        val executorUpdateAllByQuery =
+          Executor.execute(
+            ElasticRequest.updateAllByQuery(index = largeCountsIndex, script = Script("ctx._source['intField']++"))
+          )
+
+        val expectedUpdateByQueryResult =
+          UpdateByQueryResult(
+            took = 1,
+            total = 3000000000L,
+            updated = 1500000000L,
+            deleted = 1000000000L,
+            versionConflicts = 500000000L
+          )
+
+        assertZIO(executorUpdateAllByQuery)(equalTo(expectedUpdateByQueryResult))
       },
       test("updateByScript") {
         val executorUpdateByScript =

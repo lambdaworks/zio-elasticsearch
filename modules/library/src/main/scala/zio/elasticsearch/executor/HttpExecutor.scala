@@ -162,7 +162,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
   }
 
-  private def executeCount(r: Count): Task[Int] = {
+  private def executeCount(r: Count): Task[Long] = {
     val req = baseRequest
       .get(uri"${esConfig.uri}/${r.index}/$Count".withParams(getQueryParams(Chunk(("routing", r.routing)))))
       .contentType(ApplicationJson)
