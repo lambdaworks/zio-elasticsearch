@@ -474,6 +474,22 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val updateByQueryVersionConflictRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_update_by_query?conflicts=abort",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "took" : 1,
+        |  "total" : 10,
+        |  "updated" : 7,
+        |  "deleted" : 1,
+        |  "version_conflicts" : 2
+        |}
+        |""".stripMargin,
+      StatusCode.Conflict
+    )
+  )
+
   private val updateByQueryLargeCountsRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.POST && r.uri.toString == s"$url/large-counts/_update_by_query",
     response = ResponseStub.adjust(
@@ -510,7 +526,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     searchWithAggregationRequestStub,
     updateRequestStub,
     updateByQueryRequestStub,
-    updateByQueryLargeCountsRequestStub
+    updateByQueryLargeCountsRequestStub,
+    updateByQueryVersionConflictRequestStub
   )
 
   private val sttpBackendStubLayer: ULayer[SttpClient] =
