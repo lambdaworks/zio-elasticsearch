@@ -24,9 +24,14 @@ import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Error, Shards, UpdateBulkResponse}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
-import zio.elasticsearch.request.UpdateConflicts.Proceed
+import zio.elasticsearch.request.UpdateConflicts.{Abort, Proceed}
 import zio.elasticsearch.request.UpdateOutcome
-import zio.elasticsearch.result.{TermsAggregationBucketResult, TermsAggregationResult, UpdateByQueryResult}
+import zio.elasticsearch.result.{
+  TermsAggregationBucketResult,
+  TermsAggregationResult,
+  UpdateByQueryResult,
+  VersionConflictException
+}
 import zio.elasticsearch.script.Script
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
@@ -332,6 +337,18 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
           )
 
         assertZIO(executorUpdateAllByQuery)(equalTo(expectedUpdateByQueryResult))
+      },
+      test("updateAllByQuery with version conflicts") {
+        val executorUpdateAllByQuery =
+          Executor.execute(
+            ElasticRequest
+              .updateAllByQuery(index = index, script = Script("ctx._source['intField']++"))
+              .conflicts(Abort)
+          )
+
+        assertZIO(executorUpdateAllByQuery.exit)(
+          fails(equalTo(VersionConflictException(succeeded = 8, failed = 2)))
+        )
       },
       test("updateByScript") {
         val executorUpdateByScript =

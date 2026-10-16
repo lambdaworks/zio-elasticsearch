@@ -18,7 +18,15 @@ package zio.elasticsearch.executor
 
 import sttp.client4.httpclient.zio.SttpClient
 import sttp.client4.ziojson._
-import sttp.client4.{Request, Response, ResponseException, UriContext, basicRequest => request}
+import sttp.client4.{
+  ConditionalResponseAs,
+  Request,
+  Response,
+  ResponseException,
+  UriContext,
+  basicRequest => request,
+  fromMetadata
+}
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.StatusCode.{
   BadRequest => HttpBadRequest,
@@ -605,7 +613,12 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
             getQueryParams(Chunk(("conflicts", r.conflicts), ("refresh", r.refresh), ("routing", r.routing)))
           )
         )
-        .response(asJson[UpdateByQueryResponse])
+        .response(
+          fromMetadata(
+            asJson[UpdateByQueryResponse],
+            ConditionalResponseAs(_.code == HttpConflict, asJsonAlways[UpdateByQueryResponse])
+          )
+        )
         .contentType(ApplicationJson)
         .body(asJson(r.toJson))
     ).flatMap { response =>
