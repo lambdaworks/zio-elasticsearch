@@ -61,7 +61,7 @@ private[elasticsearch] final case class BucketSelector(name: String, script: Scr
   private[elasticsearch] def toJson: Json = {
     val bucketsPathJson: Json = Obj("buckets_path" -> bucketsPath.collect { case (scriptVal, path) =>
       Obj(scriptVal -> path.toJson)
-    }.reduce(_ merge _))
+    }.foldLeft[Json](Obj())(_ merge _))
 
     Obj(name -> Obj("bucket_selector" -> (bucketsPathJson merge Obj("script" -> script.toJson))))
   }
@@ -347,7 +347,7 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[SingleElast
     self.copy(aggregations = agg +: aggregations)
 
   private[elasticsearch] def toJson: Json =
-    aggregations.map(_.toJson).reduce(_ merge _)
+    aggregations.map(_.toJson).foldLeft[Json](Obj())(_ merge _)
 }
 
 sealed trait PercentileRanksAggregation
