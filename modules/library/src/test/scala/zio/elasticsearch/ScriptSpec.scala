@@ -1,13 +1,12 @@
 package zio.elasticsearch
 
-import zio.Scope
 import zio.elasticsearch.script.{Painless, Script}
 import zio.elasticsearch.utils.RichString
 import zio.test.Assertion.equalTo
 import zio.test._
 
 object ScriptSpec extends ZIOSpecDefault {
-  def spec: Spec[Environment with TestEnvironment with Scope, Any] =
+  def spec: Spec[TestEnvironment, Any] =
     suite("Script")(
       suite("constructing")(
         test("script") {

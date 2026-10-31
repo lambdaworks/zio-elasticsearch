@@ -45,7 +45,7 @@ object Main extends ZIOAppDefault {
     )
   }
 
-  private[this] def prepare: RIO[SttpClient with Elasticsearch, Unit] = {
+  private[this] def prepare: RIO[SttpClient & Elasticsearch, Unit] = {
     val deleteIndex: RIO[Elasticsearch, Unit] =
       for {
         _ <- ZIO.logInfo(s"Deleting index '$Index'...")
@@ -59,7 +59,7 @@ object Main extends ZIOAppDefault {
         _       <- Elasticsearch.execute(ElasticRequest.createIndex(Index, mapping))
       } yield ()
 
-    val populate: RIO[SttpClient with Elasticsearch, Unit] =
+    val populate: RIO[SttpClient & Elasticsearch, Unit] =
       (for {
         repositories <- RepoFetcher.fetchAllByOrganization(organization)
         _            <- ZIO.logInfo("Adding GitHub repositories...")
@@ -69,7 +69,7 @@ object Main extends ZIOAppDefault {
     deleteIndex *> createIndex *> populate
   }
 
-  private[this] def runServer: RIO[HttpConfig with Elasticsearch, ExitCode] = {
+  private[this] def runServer: RIO[HttpConfig & Elasticsearch, ExitCode] = {
     val serverConfigLive = ZLayer.fromFunction((http: HttpConfig) => Server.Config.default.port(http.port))
 
     (for {
