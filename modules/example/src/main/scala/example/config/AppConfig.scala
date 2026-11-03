@@ -16,14 +16,14 @@
 
 package example.config
 
+import zio._
 import zio.config.magnolia.deriveConfig
-import zio.{Config, Layer, ZIO, ZLayer}
 
 final case class AppConfig(http: HttpConfig, elasticsearch: ElasticsearchConfig)
 
 object AppConfig {
   private[this] final val config = ZLayer(ZIO.config(deriveConfig[AppConfig]))
 
-  lazy val live: Layer[Config.Error, ElasticsearchConfig with HttpConfig] =
+  lazy val live: Layer[Config.Error, ElasticsearchConfig & HttpConfig] =
     config.project(_.elasticsearch) ++ config.project(_.http)
 }
