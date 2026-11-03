@@ -25,7 +25,7 @@ jobs:
           java-version: 27.0.1+0
           check-latest: true
       - name: Cache Scala dependencies
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@v9
       - name: Check code formatting
         run: ./sbt check
 
@@ -55,7 +55,7 @@ jobs:
           java-version: ${{ matrix.java }}
           check-latest: true
       - name: Cache Scala dependencies
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@v9
       - name: Run tests
         run: ./sbt ++${{ matrix.scala }}! library/test
       - name: Run test container
@@ -76,7 +76,7 @@ jobs:
           java-version: 27.0.1+0
           check-latest: true
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@v9
       - name: Check Website Generation
         run: ./sbt docs/docusaurusCreateSite
 
@@ -93,7 +93,7 @@ jobs:
           java-version: 27.0.1+0
           check-latest: true
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@v9
       - name: Check that building packages works
         run: ./sbt +publishLocal
 
@@ -121,7 +121,7 @@ jobs:
           java-version: 27.0.1+0
           check-latest: true
       - name: Cache scala dependencies
-        uses: coursier/cache-action@v8
+        uses: coursier/cache-action@v9
       - name: Release artifacts
         run: ./sbt ci-release
         env:
