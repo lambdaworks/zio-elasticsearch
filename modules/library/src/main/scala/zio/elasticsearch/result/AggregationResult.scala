@@ -85,6 +85,26 @@ final case class PercentileRanksAggregationResult private[elasticsearch] (values
 final case class PercentilesAggregationResult private[elasticsearch] (values: Map[String, Option[Double]])
     extends AggregationResult
 
+final case class RangeAggregationResult private[elasticsearch] (
+  buckets: Chunk[RangeAggregationBucketResult]
+) extends AggregationResult
+
+final case class RangeAggregationBucketResult private[elasticsearch] (
+  key: String,
+  from: Option[Double],
+  to: Option[Double],
+  docCount: Long,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationResult {
+
+  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+    subAggregations.get(aggName) match {
+      case Some(agg: A) => Right(Some(agg))
+      case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+      case None         => Right(None)
+    }
+}
+
 final case class SamplerAggregationResult private[elasticsearch] (
   docCount: Long,
   subAggregations: Map[String, AggregationResult]

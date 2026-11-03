@@ -241,6 +241,44 @@ object AggregationResponseSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("range") {
+          val aggregations =
+            s"""{
+               |  "range#rangeAggregation": {
+               |    "buckets": [
+               |      { "key": "*-50.0", "to": 50.0, "doc_count": $largeCount },
+               |      { "key": "50.0-*", "from": 50.0, "doc_count": 0 }
+               |    ]
+               |  }
+               |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "rangeAggregation" -> RangeAggregationResult(
+                    buckets = Chunk(
+                      RangeAggregationBucketResult(
+                        key = "*-50.0",
+                        from = None,
+                        to = Some(50.0),
+                        docCount = largeCount,
+                        subAggregations = Map.empty
+                      ),
+                      RangeAggregationBucketResult(
+                        key = "50.0-*",
+                        from = Some(50.0),
+                        to = None,
+                        docCount = 0,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
         test("sub aggregations") {
           val aggregations =
             s"""{
@@ -412,6 +450,44 @@ object AggregationResponseSpec extends ZIOSpecDefault {
                         docCount = 1,
                         key = "say \"hi\"",
                         keyAsString = None,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("use the bucket name as key for keyed range buckets") {
+          val aggregations =
+            """{
+              |  "range#rangeAggregation": {
+              |    "buckets": {
+              |      "low": { "to": 50.0, "doc_count": 1, "max#maxAggregation": { "value": 7.0 } },
+              |      "high": { "from": 50.0, "from_as_string": "50.0", "doc_count": 0 }
+              |    }
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "rangeAggregation" -> RangeAggregationResult(
+                    buckets = Chunk(
+                      RangeAggregationBucketResult(
+                        key = "low",
+                        from = None,
+                        to = Some(50.0),
+                        docCount = 1,
+                        subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = Some(7.0)))
+                      ),
+                      RangeAggregationBucketResult(
+                        key = "high",
+                        from = Some(50.0),
+                        to = None,
+                        docCount = 0,
                         subAggregations = Map.empty
                       )
                     )

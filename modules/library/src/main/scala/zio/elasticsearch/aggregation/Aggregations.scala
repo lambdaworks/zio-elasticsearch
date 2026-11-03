@@ -423,6 +423,73 @@ private[elasticsearch] final case class Percentiles(
   }
 }
 
+sealed trait RangeAggregation extends SingleElasticAggregation with WithAgg with WithSubAgg[RangeAggregation] {
+
+  /**
+   * Sets the `keyed` parameter to `true` for the [[zio.elasticsearch.aggregation.RangeAggregation]]. Each bucket is
+   * then associated with a unique string key.
+   *
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.RangeAggregation]] enriched with the `keyed` parameter.
+   */
+  def keyed: RangeAggregation
+}
+
+private[elasticsearch] final case class Range(
+  name: String,
+  field: String,
+  ranges: NonEmptyChunk[RangeBound],
+  isKeyed: Boolean,
+  subAggregations: Chunk[SingleElasticAggregation]
+) extends RangeAggregation { self =>
+
+  def keyed: RangeAggregation =
+    self.copy(isKeyed = true)
+
+  def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
+    multipleAggregations.aggregations(self, agg)
+
+  def withSubAgg(aggregation: SingleElasticAggregation): RangeAggregation =
+    self.copy(subAggregations = aggregation +: subAggregations)
+
+  private[elasticsearch] def toJson: Json = {
+    val keyedJson   = if (isKeyed) Obj("keyed" -> true.toJson) else Obj()
+    val subAggsJson =
+      self.subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
+
+    Obj(
+      name -> (Obj(
+        "range" -> (Obj("field" -> field.toJson, "ranges" -> Arr(ranges.map(_.toJson): _*)) merge keyedJson)
+      ) merge subAggsJson)
+    )
+  }
+}
+
+final case class RangeBound(
+  from: Option[Double] = None,
+  key: Option[String] = None,
+  to: Option[Double] = None
+) { self =>
+
+  def from(value: Double): RangeBound =
+    self.copy(from = Some(value))
+
+  def key(value: String): RangeBound =
+    self.copy(key = Some(value))
+
+  def to(value: Double): RangeBound =
+    self.copy(to = Some(value))
+
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      Chunk(
+        from.map("from" -> _.toJson),
+        key.map("key" -> _.toJson),
+        to.map("to" -> _.toJson)
+      ).flatten: _*
+    )
+}
+
 sealed trait SamplerAggregation extends SingleElasticAggregation with WithSubAgg[SamplerAggregation] {
 
   /**
