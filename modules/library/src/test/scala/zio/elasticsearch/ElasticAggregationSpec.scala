@@ -792,6 +792,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             script = Script("params.agg1 + params.agg2 > 10"),
             bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
           )
+          val aggregationWithEmptyBucketsPath = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("1 > 0"),
+            bucketsPath = Map.empty
+          )
 
           val expected1 =
             """
@@ -826,8 +831,23 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithEmptyBucketsPath =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_selector": {
+              |      "buckets_path": {},
+              |      "script": {
+              |        "source": "1 > 0"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(aggregation1.toJson)(equalTo(expected1.toJson)) &&
-          assert(aggregation2.toJson)(equalTo(expected2.toJson))
+          assert(aggregation2.toJson)(equalTo(expected2.toJson)) &&
+          assert(aggregationWithEmptyBucketsPath.toJson)(equalTo(expectedWithEmptyBucketsPath.toJson))
         },
         test("bucketSort") {
           val aggregationWithFrom      = bucketSortAggregation("aggregation").from(5)
@@ -1350,7 +1370,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |""".stripMargin
 
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
-          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
+          assert(multipleAggregations.toJson)(equalTo("{}".toJson))
         },
         test("percentileRanks") {
           val aggregation            = percentileRanksAggregation("aggregation", "testField", 5, 6)
