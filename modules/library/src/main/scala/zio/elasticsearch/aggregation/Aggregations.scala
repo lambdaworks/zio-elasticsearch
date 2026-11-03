@@ -423,61 +423,71 @@ private[elasticsearch] final case class Percentiles(
   }
 }
 
-private[elasticsearch] final case class SingleRange(
-  from: Option[Double],
-  to: Option[Double],
-  key: Option[String]
-) { self =>
-  def from(value: Double): SingleRange = self.copy(from = Some(value))
-  def to(value: Double): SingleRange   = self.copy(to = Some(value))
-  def key(value: String): SingleRange  = self.copy(key = Some(value))
-}
+sealed trait RangeAggregation extends SingleElasticAggregation with WithAgg with WithSubAgg[RangeAggregation] {
 
-object SingleRange {
-
-  def from(value: Double): SingleRange =
-    SingleRange(from = Some(value), to = None, key = None)
-
-  def to(value: Double): SingleRange =
-    SingleRange(from = None, to = Some(value), key = None)
-
-  def apply(from: Double, to: Double): SingleRange =
-    SingleRange(from = Some(from), to = Some(to), key = None)
-
-}
-
-sealed trait RangeAggregation extends SingleElasticAggregation with WithAgg {
-  def asKeyed: Range
+  /**
+   * Sets the `keyed` parameter to `true` for the [[zio.elasticsearch.aggregation.RangeAggregation]]. Each bucket is
+   * then associated with a unique string key.
+   *
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.RangeAggregation]] enriched with the `keyed` parameter.
+   */
+  def keyed: RangeAggregation
 }
 
 private[elasticsearch] final case class Range(
   name: String,
   field: String,
-  ranges: Chunk[SingleRange],
-  keyed: Option[Boolean]
+  ranges: NonEmptyChunk[RangeBound],
+  isKeyed: Boolean,
+  subAggregations: Chunk[SingleElasticAggregation]
 ) extends RangeAggregation { self =>
 
-  def asKeyed: Range = self.copy(keyed = Some(true))
+  def keyed: RangeAggregation =
+    self.copy(isKeyed = true)
 
   def withAgg(agg: SingleElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
+  def withSubAgg(aggregation: SingleElasticAggregation): RangeAggregation =
+    self.copy(subAggregations = aggregation +: subAggregations)
+
   private[elasticsearch] def toJson: Json = {
-    val keyedJson: Json = keyed.fold(Obj())(m => Obj("keyed" -> m.toJson))
+    val keyedJson   = if (isKeyed) Obj("keyed" -> true.toJson) else Obj()
+    val subAggsJson =
+      self.subAggregations.nonEmptyOrElse(Obj())(sa => Obj("aggs" -> sa.map(_.toJson).reduce(_ merge _)))
 
     Obj(
-      name -> Obj(
-        "range" -> (Obj(
-          "field"  -> field.toJson,
-          "ranges" -> Arr(ranges.map { r =>
-            r.from.fold(Obj())(m => Obj("from" -> m.toJson)) merge
-              r.to.fold(Obj())(m => Obj("to" -> m.toJson)) merge
-              r.key.fold(Obj())(m => Obj("key" -> m.toJson))
-          })
-        ) merge keyedJson)
-      )
+      name -> (Obj(
+        "range" -> (Obj("field" -> field.toJson, "ranges" -> Arr(ranges.map(_.toJson): _*)) merge keyedJson)
+      ) merge subAggsJson)
     )
   }
+}
+
+final case class RangeBound(
+  from: Option[Double] = None,
+  key: Option[String] = None,
+  to: Option[Double] = None
+) { self =>
+
+  def from(value: Double): RangeBound =
+    self.copy(from = Some(value))
+
+  def key(value: String): RangeBound =
+    self.copy(key = Some(value))
+
+  def to(value: Double): RangeBound =
+    self.copy(to = Some(value))
+
+  private[elasticsearch] def toJson: Json =
+    Obj(
+      Chunk(
+        from.map("from" -> _.toJson),
+        key.map("key" -> _.toJson),
+        to.map("to" -> _.toJson)
+      ).flatten: _*
+    )
 }
 
 sealed trait SamplerAggregation extends SingleElasticAggregation with WithSubAgg[SamplerAggregation] {

@@ -85,28 +85,25 @@ final case class PercentileRanksAggregationResult private[elasticsearch] (values
 final case class PercentilesAggregationResult private[elasticsearch] (values: Map[String, Option[Double]])
     extends AggregationResult
 
-private[elasticsearch] sealed trait RangeAggregationResult extends AggregationResult
+final case class RangeAggregationResult private[elasticsearch] (
+  buckets: Chunk[RangeAggregationBucketResult]
+) extends AggregationResult
 
-private[elasticsearch] final case class RegularRangeAggregationBucketResult(
+final case class RangeAggregationBucketResult private[elasticsearch] (
   key: String,
-  to: Option[Double],
   from: Option[Double],
-  docCount: Int
-)
-
-private[elasticsearch] final case class KeyedRangeAggregationBucketResult(
   to: Option[Double],
-  from: Option[Double],
-  docCount: Int
-)
+  docCount: Long,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationResult {
 
-private[elasticsearch] final case class RegularRangeAggregationResult(
-  buckets: Chunk[RegularRangeAggregationBucketResult]
-) extends RangeAggregationResult
-
-private[elasticsearch] final case class KeyedRangeAggregationResult(
-  buckets: Map[String, KeyedRangeAggregationBucketResult]
-) extends RangeAggregationResult
+  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+    subAggregations.get(aggName) match {
+      case Some(agg: A) => Right(Some(agg))
+      case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
+      case None         => Right(None)
+    }
+}
 
 final case class SamplerAggregationResult private[elasticsearch] (
   docCount: Long,

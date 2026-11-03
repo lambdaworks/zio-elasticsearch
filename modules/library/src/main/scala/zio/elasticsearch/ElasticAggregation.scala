@@ -276,66 +276,6 @@ object ElasticAggregation {
     Min(name = name, field = field, missing = None)
 
   /**
-   * Constructs an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param field
-   *   the field for which range aggregation will be executed
-   * @tparam A
-   *   expected number type
-   * @param range
-   *   the first range to be evaluated and transformed to bucket in [[zio.elasticsearch.aggregation.RangeAggregation]]
-   * @param ranges
-   *   an array of ranges to be evaluated and transformed to buckets in
-   *   [[zio.elasticsearch.aggregation.RangeAggregation]]
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
-   *   performed.
-   */
-  final def rangeAggregation[A: Numeric](
-    name: String,
-    field: Field[_, A],
-    range: SingleRange,
-    ranges: SingleRange*
-  ): RangeAggregation =
-    Range(
-      name = name,
-      field = field.toString,
-      ranges = Chunk.fromIterable(range +: ranges),
-      keyed = None
-    )
-
-  /**
-   * Constructs an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified parameters.
-   *
-   * @param name
-   *   aggregation name
-   * @param field
-   *   the field for which range aggregation will be executed
-   * @param range
-   *   the first range to be evaluated and transformed to bucket in [[zio.elasticsearch.aggregation.RangeAggregation]]
-   * @param ranges
-   *   an array of ranges to be evaluated and transformed to buckets in
-   *   [[zio.elasticsearch.aggregation.RangeAggregation]]
-   * @return
-   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
-   *   performed.
-   */
-  final def rangeAggregation(
-    name: String,
-    field: String,
-    range: SingleRange,
-    ranges: SingleRange*
-  ): RangeAggregation =
-    Range(
-      name = name,
-      field = field,
-      ranges = Chunk.fromIterable(range +: ranges),
-      keyed = None
-    )
-
-  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified
    * parameters.
    *
@@ -463,6 +403,67 @@ object ElasticAggregation {
    */
   final def percentilesAggregation(name: String, field: String): PercentilesAggregation =
     Percentiles(name = name, field = field, percents = Chunk.empty, missing = None)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which the range aggregation will be executed
+   * @param range
+   *   the first [[zio.elasticsearch.aggregation.RangeBound]] of the aggregation
+   * @param ranges
+   *   the rest of the [[zio.elasticsearch.aggregation.RangeBound]]s of the aggregation
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
+   *   performed.
+   */
+  final def rangeAggregation[A: Numeric](
+    name: String,
+    field: Field[_, A],
+    range: RangeBound,
+    ranges: RangeBound*
+  ): RangeAggregation =
+    Range(
+      name = name,
+      field = field.toString,
+      ranges = NonEmptyChunk(range, ranges: _*),
+      isKeyed = false,
+      subAggregations = Chunk.empty
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which the range aggregation will be executed
+   * @param range
+   *   the first [[zio.elasticsearch.aggregation.RangeBound]] of the aggregation
+   * @param ranges
+   *   the rest of the [[zio.elasticsearch.aggregation.RangeBound]]s of the aggregation
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
+   *   performed.
+   */
+  final def rangeAggregation(
+    name: String,
+    field: String,
+    range: RangeBound,
+    ranges: RangeBound*
+  ): RangeAggregation =
+    Range(
+      name = name,
+      field = field,
+      ranges = NonEmptyChunk(range, ranges: _*),
+      isKeyed = false,
+      subAggregations = Chunk.empty
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.SamplerAggregation]] using the specified parameters.

@@ -19,7 +19,7 @@ package zio.elasticsearch.executor.response
 import zio.Chunk
 import zio.elasticsearch.result._
 import zio.json.ast.Json
-import zio.json.ast.Json.{Arr, Obj, Str}
+import zio.json.ast.Json.{Arr, Num, Obj, Str}
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 import zio.prelude.Validation
 
@@ -43,9 +43,9 @@ object AggregationResponse {
       case "max"                               => as[MaxAggregationResponse]
       case "min"                               => as[MinAggregationResponse]
       case "missing"                           => as[MissingAggregationResponse]
-      case "range"                             => as[RangeAggregationResponse]
       case t if t.endsWith("percentile_ranks") => as[PercentileRanksAggregationResponse]
       case t if t.endsWith("percentiles")      => as[PercentilesAggregationResponse]
+      case "range"                             => as[RangeAggregationResponse]
       case "sampler"                           => as[SamplerAggregationResponse]
       case "stats"                             => as[StatsAggregationResponse]
       case "sum"                               => as[SumAggregationResponse]
@@ -130,36 +130,25 @@ object AggregationResponse {
         MaxAggregationResult(value)
       case MinAggregationResponse(value) =>
         MinAggregationResult(value)
-      case RegularRangeAggregationResponse(buckets) =>
-        RegularRangeAggregationResult(
-          buckets.map(b =>
-            RegularRangeAggregationBucketResult(
-              key = b.key,
-              to = b.to,
-              from = b.from,
-              docCount = b.docCount
-            )
-          )
-        )
-      case KeyedRangeAggregationResponse(buckets) =>
-        KeyedRangeAggregationResult(
-          buckets.map { case (k, v) =>
-            (
-              k,
-              KeyedRangeAggregationBucketResult(
-                to = v.to,
-                from = v.from,
-                docCount = v.docCount
-              )
-            )
-          }
-        )
       case MissingAggregationResponse(value) =>
         MissingAggregationResult(value)
       case PercentileRanksAggregationResponse(values) =>
         PercentileRanksAggregationResult(values)
       case PercentilesAggregationResponse(values) =>
         PercentilesAggregationResult(values)
+      case RangeAggregationResponse(buckets) =>
+        RangeAggregationResult(
+          buckets = buckets.map(b =>
+            RangeAggregationBucketResult(
+              key = b.key,
+              from = b.from,
+              to = b.to,
+              docCount = b.docCount,
+              subAggregations =
+                b.subAggregations.map(_.map { case (key, response) => (key, toResult(response)) }).getOrElse(Map.empty)
+            )
+          )
+        )
       case SamplerAggregationResponse(count, aggs) =>
         SamplerAggregationResult(
           docCount = count,
@@ -208,6 +197,28 @@ private[elasticsearch] final case class BucketDecoder(fields: Chunk[(String, Jso
 
   lazy val keyAsString: Option[String] =
     fields.collectFirst { case ("key_as_string", Str(value)) => value }
+
+  def rangeBuckets[A](implicit decoder: JsonDecoder[A]): Either[String, Chunk[A]] = {
+    val buckets: Chunk[Json] = fields.collectFirst { case ("buckets", buckets) => buckets } match {
+      case Some(Arr(buckets)) =>
+        buckets
+      case Some(Obj(keyedBuckets)) =>
+        keyedBuckets.map {
+          case (key, Obj(bucketFields)) if !bucketFields.exists(_._1 == "key") =>
+            Obj(("key" -> Str(key)) +: bucketFields)
+          case (_, bucket) => bucket
+        }
+      case _ =>
+        Chunk.empty
+    }
+
+    buckets.foldLeft[Either[String, Chunk[A]]](Right(Chunk.empty)) { (acc, bucket) =>
+      for {
+        decoded <- acc
+        next    <- bucket.as[A]
+      } yield decoded :+ next
+    }
+  }
 
   lazy val subAggs: Either[String, Map[String, AggregationResponse]] =
     AggregationResponse.decodeAll(fields.filter { case (field, _) => field.contains('#') })
@@ -296,27 +307,7 @@ private[elasticsearch] final case class IpRangeAggregationResponse(buckets: Chun
 
 private[elasticsearch] object IpRangeAggregationResponse {
   implicit val decoder: JsonDecoder[IpRangeAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
-    val buckets: Chunk[Json] = fields.collectFirst { case ("buckets", buckets) => buckets } match {
-      case Some(Arr(buckets)) =>
-        buckets
-      case Some(Obj(keyedBuckets)) =>
-        keyedBuckets.map {
-          case (key, Obj(bucketFields)) if !bucketFields.exists(_._1 == "key") =>
-            Obj(("key" -> Str(key)) +: bucketFields)
-          case (_, bucket) => bucket
-        }
-      case _ =>
-        Chunk.empty
-    }
-
-    buckets
-      .foldLeft[Either[String, Chunk[IpRangeAggregationBucket]]](Right(Chunk.empty)) { (acc, bucket) =>
-        for {
-          decoded <- acc
-          next    <- bucket.as[IpRangeAggregationBucket]
-        } yield decoded :+ next
-      }
-      .map(IpRangeAggregationResponse(_))
+    BucketDecoder(fields).rangeBuckets[IpRangeAggregationBucket].map(IpRangeAggregationResponse(_))
   }
 }
 
@@ -330,54 +321,6 @@ private[elasticsearch] final case class MinAggregationResponse(value: Option[Dou
 
 private[elasticsearch] object MinAggregationResponse {
   implicit val decoder: JsonDecoder[MinAggregationResponse] = DeriveJsonDecoder.gen[MinAggregationResponse]
-}
-
-private[elasticsearch] final case class RegularRangeAggregationBucketResponse(
-  key: String,
-  to: Option[Double],
-  from: Option[Double],
-  @jsonField("doc_count")
-  docCount: Int
-)
-private[elasticsearch] object RegularRangeAggregationBucketResponse {
-  implicit val decoder: JsonDecoder[RegularRangeAggregationBucketResponse] =
-    DeriveJsonDecoder.gen[RegularRangeAggregationBucketResponse]
-}
-
-private[elasticsearch] final case class KeyedRangeAggregationBucketResponse(
-  to: Option[Double],
-  from: Option[Double],
-  @jsonField("doc_count")
-  docCount: Int
-)
-private[elasticsearch] object KeyedRangeAggregationBucketResponse {
-  implicit val decoder: JsonDecoder[KeyedRangeAggregationBucketResponse] =
-    DeriveJsonDecoder.gen[KeyedRangeAggregationBucketResponse]
-}
-
-private[elasticsearch] sealed trait RangeAggregationResponse extends AggregationResponse
-
-private[elasticsearch] final case class RegularRangeAggregationResponse(
-  buckets: Chunk[RegularRangeAggregationBucketResponse]
-) extends RangeAggregationResponse
-private[elasticsearch] object RegularRangeAggregationResponse {
-  implicit val decoder: JsonDecoder[RegularRangeAggregationResponse] =
-    DeriveJsonDecoder.gen[RegularRangeAggregationResponse]
-}
-
-private[elasticsearch] final case class KeyedRangeAggregationResponse(
-  buckets: Map[String, KeyedRangeAggregationBucketResponse]
-) extends RangeAggregationResponse
-private[elasticsearch] object KeyedRangeAggregationResponse {
-  implicit val decoder: JsonDecoder[KeyedRangeAggregationResponse] =
-    DeriveJsonDecoder.gen[KeyedRangeAggregationResponse]
-}
-
-private[elasticsearch] object RangeAggregationResponse {
-  implicit val decoder: JsonDecoder[RangeAggregationResponse] =
-    RegularRangeAggregationResponse.decoder
-      .widen[RangeAggregationResponse]
-      .orElse(KeyedRangeAggregationResponse.decoder.widen[RangeAggregationResponse])
 }
 
 private[elasticsearch] final case class MissingAggregationResponse(@jsonField("doc_count") docCount: Long)
@@ -401,6 +344,41 @@ private[elasticsearch] final case class PercentilesAggregationResponse(values: M
 private[elasticsearch] object PercentilesAggregationResponse {
   implicit val decoder: JsonDecoder[PercentilesAggregationResponse] =
     DeriveJsonDecoder.gen[PercentilesAggregationResponse]
+}
+
+private[elasticsearch] final case class RangeAggregationBucket(
+  key: String,
+  from: Option[Double],
+  to: Option[Double],
+  docCount: Long,
+  subAggregations: Option[Map[String, AggregationResponse]]
+) extends AggregationBucket
+
+private[elasticsearch] object RangeAggregationBucket {
+  implicit val decoder: JsonDecoder[RangeAggregationBucket] = Obj.decoder.mapOrFail { case Obj(fields) =>
+    val bucketDecoder = BucketDecoder(fields)
+
+    for {
+      key      <- bucketDecoder.key
+      docCount <- bucketDecoder.docCount
+      subAggs  <- bucketDecoder.subAggs
+    } yield RangeAggregationBucket(
+      key = key,
+      from = fields.collectFirst { case ("from", Num(value)) => value.doubleValue },
+      to = fields.collectFirst { case ("to", Num(value)) => value.doubleValue },
+      docCount = docCount,
+      subAggregations = Some(subAggs).filter(_.nonEmpty)
+    )
+  }
+}
+
+private[elasticsearch] final case class RangeAggregationResponse(buckets: Chunk[RangeAggregationBucket])
+    extends AggregationResponse
+
+private[elasticsearch] object RangeAggregationResponse {
+  implicit val decoder: JsonDecoder[RangeAggregationResponse] = Obj.decoder.mapOrFail { case Obj(fields) =>
+    BucketDecoder(fields).rangeBuckets[RangeAggregationBucket].map(RangeAggregationResponse(_))
+  }
 }
 
 private[elasticsearch] final case class SamplerAggregationResponse(

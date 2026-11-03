@@ -414,98 +414,93 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )
         },
         test("range") {
-          val aggregationTo     = rangeAggregation("aggregation1", TestDocument.intField, SingleRange.to(23.9))
-          val aggregationFrom   = rangeAggregation("aggregation2", TestDocument.intField, SingleRange.from(2))
-          val aggregationFromTo =
-            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0))
-          val aggregationRegular = rangeAggregation(
-            "aggregation4",
-            "testField",
-            SingleRange.to(23.9),
-            SingleRange.from(3),
-            SingleRange.to(12).from(0)
-          )
-          val aggregationKeyed = rangeAggregation(
-            "aggregation5",
-            TestDocument.intField,
-            SingleRange.from(30).to(60),
-            SingleRange.from(60).to(100)
-          ).asKeyed
-          val aggregationNamedKeyed = rangeAggregation(
-            "aggregation6",
-            "testField",
-            SingleRange.from(30).to(60).key("Low"),
-            SingleRange.from(60).to(100).key("High")
-          ).asKeyed
+          val aggregation =
+            rangeAggregation(
+              "aggregation",
+              "testField",
+              RangeBound().to(50),
+              RangeBound().from(50).to(100),
+              RangeBound().from(100)
+            )
+          val aggregationTs =
+            rangeAggregation(
+              name = "aggregation",
+              field = TestDocument.intField,
+              range = RangeBound().to(50),
+              ranges = RangeBound().from(50)
+            )
+          val aggregationTsRaw =
+            rangeAggregation(name = "aggregation", field = TestSubDocument.intField.raw, range = RangeBound().to(50))
+          val aggregationWithKeyed =
+            rangeAggregation(
+              name = "aggregation",
+              field = TestDocument.doubleField,
+              range = RangeBound().to(50).key("low"),
+              ranges = RangeBound().from(50).key("high")
+            ).keyed
+          val aggregationWithSubAggregation =
+            rangeAggregation(name = "aggregation", field = TestDocument.intField, range = RangeBound().to(50))
+              .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
 
-          assert(aggregationTo)(
+          assert(aggregation)(
             equalTo(
               Range(
-                "aggregation1",
-                "testField",
-                Chunk.fromIterable(List(SingleRange.to(23.9))),
-                None
-              )
-            )
-          ) && assert(aggregationFrom)(
-            equalTo(
-              Range(
-                "aggregation2",
-                "testField",
-                Chunk.fromIterable(List(SingleRange.from(2.0))),
-                None
-              )
-            )
-          ) && assert(aggregationFromTo)(
-            equalTo(
-              Range(
-                "aggregation3",
-                "testField",
-                Chunk.fromIterable(List(SingleRange(from = 4, to = 344.0))),
-                None
-              )
-            )
-          ) && assert(aggregationRegular)(
-            equalTo(
-              Range(
-                "aggregation4",
-                "testField",
-                Chunk.fromIterable(
-                  List(
-                    SingleRange.to(23.9),
-                    SingleRange.from(3),
-                    SingleRange.to(12).from(0)
-                  )
+                name = "aggregation",
+                field = "testField",
+                ranges = NonEmptyChunk(
+                  RangeBound(to = Some(50.0)),
+                  RangeBound(from = Some(50.0), to = Some(100.0)),
+                  RangeBound(from = Some(100.0))
                 ),
-                None
+                isKeyed = false,
+                subAggregations = Chunk.empty
               )
             )
-          ) && assert(aggregationKeyed)(
+          ) &&
+          assert(aggregationTs)(
             equalTo(
               Range(
-                "aggregation5",
-                "testField",
-                Chunk.fromIterable(
-                  List(
-                    SingleRange.from(30).to(60),
-                    SingleRange.from(60).to(100)
-                  )
-                ),
-                Some(true)
+                name = "aggregation",
+                field = "intField",
+                ranges = NonEmptyChunk(RangeBound(to = Some(50.0)), RangeBound(from = Some(50.0))),
+                isKeyed = false,
+                subAggregations = Chunk.empty
               )
             )
-          ) && assert(aggregationNamedKeyed)(
+          ) &&
+          assert(aggregationTsRaw)(
             equalTo(
               Range(
-                "aggregation6",
-                "testField",
-                Chunk.fromIterable(
-                  List(
-                    SingleRange.from(30).to(60).key("Low"),
-                    SingleRange.from(60).to(100).key("High")
-                  )
+                name = "aggregation",
+                field = "intField.raw",
+                ranges = NonEmptyChunk(RangeBound(to = Some(50.0))),
+                isKeyed = false,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithKeyed)(
+            equalTo(
+              Range(
+                name = "aggregation",
+                field = "doubleField",
+                ranges = NonEmptyChunk(
+                  RangeBound(key = Some("low"), to = Some(50.0)),
+                  RangeBound(from = Some(50.0), key = Some("high"))
                 ),
-                Some(true)
+                isKeyed = true,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithSubAggregation)(
+            equalTo(
+              Range(
+                name = "aggregation",
+                field = "intField",
+                ranges = NonEmptyChunk(RangeBound(to = Some(50.0))),
+                isKeyed = false,
+                subAggregations = Chunk(Max(name = "subAggregation", field = "intField", missing = None))
               )
             )
           )
@@ -1571,121 +1566,115 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("range") {
-          val aggregationTo     = rangeAggregation("aggregation1", "testField", SingleRange.to(23.9))
-          val aggregationFrom   = rangeAggregation("aggregation2", "testField", SingleRange.from(2))
-          val aggregationFromTo =
-            rangeAggregation("aggregation3", "testField", SingleRange.from(4).to(344.0))
-          val aggregationRegular: RangeAggregation = rangeAggregation(
-            "aggregation4",
-            TestDocument.intField,
-            SingleRange.to(23.9),
-            SingleRange.from(3),
-            SingleRange.to(12).from(0)
-          )
-          val aggregationKeyed = rangeAggregation(
-            "aggregation5",
-            TestDocument.intField,
-            SingleRange.from(30).to(60),
-            SingleRange.from(60).to(100)
-          ).asKeyed
-          val aggregationNamedKeyed = rangeAggregation(
-            "aggregation6",
-            TestDocument.intField,
-            SingleRange.from(30).to(60).key("Low"),
-            SingleRange.from(60).to(100).key("High")
-          ).asKeyed
+          val aggregation =
+            rangeAggregation(
+              "aggregation",
+              "testField",
+              RangeBound().to(50),
+              RangeBound().from(50).to(100),
+              RangeBound().from(100)
+            )
+          val aggregationTs =
+            rangeAggregation(name = "aggregation", field = TestDocument.intField, range = RangeBound().to(23.9))
+          val aggregationWithKeyed =
+            rangeAggregation(
+              name = "aggregation",
+              field = TestDocument.intField,
+              range = RangeBound().to(50).key("low"),
+              ranges = RangeBound().from(50).key("high")
+            ).keyed
+          val aggregationWithSubAggregation =
+            rangeAggregation(name = "aggregation", field = TestDocument.intField, range = RangeBound().from(50))
+              .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
 
-          val expectedTo =
+          val expected =
             """
               |{
-              |  "aggregation1": {
+              |  "aggregation": {
               |    "range": {
               |      "field": "testField",
               |      "ranges": [
-              |        { "to": 23.9 }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expectedFrom =
-            """
-              |{
-              |  "aggregation2": {
-              |    "range": {
-              |      "field": "testField",
-              |      "ranges": [
-              |        { "from": 2.0 }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expectedFromTo =
-            """
-              |{
-              |  "aggregation3": {
-              |    "range": {
-              |      "field": "testField",
-              |      "ranges": [
-              |        { "from": 4.0, "to": 344.0 }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expectedRegular =
-            """
-              |{
-              |  "aggregation4": {
-              |    "range": {
-              |      "field": "testField",
-              |      "ranges": [
-              |        { "to": 23.9 },
-              |        { "from": 3.0 },
-              |        { "from": 0.0, "to": 12.0 }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expectedKeyed =
-            """
-              |{
-              |  "aggregation5": {
-              |    "range": {
-              |      "field": "testField",
-              |      "keyed": true,
-              |      "ranges": [
-              |        { "from": 30.0, "to": 60.0 },
-              |        { "from": 60.0, "to": 100.0 }
-              |      ]
-              |    }
-              |  }
-              |}
-              |""".stripMargin
-          val expectedNamedKeyed =
-            """
-              |{
-              |  "aggregation6": {
-              |    "range": {
-              |      "field": "testField",
-              |      "keyed": true,
-              |      "ranges": [
-              |        { "from": 30.0, "to": 60.0, "key": "Low" },
-              |        { "from": 60.0, "to": 100.0, "key": "High" }
+              |        {
+              |          "to": 50.0
+              |        },
+              |        {
+              |          "from": 50.0,
+              |          "to": 100.0
+              |        },
+              |        {
+              |          "from": 100.0
+              |        }
               |      ]
               |    }
               |  }
               |}
               |""".stripMargin
 
-          assert(aggregationTo.toJson)(equalTo(expectedTo.toJson)) &&
-          assert(aggregationFrom.toJson)(equalTo(expectedFrom.toJson)) &&
-          assert(aggregationFromTo.toJson)(equalTo(expectedFromTo.toJson)) &&
-          assert(aggregationRegular.toJson)(equalTo(expectedRegular.toJson)) &&
-          assert(aggregationKeyed.toJson)(equalTo(expectedKeyed.toJson)) &&
-          assert(aggregationNamedKeyed.toJson)(equalTo(expectedNamedKeyed.toJson))
+          val expectedTs =
+            """
+              |{
+              |  "aggregation": {
+              |    "range": {
+              |      "field": "intField",
+              |      "ranges": [
+              |        {
+              |          "to": 23.9
+              |        }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithKeyed =
+            """
+              |{
+              |  "aggregation": {
+              |    "range": {
+              |      "field": "intField",
+              |      "ranges": [
+              |        {
+              |          "key": "low",
+              |          "to": 50.0
+              |        },
+              |        {
+              |          "from": 50.0,
+              |          "key": "high"
+              |        }
+              |      ],
+              |      "keyed": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithSubAggregation =
+            """
+              |{
+              |  "aggregation": {
+              |    "range": {
+              |      "field": "intField",
+              |      "ranges": [
+              |        {
+              |          "from": 50.0
+              |        }
+              |      ]
+              |    },
+              |    "aggs": {
+              |      "subAggregation": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithKeyed.toJson)(equalTo(expectedWithKeyed.toJson)) &&
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("sampler") {
           val aggWithSubAgg = ElasticAggregation.samplerAggregation(
