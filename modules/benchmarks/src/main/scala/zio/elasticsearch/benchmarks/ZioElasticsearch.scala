@@ -40,14 +40,17 @@ private[benchmarks] final class ZioElasticsearch private (runtime: Runtime.Scope
     for {
       _ <- executor.execute(ElasticRequest.deleteIndex(index))
       _ <- executor.execute(ElasticRequest.createIndex(index))
-      _ <- executor
-             .execute(
-               ElasticRequest
-                 .bulk(index, documents.map(doc => ElasticRequest.upsert(DocumentId(doc.id), doc)): _*)
-                 .refreshTrue
-             )
-             .when(documents.nonEmpty)
+      _ <- bulkUpsert(index, documents, refresh = true).when(documents.nonEmpty)
     } yield ()
+
+  def bulkUpsert(index: IndexName, documents: Chunk[TestDocument], refresh: Boolean = false): Task[Unit] =
+    executor
+      .execute(
+        ElasticRequest
+          .bulk(index, documents.map(doc => ElasticRequest.upsert(DocumentId(doc.id), doc)): _*)
+          .refresh(refresh)
+      )
+      .unit
 
   def tearDown(): Unit =
     Unsafe.unsafe(implicit u => runtime.unsafe.shutdown())
