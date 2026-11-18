@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import sttp.client4.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.data.GeoPoint
@@ -32,7 +31,7 @@ import java.time.LocalDate
 
 trait IntegrationSpec extends ZIOSpecDefault {
 
-  val elasticsearchLayer: TaskLayer[Executor] = HttpClientZioBackend.layer() >>> ElasticExecutor.local
+  val elasticsearchLayer: TaskLayer[Executor] = ElasticBackend.layer() >>> ElasticExecutor.local
 
   val index: IndexName = IndexName("users")
 
