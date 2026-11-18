@@ -1324,6 +1324,30 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(requestBody)(equalTo(expected))
         },
+        test("bulk with update or create") {
+          val doc1Json =
+            """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
+          val doc2Json =
+            """{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}"""
+
+          val requestBody =
+            bulk(
+              Index,
+              update(id = DocId, doc = Doc1).orCreate(Doc2),
+              updateByScript(Index, DocId, Script1).orCreate(Doc2)
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            s"""|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"doc":$doc1Json,"upsert":$doc2Json}
+                |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}},"upsert":$doc2Json}
+                |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
         test("count") {
           val jsonRequest = count(Index) match {
             case r: Count => r.toJson
