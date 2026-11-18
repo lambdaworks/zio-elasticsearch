@@ -5,7 +5,7 @@ title: "kNN Search Request"
 
 The `kNN Search` request performs a k-nearest neighbor (kNN) search: given a query vector, it finds the `k` closest vectors and returns those documents as search hits.
 
-Note that this request requires Elasticsearch 8.0 or newer, since the `_knn_search` API is not available in Elasticsearch 7. The API was deprecated in Elasticsearch 8.4 in favour of the `knn` option of the `_search` API. It is still available in 8.x, but may be removed in a future Elasticsearch version.
+Note that this request uses the `_knn_search` API, which is only available in Elasticsearch 8.x: it does not exist in Elasticsearch 7, and it was removed in Elasticsearch 9.0 (it has been deprecated since 8.4 in favour of the `knn` option of the `_search` API). The `filter` method requires Elasticsearch 8.2 or newer.
 
 In order to use the `kNN Search` request, the searched field must be mapped as a `dense_vector` field with indexing enabled, for example:
 ```scala

@@ -5,7 +5,7 @@ title: "kNN Query"
 
 The `kNN` query finds the `k` nearest vectors to a query vector, as measured by a similarity metric. It is used for performing k-nearest neighbor (kNN) search on fields of type `dense_vector`.
 
-Note that the `kNN` query can't be used as a regular query (e.g. in a `Search` request or within a `Bool` query); it can only be executed using the [`kNN Search`](https://lambdaworks.github.io/zio-elasticsearch/overview/requests/elastic_request_knn_search) request, which requires Elasticsearch 8.0 or newer.
+Note that the `kNN` query can't be used as a regular query (e.g. in a `Search` request or within a `Bool` query); it can only be executed using the [`kNN Search`](https://lambdaworks.github.io/zio-elasticsearch/overview/requests/elastic_request_knn_search) request, which is only available in Elasticsearch 8.x.
 
 In order to use the `kNN` query import the following:
 ```scala
@@ -26,10 +26,6 @@ val query: KNNQuery[Document] = kNN(field = Document.vectorField, k = 2, numCand
 
 Parameter `k` represents the number of nearest neighbors to return as top hits, while `numCandidates` represents the number of nearest neighbor candidates to consider per shard. Parameter `k` must be less than or equal to `numCandidates`.
 
-If you want to change the `similarity`, you can use `similarity` method:
-```scala
-val queryWithSimilarity: KNNQuery[Document] =
-  kNN(field = Document.vectorField, k = 2, numCandidates = 5, queryVector = Chunk(1.0, 2.0, 3.0)).similarity(3.0)
-```
+Note that the `similarity` method is currently not usable: the `_knn_search` API rejects the `similarity` parameter on every Elasticsearch version.
 
 You can find more information about `kNN` query [here](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/knn-search.html).
