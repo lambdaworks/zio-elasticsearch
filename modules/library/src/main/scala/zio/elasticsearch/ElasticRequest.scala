@@ -792,7 +792,7 @@ object ElasticRequest {
 
     private[elasticsearch] def toJson: Json = {
       val filterJson: Json = filter.fold(Obj())(f => Obj("filter" -> f.toJson(None)))
-      Obj("knn" -> knn.toJson) merge filterJson
+      Obj("knn" -> (knn.toJson merge filterJson), "size" -> knn.k.toJson)
     }
   }
 

@@ -385,7 +385,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
 
   private def executeKnn(r: KNN): Task[KNNSearchResult] = {
-    val uri = uri"${esConfig.uri}/${r.selectors}/$KnnSearch".withParams(
+    val uri = uri"${esConfig.uri}/${r.selectors}/$Search".withParams(
       getQueryParams(Chunk(("routing", r.routing)))
     )
 
@@ -699,7 +699,6 @@ private[elasticsearch] object HttpExecutor {
   private final val DeleteByQuery = "_delete_by_query"
   private final val Doc           = "_doc"
   private final val KeepAlive     = "keep_alive"
-  private final val KnnSearch     = "_knn_search"
   private final val PointInTime   = "_pit"
   private final val Refresh       = "_refresh"
   private final val Scroll        = "scroll"

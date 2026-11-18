@@ -1433,7 +1433,8 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "query_vector": [1.1, 3.3],
               |    "k": 10,
               |    "num_candidates": 21
-              |  }
+              |  },
+              |  "size": 10
               |}
               |""".stripMargin
 
@@ -1445,15 +1446,16 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               |    "query_vector": [1.1, 3.3],
               |    "k": 10,
               |    "num_candidates": 21,
-              |    "similarity": 3.14
-              |  },
-              |  "filter": {
-              |    "range": {
-              |      "intField": {
-              |        "gte": 10
+              |    "similarity": 3.14,
+              |    "filter": {
+              |      "range": {
+              |        "intField": {
+              |          "gte": 10
+              |        }
               |      }
               |    }
-              |  }
+              |  },
+              |  "size": 10
               |}
               |""".stripMargin
 
