@@ -23,7 +23,7 @@ import zio.{Scope => _, _}
 
 import java.util.concurrent.TimeUnit
 
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @OutputTimeUnit(TimeUnit.SECONDS)
 @Measurement(iterations = 15)
@@ -75,7 +75,9 @@ class IndexGetBenchmark {
 
   private def run(client: BenchmarkClient): Unit =
     BenchmarkClient.unsafeRun {
-      val task  = client.upsert(TestIndex, TestDocument.Single) *> client.getById(TestIndex, TestDocument.Single.id)
+      val task = ZIO.suspendSucceed {
+        client.upsert(TestIndex, TestDocument.Single) *> client.getById(TestIndex, TestDocument.Single.id)
+      }
       val tasks = Chunk.fill(parallelism)(task.repeatN(repetitions))
 
       ZIO.collectAllParDiscard(tasks)

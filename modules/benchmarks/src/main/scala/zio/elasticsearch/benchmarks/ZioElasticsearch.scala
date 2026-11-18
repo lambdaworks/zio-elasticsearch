@@ -50,7 +50,12 @@ private[benchmarks] final class ZioElasticsearch private (runtime: Runtime.Scope
           .bulk(index, documents.map(doc => ElasticRequest.upsert(DocumentId(doc.id), doc)): _*)
           .refresh(refresh)
       )
-      .unit
+      .flatMap { response =>
+        if (response.errors) {
+          val reason = response.items.iterator.flatMap(_.error).map(_.reason).nextOption().getOrElse("unknown error")
+          ZIO.fail(new IllegalStateException(s"Bulk upsert into $index failed: $reason"))
+        } else ZIO.unit
+      }
 
   def bulkUpdate(index: IndexName, documents: Chunk[TestDocument]): Task[Unit] =
     executor
