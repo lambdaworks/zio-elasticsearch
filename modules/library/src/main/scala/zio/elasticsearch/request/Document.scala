@@ -22,9 +22,11 @@ import zio.json.ast.Json.Obj
 import zio.schema.Schema
 import zio.schema.codec.JsonCodec
 
-private[elasticsearch] final case class Document(json: Json)
+private[elasticsearch] final case class Document(raw: String) {
+  lazy val json: Json = raw.fromJson[Json].fold(_ => Obj(), identity)
+}
 
 private[elasticsearch] object Document {
   def from[A](doc: A)(implicit schema: Schema[A]): Document =
-    Document(JsonCodec.jsonEncoder(schema).encodeJson(doc, indent = None).fromJson[Json].fold(_ => Obj(), identity))
+    Document(JsonCodec.jsonEncoder(schema).encodeJson(doc, indent = None).toString)
 }

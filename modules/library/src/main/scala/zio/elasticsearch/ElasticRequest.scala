@@ -537,7 +537,7 @@ object ElasticRequest {
             requestType = "create",
             parameters = Chunk(("_index", index.orElse(this.index)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case CreateWithId(index, id, document, _, routing) =>
         Chunk(
@@ -545,7 +545,7 @@ object ElasticRequest {
             requestType = "create",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case CreateOrUpdate(index, id, document, _, routing) =>
         Chunk(
@@ -553,7 +553,7 @@ object ElasticRequest {
             requestType = "index",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case DeleteById(index, id, _, routing) =>
         Chunk(

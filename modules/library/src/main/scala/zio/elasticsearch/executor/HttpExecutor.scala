@@ -199,7 +199,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(asJson(r.toJson))
+        .body(r.document.raw)
         .response(asJson[CreateResponse])
     ).flatMap { response =>
       response.code match {
@@ -225,7 +225,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(asJson(r.toJson))
+        .body(r.document.raw)
     ).flatMap { response =>
       response.code match {
         case HttpCreated  => ZIO.succeed(CreationOutcome.Created)
@@ -253,7 +253,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(asJson(r.toJson))).flatMap { response =>
+    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.document.raw)).flatMap { response =>
       response.code match {
         case HttpOk | HttpCreated => ZIO.unit
         case _                    => ZIO.fail(handleFailures(response))
