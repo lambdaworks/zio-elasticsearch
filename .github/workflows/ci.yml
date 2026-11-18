@@ -106,7 +106,7 @@ jobs:
 
   publish:
     runs-on: ubuntu-26.04
-    timeout-minutes: 10
+    timeout-minutes: 30
     needs: [ ci ]
     if: github.event_name != 'pull_request'
     steps:
