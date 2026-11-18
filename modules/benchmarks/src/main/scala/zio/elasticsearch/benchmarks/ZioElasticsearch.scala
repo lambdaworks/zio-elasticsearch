@@ -52,6 +52,11 @@ private[benchmarks] final class ZioElasticsearch private (runtime: Runtime.Scope
       )
       .unit
 
+  def bulkUpdate(index: IndexName, documents: Chunk[TestDocument]): Task[Unit] =
+    executor
+      .execute(ElasticRequest.bulk(index, documents.map(doc => ElasticRequest.update(DocumentId(doc.id), doc)): _*))
+      .unit
+
   def tearDown(): Unit =
     Unsafe.unsafe(implicit u => runtime.unsafe.shutdown())
 }

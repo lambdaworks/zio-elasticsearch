@@ -1303,6 +1303,27 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(bodyAllIndividualIndices)(equalTo(expectedAllIndividualIndices)) &&
           assert(bodyIndividualRoutingOverridesGlobal)(equalTo(expectedIndividualRoutingOverridesGlobal))
         },
+        test("bulk with update and delete") {
+          val requestBody =
+            bulk(
+              Index,
+              update(id = DocId, doc = Doc1),
+              updateByScript(Index, DocId, Script1),
+              deleteById(DocId)
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            """|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"doc":{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}}
+               |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}}}
+               |{ "delete" : { "_index" : "index", "_id" : "documentid" } }
+               |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
         test("count") {
           val jsonRequest = count(Index) match {
             case r: Count => r.toJson

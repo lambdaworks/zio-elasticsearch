@@ -568,7 +568,7 @@ object ElasticRequest {
             requestType = "update",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          Obj("doc" -> document.json)
+          s"""{"doc":${document.raw}}"""
         )
       case Update(index, id, _, _, routing, Some(script), _) =>
         Chunk(

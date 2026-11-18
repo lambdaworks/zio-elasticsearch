@@ -54,6 +54,10 @@ class OfflineSearchBenchmark {
   def bulkUpsert(): Unit =
     BenchmarkClient.unsafeRun(zioElasticsearch.bulkUpsert(TestIndex, documents))
 
+  @Benchmark
+  def bulkUpdate(): Unit =
+    BenchmarkClient.unsafeRun(zioElasticsearch.bulkUpdate(TestIndex, documents))
+
   private var documents: Chunk[TestDocument]     = _
   private var zioElasticsearch: ZioElasticsearch = _
 }
