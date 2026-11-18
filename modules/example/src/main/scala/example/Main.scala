@@ -19,10 +19,10 @@ package example
 import example.api.{HealthCheck, Repositories}
 import example.config.{AppConfig, ElasticsearchConfig, HttpConfig}
 import example.external.github.RepoFetcher
-import sttp.client4.httpclient.zio.{HttpClientZioBackend, SttpClient}
+import sttp.client4.httpclient.zio.SttpClient
 import zio._
 import zio.config.typesafe.TypesafeConfigProvider
-import zio.elasticsearch.{ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
+import zio.elasticsearch.{ElasticBackend, ElasticConfig, ElasticExecutor, ElasticRequest, Elasticsearch}
 import zio.http.Server
 
 import scala.io.Source
@@ -41,7 +41,7 @@ object Main extends ZIOAppDefault {
       elasticConfigLive,
       ElasticExecutor.live,
       Elasticsearch.layer,
-      HttpClientZioBackend.layer()
+      ElasticBackend.layer()
     )
   }
 
