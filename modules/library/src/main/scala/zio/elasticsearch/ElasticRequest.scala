@@ -279,7 +279,8 @@ object ElasticRequest {
 
   /**
    * Constructs an instance of [[KNNRequest]] used for performing a k-nearest neighbour (kNN) search. Given a query
-   * vector, it finds the k closest vectors and returns those documents as search hits.
+   * vector, it finds the k closest vectors and returns those documents as search hits. Requires Elasticsearch 8.4 or
+   * newer.
    *
    * @param selectors
    *   the name of the index or more indices to search in
@@ -792,7 +793,7 @@ object ElasticRequest {
 
     private[elasticsearch] def toJson: Json = {
       val filterJson: Json = filter.fold(Obj())(f => Obj("filter" -> f.toJson(None)))
-      Obj("knn" -> knn.toJson) merge filterJson
+      Obj("knn" -> (knn.toJson merge filterJson), "size" -> knn.k.toJson)
     }
   }
 

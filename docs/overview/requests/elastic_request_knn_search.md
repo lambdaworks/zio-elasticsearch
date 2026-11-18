@@ -5,7 +5,7 @@ title: "kNN Search Request"
 
 The `kNN Search` request performs a k-nearest neighbor (kNN) search: given a query vector, it finds the `k` closest vectors and returns those documents as search hits.
 
-Note that this request uses the `_knn_search` API, which was deprecated in Elasticsearch 8.4 in favour of the `knn` option of the `_search` API. It is still available in 8.x, but may be removed in a future Elasticsearch version.
+This request uses the `knn` option of the `_search` API, which requires Elasticsearch 8.4 or newer. It is not available in Elasticsearch 7. The request returns the `k` nearest documents.
 
 In order to use the `kNN Search` request, the searched field must be mapped as a `dense_vector` field with indexing enabled, for example:
 ```scala
@@ -73,4 +73,4 @@ val result: RIO[Elasticsearch, Chunk[Document]] =
   Elasticsearch.execute(request).documentAs[Document]
 ```
 
-You can find more information about `kNN Search` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/8.6/knn-search-api.html).
+You can find more information about `kNN Search` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/8.12/knn-search.html).

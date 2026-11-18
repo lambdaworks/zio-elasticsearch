@@ -15,7 +15,7 @@ The library depends on sttp as an HTTP client for executing requests, and other 
 The following versions are supported:
 - Scala: 2.12, 2.13 and 3
 - ZIO: 2
-- Elasticsearch: 7, 8
+- Elasticsearch: 7, 8 (kNN search requires 8.4+)
 - JVM 17+
 
 ## Installation
@@ -23,7 +23,7 @@ The following versions are supported:
 To use ZIO Elasticsearch in your project, add the following line to your `build.sbt` file:
 
 ```scala
-libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "0.5.1"
+libraryDependencies += "io.lambdaworks" %% "zio-elasticsearch" % "0.6.0"
 ```
 
 ## Usage
@@ -200,4 +200,4 @@ See the [Code of Conduct](https://lambdaworks.github.io/zio-elasticsearch/about/
 [License](LICENSE)
 
 
-[scala-version-badge]: https://img.shields.io/badge/scala-2.13.18-blue?logo=scala&color=red
+[scala-version-badge]: https://img.shields.io/badge/scala-2.12%20%7C%202.13%20%7C%203-blue?logo=scala&color=red
