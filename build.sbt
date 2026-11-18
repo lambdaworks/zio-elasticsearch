@@ -31,7 +31,7 @@ lazy val root =
   project
     .in(file("."))
     .settings(publish / skip := true)
-    .aggregate(library, integration, example, docs)
+    .aggregate(library, integration, benchmarks, example, docs)
 
 lazy val library =
   project
@@ -63,6 +63,25 @@ lazy val integration =
     .settings(
       publish / skip := true
     )
+
+lazy val benchmarks =
+  project
+    .in(file("modules/benchmarks"))
+    .enablePlugins(JmhPlugin)
+    .settings(stdSettings("benchmarks"))
+    .settings(
+      crossScalaVersions := List(Scala213),
+      publish / skip     := true,
+      libraryDependencies ++= List(
+        "co.elastic.clients"            % "elasticsearch-java"                   % "8.19.25",
+        "com.fasterxml.jackson.module" %% "jackson-module-scala"                 % "2.22.4",
+        "nl.gn0s1s"                    %% "elastic4s-client-esjava"              % "8.19.3",
+        "nl.gn0s1s"                    %% "elastic4s-effect-zio"                 % "8.19.3",
+        "nl.gn0s1s"                    %% "elastic4s-json-jackson"               % "8.19.3",
+        "org.elasticsearch.client"      % "elasticsearch-rest-high-level-client" % "7.17.29"
+      )
+    )
+    .dependsOn(library)
 
 lazy val example =
   project
