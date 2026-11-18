@@ -268,7 +268,7 @@ sealed trait KNNQuery[-S] { self =>
 
   /**
    * Sets the `similarity` parameter for the [[zio.elasticsearch.query.KNNQuery]]. The `similarity` parameter is the
-   * required minimum similarity for a vector to be considered a match.
+   * required minimum similarity for a vector to be considered a match. Requires Elasticsearch 8.8 or newer.
    *
    * @param value
    *   a non-negative real number used for the `similarity`
