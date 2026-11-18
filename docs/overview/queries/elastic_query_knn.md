@@ -5,7 +5,7 @@ title: "kNN Query"
 
 The `kNN` query finds the `k` nearest vectors to a query vector, as measured by a similarity metric. It is used for performing k-nearest neighbor (kNN) search on fields of type `dense_vector`.
 
-Note that the `kNN` query can't be used as a regular query (e.g. in a `Search` request or within a `Bool` query); it can only be executed using the [`kNN Search`](https://lambdaworks.github.io/zio-elasticsearch/overview/requests/elastic_request_knn_search) request.
+Note that the `kNN` query can't be used as a regular query (e.g. in a `Search` request or within a `Bool` query); it can only be executed using the [`kNN Search`](https://lambdaworks.github.io/zio-elasticsearch/overview/requests/elastic_request_knn_search) request, which requires Elasticsearch 8.0 or newer.
 
 In order to use the `kNN` query import the following:
 ```scala
