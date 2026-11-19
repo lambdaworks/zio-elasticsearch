@@ -27,6 +27,10 @@ import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.{Abort, Proceed}
 import zio.elasticsearch.request.UpdateOutcome
 import zio.elasticsearch.result.{
+  DecodingException,
+  ElasticException,
+  MultiGetItem,
+  MultiGetResult,
   TermsAggregationBucketResult,
   TermsAggregationResult,
   UpdateByQueryResult,
@@ -232,6 +236,72 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
             .documentAs[TestDocument]
         assertZIO(executorSearch)(equalTo(Chunk(doc)))
+      },
+      test("multiGet") {
+        val executorMultiGet =
+          Executor.execute(
+            ElasticRequest
+              .multiGet(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), ids = DocumentId("missing-id"))
+              .realtime(false)
+              .routing(Routing("routing"))
+          )
+
+        assertZIO(executorMultiGet.documentAs[TestDocument])(equalTo(Chunk(Some(doc), None))) &&
+        assertZIO(executorMultiGet.flatMap(_.missing))(
+          equalTo(Chunk(MultiGetItem.NotFound(index = "repositories", id = DocumentId("missing-id"))))
+        )
+      },
+      test("multiGet across indices with failures and missing _source") {
+        val documentId       = DocumentId("V4x8q4UB3agN0z75fv5r")
+        val executorMultiGet =
+          Executor.execute(ElasticRequest.multiGet((index, documentId), (IndexName("missing-index"), documentId)))
+
+        val expectedFailure =
+          MultiGetItem.Failed(
+            index = "missing-index",
+            id = documentId,
+            error = Error(
+              `type` = "index_not_found_exception",
+              reason = "no such index [missing-index]",
+              indexUuid = Some("_na_"),
+              shard = None,
+              index = Some("missing-index")
+            )
+          )
+
+        assertZIO(executorMultiGet.flatMap(_.items))(
+          equalTo(Chunk(MultiGetItem.Found(index = "repositories", id = documentId, item = None), expectedFailure))
+        ) &&
+        assertZIO(executorMultiGet.flatMap(_.failures))(equalTo(Chunk(expectedFailure))) &&
+        assertZIO(executorMultiGet.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[ElasticException](
+              hasMessage(
+                equalTo(
+                  "Could not retrieve all documents: [missing-index/V4x8q4UB3agN0z75fv5r] index_not_found_exception: no such index [missing-index]"
+                )
+              )
+            )
+          )
+        )
+      },
+      test("multiGet fails to decode found document without _source") {
+        val result =
+          new MultiGetResult(
+            Chunk(MultiGetItem.Found(index = "repositories", id = DocumentId("V4x8q4UB3agN0z75fv5r"), item = None))
+          )
+
+        assertZIO(result.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[DecodingException](
+              hasMessage(
+                equalTo(
+                  "Could not parse all documents successfully: Document [repositories/V4x8q4UB3agN0z75fv5r] was found, but its _source is not available"
+                )
+              )
+            )
+          )
+        )
       },
       test("refresh") {
         val executorRefresh = Executor.execute(ElasticRequest.refresh(selectors = index))

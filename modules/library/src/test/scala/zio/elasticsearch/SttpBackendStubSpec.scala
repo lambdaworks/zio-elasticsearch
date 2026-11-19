@@ -261,6 +261,95 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val multiGetRequestStub: StubMapping = StubMapping(
+    request =
+      r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_mget?realtime=false&routing=routing",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "docs": [
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "_version": 1,
+        |      "found": true,
+        |      "_source": {
+        |        "stringField": "StringField",
+        |        "subDocumentList": [
+        |          {
+        |            "stringField": "StringField",
+        |            "nestedField": {
+        |              "stringField": "StringField",
+        |              "longField": 1
+        |            },
+        |            "intField": 132,
+        |            "intFieldList": []
+        |          }
+        |        ],
+        |        "dateField": "2020-10-11",
+        |        "intField": 10,
+        |        "doubleField": 10.0,
+        |        "booleanField": true,
+        |        "geoPointField": {
+        |          "lat": 1.0,
+        |          "lon": 1.0
+        |        },
+        |        "vectorField": [
+        |          1,
+        |          5,
+        |          -20
+        |        ]
+        |      }
+        |    },
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "missing-id",
+        |      "found": false
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  )
+
+  private val multiGetAcrossIndicesRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/_mget",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "docs": [
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "_version": 1,
+        |      "found": true
+        |    },
+        |    {
+        |      "_index": "missing-index",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "error": {
+        |        "root_cause": [
+        |          {
+        |            "type": "index_not_found_exception",
+        |            "reason": "no such index [missing-index]",
+        |            "resource.type": "index_or_alias",
+        |            "resource.id": "missing-index",
+        |            "index_uuid": "_na_",
+        |            "index": "missing-index"
+        |          }
+        |        ],
+        |        "type": "index_not_found_exception",
+        |        "reason": "no such index [missing-index]",
+        |        "resource.type": "index_or_alias",
+        |        "resource.id": "missing-index",
+        |        "index_uuid": "_na_",
+        |        "index": "missing-index"
+        |      }
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  )
+
   private val refreshRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_refresh",
     response = ResponseStub.exact("OK")
@@ -462,6 +551,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     deleteIndexRequestStub,
     existsRequestStub,
     getByIdRequestStub,
+    multiGetRequestStub,
+    multiGetAcrossIndicesRequestStub,
     refreshRequestStub,
     searchRequestStub,
     searchWithAggregationRequestStub,

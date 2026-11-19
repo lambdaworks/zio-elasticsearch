@@ -50,6 +50,7 @@ import zio.elasticsearch.executor.response.{
   DocumentWithHighlightsAndSort,
   GetResponse,
   Hit,
+  MultiGetResponse,
   SearchWithAggregationsResponse,
   UpdateByQueryResponse
 }
@@ -88,6 +89,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: Exists                     => executeExists(r)
       case r: GetById                    => executeGetById(r)
       case r: KNN                        => executeKnn(r)
+      case r: MultiGet                   => executeMultiGet(r)
       case r: Refresh                    => executeRefresh(r)
       case r: Search                     => executeSearch(r)
       case r: SearchAndAggregate         => executeSearchAndAggregate(r)
@@ -409,6 +411,47 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     }
   }
 
+  private def executeMultiGet(r: MultiGet): Task[MultiGetResult] = {
+    val uri = uri"${esConfig.uri}/${r.index}/$Mget".withParams(
+      getQueryParams(
+        Chunk(
+          ("_source_excludes", Some(r.excluded.mkString(",")).filter(_.nonEmpty)),
+          ("_source_includes", Some(r.included.mkString(",")).filter(_.nonEmpty)),
+          ("realtime", r.realtime),
+          ("refresh", r.refresh),
+          ("routing", r.routing)
+        )
+      )
+    )
+
+    sendRequestWithCustomResponse(
+      baseRequest
+        .post(uri)
+        .response(asJson[MultiGetResponse])
+        .contentType(ApplicationJson)
+        .body(asJson(r.toJson))
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value =>
+              ZIO.succeed(new MultiGetResult(value.docs.map { doc =>
+                val id = DocumentId(doc.id)
+                (doc.error, doc.found) match {
+                  case (Some(error), _) => MultiGetItem.Failed(index = doc.index, id = id, error = error)
+                  case (_, Some(true))  =>
+                    MultiGetItem.Found(index = doc.index, id = id, item = doc.source.map(source => Item(raw = source)))
+                  case _ => MultiGetItem.NotFound(index = doc.index, id = id)
+                }
+              }))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
+      }
+    }
+  }
+
   private def executeRefresh(r: Refresh): Task[Boolean] =
     sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.selectors}/$Refresh")).flatMap { response =>
       response.code match {
@@ -699,6 +742,7 @@ private[elasticsearch] object HttpExecutor {
   private final val DeleteByQuery = "_delete_by_query"
   private final val Doc           = "_doc"
   private final val KeepAlive     = "keep_alive"
+  private final val Mget          = "_mget"
   private final val PointInTime   = "_pit"
   private final val Refresh       = "_refresh"
   private final val Scroll        = "scroll"
