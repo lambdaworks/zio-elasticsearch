@@ -1846,10 +1846,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
           val jsonRequestWithUpsert = update(index = Index, id = DocId, doc = Doc1).orCreate(Doc2) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
 
           val expected =
@@ -1950,10 +1950,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("updateByScript") {
           val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
           val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
 
           val expected =

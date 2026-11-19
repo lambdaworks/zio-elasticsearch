@@ -596,7 +596,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           )
         )
         .contentType(ApplicationJson)
-        .body(asJson(r.toJson))
+        .body(r.body)
     ).flatMap { response =>
       response.code match {
         case HttpOk      => ZIO.succeed(UpdateOutcome.Updated)
