@@ -16,4 +16,6 @@
 
 package zio.elasticsearch.executor
 
-final case class ElasticCredentials(username: String, password: String)
+final case class ElasticCredentials(username: String, password: String) {
+  override def toString: String = s"ElasticCredentials(username = $username, password = ***)"
+}

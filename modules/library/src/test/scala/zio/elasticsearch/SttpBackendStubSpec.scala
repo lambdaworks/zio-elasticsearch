@@ -6,7 +6,7 @@ import sttp.client4.{GenericRequest, Response, StringBody}
 import sttp.model.{Method, StatusCode}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
-import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.executor.{ElasticCredentials, Executor}
 import zio.test.ZIOSpecDefault
 import zio.{Task, TaskLayer, ULayer, ZLayer}
 
@@ -684,5 +684,11 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   val elasticsearchSttpLayer: TaskLayer[Executor] =
     (sttpBackendStubLayer ++ ZLayer.succeed(ElasticConfig.Default)) >>> ElasticExecutor.live
+
+  val credentials: ElasticCredentials = ElasticCredentials(username = "elastic", password = "secret-password")
+
+  val elasticsearchSttpLayerWithCredentials: TaskLayer[Executor] =
+    (sttpBackendStubLayer ++ ZLayer.succeed(ElasticConfig.Default.copy(credentials = Some(credentials)))) >>>
+      ElasticExecutor.live
 
 }
