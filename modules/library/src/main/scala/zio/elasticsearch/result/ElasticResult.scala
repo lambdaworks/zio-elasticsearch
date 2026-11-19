@@ -22,10 +22,12 @@ import zio.prelude.ZValidation
 import zio.schema.Schema
 import zio.{Chunk, IO, Task, UIO, ZIO}
 
+import scala.reflect.ClassTag
+
 private[elasticsearch] sealed trait ResultWithAggregation {
   def aggregation(name: String): Task[Option[AggregationResult]]
 
-  def aggregationAs[A <: AggregationResult](name: String): IO[DecodingException, Option[A]] =
+  def aggregationAs[A <: AggregationResult: ClassTag](name: String): IO[DecodingException, Option[A]] =
     aggregation(name)
       .mapBoth(
         e => DecodingException(s"Something went wrong decoding the aggregation with name $name: $e"),

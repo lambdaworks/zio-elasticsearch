@@ -35,24 +35,24 @@ object AggregationResponse {
       data.as[A].map(name -> _).left.map(error => s"$field$error")
 
     tpe match {
-      case "avg"                               => as[AvgAggregationResponse]
-      case "cardinality"                       => as[CardinalityAggregationResponse]
-      case "extended_stats"                    => as[ExtendedStatsAggregationResponse]
-      case "filter"                            => as[FilterAggregationResponse]
-      case "ip_range"                          => as[IpRangeAggregationResponse]
-      case "max"                               => as[MaxAggregationResponse]
-      case "min"                               => as[MinAggregationResponse]
-      case "missing"                           => as[MissingAggregationResponse]
-      case t if t.endsWith("percentile_ranks") => as[PercentileRanksAggregationResponse]
-      case t if t.endsWith("percentiles")      => as[PercentilesAggregationResponse]
-      case "range"                             => as[RangeAggregationResponse]
-      case "sampler"                           => as[SamplerAggregationResponse]
-      case "stats"                             => as[StatsAggregationResponse]
-      case "sum"                               => as[SumAggregationResponse]
-      case t if t.endsWith("terms")            => as[TermsAggregationResponse]
-      case "value_count"                       => as[ValueCountAggregationResponse]
-      case "weighted_avg"                      => as[WeightedAvgAggregationResponse]
-      case _                                   => Left(s"Unsupported aggregation: $field")
+      case "avg"                                               => as[AvgAggregationResponse]
+      case "cardinality"                                       => as[CardinalityAggregationResponse]
+      case "extended_stats"                                    => as[ExtendedStatsAggregationResponse]
+      case "filter"                                            => as[FilterAggregationResponse]
+      case "ip_range"                                          => as[IpRangeAggregationResponse]
+      case "max"                                               => as[MaxAggregationResponse]
+      case "min"                                               => as[MinAggregationResponse]
+      case "missing"                                           => as[MissingAggregationResponse]
+      case "tdigest_percentile_ranks" | "hdr_percentile_ranks" => as[PercentileRanksAggregationResponse]
+      case "tdigest_percentiles" | "hdr_percentiles"           => as[PercentilesAggregationResponse]
+      case "range"                                             => as[RangeAggregationResponse]
+      case "sampler"                                           => as[SamplerAggregationResponse]
+      case "stats"                                             => as[StatsAggregationResponse]
+      case "sum"                                               => as[SumAggregationResponse]
+      case "sterms" | "lterms" | "dterms" | "umterms"          => as[TermsAggregationResponse]
+      case "value_count"                                       => as[ValueCountAggregationResponse]
+      case "weighted_avg"                                      => as[WeightedAvgAggregationResponse]
+      case _                                                   => Left(s"Unsupported aggregation: $field")
     }
   }
 
