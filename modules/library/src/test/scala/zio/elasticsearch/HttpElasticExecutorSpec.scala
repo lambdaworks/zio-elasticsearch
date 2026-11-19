@@ -27,6 +27,7 @@ import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.{Abort, Proceed}
 import zio.elasticsearch.request.UpdateOutcome
 import zio.elasticsearch.result.{
+  MultiGetItem,
   TermsAggregationBucketResult,
   TermsAggregationResult,
   UpdateByQueryResult,
@@ -232,6 +233,20 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
             .documentAs[TestDocument]
         assertZIO(executorSearch)(equalTo(Chunk(doc)))
+      },
+      test("multiGet") {
+        val executorMultiGet =
+          Executor.execute(
+            ElasticRequest
+              .multiGet(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), ids = DocumentId("missing-id"))
+              .realtime(false)
+              .routing(Routing("routing"))
+          )
+
+        assertZIO(executorMultiGet.documentAs[TestDocument])(equalTo(Chunk(doc))) &&
+        assertZIO(executorMultiGet.flatMap(_.missing))(
+          equalTo(Chunk(MultiGetItem.NotFound(index = "repositories", id = DocumentId("missing-id"))))
+        )
       },
       test("refresh") {
         val executorRefresh = Executor.execute(ElasticRequest.refresh(selectors = index))

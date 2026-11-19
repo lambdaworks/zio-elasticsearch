@@ -30,6 +30,7 @@ import zio.elasticsearch.result.{
   AggregateResult,
   GetResult,
   KNNSearchResult,
+  MultiGetResult,
   SearchAndAggregateResult,
   SearchResult,
   UpdateByQueryResult
@@ -291,6 +292,52 @@ object ElasticRequest {
    */
   final def knnSearch[I: IndexSelector](selectors: I, query: KNNQuery[_]): KNNRequest =
     KNN(knn = query, selectors = selectors.toSelector, filter = None, routing = None)
+
+  /**
+   * Constructs an instance of [[MultiGetRequest]] used for retrieving multiple documents from the specified index, by
+   * specified IDs, in a single request.
+   *
+   * @param index
+   *   the name of the index where the documents are located
+   * @param id
+   *   the ID of the first document to retrieve
+   * @param ids
+   *   the IDs of the rest of the documents to retrieve
+   * @return
+   *   an instance of [[MultiGetRequest]] that represents multi get operation to be performed.
+   */
+  final def multiGet(index: IndexName, id: DocumentId, ids: DocumentId*): MultiGetRequest =
+    MultiGet(
+      index = Some(index),
+      docs = Chunk.fromIterable(id +: ids).map(docId => (None, docId)),
+      excluded = Chunk.empty,
+      included = Chunk.empty,
+      realtime = None,
+      refresh = None,
+      routing = None
+    )
+
+  /**
+   * Constructs an instance of [[MultiGetRequest]] used for retrieving multiple documents, possibly from different
+   * indices, by specified pairs of index name and document ID, in a single request.
+   *
+   * @param doc
+   *   the index name and the ID of the first document to retrieve
+   * @param docs
+   *   the index names and the IDs of the rest of the documents to retrieve
+   * @return
+   *   an instance of [[MultiGetRequest]] that represents multi get operation to be performed.
+   */
+  final def multiGet(doc: (IndexName, DocumentId), docs: (IndexName, DocumentId)*): MultiGetRequest =
+    MultiGet(
+      index = None,
+      docs = Chunk.fromIterable(doc +: docs).map { case (index, id) => (Some(index), id) },
+      excluded = Chunk.empty,
+      included = Chunk.empty,
+      realtime = None,
+      refresh = None,
+      routing = None
+    )
 
   /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
@@ -795,6 +842,70 @@ object ElasticRequest {
       val filterJson: Json = filter.fold(Obj())(f => Obj("filter" -> f.toJson(None)))
       Obj("knn" -> (knn.toJson merge filterJson), "size" -> knn.k.toJson)
     }
+  }
+
+  sealed trait MultiGetRequest
+      extends ElasticRequest[MultiGetResult, Executable]
+      with HasRefresh[MultiGetRequest]
+      with HasRouting[MultiGetRequest]
+      with HasSourceFiltering[MultiGetRequest] {
+
+    /**
+     * Configures whether the [[zio.elasticsearch.ElasticRequest.MultiGetRequest]] is performed in real time or on
+     * searchable documents only.
+     *
+     * @param value
+     *   should be `true` if documents should be retrieved in real time, `false` otherwise
+     * @return
+     *   an instance of the [[zio.elasticsearch.ElasticRequest.MultiGetRequest]] enriched with the `realtime` parameter.
+     */
+    def realtime(value: Boolean): MultiGetRequest
+  }
+
+  private[elasticsearch] final case class MultiGet(
+    index: Option[IndexName],
+    docs: Chunk[(Option[IndexName], DocumentId)],
+    excluded: Chunk[String],
+    included: Chunk[String],
+    realtime: Option[Boolean],
+    refresh: Option[Boolean],
+    routing: Option[Routing]
+  ) extends MultiGetRequest { self =>
+
+    def excludes[S](field: Field[S, _], fields: Field[S, _]*): MultiGetRequest =
+      self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
+
+    def excludes(field: String, fields: String*): MultiGetRequest =
+      self.copy(excluded = excluded ++ (field +: fields))
+
+    def includes[S](field: Field[S, _], fields: Field[S, _]*): MultiGetRequest =
+      self.copy(included = included ++ (field.toString +: fields.map(_.toString)))
+
+    def includes(field: String, fields: String*): MultiGetRequest =
+      self.copy(included = included ++ (field +: fields))
+
+    def includes[A](implicit schema: Schema.Record[A]): MultiGetRequest =
+      self.copy(included = included ++ getFieldNames(schema))
+
+    def realtime(value: Boolean): MultiGetRequest =
+      self.copy(realtime = Some(value))
+
+    def refresh(value: Boolean): MultiGetRequest =
+      self.copy(refresh = Some(value))
+
+    def routing(value: Routing): MultiGetRequest =
+      self.copy(routing = Some(value))
+
+    private[elasticsearch] def toJson: Json =
+      index match {
+        case Some(_) =>
+          Obj("ids" -> Arr(docs.map { case (_, id) => DocumentId.unwrap(id).toJson }))
+        case None =>
+          Obj("docs" -> Arr(docs.map { case (docIndex, id) =>
+            docIndex.fold(Obj())(i => Obj("_index" -> IndexName.unwrap(i).toJson)) merge
+              Obj("_id" -> DocumentId.unwrap(id).toJson)
+          }))
+      }
   }
 
   sealed trait RefreshRequest extends ElasticRequest[Boolean, Executable]

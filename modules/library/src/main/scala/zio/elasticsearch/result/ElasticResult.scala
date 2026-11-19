@@ -115,6 +115,27 @@ final class KNNSearchResult private[elasticsearch] (private val hits: Chunk[Item
   lazy val items: UIO[Chunk[Item]] = ZIO.succeed(hits)
 }
 
+final class MultiGetResult private[elasticsearch] (private val docs: Chunk[MultiGetItem])
+    extends DocumentResult[Chunk] {
+
+  def documentAs[A: Schema]: IO[DecodingException, Chunk[A]] =
+    ZIO.fromEither {
+      ZValidation
+        .validateAll(docs.collect { case MultiGetItem.Found(_, _, item) => ZValidation.fromEither(item.documentAs) })
+        .toEitherWith { errors =>
+          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(", ")}")
+        }
+    }
+
+  lazy val failures: UIO[Chunk[MultiGetItem.Failed]] =
+    ZIO.succeed(docs.collect { case failed: MultiGetItem.Failed => failed })
+
+  lazy val items: UIO[Chunk[MultiGetItem]] = ZIO.succeed(docs)
+
+  lazy val missing: UIO[Chunk[MultiGetItem.NotFound]] =
+    ZIO.succeed(docs.collect { case notFound: MultiGetItem.NotFound => notFound })
+}
+
 final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],
   private val fullResponse: SearchWithAggregationsResponse

@@ -500,6 +500,55 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("multiGet") {
+          val multiGetRequest              = multiGet(index = Index, id = DocId, ids = DocId2)
+          val multiGetRequestWithAllParams =
+            multiGet(index = Index, id = DocId, ids = DocId2)
+              .includes(TestDocument.stringField, TestDocument.intField)
+              .excludes("booleanField")
+              .realtime(false)
+              .refreshTrue
+              .routing(RoutingValue)
+          val multiGetRequestAcrossIndices = multiGet(doc = (Index, DocId), docs = (Index2, DocId2))
+
+          assert(multiGetRequest)(
+            equalTo(
+              MultiGet(
+                index = Some(Index),
+                docs = Chunk((None, DocId), (None, DocId2)),
+                excluded = Chunk.empty,
+                included = Chunk.empty,
+                realtime = None,
+                refresh = None,
+                routing = None
+              )
+            )
+          ) && assert(multiGetRequestWithAllParams)(
+            equalTo(
+              MultiGet(
+                index = Some(Index),
+                docs = Chunk((None, DocId), (None, DocId2)),
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "intField"),
+                realtime = Some(false),
+                refresh = Some(true),
+                routing = Some(RoutingValue)
+              )
+            )
+          ) && assert(multiGetRequestAcrossIndices)(
+            equalTo(
+              MultiGet(
+                index = None,
+                docs = Chunk((Some(Index), DocId), (Some(Index2), DocId2)),
+                excluded = Chunk.empty,
+                included = Chunk.empty,
+                realtime = None,
+                refresh = None,
+                routing = None
+              )
+            )
+          )
+        },
         test("refresh") {
           val refreshRequest        = refresh(Index)
           val refreshWithMultiIndex = refresh(Indices)
@@ -1463,6 +1512,34 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             equalTo(expectedWithFilter.toJson)
           )
         },
+        test("multiGet") {
+          val jsonRequest = multiGet(index = Index, id = DocId, ids = DocId2) match {
+            case r: ElasticRequest.MultiGet => r.toJson
+          }
+          val jsonRequestAcrossIndices = multiGet(doc = (Index, DocId), docs = (Index2, DocId2)) match {
+            case r: ElasticRequest.MultiGet => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "ids": ["documentid", "documentid2"]
+              |}
+              |""".stripMargin
+
+          val expectedAcrossIndices =
+            """
+              |{
+              |  "docs": [
+              |    { "_index": "index", "_id": "documentid" },
+              |    { "_index": "index2", "_id": "documentid2" }
+              |  ]
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestAcrossIndices)(equalTo(expectedAcrossIndices.toJson))
+        },
         test("search") {
           val jsonRequest = search(Index, Query) match {
             case r: ElasticRequest.Search => r.toJson
@@ -1999,6 +2076,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     vectorField = List()
   )
   private val DocId            = DocumentId("documentid")
+  private val DocId2           = DocumentId("documentid2")
   private val Index            = IndexName("index")
   private val Index2           = IndexName("index2")
   private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)

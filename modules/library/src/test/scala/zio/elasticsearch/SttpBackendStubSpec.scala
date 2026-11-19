@@ -261,6 +261,56 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val multiGetRequestStub: StubMapping = StubMapping(
+    request =
+      r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_mget?realtime=false&routing=routing",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "docs": [
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "_version": 1,
+        |      "found": true,
+        |      "_source": {
+        |        "stringField": "StringField",
+        |        "subDocumentList": [
+        |          {
+        |            "stringField": "StringField",
+        |            "nestedField": {
+        |              "stringField": "StringField",
+        |              "longField": 1
+        |            },
+        |            "intField": 132,
+        |            "intFieldList": []
+        |          }
+        |        ],
+        |        "dateField": "2020-10-11",
+        |        "intField": 10,
+        |        "doubleField": 10.0,
+        |        "booleanField": true,
+        |        "geoPointField": {
+        |          "lat": 1.0,
+        |          "lon": 1.0
+        |        },
+        |        "vectorField": [
+        |          1,
+        |          5,
+        |          -20
+        |        ]
+        |      }
+        |    },
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "missing-id",
+        |      "found": false
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  )
+
   private val refreshRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_refresh",
     response = ResponseStub.exact("OK")
@@ -462,6 +512,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     deleteIndexRequestStub,
     existsRequestStub,
     getByIdRequestStub,
+    multiGetRequestStub,
     refreshRequestStub,
     searchRequestStub,
     searchWithAggregationRequestStub,

@@ -40,6 +40,7 @@ import zio.elasticsearch.result.{
   IpRangeAggregationResult,
   Item,
   MaxAggregationResult,
+  MultiGetItem,
   RangeAggregationBucketResult,
   RangeAggregationResult,
   SamplerAggregationResult,
@@ -50,7 +51,7 @@ import zio.elasticsearch.result.{
   UpdateByQueryResult
 }
 import zio.elasticsearch.script.{Painless, Script}
-import zio.json.ast.Json.{Arr, Str}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.schema.codec.JsonCodec
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
@@ -1464,6 +1465,95 @@ object HttpExecutorSpec extends IntegrationSpec {
 
             assertZIO(result.exit)(
               fails(isSubtype[Exception](assertException("Could not parse the document: .nestedField(missing)")))
+            )
+          }
+        }
+      ),
+      suite("multi get")(
+        test("return found documents and report missing ones from a single index") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, missingDocumentId) =>
+              for {
+                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, firstDocumentId, firstDocument))
+                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, secondDocumentId, secondDocument))
+                res <- Executor.execute(
+                         ElasticRequest.multiGet(index, firstDocumentId, missingDocumentId, secondDocumentId)
+                       )
+                docs    <- res.documentAs[TestDocument]
+                missing <- res.missing
+                items   <- res.items
+              } yield assert(docs)(equalTo(Chunk(firstDocument, secondDocument))) &&
+                assert(missing)(equalTo(Chunk(MultiGetItem.NotFound(IndexName.unwrap(index), missingDocumentId)))) &&
+                assert(items.map(_.id))(equalTo(Chunk(firstDocumentId, missingDocumentId, secondDocumentId)))
+          }
+        },
+        test("return documents across indices and report failures for missing indices") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              for {
+                _ <- Executor.execute(ElasticRequest.upsert[TestDocument](index, firstDocumentId, firstDocument))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                     )
+                res <- Executor.execute(
+                         ElasticRequest.multiGet(
+                           (index, firstDocumentId),
+                           (firstSearchIndex, secondDocumentId),
+                           (refreshFailIndex, firstDocumentId)
+                         )
+                       )
+                docs     <- res.documentAs[TestDocument]
+                failures <- res.failures
+              } yield assert(docs)(equalTo(Chunk(firstDocument, secondDocument))) &&
+                assert(failures.map(f => (f.index, f.id, f.error.`type`)))(
+                  equalTo(Chunk((IndexName.unwrap(refreshFailIndex), firstDocumentId, "index_not_found_exception")))
+                )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("apply source filtering, routing, realtime and refresh parameters") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _ <- Executor.execute(
+                     ElasticRequest
+                       .upsert[TestDocument](firstSearchIndex, documentId, document)
+                       .routing(Routing("routing"))
+                   )
+              notRealtime <- Executor.execute(ElasticRequest.multiGet(firstSearchIndex, documentId).realtime(false))
+              missing     <- notRealtime.missing
+              res         <- Executor.execute(
+                       ElasticRequest
+                         .multiGet(firstSearchIndex, documentId)
+                         .includes(TestDocument.stringField, TestDocument.intField)
+                         .excludes(TestDocument.intField)
+                         .routing(Routing("routing"))
+                         .realtime(false)
+                         .refreshTrue
+                     )
+              items <- res.items
+            } yield assert(missing.map(_.id))(equalTo(Chunk(documentId))) &&
+              assert(items.collect { case MultiGetItem.Found(_, _, item) => item.raw })(
+                equalTo(Chunk(Obj("stringField" -> Str(document.stringField))))
+              )
+          }
+        } @@ around(
+          Executor.execute(
+            ElasticRequest
+              .createIndex(firstSearchIndex, """{ "settings": { "index": { "refresh_interval": "-1" } } }""")
+          ),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("fail on decoding error") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            val result = for {
+              _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
+              res <- Executor.execute(ElasticRequest.multiGet(index, documentId)).documentAs[TestSubDocument]
+            } yield res
+
+            assertZIO(result.exit)(
+              fails(isSubtype[Exception](assertException("Could not parse all documents successfully")))
             )
           }
         }
