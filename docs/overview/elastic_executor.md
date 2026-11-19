@@ -21,11 +21,14 @@ For example, if you want to execute requests on an Elasticsearch server running 
  - provide the `live` `ZLayer` to your effect, along with a `SttpBackend` and an `ElasticConfig` layer,
  - or provide `ElasticExecutor.local` layer along with a `SttpBackend`.
 
-The recommended `SttpBackend` is `ElasticBackend.layer()`.
-It is the `HttpClientZioBackend` from sttp, configured so that responses are completed without an extra thread hand-off, which improves throughput.
-Any other `HttpClientZioBackend` layer, such as `HttpClientZioBackend.layer()`, works as well.
+The recommended `SttpBackend` is `HttpClientZioBackend.layer()` from sttp.
+
+As an opt-in alternative, `ElasticBackend.layer()` provides the same `HttpClientZioBackend`, configured so that the HTTP client runs its work on its selector thread instead of handing it off to another thread.
+This saves one thread hop per request, which was about 3-4% faster in benchmarks over plain HTTP.
+Because that thread does the I/O for all connections, CPU-heavy work such as TLS handshakes delays every in-flight request, so prefer `HttpClientZioBackend.layer()` for HTTPS clusters.
 
 ```scala
+import sttp.client4.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch._
 
@@ -36,13 +39,13 @@ val result: RIO[Elasticsearch, Boolean] =
 result.provide(
   ZLayer.succeed(ElasticConfig("localhost", 9200)) >>> ElasticExecutor.live,
   Elasticsearch.layer,
-  ElasticBackend.layer()
+  HttpClientZioBackend.layer()
 )
 
 // Executing Elasticsearch requests with local ElasticExecutor
 result.provide(
   ElasticExecutor.local,
   Elasticsearch.layer,
-  ElasticBackend.layer()
+  HttpClientZioBackend.layer()
 )
 ```

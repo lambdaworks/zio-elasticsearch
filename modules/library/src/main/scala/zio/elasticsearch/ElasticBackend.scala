@@ -16,11 +16,14 @@
 
 package zio.elasticsearch
 
+import sttp.capabilities.zio.ZioStreams
 import sttp.client4.BackendOptions
+import sttp.client4.compression.CompressionHandlers
 import sttp.client4.httpclient.zio.{HttpClientZioBackend, SttpClient}
 import zio._
+import zio.stream.ZStream
 
-import java.net.http.HttpClient
+import java.net.http.{HttpClient, HttpRequest}
 import java.net.{Authenticator, PasswordAuthentication}
 import java.time.{Duration => JDuration}
 import java.util.concurrent.Executor
@@ -28,20 +31,39 @@ import java.util.concurrent.Executor
 object ElasticBackend {
 
   /**
-   * An [[sttp.client4.httpclient.zio.SttpClient]] tuned for Elasticsearch.
+   * An [[sttp.client4.httpclient.zio.SttpClient]] tuned for Elasticsearch, offered as an opt-in alternative to
+   * `HttpClientZioBackend.layer()`.
    *
-   * Unlike `HttpClientZioBackend.layer()`, the underlying `java.net.http.HttpClient` completes responses directly on
-   * its selector thread instead of handing them off to another executor first. The response body is consumed as a
-   * reactive stream that only enqueues data, so no blocking work runs on that thread, and every request saves one
-   * thread hop.
+   * Unlike `HttpClientZioBackend.layer()`, the underlying `java.net.http.HttpClient` runs the work it would otherwise
+   * hand off to an executor directly on its selector thread, which saves one thread hop per request. The response body
+   * is consumed as a reactive stream that only enqueues data, so completing responses does not block that thread.
+   *
+   * The selector thread does the I/O for all connections, so anything CPU-heavy the client runs there delays every
+   * in-flight request. For example, TLS handshakes run their delegated `SSLEngine` tasks on it. The gain was measured
+   * over plain HTTP only, so prefer `HttpClientZioBackend.layer()` for HTTPS clusters.
    *
    * @param options
    *   the [[sttp.client4.BackendOptions]] used to configure the connection timeout and proxy
+   * @param customizeRequest
+   *   a function applied to every `java.net.http.HttpRequest` before it is sent, for example to add headers or set a
+   *   request timeout
+   * @param compressionHandlers
+   *   the handlers used to compress request bodies and decompress response bodies
    * @return
-   *   a scoped layer that closes the client when released.
+   *   a layer that provides the [[sttp.client4.httpclient.zio.SttpClient]]. As with `HttpClientZioBackend.layer()`, the
+   *   underlying `java.net.http.HttpClient` is not closed when the layer is released.
    */
-  def layer(options: BackendOptions = BackendOptions.Default): TaskLayer[SttpClient] =
-    ZLayer.scoped(ZIO.attempt(client(options)).flatMap(HttpClientZioBackend.scopedUsingClient(_)))
+  def layer(
+    options: BackendOptions = BackendOptions.Default,
+    customizeRequest: HttpRequest => HttpRequest = identity,
+    compressionHandlers: CompressionHandlers[ZioStreams, ZStream[Any, Throwable, Byte]] =
+      HttpClientZioBackend.DefaultCompressionHandlers
+  ): TaskLayer[SttpClient] =
+    ZLayer.scoped(
+      ZIO
+        .attempt(client(options))
+        .flatMap(HttpClientZioBackend.scopedUsingClient(_, customizeRequest, compressionHandlers))
+    )
 
   private def client(options: BackendOptions): HttpClient = {
     val builder =
