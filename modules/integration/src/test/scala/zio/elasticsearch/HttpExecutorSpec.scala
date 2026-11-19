@@ -2239,18 +2239,19 @@ object HttpExecutorSpec extends IntegrationSpec {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
               for {
-                _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                document = firstDocument.copy(stringField = "test this is boolean")
-                _       <-
+                _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                document          = firstDocument.copy(stringField = "test this is boolean")
+                unrelatedDocument = secondDocument.copy(stringField = "unrelated text")
+                _                <-
                   Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                 _ <- Executor.execute(
                        ElasticRequest
-                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, unrelatedDocument)
                          .refreshTrue
                      )
                 query = matchBooleanPrefix(TestDocument.stringField, "this is test bo")
                 res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-              } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
+              } yield assert(res)(equalTo(Chunk(document)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
