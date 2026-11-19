@@ -23,9 +23,7 @@ import zio.schema.Schema
 private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
 
   /**
-   * Specifies one or more type-safe fields to be excluded in the response of a
-   * [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   * Specifies one or more type-safe fields to be excluded in the response of the [[zio.elasticsearch.ElasticRequest]].
    *
    * @param field
    *   a type-safe field to be excluded
@@ -34,65 +32,56 @@ private[elasticsearch] trait HasSourceFiltering[R <: HasSourceFiltering[R]] {
    * @tparam S
    *   document which fields are excluded
    * @return
-   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be excluded.
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] with specified fields to be excluded.
    */
   def excludes[S](field: Field[S, _], fields: Field[S, _]*): R
 
   /**
-   * Specifies one or more fields to be excluded in the response of a [[zio.elasticsearch.ElasticRequest.SearchRequest]]
-   * or a [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   * Specifies one or more fields to be excluded in the response of the [[zio.elasticsearch.ElasticRequest]].
    *
    * @param field
    *   a field to be excluded
    * @param fields
    *   fields to be excluded
    * @return
-   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be excluded.
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] with specified fields to be excluded.
    */
   def excludes(field: String, fields: String*): R
 
   /**
-   * Specifies one or more type-safe fields to be included in the response of a
-   * [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   * Specifies one or more type-safe fields to be included in the response of the [[zio.elasticsearch.ElasticRequest]].
    *
    * @param field
    *   a type-safe field to be included
    * @param fields
    *   type-safe fields to be included
    * @return
-   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be included.
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] with specified fields to be included.
    */
   def includes[S](field: Field[S, _], fields: Field[S, _]*): R
 
   /**
-   * Specifies one or more fields to be included in the response of a [[zio.elasticsearch.ElasticRequest.SearchRequest]]
-   * or a [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]].
+   * Specifies one or more fields to be included in the response of the [[zio.elasticsearch.ElasticRequest]].
    *
    * @param field
    *   a field to be included
    * @param fields
    *   fields to be included
    * @return
-   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be included.
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] with specified fields to be included.
    */
   def includes(field: String, fields: String*): R
 
   /**
-   * Specifies fields to be included in the response of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   * [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] based on the schema of a case class.
+   * Specifies fields to be included in the response of the [[zio.elasticsearch.ElasticRequest]] based on the schema of
+   * a case class.
    *
    * @tparam A
    *   a case class whose fields will be included in the response
    * @param schema
    *   a record schema of [[A]]
    * @return
-   *   an instance of a [[zio.elasticsearch.ElasticRequest.SearchRequest]] or a
-   *   [[zio.elasticsearch.ElasticRequest.SearchAndAggregateRequest]] with specified fields to be excluded.
+   *   an instance of the [[zio.elasticsearch.ElasticRequest]] with specified fields to be included.
    */
   def includes[A](implicit schema: Schema.Record[A]): R
 

@@ -441,7 +441,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 (doc.error, doc.found) match {
                   case (Some(error), _) => MultiGetItem.Failed(index = doc.index, id = id, error = error)
                   case (_, Some(true))  =>
-                    MultiGetItem.Found(index = doc.index, id = id, item = Item(raw = doc.source.getOrElse(Obj())))
+                    MultiGetItem.Found(index = doc.index, id = id, item = doc.source.map(source => Item(raw = source)))
                   case _ => MultiGetItem.NotFound(index = doc.index, id = id)
                 }
               }))

@@ -25,7 +25,7 @@ sealed trait MultiGetItem {
 }
 
 object MultiGetItem {
-  final case class Found(index: String, id: DocumentId, item: Item) extends MultiGetItem
+  final case class Found(index: String, id: DocumentId, item: Option[Item]) extends MultiGetItem
 
   final case class NotFound(index: String, id: DocumentId) extends MultiGetItem
 

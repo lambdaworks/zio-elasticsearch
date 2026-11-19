@@ -514,8 +514,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(multiGetRequest)(
             equalTo(
               MultiGet(
-                index = Some(Index),
-                docs = Chunk((None, DocId), (None, DocId2)),
+                target = MultiGetTarget.Ids(index = Index, ids = Chunk(DocId, DocId2)),
                 excluded = Chunk.empty,
                 included = Chunk.empty,
                 realtime = None,
@@ -526,8 +525,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(multiGetRequestWithAllParams)(
             equalTo(
               MultiGet(
-                index = Some(Index),
-                docs = Chunk((None, DocId), (None, DocId2)),
+                target = MultiGetTarget.Ids(index = Index, ids = Chunk(DocId, DocId2)),
                 excluded = Chunk("booleanField"),
                 included = Chunk("stringField", "intField"),
                 realtime = Some(false),
@@ -538,8 +536,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           ) && assert(multiGetRequestAcrossIndices)(
             equalTo(
               MultiGet(
-                index = None,
-                docs = Chunk((Some(Index), DocId), (Some(Index2), DocId2)),
+                target = MultiGetTarget.Docs(docs = Chunk((Index, DocId), (Index2, DocId2))),
                 excluded = Chunk.empty,
                 included = Chunk.empty,
                 realtime = None,

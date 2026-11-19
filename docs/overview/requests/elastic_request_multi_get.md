@@ -48,7 +48,7 @@ val requestWithIncludesFromSchema: MultiGetRequest = multiGet(index = IndexName(
 val requestWithExcludes: MultiGetRequest = multiGet(index = IndexName("index"), id = DocumentId("111")).excludes("email")
 ```
 
-Executing the `MultiGet` request returns a `MultiGetResult`. Found documents can be decoded with `documentAs`, while documents that were not found and documents that could not be retrieved (for example, because their index does not exist) are reported with `missing` and `failures` respectively:
+Executing the `MultiGet` request returns a `MultiGetResult`:
 ```scala
 import zio._
 import zio.elasticsearch.result.{MultiGetItem, MultiGetResult}
@@ -56,11 +56,14 @@ import zio.elasticsearch.result.{MultiGetItem, MultiGetResult}
 val result: RIO[Elasticsearch, MultiGetResult] =
   Elasticsearch.execute(multiGet(index = IndexName("index"), id = DocumentId("111"), ids = DocumentId("222")))
 
-val users: RIO[Elasticsearch, Chunk[User]] = result.documentAs[User]
+val users: RIO[Elasticsearch, Chunk[Option[User]]] = result.documentAs[User]
+val items: RIO[Elasticsearch, Chunk[MultiGetItem]] = result.flatMap(_.items)
 val missing: RIO[Elasticsearch, Chunk[MultiGetItem.NotFound]] = result.flatMap(_.missing)
 val failures: RIO[Elasticsearch, Chunk[MultiGetItem.Failed]] = result.flatMap(_.failures)
 ```
 
-Use `items` to get every requested document, in the order it was requested, as a `MultiGetItem` that is either `Found`, `NotFound` or `Failed`.
+`documentAs` returns one element per requested document, in the order the documents were requested: `Some` with the decoded document if it was found, or `None` if it was not found. It fails with an `ElasticException` if any document could not be retrieved (for example, because its index does not exist), and with a `DecodingException` if any found document cannot be decoded or has no `_source` (for example, because `_source` is disabled in the index mapping).
+
+To handle these cases without failing, use `items`, which returns every requested document, in the order it was requested, as a `MultiGetItem` that is either `Found`, `NotFound` or `Failed`. `missing` and `failures` return only the `NotFound` and `Failed` items respectively.
 
 You can find more information about `MultiGet` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-multi-get.html).

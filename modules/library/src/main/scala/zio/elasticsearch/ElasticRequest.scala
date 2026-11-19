@@ -308,8 +308,7 @@ object ElasticRequest {
    */
   final def multiGet(index: IndexName, id: DocumentId, ids: DocumentId*): MultiGetRequest =
     MultiGet(
-      index = Some(index),
-      docs = Chunk.fromIterable(id +: ids).map(docId => (None, docId)),
+      target = MultiGetTarget.Ids(index = index, ids = Chunk.fromIterable(id +: ids)),
       excluded = Chunk.empty,
       included = Chunk.empty,
       realtime = None,
@@ -330,8 +329,7 @@ object ElasticRequest {
    */
   final def multiGet(doc: (IndexName, DocumentId), docs: (IndexName, DocumentId)*): MultiGetRequest =
     MultiGet(
-      index = None,
-      docs = Chunk.fromIterable(doc +: docs).map { case (index, id) => (Some(index), id) },
+      target = MultiGetTarget.Docs(docs = Chunk.fromIterable(doc +: docs)),
       excluded = Chunk.empty,
       included = Chunk.empty,
       realtime = None,
@@ -862,9 +860,16 @@ object ElasticRequest {
     def realtime(value: Boolean): MultiGetRequest
   }
 
+  private[elasticsearch] sealed trait MultiGetTarget
+
+  private[elasticsearch] object MultiGetTarget {
+    final case class Ids(index: IndexName, ids: Chunk[DocumentId]) extends MultiGetTarget
+
+    final case class Docs(docs: Chunk[(IndexName, DocumentId)]) extends MultiGetTarget
+  }
+
   private[elasticsearch] final case class MultiGet(
-    index: Option[IndexName],
-    docs: Chunk[(Option[IndexName], DocumentId)],
+    target: MultiGetTarget,
     excluded: Chunk[String],
     included: Chunk[String],
     realtime: Option[Boolean],
@@ -896,14 +901,19 @@ object ElasticRequest {
     def routing(value: Routing): MultiGetRequest =
       self.copy(routing = Some(value))
 
+    private[elasticsearch] lazy val index: Option[IndexName] =
+      target match {
+        case MultiGetTarget.Ids(index, _) => Some(index)
+        case MultiGetTarget.Docs(_)       => None
+      }
+
     private[elasticsearch] def toJson: Json =
-      index match {
-        case Some(_) =>
-          Obj("ids" -> Arr(docs.map { case (_, id) => DocumentId.unwrap(id).toJson }))
-        case None =>
-          Obj("docs" -> Arr(docs.map { case (docIndex, id) =>
-            docIndex.fold(Obj())(i => Obj("_index" -> IndexName.unwrap(i).toJson)) merge
-              Obj("_id" -> DocumentId.unwrap(id).toJson)
+      target match {
+        case MultiGetTarget.Ids(_, ids) =>
+          Obj("ids" -> Arr(ids.map(id => DocumentId.unwrap(id).toJson)))
+        case MultiGetTarget.Docs(docs) =>
+          Obj("docs" -> Arr(docs.map { case (index, id) =>
+            Obj("_index" -> IndexName.unwrap(index).toJson, "_id" -> DocumentId.unwrap(id).toJson)
           }))
       }
   }

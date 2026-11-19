@@ -116,15 +116,43 @@ final class KNNSearchResult private[elasticsearch] (private val hits: Chunk[Item
 }
 
 final class MultiGetResult private[elasticsearch] (private val docs: Chunk[MultiGetItem])
-    extends DocumentResult[Chunk] {
+    extends DocumentResult[MultiGetResult.Documents] {
 
-  def documentAs[A: Schema]: IO[DecodingException, Chunk[A]] =
-    ZIO.fromEither {
-      ZValidation
-        .validateAll(docs.collect { case MultiGetItem.Found(_, _, item) => ZValidation.fromEither(item.documentAs) })
-        .toEitherWith { errors =>
-          DecodingException(s"Could not parse all documents successfully: ${errors.map(_.message).mkString(", ")}")
+  /**
+   * Decodes the requested documents as type `A`, keeping the order in which they were requested.
+   *
+   * @tparam A
+   *   the type to decode the documents to. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an effect that produces one element per requested document: `Some` with the decoded document if it was found, or
+   *   `None` if it was not found. It fails with an [[ElasticException]] if any document could not be retrieved (see
+   *   [[failures]]), or with a [[DecodingException]] if any found document could not be decoded or has no `_source`.
+   */
+  def documentAs[A: Schema]: IO[ElasticException, Chunk[Option[A]]] =
+    docs.collect { case failed: MultiGetItem.Failed => failed } match {
+      case Chunk() =>
+        ZIO.fromEither {
+          ZValidation
+            .validateAll(docs.map {
+              case MultiGetItem.Found(_, _, Some(item)) =>
+                ZValidation.fromEither(item.documentAs[A]).map(Option(_)).mapError(_.message)
+              case MultiGetItem.Found(index, id, None) =>
+                ZValidation.fail(s"Document [$index/$id] was found, but its _source is not available")
+              case _ =>
+                ZValidation.succeed(None)
+            })
+            .toEitherWith(errors =>
+              DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
+            )
         }
+      case failures =>
+        ZIO.fail(
+          new ElasticException(
+            s"Could not retrieve all documents: ${failures
+                .map(f => s"[${f.index}/${f.id}] ${f.error.`type`}: ${f.error.reason}")
+                .mkString(", ")}"
+          )
+        )
     }
 
   lazy val failures: UIO[Chunk[MultiGetItem.Failed]] =
@@ -134,6 +162,10 @@ final class MultiGetResult private[elasticsearch] (private val docs: Chunk[Multi
 
   lazy val missing: UIO[Chunk[MultiGetItem.NotFound]] =
     ZIO.succeed(docs.collect { case notFound: MultiGetItem.NotFound => notFound })
+}
+
+object MultiGetResult {
+  type Documents[A] = Chunk[Option[A]]
 }
 
 final class SearchResult private[elasticsearch] (
