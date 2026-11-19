@@ -47,7 +47,13 @@ sealed trait BulkableRequest[A, X <: IsExecutable] extends ElasticRequest[A, X] 
   def index(index: IndexName)(implicit ev: X =:= NotExecutable): BulkableRequest[A, Executable]
 }
 
-sealed trait MultiSearchableRequest[A] extends ElasticRequest[A, Executable]
+sealed trait MultiSearchableRequest[A] extends ElasticRequest[A, Executable] {
+  private[elasticsearch] def selectors: String
+
+  private[elasticsearch] def routing: Option[Routing]
+
+  private[elasticsearch] def toJson: Json
+}
 
 object ElasticRequest {
 
@@ -571,6 +577,8 @@ object ElasticRequest {
     selectors: String,
     aggregation: ElasticAggregation
   ) extends AggregateRequest {
+    private[elasticsearch] def routing: Option[Routing] = None
+
     private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }
 
@@ -950,14 +958,10 @@ object ElasticRequest {
     def maxConcurrentSearches(value: Int): MultiSearchRequest =
       self.copy(maxConcurrentSearches = Some(value))
 
-    private[elasticsearch] lazy val body: String = requests.flatMap {
-      case r: Aggregate =>
-        Chunk(getMultiSearchHeader(selectors = r.selectors, routing = None), r.toJson)
-      case r: Search =>
-        Chunk(getMultiSearchHeader(selectors = r.selectors, routing = r.routing), r.toJson)
-      case r: SearchAndAggregate =>
-        Chunk(getMultiSearchHeader(selectors = r.selectors, routing = r.routing), r.toJson)
-    }.mkString(start = "", sep = "\n", end = "\n")
+    private[elasticsearch] lazy val body: String =
+      requests
+        .flatMap(r => Chunk(getMultiSearchHeader(selectors = r.selectors, routing = r.routing), r.toJson))
+        .mkString(start = "", sep = "\n", end = "\n")
   }
 
   sealed trait RefreshRequest extends ElasticRequest[Boolean, Executable]

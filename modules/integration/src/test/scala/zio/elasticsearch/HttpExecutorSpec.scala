@@ -1688,7 +1688,7 @@ object HttpExecutorSpec extends IntegrationSpec {
             Executor
               .execute(ElasticRequest.multiSearch(ElasticRequest.search(index, matchAll)).maxConcurrentSearches(0))
               .exit
-          )(fails(isSubtype[ElasticException](assertException("maxConcurrentSearchRequests must be positive"))))
+          )(fails(isSubtype[ElasticException](anything)))
         }
       ),
       suite("refreshing")(

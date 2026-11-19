@@ -443,6 +443,23 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |        "index": "missing-index"
         |      },
         |      "status": 404
+        |    },
+        |    {
+        |      "error": {
+        |        "root_cause": [
+        |          {
+        |            "type": "null_pointer_exception",
+        |            "reason": null
+        |          }
+        |        ],
+        |        "type": "null_pointer_exception",
+        |        "reason": null
+        |      },
+        |      "status": 500
+        |    },
+        |    {
+        |      "took": 1,
+        |      "status": 200
         |    }
         |  ]
         |}""".stripMargin

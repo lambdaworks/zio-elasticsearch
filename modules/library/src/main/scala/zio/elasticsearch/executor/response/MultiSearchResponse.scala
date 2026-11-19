@@ -18,7 +18,7 @@ package zio.elasticsearch.executor.response
 
 import zio.Chunk
 import zio.json.ast.Json
-import zio.json.{DeriveJsonDecoder, JsonDecoder}
+import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
 
 private[elasticsearch] final case class MultiSearchResponse(took: Int, responses: Chunk[Json])
 
@@ -26,8 +26,34 @@ private[elasticsearch] object MultiSearchResponse {
   implicit val decoder: JsonDecoder[MultiSearchResponse] = DeriveJsonDecoder.gen[MultiSearchResponse]
 }
 
-private[elasticsearch] final case class MultiSearchResponseError(error: Error, status: Int)
+private[elasticsearch] final case class MultiSearchResponseError(error: MultiSearchResponseErrorCause, status: Int)
 
 private[elasticsearch] object MultiSearchResponseError {
   implicit val decoder: JsonDecoder[MultiSearchResponseError] = DeriveJsonDecoder.gen[MultiSearchResponseError]
+}
+
+private[elasticsearch] final case class MultiSearchResponseErrorCause(
+  `type`: String,
+  reason: Option[String],
+  @jsonField("index_uuid")
+  indexUuid: Option[String],
+  shard: Option[Json],
+  index: Option[String]
+) {
+  lazy val toError: Error =
+    Error(
+      `type` = `type`,
+      reason = reason.getOrElse(""),
+      indexUuid = indexUuid,
+      shard = shard.map {
+        case Json.Str(value) => value
+        case other           => other.toString
+      },
+      index = index
+    )
+}
+
+private[elasticsearch] object MultiSearchResponseErrorCause {
+  implicit val decoder: JsonDecoder[MultiSearchResponseErrorCause] =
+    DeriveJsonDecoder.gen[MultiSearchResponseErrorCause]
 }

@@ -41,8 +41,13 @@ val items: RIO[Elasticsearch, Chunk[MultiSearchItem]] = result.flatMap(_.items)
 val failures: RIO[Elasticsearch, Chunk[MultiSearchItem.Failed]] = result.flatMap(_.failures)
 ```
 
-`results` returns one `SearchAndAggregateResult` per requested search, in the order the searches were requested, which gives you access to the documents, aggregations and total hits of each search. `documentAs` returns the documents found by each search, also in the order the searches were requested. Both fail with an `ElasticException` if any search failed (for example, because its index does not exist), and `documentAs` fails with a `DecodingException` if any document cannot be decoded.
+`results` returns one `SearchAndAggregateResult` per requested search, in the order the searches were requested, which gives you access to the documents, aggregations and total hits of each search. `documentAs` returns the documents found by each search, also in the order the searches were requested. Both fail with an `ElasticException` if any search failed (for example, because its index does not exist), and `documentAs` fails with a `DecodingException` listing, by search position, every document that cannot be decoded.
 
-A failing search does not fail the whole request. To handle failed searches without failing, use `items`, which returns every requested search, in the order it was requested, as a `MultiSearchItem` that is either `Succeeded` (with its HTTP `status` and `result`) or `Failed` (with its HTTP `status` and `error`). `failures` returns only the `Failed` items.
+A failing search does not fail the whole request. To handle failed searches without failing, use `items`, which returns every requested search, in the order it was requested, as a `MultiSearchItem` that is either:
+- `Succeeded`, with its HTTP `status` and `result`,
+- `Failed`, with its HTTP `status` and the `error` returned by Elasticsearch, or
+- `Undecodable`, with its HTTP `status`, the raw `response` and a `message` explaining why the response could not be parsed.
+
+`failures` returns only the `Failed` items.
 
 You can find more information about `MultiSearch` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-multi-search.html).

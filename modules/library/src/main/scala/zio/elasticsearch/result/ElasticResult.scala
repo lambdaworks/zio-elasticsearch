@@ -178,11 +178,24 @@ final class MultiSearchResult private[elasticsearch] (private val responses: Chu
    *   the type to decode the documents to. An implicit `Schema` instance must be in scope for this type
    * @return
    *   an effect that produces one element per requested search, containing the documents it found. It fails with an
-   *   [[ElasticException]] if any search failed (see [[failures]]), or with a [[DecodingException]] if any document
-   *   could not be decoded.
+   *   [[ElasticException]] if any search failed or its response could not be parsed (see [[items]]), or with a
+   *   [[DecodingException]] listing, by search position, every document that could not be decoded.
    */
   def documentAs[A: Schema]: IO[ElasticException, Chunk[Chunk[A]]] =
-    results.flatMap(results => ZIO.foreach(results)(_.documentAs[A].refineToOrDie[ElasticException]))
+    results.flatMap { results =>
+      ZIO.fromEither {
+        ZValidation
+          .validateAll(results.zipWithIndex.map { case (result, position) =>
+            ZValidation.validateAll(
+              result.hits
+                .map(item => ZValidation.fromEither(item.documentAs[A]).mapError(e => s"[$position] ${e.message}"))
+            )
+          })
+          .toEitherWith(errors =>
+            DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
+          )
+      }
+    }
 
   lazy val failures: UIO[Chunk[MultiSearchItem.Failed]] =
     ZIO.succeed(responses.collect { case failed: MultiSearchItem.Failed => failed })
@@ -194,11 +207,15 @@ final class MultiSearchResult private[elasticsearch] (private val responses: Chu
    *
    * @return
    *   an effect that produces one [[SearchAndAggregateResult]] per requested search. It fails with an
-   *   [[ElasticException]] if any search failed (see [[failures]]).
+   *   [[ElasticException]] if any search failed (see [[failures]]) or its response could not be parsed (see
+   *   [[MultiSearchItem.Undecodable]]).
    */
   lazy val results: IO[ElasticException, Chunk[SearchAndAggregateResult]] =
-    responses.zipWithIndex.collect { case (MultiSearchItem.Failed(_, error), position) =>
-      s"[$position] ${error.`type`}: ${error.reason}"
+    responses.zipWithIndex.collect {
+      case (MultiSearchItem.Failed(_, error), position) =>
+        s"[$position] ${error.`type`}: ${error.reason}"
+      case (MultiSearchItem.Undecodable(_, _, message), position) =>
+        s"[$position] could not parse the response: $message"
     } match {
       case Chunk() =>
         ZIO.succeed(responses.collect { case MultiSearchItem.Succeeded(_, result) => result })
@@ -236,7 +253,7 @@ final class SearchResult private[elasticsearch] (
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
-  private val hits: Chunk[Item],
+  private[elasticsearch] val hits: Chunk[Item],
   private val aggs: Map[String, AggregationResult],
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[Chunk]

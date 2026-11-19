@@ -64,7 +64,7 @@ import zio.json.ast.{Json, JsonCursor}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
-import zio.{Chunk, IO, Task, ZIO}
+import zio.{Chunk, Task, ZIO}
 
 import scala.collection.immutable.{Map => ScalaMap}
 
@@ -472,10 +472,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         case HttpOk =>
           response.body.fold(
             e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
-            value =>
-              ZIO
-                .foreach(value.responses)(multiSearchItem)
-                .map(new MultiSearchResult(_))
+            value => ZIO.succeed(new MultiSearchResult(value.responses.map(multiSearchItem)))
           )
         case _ =>
           ZIO.fail(handleFailuresFromCustomResponse(response))
@@ -747,26 +744,29 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       Item(raw = r.source, highlight = r.highlight, innerHits = innerHits, sort = r.sort)
     }
 
-  private def multiSearchItem(json: Json): IO[DecodingException, MultiSearchItem] =
-    ZIO
-      .fromEither(json.get(MultiSearchError) match {
-        case Right(_) =>
-          json.as[MultiSearchResponseError].map(r => MultiSearchItem.Failed(status = r.status, error = r.error))
-        case Left(_) =>
-          for {
-            response  <- json.as[SearchWithAggregationsResponse]
-            innerHits <- response.innerHitsResults
-            aggs      <- response.aggs
-          } yield MultiSearchItem.Succeeded(
-            status = json.get(MultiSearchStatus).flatMap(_.as[Int]).getOrElse(HttpOk.code),
-            result = new SearchAndAggregateResult(
-              itemsFromDocumentsWithHighlightsSortAndInnerHits(response.resultsWithHighlightsAndSort, innerHits),
-              aggs.map { case (key, response) => (key, toResult(response)) },
-              response
-            )
+  private def multiSearchItem(json: Json): MultiSearchItem = {
+    val status = json.get(MultiSearchStatus).flatMap(_.as[Int]).getOrElse(HttpOk.code)
+
+    val item: Either[String, MultiSearchItem] = json.get(MultiSearchError) match {
+      case Right(_) =>
+        json.as[MultiSearchResponseError].map(r => MultiSearchItem.Failed(status = r.status, error = r.error.toError))
+      case Left(_) =>
+        for {
+          response  <- json.as[SearchWithAggregationsResponse]
+          innerHits <- response.innerHitsResults
+          aggs      <- response.aggs
+        } yield MultiSearchItem.Succeeded(
+          status = status,
+          result = new SearchAndAggregateResult(
+            itemsFromDocumentsWithHighlightsSortAndInnerHits(response.resultsWithHighlightsAndSort, innerHits),
+            aggs.map { case (key, response) => (key, toResult(response)) },
+            response
           )
-      })
-      .mapError(error => DecodingException(s"Could not parse multi search response: $error"))
+        )
+    }
+
+    item.fold(error => MultiSearchItem.Undecodable(status = status, response = json, message = error), identity)
+  }
 
   private def sendRequest(req: Request[Either[String, String]]): Task[Response[Either[String, String]]] =
     for {

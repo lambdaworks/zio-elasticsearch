@@ -17,6 +17,7 @@
 package zio.elasticsearch.result
 
 import zio.elasticsearch.executor.response.Error
+import zio.json.ast.Json
 
 sealed trait MultiSearchItem {
   def status: Int
@@ -26,4 +27,6 @@ object MultiSearchItem {
   final case class Succeeded(status: Int, result: SearchAndAggregateResult) extends MultiSearchItem
 
   final case class Failed(status: Int, error: Error) extends MultiSearchItem
+
+  final case class Undecodable(status: Int, response: Json, message: String) extends MultiSearchItem
 }
