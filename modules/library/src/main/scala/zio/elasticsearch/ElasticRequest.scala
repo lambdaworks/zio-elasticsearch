@@ -30,6 +30,8 @@ import zio.elasticsearch.result.{
   AggregateResult,
   GetResult,
   KNNSearchResult,
+  MultiGetResult,
+  MultiSearchResult,
   SearchAndAggregateResult,
   SearchResult,
   UpdateByQueryResult
@@ -43,6 +45,14 @@ sealed trait ElasticRequest[A, X <: IsExecutable]
 
 sealed trait BulkableRequest[A, X <: IsExecutable] extends ElasticRequest[A, X] {
   def index(index: IndexName)(implicit ev: X =:= NotExecutable): BulkableRequest[A, Executable]
+}
+
+sealed trait MultiSearchableRequest[A] extends ElasticRequest[A, Executable] {
+  private[elasticsearch] def selectors: String
+
+  private[elasticsearch] def routing: Option[Routing]
+
+  private[elasticsearch] def toJson: Json
 }
 
 object ElasticRequest {
@@ -293,6 +303,64 @@ object ElasticRequest {
     KNN(knn = query, selectors = selectors.toSelector, filter = None, routing = None)
 
   /**
+   * Constructs an instance of [[MultiGetRequest]] used for retrieving multiple documents from the specified index, by
+   * specified IDs, in a single request.
+   *
+   * @param index
+   *   the name of the index where the documents are located
+   * @param id
+   *   the ID of the first document to retrieve
+   * @param ids
+   *   the IDs of the rest of the documents to retrieve
+   * @return
+   *   an instance of [[MultiGetRequest]] that represents multi get operation to be performed.
+   */
+  final def multiGet(index: IndexName, id: DocumentId, ids: DocumentId*): MultiGetRequest =
+    MultiGet(
+      target = MultiGetTarget.Ids(index = index, ids = Chunk.fromIterable(id +: ids)),
+      excluded = Chunk.empty,
+      included = Chunk.empty,
+      realtime = None,
+      refresh = None,
+      routing = None
+    )
+
+  /**
+   * Constructs an instance of [[MultiGetRequest]] used for retrieving multiple documents, possibly from different
+   * indices, by specified pairs of index name and document ID, in a single request.
+   *
+   * @param doc
+   *   the index name and the ID of the first document to retrieve
+   * @param docs
+   *   the index names and the IDs of the rest of the documents to retrieve
+   * @return
+   *   an instance of [[MultiGetRequest]] that represents multi get operation to be performed.
+   */
+  final def multiGet(doc: (IndexName, DocumentId), docs: (IndexName, DocumentId)*): MultiGetRequest =
+    MultiGet(
+      target = MultiGetTarget.Docs(docs = Chunk.fromIterable(doc +: docs)),
+      excluded = Chunk.empty,
+      included = Chunk.empty,
+      realtime = None,
+      refresh = None,
+      routing = None
+    )
+
+  /**
+   * Constructs an instance of [[MultiSearchRequest]] used for executing multiple search and aggregation requests in a
+   * single request.
+   *
+   * @param request
+   *   the first [[SearchRequest]], [[SearchAndAggregateRequest]] or [[AggregateRequest]] to execute
+   * @param requests
+   *   the rest of the [[SearchRequest]]s, [[SearchAndAggregateRequest]]s or [[AggregateRequest]]s to execute
+   * @return
+   *   an instance of [[MultiSearchRequest]] that represents multi search operation to be performed.
+   */
+  final def multiSearch(request: MultiSearchableRequest[_], requests: MultiSearchableRequest[_]*): MultiSearchRequest =
+    MultiSearch(requests = Chunk.fromIterable(request +: requests), maxConcurrentSearches = None)
+
+  /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
    *
    * @param selectors
@@ -503,12 +571,14 @@ object ElasticRequest {
   final def upsert[A: Schema](id: DocumentId, doc: A): CreateOrUpdateRequest[NotExecutable] =
     CreateOrUpdate(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)
 
-  sealed trait AggregateRequest extends ElasticRequest[AggregateResult, Executable]
+  sealed trait AggregateRequest extends MultiSearchableRequest[AggregateResult]
 
   private[elasticsearch] final case class Aggregate(
     selectors: String,
     aggregation: ElasticAggregation
   ) extends AggregateRequest {
+    private[elasticsearch] def routing: Option[Routing] = None
+
     private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
   }
 
@@ -537,7 +607,7 @@ object ElasticRequest {
             requestType = "create",
             parameters = Chunk(("_index", index.orElse(this.index)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case CreateWithId(index, id, document, _, routing) =>
         Chunk(
@@ -545,7 +615,7 @@ object ElasticRequest {
             requestType = "create",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case CreateOrUpdate(index, id, document, _, routing) =>
         Chunk(
@@ -553,7 +623,7 @@ object ElasticRequest {
             requestType = "index",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case DeleteById(index, id, _, routing) =>
         Chunk(
@@ -562,24 +632,16 @@ object ElasticRequest {
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           )
         )
-      case Update(index, id, Some(document), _, routing, None, _) =>
-        Chunk(
-          getActionAndMeta(
-            requestType = "update",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-          ),
-          Obj("doc" -> document.json)
-        )
-      case Update(index, id, _, _, routing, Some(script), _) =>
-        Chunk(
-          getActionAndMeta(
-            requestType = "update",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-          ),
-          Obj("script" -> script.toJson)
-        )
       case Update(_, _, None, _, _, None, _) =>
         Chunk.empty
+      case update @ Update(index, id, _, _, routing, _, _) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "update",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+          ),
+          update.body
+        )
     }.mkString(start = "", sep = "\n", end = "\n")
   }
 
@@ -797,12 +859,117 @@ object ElasticRequest {
     }
   }
 
+  sealed trait MultiGetRequest
+      extends ElasticRequest[MultiGetResult, Executable]
+      with HasRefresh[MultiGetRequest]
+      with HasRouting[MultiGetRequest]
+      with HasSourceFiltering[MultiGetRequest] {
+
+    /**
+     * Configures whether the [[zio.elasticsearch.ElasticRequest.MultiGetRequest]] is performed in real time or on
+     * searchable documents only.
+     *
+     * @param value
+     *   should be `true` if documents should be retrieved in real time, `false` otherwise
+     * @return
+     *   an instance of the [[zio.elasticsearch.ElasticRequest.MultiGetRequest]] enriched with the `realtime` parameter.
+     */
+    def realtime(value: Boolean): MultiGetRequest
+  }
+
+  private[elasticsearch] sealed trait MultiGetTarget
+
+  private[elasticsearch] object MultiGetTarget {
+    final case class Ids(index: IndexName, ids: Chunk[DocumentId]) extends MultiGetTarget
+
+    final case class Docs(docs: Chunk[(IndexName, DocumentId)]) extends MultiGetTarget
+  }
+
+  private[elasticsearch] final case class MultiGet(
+    target: MultiGetTarget,
+    excluded: Chunk[String],
+    included: Chunk[String],
+    realtime: Option[Boolean],
+    refresh: Option[Boolean],
+    routing: Option[Routing]
+  ) extends MultiGetRequest { self =>
+
+    def excludes[S](field: Field[S, _], fields: Field[S, _]*): MultiGetRequest =
+      self.copy(excluded = excluded ++ (field.toString +: fields.map(_.toString)))
+
+    def excludes(field: String, fields: String*): MultiGetRequest =
+      self.copy(excluded = excluded ++ (field +: fields))
+
+    def includes[S](field: Field[S, _], fields: Field[S, _]*): MultiGetRequest =
+      self.copy(included = included ++ (field.toString +: fields.map(_.toString)))
+
+    def includes(field: String, fields: String*): MultiGetRequest =
+      self.copy(included = included ++ (field +: fields))
+
+    def includes[A](implicit schema: Schema.Record[A]): MultiGetRequest =
+      self.copy(included = included ++ getFieldNames(schema))
+
+    def realtime(value: Boolean): MultiGetRequest =
+      self.copy(realtime = Some(value))
+
+    def refresh(value: Boolean): MultiGetRequest =
+      self.copy(refresh = Some(value))
+
+    def routing(value: Routing): MultiGetRequest =
+      self.copy(routing = Some(value))
+
+    private[elasticsearch] lazy val index: Option[IndexName] =
+      target match {
+        case MultiGetTarget.Ids(index, _) => Some(index)
+        case MultiGetTarget.Docs(_)       => None
+      }
+
+    private[elasticsearch] def toJson: Json =
+      target match {
+        case MultiGetTarget.Ids(_, ids) =>
+          Obj("ids" -> Arr(ids.map(id => DocumentId.unwrap(id).toJson)))
+        case MultiGetTarget.Docs(docs) =>
+          Obj("docs" -> Arr(docs.map { case (index, id) =>
+            Obj("_index" -> IndexName.unwrap(index).toJson, "_id" -> DocumentId.unwrap(id).toJson)
+          }))
+      }
+  }
+
+  sealed trait MultiSearchRequest extends ElasticRequest[MultiSearchResult, Executable] {
+
+    /**
+     * Sets the maximum number of concurrent searches the [[zio.elasticsearch.ElasticRequest.MultiSearchRequest]] can
+     * execute.
+     *
+     * @param value
+     *   a positive number representing the maximum number of searches executed concurrently
+     * @return
+     *   an instance of the [[zio.elasticsearch.ElasticRequest.MultiSearchRequest]] enriched with the
+     *   `max_concurrent_searches` parameter.
+     */
+    def maxConcurrentSearches(value: Int): MultiSearchRequest
+  }
+
+  private[elasticsearch] final case class MultiSearch(
+    requests: Chunk[MultiSearchableRequest[_]],
+    maxConcurrentSearches: Option[Int]
+  ) extends MultiSearchRequest { self =>
+
+    def maxConcurrentSearches(value: Int): MultiSearchRequest =
+      self.copy(maxConcurrentSearches = Some(value))
+
+    private[elasticsearch] lazy val body: String =
+      requests
+        .flatMap(r => Chunk(getMultiSearchHeader(selectors = r.selectors, routing = r.routing), r.toJson))
+        .mkString(start = "", sep = "\n", end = "\n")
+  }
+
   sealed trait RefreshRequest extends ElasticRequest[Boolean, Executable]
 
   private[elasticsearch] final case class Refresh(selectors: String) extends RefreshRequest
 
   sealed trait SearchRequest
-      extends ElasticRequest[SearchResult, Executable]
+      extends MultiSearchableRequest[SearchResult]
       with HasFrom[SearchRequest]
       with HasHighlights[SearchRequest]
       with HasRouting[SearchRequest]
@@ -916,7 +1083,7 @@ object ElasticRequest {
   }
 
   sealed trait SearchAndAggregateRequest
-      extends ElasticRequest[SearchAndAggregateResult, Executable]
+      extends MultiSearchableRequest[SearchAndAggregateResult]
       with HasFrom[SearchAndAggregateRequest]
       with HasHighlights[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
@@ -1043,12 +1210,20 @@ object ElasticRequest {
     def routing(value: Routing): UpdateRequest[X] =
       self.copy(routing = Some(value))
 
-    private[elasticsearch] def toJson: Json = {
-      val docToJson: Json    = doc.fold(Obj())(d => Obj("doc" -> d.json))
-      val scriptToJson: Json = script.fold(Obj())(s => Obj("script" -> s.toJson))
-      val upsertJson: Json   = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
+    private[elasticsearch] def body: String = {
+      val body = new StringBuilder(32 + doc.fold(0)(_.raw.length) + upsert.fold(0)(_.raw.length)).append('{')
 
-      scriptToJson merge docToJson merge upsertJson
+      def field(name: String, value: String): Unit = {
+        if (body.length > 1) body.append(',')
+        body.append('"').append(name).append("\":").append(value)
+        ()
+      }
+
+      script.foreach(s => field("script", s.toJson.toString))
+      doc.foreach(d => field("doc", d.raw))
+      upsert.foreach(u => field("upsert", u.raw))
+
+      body.append('}').toString
     }
   }
 
@@ -1092,6 +1267,9 @@ object ElasticRequest {
         scriptJson merge Obj("query" -> q.toJson(fieldPath = None))
       )
   }
+
+  private def getMultiSearchHeader(selectors: String, routing: Option[Routing]): Json =
+    Obj("index" -> selectors.toJson) merge routing.fold(Obj())(r => Obj("routing" -> Routing.unwrap(r).toJson))
 
   private def getActionAndMeta(requestType: String, parameters: Chunk[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) =>

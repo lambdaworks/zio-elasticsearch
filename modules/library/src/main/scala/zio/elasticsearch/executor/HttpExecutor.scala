@@ -27,6 +27,7 @@ import sttp.client4.{
   basicRequest => request,
   fromMetadata
 }
+import sttp.model.MediaType
 import sttp.model.MediaType.ApplicationJson
 import sttp.model.StatusCode.{
   BadRequest => HttpBadRequest,
@@ -50,13 +51,16 @@ import zio.elasticsearch.executor.response.{
   DocumentWithHighlightsAndSort,
   GetResponse,
   Hit,
+  MultiGetResponse,
+  MultiSearchResponse,
+  MultiSearchResponseError,
   SearchWithAggregationsResponse,
   UpdateByQueryResponse
 }
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, Executable, UpdateOutcome}
 import zio.elasticsearch.result._
-import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.{Json, JsonCursor}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
@@ -88,6 +92,8 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       case r: Exists                     => executeExists(r)
       case r: GetById                    => executeGetById(r)
       case r: KNN                        => executeKnn(r)
+      case r: MultiGet                   => executeMultiGet(r)
+      case r: MultiSearch                => executeMultiSearch(r)
       case r: Refresh                    => executeRefresh(r)
       case r: Search                     => executeSearch(r)
       case r: SearchAndAggregate         => executeSearchAndAggregate(r)
@@ -199,7 +205,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(asJson(r.toJson))
+        .body(r.document.raw)
         .response(asJson[CreateResponse])
     ).flatMap { response =>
       response.code match {
@@ -225,7 +231,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       baseRequest
         .post(uri)
         .contentType(ApplicationJson)
-        .body(asJson(r.toJson))
+        .body(r.document.raw)
     ).flatMap { response =>
       response.code match {
         case HttpCreated  => ZIO.succeed(CreationOutcome.Created)
@@ -253,7 +259,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     val uri = uri"${esConfig.uri}/${r.index}/$Doc/${r.id}"
       .withParams(getQueryParams(Chunk(("refresh", r.refresh), ("routing", r.routing))))
 
-    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(asJson(r.toJson))).flatMap { response =>
+    sendRequest(baseRequest.put(uri).contentType(ApplicationJson).body(r.document.raw)).flatMap { response =>
       response.code match {
         case HttpOk | HttpCreated => ZIO.unit
         case _                    => ZIO.fail(handleFailures(response))
@@ -408,6 +414,70 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
   }
+
+  private def executeMultiGet(r: MultiGet): Task[MultiGetResult] = {
+    val uri = uri"${esConfig.uri}/${r.index}/$Mget".withParams(
+      getQueryParams(
+        Chunk(
+          ("_source_excludes", Some(r.excluded.mkString(",")).filter(_.nonEmpty)),
+          ("_source_includes", Some(r.included.mkString(",")).filter(_.nonEmpty)),
+          ("realtime", r.realtime),
+          ("refresh", r.refresh),
+          ("routing", r.routing)
+        )
+      )
+    )
+
+    sendRequestWithCustomResponse(
+      baseRequest
+        .post(uri)
+        .response(asJson[MultiGetResponse])
+        .contentType(ApplicationJson)
+        .body(asJson(r.toJson))
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value =>
+              ZIO.succeed(new MultiGetResult(value.docs.map { doc =>
+                val id = DocumentId(doc.id)
+                (doc.error, doc.found) match {
+                  case (Some(error), _) => MultiGetItem.Failed(index = doc.index, id = id, error = error)
+                  case (_, Some(true))  =>
+                    MultiGetItem.Found(index = doc.index, id = id, item = doc.source.map(source => Item(raw = source)))
+                  case _ => MultiGetItem.NotFound(index = doc.index, id = id)
+                }
+              }))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
+      }
+    }
+  }
+
+  private def executeMultiSearch(r: MultiSearch): Task[MultiSearchResult] =
+    sendRequestWithCustomResponse(
+      baseRequest
+        .post(
+          uri"${esConfig.uri}/$Msearch"
+            .withParams(getQueryParams(Chunk(("max_concurrent_searches", r.maxConcurrentSearches))))
+            .addQuerySegment(QuerySegment.Value("typed_keys"))
+        )
+        .response(asJson[MultiSearchResponse])
+        .contentType(ApplicationNdJson)
+        .body(r.body)
+    ).flatMap { response =>
+      response.code match {
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            value => ZIO.succeed(new MultiSearchResult(value.responses.map(multiSearchItem)))
+          )
+        case _ =>
+          ZIO.fail(handleFailuresFromCustomResponse(response))
+      }
+    }
 
   private def executeRefresh(r: Refresh): Task[Boolean] =
     sendRequest(baseRequest.get(uri"${esConfig.uri}/${r.selectors}/$Refresh")).flatMap { response =>
@@ -596,7 +666,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           )
         )
         .contentType(ApplicationJson)
-        .body(asJson(r.toJson))
+        .body(r.body)
     ).flatMap { response =>
       response.code match {
         case HttpOk      => ZIO.succeed(UpdateOutcome.Updated)
@@ -674,6 +744,30 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       Item(raw = r.source, highlight = r.highlight, innerHits = innerHits, sort = r.sort)
     }
 
+  private def multiSearchItem(json: Json): MultiSearchItem = {
+    val status = json.get(MultiSearchStatus).flatMap(_.as[Int]).getOrElse(HttpOk.code)
+
+    val item: Either[String, MultiSearchItem] = json.get(MultiSearchError) match {
+      case Right(_) =>
+        json.as[MultiSearchResponseError].map(r => MultiSearchItem.Failed(status = r.status, error = r.error.toError))
+      case Left(_) =>
+        for {
+          response  <- json.as[SearchWithAggregationsResponse]
+          innerHits <- response.innerHitsResults
+          aggs      <- response.aggs
+        } yield MultiSearchItem.Succeeded(
+          status = status,
+          result = new SearchAndAggregateResult(
+            itemsFromDocumentsWithHighlightsSortAndInnerHits(response.resultsWithHighlightsAndSort, innerHits),
+            aggs.map { case (key, response) => (key, toResult(response)) },
+            response
+          )
+        )
+    }
+
+    item.fold(error => MultiSearchItem.Undecodable(status = status, response = json, message = error), identity)
+  }
+
   private def sendRequest(req: Request[Either[String, String]]): Task[Response[Either[String, String]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
@@ -699,6 +793,8 @@ private[elasticsearch] object HttpExecutor {
   private final val DeleteByQuery = "_delete_by_query"
   private final val Doc           = "_doc"
   private final val KeepAlive     = "keep_alive"
+  private final val Mget          = "_mget"
+  private final val Msearch       = "_msearch"
   private final val PointInTime   = "_pit"
   private final val Refresh       = "_refresh"
   private final val Scroll        = "scroll"
@@ -707,6 +803,10 @@ private[elasticsearch] object HttpExecutor {
   private final val ShardDoc      = "_shard_doc"
   private final val Update        = "_update"
   private final val UpdateByQuery = "_update_by_query"
+
+  private final val ApplicationNdJson = MediaType("application", "x-ndjson")
+  private final val MultiSearchError  = JsonCursor.field("error")
+  private final val MultiSearchStatus = JsonCursor.field("status")
 
   private[elasticsearch] final case class PointInTimeResponse(id: String)
   object PointInTimeResponse {

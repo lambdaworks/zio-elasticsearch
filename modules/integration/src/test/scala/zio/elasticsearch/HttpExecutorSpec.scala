@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticIntervalRule.intervalMatch
@@ -35,11 +34,15 @@ import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits, MinimumShouldMatch}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{
+  DecodingException,
+  ElasticException,
   FilterAggregationResult,
   IpRangeAggregationBucketResult,
   IpRangeAggregationResult,
   Item,
   MaxAggregationResult,
+  MultiGetItem,
+  MultiSearchItem,
   RangeAggregationBucketResult,
   RangeAggregationResult,
   SamplerAggregationResult,
@@ -50,12 +53,13 @@ import zio.elasticsearch.result.{
   UpdateByQueryResult
 }
 import zio.elasticsearch.script.{Painless, Script}
-import zio.json.ast.Json.{Arr, Str}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.schema.codec.JsonCodec
 import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+import zio.{Chunk, ZIO}
 
 import java.time.LocalDate
 import scala.util.Random
@@ -1468,6 +1472,225 @@ object HttpExecutorSpec extends IntegrationSpec {
           }
         }
       ),
+      suite("multi get")(
+        test("return found documents and report missing ones from a single index") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, missingDocumentId) =>
+              for {
+                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, firstDocumentId, firstDocument))
+                _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, secondDocumentId, secondDocument))
+                res <- Executor.execute(
+                         ElasticRequest.multiGet(index, firstDocumentId, missingDocumentId, secondDocumentId)
+                       )
+                docs    <- res.documentAs[TestDocument]
+                missing <- res.missing
+                items   <- res.items
+              } yield assert(docs)(equalTo(Chunk(Some(firstDocument), None, Some(secondDocument)))) &&
+                assert(missing)(equalTo(Chunk(MultiGetItem.NotFound(IndexName.unwrap(index), missingDocumentId)))) &&
+                assert(items.map(_.id))(equalTo(Chunk(firstDocumentId, missingDocumentId, secondDocumentId)))
+          }
+        },
+        test("return documents across indices") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              for {
+                _ <- Executor.execute(ElasticRequest.upsert[TestDocument](index, firstDocumentId, firstDocument))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                     )
+                docs <-
+                  Executor
+                    .execute(ElasticRequest.multiGet((index, firstDocumentId), (firstSearchIndex, secondDocumentId)))
+                    .documentAs[TestDocument]
+              } yield assert(docs)(equalTo(Chunk(Some(firstDocument), Some(secondDocument))))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("report failures for missing indices and fail on documentAs") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _        <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
+              res      <- Executor.execute(ElasticRequest.multiGet((index, documentId), (refreshFailIndex, documentId)))
+              failures <- res.failures
+              docs     <- res.documentAs[TestDocument].exit
+            } yield assert(failures.map(f => (f.index, f.id, f.error.`type`)))(
+              equalTo(Chunk((IndexName.unwrap(refreshFailIndex), documentId, "index_not_found_exception")))
+            ) && assert(docs)(
+              fails(
+                isSubtype[ElasticException](
+                  assertException(s"[${IndexName.unwrap(refreshFailIndex)}/$documentId] index_not_found_exception")
+                )
+              )
+            )
+          }
+        },
+        test("report found documents without _source and fail on decoding") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _ <- Executor.execute(
+                     ElasticRequest.upsert[TestDocument](firstSearchIndex, documentId, document).refreshTrue
+                   )
+              res   <- Executor.execute(ElasticRequest.multiGet(firstSearchIndex, documentId))
+              items <- res.items
+              docs  <- res.documentAs[TestDocument].exit
+            } yield assert(items)(
+              equalTo(Chunk(MultiGetItem.Found(IndexName.unwrap(firstSearchIndex), documentId, None)))
+            ) && assert(docs)(
+              fails(isSubtype[DecodingException](assertException("its _source is not available")))
+            )
+          }
+        } @@ around(
+          Executor.execute(
+            ElasticRequest.createIndex(firstSearchIndex, """{ "mappings": { "_source": { "enabled": false } } }""")
+          ),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("apply source filtering, realtime and refresh parameters") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _ <- Executor.execute(
+                     ElasticRequest
+                       .upsert[TestDocument](firstSearchIndex, documentId, document)
+                       .routing(Routing("routing"))
+                   )
+              notRealtime <- Executor.execute(
+                               ElasticRequest
+                                 .multiGet(firstSearchIndex, documentId)
+                                 .routing(Routing("routing"))
+                                 .realtime(false)
+                             )
+              missing <- notRealtime.missing
+              res     <- Executor.execute(
+                       ElasticRequest
+                         .multiGet(firstSearchIndex, documentId)
+                         .includes(TestDocument.stringField, TestDocument.intField)
+                         .excludes(TestDocument.intField)
+                         .routing(Routing("routing"))
+                         .realtime(false)
+                         .refreshTrue
+                     )
+              items <- res.items
+            } yield assert(missing.map(_.id))(equalTo(Chunk(documentId))) &&
+              assert(items.collect { case MultiGetItem.Found(_, _, Some(item)) => item.raw })(
+                equalTo(Chunk(Obj("stringField" -> Str(document.stringField))))
+              )
+          }
+        } @@ around(
+          Executor.execute(
+            ElasticRequest
+              .createIndex(firstSearchIndex, """{ "settings": { "index": { "refresh_interval": "-1" } } }""")
+          ),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("fail on decoding error") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            val result = for {
+              _   <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
+              res <- Executor.execute(ElasticRequest.multiGet(index, documentId)).documentAs[TestSubDocument]
+            } yield res
+
+            assertZIO(result.exit)(
+              fails(isSubtype[Exception](assertException("Could not parse all documents successfully")))
+            )
+          }
+        }
+      ),
+      suite("multi search")(
+        test("execute searches and aggregations across indices") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+              val firstDocumentUpdated  = firstDocument.copy(intField = 1)
+              val secondDocumentUpdated = secondDocument.copy(intField = 2)
+              val thirdDocumentUpdated  = thirdDocument.copy(intField = 3)
+              for {
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentUpdated)
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated)
+                         .refreshTrue
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](secondSearchIndex, thirdDocumentId, thirdDocumentUpdated)
+                         .refreshTrue
+                     )
+                res <- Executor.execute(
+                         ElasticRequest
+                           .multiSearch(
+                             ElasticRequest
+                               .search(firstSearchIndex, matchAll)
+                               .sort(sortBy(TestDocument.intField).order(Desc)),
+                             ElasticRequest.search(
+                               secondSearchIndex,
+                               matchAll,
+                               maxAggregation(name = "aggregationInt", field = TestDocument.intField)
+                             ),
+                             ElasticRequest.aggregate(
+                               MultiIndex.names(firstSearchIndex, secondSearchIndex),
+                               maxAggregation(name = "aggregationInt", field = TestDocument.intField)
+                             )
+                           )
+                           .maxConcurrentSearches(1)
+                       )
+                items        <- res.items
+                results      <- res.results
+                firstSearch  <- results(0).documentAs[TestDocument]
+                secondSearch <- results(1).documentAs[TestDocument]
+                secondMax    <- results(1).asMaxAggregation("aggregationInt")
+                aggregateMax <- results(2).asMaxAggregation("aggregationInt")
+              } yield assert(items.map(_.status))(equalTo(Chunk(200, 200, 200))) &&
+                assert(firstSearch)(equalTo(Chunk(secondDocumentUpdated, firstDocumentUpdated))) &&
+                assert(secondSearch)(equalTo(Chunk(thirdDocumentUpdated))) &&
+                assert(secondMax.flatMap(_.value))(isSome(equalTo(3.0))) &&
+                assert(aggregateMax.flatMap(_.value))(isSome(equalTo(3.0)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)) *>
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie *>
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+        ),
+        test("report failed searches without failing the whole request") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _ <- Executor.execute(
+                     ElasticRequest.upsert[TestDocument](firstSearchIndex, documentId, document).refreshTrue
+                   )
+              res <- Executor.execute(
+                       ElasticRequest.multiSearch(
+                         ElasticRequest.search(firstSearchIndex, matchAll),
+                         ElasticRequest.search(refreshFailIndex, matchAll)
+                       )
+                     )
+              items    <- res.items
+              failures <- res.failures
+              found    <- ZIO.foreach(items.collect { case MultiSearchItem.Succeeded(_, result) => result })(
+                         _.documentAs[TestDocument]
+                       )
+              docs <- res.documentAs[TestDocument].exit
+            } yield assert(items.map(_.status))(equalTo(Chunk(200, 404))) &&
+              assert(found)(equalTo(Chunk(Chunk(document)))) &&
+              assert(failures.map(_.error.`type`))(equalTo(Chunk("index_not_found_exception"))) &&
+              assert(docs)(
+                fails(isSubtype[ElasticException](assertException("[1] index_not_found_exception")))
+              )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("fail on invalid max concurrent searches") {
+          assertZIO(
+            Executor
+              .execute(ElasticRequest.multiSearch(ElasticRequest.search(index, matchAll)).maxConcurrentSearches(0))
+              .exit
+          )(fails(isSubtype[ElasticException](anything)))
+        }
+      ),
       suite("refreshing")(
         test("refresh single, multiple, all indices and return false for missing") {
           for {
@@ -2111,18 +2334,19 @@ object HttpExecutorSpec extends IntegrationSpec {
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
               for {
-                _       <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
-                document = firstDocument.copy(stringField = "test this is boolean")
-                _       <-
+                _                <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                document          = firstDocument.copy(stringField = "test this is boolean")
+                unrelatedDocument = secondDocument.copy(stringField = "unrelated text")
+                _                <-
                   Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, document))
                 _ <- Executor.execute(
                        ElasticRequest
-                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, unrelatedDocument)
                          .refreshTrue
                      )
                 query = matchBooleanPrefix(TestDocument.stringField, "this is test bo")
                 res  <- Executor.execute(ElasticRequest.search(firstSearchIndex, query)).documentAs[TestDocument]
-              } yield assert(res)(Assertion.contains(document)) && assert(res)(!Assertion.contains(secondDocument))
+              } yield assert(res)(equalTo(Chunk(document)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -3429,6 +3653,33 @@ object HttpExecutorSpec extends IntegrationSpec {
                 assert(doc2)(isNone) && assert(doc1)(
                   isSome(equalTo(document.copy(doubleField = 3000, intField = 100)))
                 )
+          }
+        },
+        test("execute bulk update or create") {
+          checkOnce(genDocumentId, genDocumentId, genTestDocument, genTestDocument) {
+            (firstDocumentId, secondDocumentId, firstDocument, secondDocument) =>
+              for {
+                res <- Executor.execute(
+                         ElasticRequest
+                           .bulk(
+                             ElasticRequest
+                               .update[TestDocument](index, firstDocumentId, firstDocument.copy(intField = 100))
+                               .orCreate(firstDocument),
+                             ElasticRequest
+                               .updateByScript(
+                                 index,
+                                 secondDocumentId,
+                                 Script("ctx._source.intField += params['factor']").params("factor" -> 2)
+                               )
+                               .orCreate(secondDocument)
+                           )
+                           .refreshTrue
+                       )
+                doc1 <- Executor.execute(ElasticRequest.getById(index, firstDocumentId)).documentAs[TestDocument]
+                doc2 <- Executor.execute(ElasticRequest.getById(index, secondDocumentId)).documentAs[TestDocument]
+              } yield assert(res.items.map(_.error.isDefined))(equalTo(Chunk(false, false))) &&
+                assert(doc1)(isSome(equalTo(firstDocument))) &&
+                assert(doc2)(isSome(equalTo(secondDocument)))
           }
         }
       ),

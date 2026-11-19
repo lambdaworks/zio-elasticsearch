@@ -16,25 +16,43 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{kNN, matchAll, term}
 import zio.elasticsearch.domain.TestDocument
 import zio.elasticsearch.executor.Executor
-import zio.elasticsearch.executor.response.{BulkResponse, CreateBulkResponse, Error, Shards, UpdateBulkResponse}
+import zio.elasticsearch.executor.response.{
+  BulkResponse,
+  CreateBulkResponse,
+  Error,
+  Hits,
+  SearchWithAggregationsResponse,
+  Shards,
+  UpdateBulkResponse
+}
 import zio.elasticsearch.request.CreationOutcome.Created
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.{Abort, Proceed}
 import zio.elasticsearch.request.UpdateOutcome
 import zio.elasticsearch.result.{
+  DecodingException,
+  ElasticException,
+  Item,
+  MultiGetItem,
+  MultiGetResult,
+  MultiSearchItem,
+  MultiSearchResult,
+  SearchAndAggregateResult,
   TermsAggregationBucketResult,
   TermsAggregationResult,
   UpdateByQueryResult,
   VersionConflictException
 }
 import zio.elasticsearch.script.Script
+import zio.json.ast.Json
+import zio.json.ast.Json.{Num, Obj, Str}
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
+import zio.{Chunk, ZIO}
 
 object HttpElasticExecutorSpec extends SttpBackendStubSpec {
   def spec: Spec[TestEnvironment, Any] =
@@ -232,6 +250,180 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             )
             .documentAs[TestDocument]
         assertZIO(executorSearch)(equalTo(Chunk(doc)))
+      },
+      test("multiGet") {
+        val executorMultiGet =
+          Executor.execute(
+            ElasticRequest
+              .multiGet(index = index, id = DocumentId("V4x8q4UB3agN0z75fv5r"), ids = DocumentId("missing-id"))
+              .realtime(false)
+              .routing(Routing("routing"))
+          )
+
+        assertZIO(executorMultiGet.documentAs[TestDocument])(equalTo(Chunk(Some(doc), None))) &&
+        assertZIO(executorMultiGet.flatMap(_.missing))(
+          equalTo(Chunk(MultiGetItem.NotFound(index = "repositories", id = DocumentId("missing-id"))))
+        )
+      },
+      test("multiGet across indices with failures and missing _source") {
+        val documentId       = DocumentId("V4x8q4UB3agN0z75fv5r")
+        val executorMultiGet =
+          Executor.execute(ElasticRequest.multiGet((index, documentId), (IndexName("missing-index"), documentId)))
+
+        val expectedFailure =
+          MultiGetItem.Failed(
+            index = "missing-index",
+            id = documentId,
+            error = Error(
+              `type` = "index_not_found_exception",
+              reason = "no such index [missing-index]",
+              indexUuid = Some("_na_"),
+              shard = None,
+              index = Some("missing-index")
+            )
+          )
+
+        assertZIO(executorMultiGet.flatMap(_.items))(
+          equalTo(Chunk(MultiGetItem.Found(index = "repositories", id = documentId, item = None), expectedFailure))
+        ) &&
+        assertZIO(executorMultiGet.flatMap(_.failures))(equalTo(Chunk(expectedFailure))) &&
+        assertZIO(executorMultiGet.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[ElasticException](
+              hasMessage(
+                equalTo(
+                  "Could not retrieve all documents: [missing-index/V4x8q4UB3agN0z75fv5r] index_not_found_exception: no such index [missing-index]"
+                )
+              )
+            )
+          )
+        )
+      },
+      test("multiGet fails to decode found document without _source") {
+        val result =
+          new MultiGetResult(
+            Chunk(MultiGetItem.Found(index = "repositories", id = DocumentId("V4x8q4UB3agN0z75fv5r"), item = None))
+          )
+
+        assertZIO(result.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[DecodingException](
+              hasMessage(
+                equalTo(
+                  "Could not parse all documents successfully: Document [repositories/V4x8q4UB3agN0z75fv5r] was found, but its _source is not available"
+                )
+              )
+            )
+          )
+        )
+      },
+      test("multiSearch") {
+        val terms               = termsAggregation(name = "aggregation1", field = "name")
+        val executorMultiSearch =
+          Executor.execute(
+            ElasticRequest
+              .multiSearch(
+                ElasticRequest.search(selectors = index, query = matchAll, aggregation = terms),
+                ElasticRequest.search(selectors = IndexName("missing-index"), query = matchAll),
+                ElasticRequest.search(selectors = index, query = matchAll),
+                ElasticRequest.search(selectors = index, query = matchAll)
+              )
+              .maxConcurrentSearches(2)
+          )
+
+        val expectedFailures =
+          Chunk(
+            MultiSearchItem.Failed(
+              status = 404,
+              error = Error(
+                `type` = "index_not_found_exception",
+                reason = "no such index [missing-index]",
+                indexUuid = Some("_na_"),
+                shard = None,
+                index = Some("missing-index")
+              )
+            ),
+            MultiSearchItem.Failed(
+              status = 500,
+              error =
+                Error(`type` = "null_pointer_exception", reason = "", indexUuid = None, shard = None, index = None)
+            )
+          )
+
+        val expectedTermsAggregationResult =
+          TermsAggregationResult(
+            docErrorCount = 0,
+            sumOtherDocCount = 0,
+            buckets = Chunk(
+              TermsAggregationBucketResult(key = "name", keyAsString = None, docCount = 5, subAggregations = Map.empty)
+            )
+          )
+
+        assertZIO(executorMultiSearch.flatMap(_.items).map(_.map(_.status)))(equalTo(Chunk(200, 404, 500, 200))) &&
+        assertZIO(executorMultiSearch.flatMap(_.failures))(equalTo(expectedFailures)) &&
+        assertZIO(
+          executorMultiSearch
+            .flatMap(_.undecodable)
+            .map(_.map(undecodable => (undecodable.status, undecodable.response)))
+        )(equalTo(Chunk((200, Obj("took" -> Num(1), "status" -> Num(200)))))) &&
+        assertZIO(
+          executorMultiSearch
+            .flatMap(_.items)
+            .flatMap(items =>
+              ZIO.foreach(items.collect { case MultiSearchItem.Succeeded(_, result) => result })(result =>
+                result.documentAs[TestDocument] <*> result.asTermsAggregation("aggregation1") <*> result.total
+              )
+            )
+        )(equalTo(Chunk((Chunk(doc), Some(expectedTermsAggregationResult), 1L)))) &&
+        assertZIO(executorMultiSearch.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[ElasticException](
+              hasMessage(
+                startsWithString(
+                  "Could not execute all searches: [1] index_not_found_exception: no such index [missing-index], " +
+                    "[2] null_pointer_exception, [3] could not parse the response: "
+                )
+              )
+            )
+          )
+        )
+      },
+      test("multiSearch reports decoding failures of all searches by position") {
+        val documentId = DocumentId("V4x8q4UB3agN0z75fv5r")
+
+        def result(source: Json): SearchAndAggregateResult =
+          new SearchAndAggregateResult(
+            hits = Chunk(Item(raw = source)),
+            aggs = Map.empty,
+            fullResponse = SearchWithAggregationsResponse(
+              pitId = None,
+              scrollId = None,
+              took = 1,
+              timedOut = false,
+              shards = Shards(total = 1, successful = 1, failed = 0),
+              hits = Hits(total = None, hits = Chunk.empty),
+              aggregations = None
+            )
+          )
+
+        val multiSearchResult =
+          new MultiSearchResult(
+            Chunk(
+              MultiSearchItem.Succeeded(status = 200, result = result(Obj("stringField" -> Str(documentId.toString)))),
+              MultiSearchItem.Succeeded(status = 200, result = result(Obj("intField" -> Num(1))))
+            )
+          )
+
+        assertZIO(multiSearchResult.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[DecodingException](
+              hasMessage(
+                startsWithString("Could not parse all documents successfully: [0] ") &&
+                  containsString(", [1] ")
+              )
+            )
+          )
+        )
       },
       test("refresh") {
         val executorRefresh = Executor.execute(ElasticRequest.refresh(selectors = index))

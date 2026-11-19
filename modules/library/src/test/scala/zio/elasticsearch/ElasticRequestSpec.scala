@@ -500,6 +500,77 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("multiGet") {
+          val multiGetRequest              = multiGet(index = Index, id = DocId, ids = DocId2)
+          val multiGetRequestWithAllParams =
+            multiGet(index = Index, id = DocId, ids = DocId2)
+              .includes(TestDocument.stringField, TestDocument.intField)
+              .excludes("booleanField")
+              .realtime(false)
+              .refreshTrue
+              .routing(RoutingValue)
+          val multiGetRequestAcrossIndices = multiGet(doc = (Index, DocId), docs = (Index2, DocId2))
+
+          assert(multiGetRequest)(
+            equalTo(
+              MultiGet(
+                target = MultiGetTarget.Ids(index = Index, ids = Chunk(DocId, DocId2)),
+                excluded = Chunk.empty,
+                included = Chunk.empty,
+                realtime = None,
+                refresh = None,
+                routing = None
+              )
+            )
+          ) && assert(multiGetRequestWithAllParams)(
+            equalTo(
+              MultiGet(
+                target = MultiGetTarget.Ids(index = Index, ids = Chunk(DocId, DocId2)),
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "intField"),
+                realtime = Some(false),
+                refresh = Some(true),
+                routing = Some(RoutingValue)
+              )
+            )
+          ) && assert(multiGetRequestAcrossIndices)(
+            equalTo(
+              MultiGet(
+                target = MultiGetTarget.Docs(docs = Chunk((Index, DocId), (Index2, DocId2))),
+                excluded = Chunk.empty,
+                included = Chunk.empty,
+                realtime = None,
+                refresh = None,
+                routing = None
+              )
+            )
+          )
+        },
+        test("multiSearch") {
+          val multiSearchRequest =
+            multiSearch(
+              search(selectors = Index, query = Query),
+              aggregate(selectors = Indices, aggregation = MaxAggregation)
+            )
+          val multiSearchRequestWithMaxConcurrentSearches =
+            multiSearch(search(selectors = Index, query = Query)).maxConcurrentSearches(2)
+
+          assert(multiSearchRequest)(
+            equalTo(
+              MultiSearch(
+                requests = Chunk(
+                  search(selectors = Index, query = Query),
+                  aggregate(selectors = Indices, aggregation = MaxAggregation)
+                ),
+                maxConcurrentSearches = None
+              )
+            )
+          ) && assert(multiSearchRequestWithMaxConcurrentSearches)(
+            equalTo(
+              MultiSearch(requests = Chunk(search(selectors = Index, query = Query)), maxConcurrentSearches = Some(2))
+            )
+          )
+        },
         test("refresh") {
           val refreshRequest        = refresh(Index)
           val refreshWithMultiIndex = refresh(Indices)
@@ -1303,6 +1374,51 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(bodyAllIndividualIndices)(equalTo(expectedAllIndividualIndices)) &&
           assert(bodyIndividualRoutingOverridesGlobal)(equalTo(expectedIndividualRoutingOverridesGlobal))
         },
+        test("bulk with update and delete") {
+          val requestBody =
+            bulk(
+              Index,
+              update(id = DocId, doc = Doc1),
+              updateByScript(Index, DocId, Script1),
+              deleteById(DocId)
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            """|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"doc":{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}}
+               |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}}}
+               |{ "delete" : { "_index" : "index", "_id" : "documentid" } }
+               |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
+        test("bulk with update or create") {
+          val doc1Json =
+            """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
+          val doc2Json =
+            """{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}"""
+
+          val requestBody =
+            bulk(
+              Index,
+              update(id = DocId, doc = Doc1).orCreate(Doc2),
+              updateByScript(Index, DocId, Script1).orCreate(Doc2)
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            s"""|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"doc":$doc1Json,"upsert":$doc2Json}
+                |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}},"upsert":$doc2Json}
+                |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
         test("count") {
           val jsonRequest = count(Index) match {
             case r: Count => r.toJson
@@ -1462,6 +1578,54 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequest)(equalTo(expected.toJson)) && assert(jsonRequestWithFilter)(
             equalTo(expectedWithFilter.toJson)
           )
+        },
+        test("multiGet") {
+          val jsonRequest = multiGet(index = Index, id = DocId, ids = DocId2) match {
+            case r: ElasticRequest.MultiGet => r.toJson
+          }
+          val jsonRequestAcrossIndices = multiGet(doc = (Index, DocId), docs = (Index2, DocId2)) match {
+            case r: ElasticRequest.MultiGet => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "ids": ["documentid", "documentid2"]
+              |}
+              |""".stripMargin
+
+          val expectedAcrossIndices =
+            """
+              |{
+              |  "docs": [
+              |    { "_index": "index", "_id": "documentid" },
+              |    { "_index": "index2", "_id": "documentid2" }
+              |  ]
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson)) &&
+          assert(jsonRequestAcrossIndices)(equalTo(expectedAcrossIndices.toJson))
+        },
+        test("multiSearch") {
+          val requestBody = multiSearch(
+            search(selectors = Index, query = Query).routing(RoutingValue).size(5),
+            search(selectors = Indices, query = Query, aggregation = TermsAggregation),
+            aggregate(selectors = Index, aggregation = MaxAggregation)
+          ) match {
+            case r: MultiSearch => r.body
+          }
+
+          val expected =
+            """|{"index":"index","routing":"routing"}
+               |{"query":{"range":{"intField":{"gte":10}}},"size":5}
+               |{"index":"index,index2"}
+               |{"query":{"range":{"intField":{"gte":10}}},"aggs":{"aggregation":{"terms":{"field":"intField"}}}}
+               |{"index":"index"}
+               |{"aggs":{"aggregation":{"max":{"field":"intField"}}}}
+               |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
         },
         test("search") {
           val jsonRequest = search(Index, Query) match {
@@ -1801,10 +1965,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
           val jsonRequestWithUpsert = update(index = Index, id = DocId, doc = Doc1).orCreate(Doc2) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
 
           val expected =
@@ -1905,10 +2069,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("updateByScript") {
           val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
           val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
 
           val expected =
@@ -1999,6 +2163,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
     vectorField = List()
   )
   private val DocId            = DocumentId("documentid")
+  private val DocId2           = DocumentId("documentid2")
   private val Index            = IndexName("index")
   private val Index2           = IndexName("index2")
   private val MaxAggregation   = ElasticAggregation.maxAggregation(name = "aggregation", field = TestDocument.intField)

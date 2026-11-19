@@ -21,10 +21,16 @@ For example, if you want to execute requests on an Elasticsearch server running 
  - provide the `live` `ZLayer` to your effect, along with a `SttpBackend` and an `ElasticConfig` layer,
  - or provide `ElasticExecutor.local` layer along with a `SttpBackend`.
 
+The recommended `SttpBackend` is `HttpClientZioBackend.layer()` from sttp.
+
+As an opt-in alternative, `ElasticBackend.layer()` provides the same `HttpClientZioBackend`, configured so that the HTTP client runs its work on its selector thread instead of handing it off to another thread.
+This saves one thread hop per request, which was about 3-4% faster in benchmarks over plain HTTP.
+Because that thread does the I/O for all connections, CPU-heavy work such as TLS handshakes delays every in-flight request, so prefer `HttpClientZioBackend.layer()` for HTTPS clusters.
+
 ```scala
+import sttp.client4.httpclient.zio.HttpClientZioBackend
 import zio._
 import zio.elasticsearch._
-import sttp.client3.httpclient.zio.HttpClientZioBackend
 
 val result: RIO[Elasticsearch, Boolean] =
   Elasticsearch.execute(ElasticRequest.exists(IndexName("index"), DocumentId("documentId")))

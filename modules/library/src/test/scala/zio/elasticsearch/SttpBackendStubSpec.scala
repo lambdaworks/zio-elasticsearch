@@ -261,6 +261,211 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     )
   )
 
+  private val multiGetRequestStub: StubMapping = StubMapping(
+    request =
+      r => r.method == Method.POST && r.uri.toString == s"$url/repositories/_mget?realtime=false&routing=routing",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "docs": [
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "_version": 1,
+        |      "found": true,
+        |      "_source": {
+        |        "stringField": "StringField",
+        |        "subDocumentList": [
+        |          {
+        |            "stringField": "StringField",
+        |            "nestedField": {
+        |              "stringField": "StringField",
+        |              "longField": 1
+        |            },
+        |            "intField": 132,
+        |            "intFieldList": []
+        |          }
+        |        ],
+        |        "dateField": "2020-10-11",
+        |        "intField": 10,
+        |        "doubleField": 10.0,
+        |        "booleanField": true,
+        |        "geoPointField": {
+        |          "lat": 1.0,
+        |          "lon": 1.0
+        |        },
+        |        "vectorField": [
+        |          1,
+        |          5,
+        |          -20
+        |        ]
+        |      }
+        |    },
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "missing-id",
+        |      "found": false
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  )
+
+  private val multiGetAcrossIndicesRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.POST && r.uri.toString == s"$url/_mget",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "docs": [
+        |    {
+        |      "_index": "repositories",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "_version": 1,
+        |      "found": true
+        |    },
+        |    {
+        |      "_index": "missing-index",
+        |      "_id": "V4x8q4UB3agN0z75fv5r",
+        |      "error": {
+        |        "root_cause": [
+        |          {
+        |            "type": "index_not_found_exception",
+        |            "reason": "no such index [missing-index]",
+        |            "resource.type": "index_or_alias",
+        |            "resource.id": "missing-index",
+        |            "index_uuid": "_na_",
+        |            "index": "missing-index"
+        |          }
+        |        ],
+        |        "type": "index_not_found_exception",
+        |        "reason": "no such index [missing-index]",
+        |        "resource.type": "index_or_alias",
+        |        "resource.id": "missing-index",
+        |        "index_uuid": "_na_",
+        |        "index": "missing-index"
+        |      }
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  )
+
+  private val multiSearchRequestStub: StubMapping = StubMapping(
+    request = r =>
+      r.method == Method.POST && r.uri.toString == s"$url/_msearch?max_concurrent_searches=2&typed_keys" &&
+        r.header("Content-Type").contains("application/x-ndjson"),
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "took": 7,
+        |  "responses": [
+        |    {
+        |      "took": 5,
+        |      "timed_out": false,
+        |      "_shards": {
+        |        "total": 1,
+        |        "successful": 1,
+        |        "skipped": 0,
+        |        "failed": 0
+        |      },
+        |      "hits": {
+        |        "total": {
+        |          "value": 1,
+        |          "relation": "eq"
+        |        },
+        |        "max_score": 1,
+        |        "hits": [
+        |          {
+        |            "_index": "repositories",
+        |            "_id": "111",
+        |            "_score": 1,
+        |            "_source": {
+        |              "stringField": "StringField",
+        |              "subDocumentList": [
+        |                {
+        |                  "stringField": "StringField",
+        |                  "nestedField": {
+        |                    "stringField": "StringField",
+        |                    "longField": 1
+        |                  },
+        |                  "intField": 132,
+        |                  "intFieldList": []
+        |                }
+        |              ],
+        |              "dateField": "2020-10-11",
+        |              "intField": 10,
+        |              "doubleField": 10.0,
+        |              "booleanField": true,
+        |              "geoPointField": {
+        |                "lat": 1.0,
+        |                "lon": 1.0
+        |              },
+        |              "vectorField": [
+        |                1,
+        |                5,
+        |                -20
+        |              ]
+        |            }
+        |          }
+        |        ]
+        |      },
+        |      "aggregations": {
+        |        "terms#aggregation1": {
+        |          "doc_count_error_upper_bound": 0,
+        |          "sum_other_doc_count": 0,
+        |          "buckets": [
+        |            {
+        |              "key": "name",
+        |              "doc_count": 5
+        |            }
+        |          ]
+        |        }
+        |      },
+        |      "status": 200
+        |    },
+        |    {
+        |      "error": {
+        |        "root_cause": [
+        |          {
+        |            "type": "index_not_found_exception",
+        |            "reason": "no such index [missing-index]",
+        |            "resource.type": "index_or_alias",
+        |            "resource.id": "missing-index",
+        |            "index_uuid": "_na_",
+        |            "index": "missing-index"
+        |          }
+        |        ],
+        |        "type": "index_not_found_exception",
+        |        "reason": "no such index [missing-index]",
+        |        "resource.type": "index_or_alias",
+        |        "resource.id": "missing-index",
+        |        "index_uuid": "_na_",
+        |        "index": "missing-index"
+        |      },
+        |      "status": 404
+        |    },
+        |    {
+        |      "error": {
+        |        "root_cause": [
+        |          {
+        |            "type": "null_pointer_exception",
+        |            "reason": null
+        |          }
+        |        ],
+        |        "type": "null_pointer_exception",
+        |        "reason": null
+        |      },
+        |      "status": 500
+        |    },
+        |    {
+        |      "took": 1,
+        |      "status": 200
+        |    }
+        |  ]
+        |}""".stripMargin
+    )
+  )
+
   private val refreshRequestStub: StubMapping = StubMapping(
     request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_refresh",
     response = ResponseStub.exact("OK")
@@ -462,6 +667,9 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     deleteIndexRequestStub,
     existsRequestStub,
     getByIdRequestStub,
+    multiGetRequestStub,
+    multiGetAcrossIndicesRequestStub,
+    multiSearchRequestStub,
     refreshRequestStub,
     searchRequestStub,
     searchWithAggregationRequestStub,

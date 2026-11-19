@@ -56,6 +56,9 @@ jobs:
           check-latest: true
       - name: Cache Scala dependencies
         uses: coursier/cache-action@v9
+      - name: Compile benchmarks
+        if: ${{ startsWith(matrix.scala, '2.13') }}
+        run: ./sbt ++${{ matrix.scala }}! benchmarks/Jmh/compile
       - name: Run tests
         run: ./sbt ++${{ matrix.scala }}! library/test
       - name: Run test container

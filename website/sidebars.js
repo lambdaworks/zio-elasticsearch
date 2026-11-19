@@ -90,6 +90,8 @@ module.exports = {
                     'overview/requests/elastic_request_exists',
                     'overview/requests/elastic_request_get_by_id',
                     'overview/requests/elastic_request_knn_search',
+                    'overview/requests/elastic_request_multi_get',
+                    'overview/requests/elastic_request_multi_search',
                     'overview/requests/elastic_request_refresh',
                     'overview/requests/elastic_request_search',
                     'overview/requests/elastic_request_update',

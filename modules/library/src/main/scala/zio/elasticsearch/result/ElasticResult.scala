@@ -117,6 +117,132 @@ final class KNNSearchResult private[elasticsearch] (private val hits: Chunk[Item
   lazy val items: UIO[Chunk[Item]] = ZIO.succeed(hits)
 }
 
+final class MultiGetResult private[elasticsearch] (private val docs: Chunk[MultiGetItem])
+    extends DocumentResult[MultiGetResult.Documents] {
+
+  /**
+   * Decodes the requested documents as type `A`, keeping the order in which they were requested.
+   *
+   * @tparam A
+   *   the type to decode the documents to. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an effect that produces one element per requested document: `Some` with the decoded document if it was found, or
+   *   `None` if it was not found. It fails with an [[ElasticException]] if any document could not be retrieved (see
+   *   [[failures]]), or with a [[DecodingException]] if any found document could not be decoded or has no `_source`.
+   */
+  def documentAs[A: Schema]: IO[ElasticException, Chunk[Option[A]]] =
+    docs.collect { case failed: MultiGetItem.Failed => failed } match {
+      case Chunk() =>
+        ZIO.fromEither {
+          ZValidation
+            .validateAll(docs.map {
+              case MultiGetItem.Found(_, _, Some(item)) =>
+                ZValidation.fromEither(item.documentAs[A]).map(Option(_)).mapError(_.message)
+              case MultiGetItem.Found(index, id, None) =>
+                ZValidation.fail(s"Document [$index/$id] was found, but its _source is not available")
+              case _ =>
+                ZValidation.succeed(None)
+            })
+            .toEitherWith(errors =>
+              DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
+            )
+        }
+      case failures =>
+        ZIO.fail(
+          new ElasticException(
+            s"Could not retrieve all documents: ${failures
+                .map(f => s"[${f.index}/${f.id}] ${f.error.`type`}: ${f.error.reason}")
+                .mkString(", ")}"
+          )
+        )
+    }
+
+  lazy val failures: UIO[Chunk[MultiGetItem.Failed]] =
+    ZIO.succeed(docs.collect { case failed: MultiGetItem.Failed => failed })
+
+  lazy val items: UIO[Chunk[MultiGetItem]] = ZIO.succeed(docs)
+
+  lazy val missing: UIO[Chunk[MultiGetItem.NotFound]] =
+    ZIO.succeed(docs.collect { case notFound: MultiGetItem.NotFound => notFound })
+}
+
+object MultiGetResult {
+  type Documents[A] = Chunk[Option[A]]
+}
+
+final class MultiSearchResult private[elasticsearch] (private val responses: Chunk[MultiSearchItem])
+    extends DocumentResult[MultiSearchResult.Documents] {
+
+  /**
+   * Decodes the documents found by each search as type `A`, keeping the order in which the searches were requested.
+   *
+   * @tparam A
+   *   the type to decode the documents to. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an effect that produces one element per requested search, containing the documents it found. It fails with an
+   *   [[ElasticException]] if any search failed or its response could not be parsed (see [[items]]), or with a
+   *   [[DecodingException]] listing, by search position, every document that could not be decoded.
+   */
+  def documentAs[A: Schema]: IO[ElasticException, Chunk[Chunk[A]]] =
+    results.flatMap { results =>
+      ZIO.fromEither {
+        ZValidation
+          .validateAll(results.zipWithIndex.map { case (result, position) =>
+            ZValidation.validateAll(
+              result.hits
+                .map(item => ZValidation.fromEither(item.documentAs[A]).mapError(e => s"[$position] ${e.message}"))
+            )
+          })
+          .toEitherWith(errors =>
+            DecodingException(s"Could not parse all documents successfully: ${errors.mkString(", ")}")
+          )
+      }
+    }
+
+  /**
+   * Returns the searches that Elasticsearch reported as failed. It does not include searches whose response could not
+   * be parsed (see [[undecodable]]).
+   */
+  lazy val failures: UIO[Chunk[MultiSearchItem.Failed]] =
+    ZIO.succeed(responses.collect { case failed: MultiSearchItem.Failed => failed })
+
+  lazy val items: UIO[Chunk[MultiSearchItem]] = ZIO.succeed(responses)
+
+  /**
+   * Returns the searches whose response could not be parsed. Together with [[failures]], it contains every search that
+   * makes [[results]] and [[documentAs]] fail.
+   */
+  lazy val undecodable: UIO[Chunk[MultiSearchItem.Undecodable]] =
+    ZIO.succeed(responses.collect { case undecodable: MultiSearchItem.Undecodable => undecodable })
+
+  /**
+   * Returns the result of each search, keeping the order in which the searches were requested.
+   *
+   * @return
+   *   an effect that produces one [[SearchAndAggregateResult]] per requested search. It fails with an
+   *   [[ElasticException]] if any search failed (see [[failures]]) or its response could not be parsed (see
+   *   [[undecodable]]).
+   */
+  lazy val results: IO[ElasticException, Chunk[SearchAndAggregateResult]] =
+    responses.zipWithIndex.collect {
+      case (MultiSearchItem.Failed(_, error), position) if error.reason.isEmpty =>
+        s"[$position] ${error.`type`}"
+      case (MultiSearchItem.Failed(_, error), position) =>
+        s"[$position] ${error.`type`}: ${error.reason}"
+      case (MultiSearchItem.Undecodable(_, _, message), position) =>
+        s"[$position] could not parse the response: $message"
+    } match {
+      case Chunk() =>
+        ZIO.succeed(responses.collect { case MultiSearchItem.Succeeded(_, result) => result })
+      case failures =>
+        ZIO.fail(new ElasticException(s"Could not execute all searches: ${failures.mkString(", ")}"))
+    }
+}
+
+object MultiSearchResult {
+  type Documents[A] = Chunk[Chunk[A]]
+}
+
 final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],
   private val fullResponse: SearchWithAggregationsResponse
@@ -142,7 +268,7 @@ final class SearchResult private[elasticsearch] (
 }
 
 final class SearchAndAggregateResult private[elasticsearch] (
-  private val hits: Chunk[Item],
+  private[elasticsearch] val hits: Chunk[Item],
   private val aggs: Map[String, AggregationResult],
   private val fullResponse: SearchWithAggregationsResponse
 ) extends DocumentResult[Chunk]
