@@ -19,6 +19,13 @@ and `keepAliveFor` (used to tell Elasticsearch how long should search be kept al
 StreamConfig(searchAfter = false, keepAlive = "5m", pageSize = Some(100))
 ```
 
+Every page of the stream is fetched using the body of the provided `SearchRequest`, so its query, sorting, source filtering (`includes` / `excludes`) and highlights are respected in both modes.
+The page size is taken from `StreamConfig` and falls back to the `size` of the request.
+`from` is ignored, since paging is managed by the stream itself.
+When using `search_after`, the `searchAfter` value of the request (if any) is used as the starting point of the stream, while it is ignored when using `scroll`, which does not support it.
+
+The scroll context or point in time is released as soon as the stream completes, fails or is interrupted (e.g. when using `take`), so it doesn't keep cluster resources open until `keep_alive` expires.
+
 When using the `streamAs[A]` method, results are parsed into the desired type `A`, relying on an implicit schema for `A`.
 
 ```scala
