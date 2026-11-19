@@ -3430,6 +3430,33 @@ object HttpExecutorSpec extends IntegrationSpec {
                   isSome(equalTo(document.copy(doubleField = 3000, intField = 100)))
                 )
           }
+        },
+        test("execute bulk update or create") {
+          checkOnce(genDocumentId, genDocumentId, genTestDocument, genTestDocument) {
+            (firstDocumentId, secondDocumentId, firstDocument, secondDocument) =>
+              for {
+                res <- Executor.execute(
+                         ElasticRequest
+                           .bulk(
+                             ElasticRequest
+                               .update[TestDocument](index, firstDocumentId, firstDocument.copy(intField = 100))
+                               .orCreate(firstDocument),
+                             ElasticRequest
+                               .updateByScript(
+                                 index,
+                                 secondDocumentId,
+                                 Script("ctx._source.intField += params['factor']").params("factor" -> 2)
+                               )
+                               .orCreate(secondDocument)
+                           )
+                           .refreshTrue
+                       )
+                doc1 <- Executor.execute(ElasticRequest.getById(index, firstDocumentId)).documentAs[TestDocument]
+                doc2 <- Executor.execute(ElasticRequest.getById(index, secondDocumentId)).documentAs[TestDocument]
+              } yield assert(res.items.map(_.error.isDefined))(equalTo(Chunk(false, false))) &&
+                assert(doc1)(isSome(equalTo(firstDocument))) &&
+                assert(doc2)(isSome(equalTo(secondDocument)))
+          }
         }
       ),
       suite("updating document")(

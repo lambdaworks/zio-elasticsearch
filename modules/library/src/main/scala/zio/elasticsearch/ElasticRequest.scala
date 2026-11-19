@@ -537,7 +537,7 @@ object ElasticRequest {
             requestType = "create",
             parameters = Chunk(("_index", index.orElse(this.index)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case CreateWithId(index, id, document, _, routing) =>
         Chunk(
@@ -545,7 +545,7 @@ object ElasticRequest {
             requestType = "create",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case CreateOrUpdate(index, id, document, _, routing) =>
         Chunk(
@@ -553,7 +553,7 @@ object ElasticRequest {
             requestType = "index",
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           ),
-          document.json
+          document.raw
         )
       case DeleteById(index, id, _, routing) =>
         Chunk(
@@ -562,24 +562,16 @@ object ElasticRequest {
             parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
           )
         )
-      case Update(index, id, Some(document), _, routing, None, _) =>
-        Chunk(
-          getActionAndMeta(
-            requestType = "update",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-          ),
-          Obj("doc" -> document.json)
-        )
-      case Update(index, id, _, _, routing, Some(script), _) =>
-        Chunk(
-          getActionAndMeta(
-            requestType = "update",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
-          ),
-          Obj("script" -> script.toJson)
-        )
       case Update(_, _, None, _, _, None, _) =>
         Chunk.empty
+      case update @ Update(index, id, _, _, routing, _, _) =>
+        Chunk(
+          getActionAndMeta(
+            requestType = "update",
+            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+          ),
+          update.body
+        )
     }.mkString(start = "", sep = "\n", end = "\n")
   }
 
@@ -1043,12 +1035,20 @@ object ElasticRequest {
     def routing(value: Routing): UpdateRequest[X] =
       self.copy(routing = Some(value))
 
-    private[elasticsearch] def toJson: Json = {
-      val docToJson: Json    = doc.fold(Obj())(d => Obj("doc" -> d.json))
-      val scriptToJson: Json = script.fold(Obj())(s => Obj("script" -> s.toJson))
-      val upsertJson: Json   = upsert.fold(Obj())(u => Obj("upsert" -> u.json))
+    private[elasticsearch] def body: String = {
+      val body = new StringBuilder(32 + doc.fold(0)(_.raw.length) + upsert.fold(0)(_.raw.length)).append('{')
 
-      scriptToJson merge docToJson merge upsertJson
+      def field(name: String, value: String): Unit = {
+        if (body.length > 1) body.append(',')
+        body.append('"').append(name).append("\":").append(value)
+        ()
+      }
+
+      script.foreach(s => field("script", s.toJson.toString))
+      doc.foreach(d => field("doc", d.raw))
+      upsert.foreach(u => field("upsert", u.raw))
+
+      body.append('}').toString
     }
   }
 

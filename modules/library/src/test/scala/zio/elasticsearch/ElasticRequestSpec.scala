@@ -1303,6 +1303,51 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(bodyAllIndividualIndices)(equalTo(expectedAllIndividualIndices)) &&
           assert(bodyIndividualRoutingOverridesGlobal)(equalTo(expectedIndividualRoutingOverridesGlobal))
         },
+        test("bulk with update and delete") {
+          val requestBody =
+            bulk(
+              Index,
+              update(id = DocId, doc = Doc1),
+              updateByScript(Index, DocId, Script1),
+              deleteById(DocId)
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            """|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"doc":{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}}
+               |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}}}
+               |{ "delete" : { "_index" : "index", "_id" : "documentid" } }
+               |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
+        test("bulk with update or create") {
+          val doc1Json =
+            """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
+          val doc2Json =
+            """{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}"""
+
+          val requestBody =
+            bulk(
+              Index,
+              update(id = DocId, doc = Doc1).orCreate(Doc2),
+              updateByScript(Index, DocId, Script1).orCreate(Doc2)
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            s"""|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"doc":$doc1Json,"upsert":$doc2Json}
+                |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}},"upsert":$doc2Json}
+                |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
+        },
         test("count") {
           val jsonRequest = count(Index) match {
             case r: Count => r.toJson
@@ -1801,10 +1846,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
           val jsonRequestWithUpsert = update(index = Index, id = DocId, doc = Doc1).orCreate(Doc2) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
 
           val expected =
@@ -1905,10 +1950,10 @@ object ElasticRequestSpec extends ZIOSpecDefault {
         },
         test("updateByScript") {
           val jsonRequest = updateByScript(index = Index, id = DocId, script = Script1) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
           val jsonRequestWithUpsert = updateByScript(index = Index, id = DocId, script = Script1).orCreate(Doc2) match {
-            case r: Update[Executable] => r.toJson
+            case r: Update[Executable] => r.body.toJson
           }
 
           val expected =
