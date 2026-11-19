@@ -168,6 +168,49 @@ object MultiGetResult {
   type Documents[A] = Chunk[Option[A]]
 }
 
+final class MultiSearchResult private[elasticsearch] (private val responses: Chunk[MultiSearchItem])
+    extends DocumentResult[MultiSearchResult.Documents] {
+
+  /**
+   * Decodes the documents found by each search as type `A`, keeping the order in which the searches were requested.
+   *
+   * @tparam A
+   *   the type to decode the documents to. An implicit `Schema` instance must be in scope for this type
+   * @return
+   *   an effect that produces one element per requested search, containing the documents it found. It fails with an
+   *   [[ElasticException]] if any search failed (see [[failures]]), or with a [[DecodingException]] if any document
+   *   could not be decoded.
+   */
+  def documentAs[A: Schema]: IO[ElasticException, Chunk[Chunk[A]]] =
+    results.flatMap(results => ZIO.foreach(results)(_.documentAs[A].refineToOrDie[ElasticException]))
+
+  lazy val failures: UIO[Chunk[MultiSearchItem.Failed]] =
+    ZIO.succeed(responses.collect { case failed: MultiSearchItem.Failed => failed })
+
+  lazy val items: UIO[Chunk[MultiSearchItem]] = ZIO.succeed(responses)
+
+  /**
+   * Returns the result of each search, keeping the order in which the searches were requested.
+   *
+   * @return
+   *   an effect that produces one [[SearchAndAggregateResult]] per requested search. It fails with an
+   *   [[ElasticException]] if any search failed (see [[failures]]).
+   */
+  lazy val results: IO[ElasticException, Chunk[SearchAndAggregateResult]] =
+    responses.zipWithIndex.collect { case (MultiSearchItem.Failed(_, error), position) =>
+      s"[$position] ${error.`type`}: ${error.reason}"
+    } match {
+      case Chunk() =>
+        ZIO.succeed(responses.collect { case MultiSearchItem.Succeeded(_, result) => result })
+      case failures =>
+        ZIO.fail(new ElasticException(s"Could not execute all searches: ${failures.mkString(", ")}"))
+    }
+}
+
+object MultiSearchResult {
+  type Documents[A] = Chunk[Chunk[A]]
+}
+
 final class SearchResult private[elasticsearch] (
   private val hits: Chunk[Item],
   private val fullResponse: SearchWithAggregationsResponse

@@ -31,6 +31,7 @@ import zio.elasticsearch.result.{
   GetResult,
   KNNSearchResult,
   MultiGetResult,
+  MultiSearchResult,
   SearchAndAggregateResult,
   SearchResult,
   UpdateByQueryResult
@@ -45,6 +46,8 @@ sealed trait ElasticRequest[A, X <: IsExecutable]
 sealed trait BulkableRequest[A, X <: IsExecutable] extends ElasticRequest[A, X] {
   def index(index: IndexName)(implicit ev: X =:= NotExecutable): BulkableRequest[A, Executable]
 }
+
+sealed trait MultiSearchableRequest[A] extends ElasticRequest[A, Executable]
 
 object ElasticRequest {
 
@@ -338,6 +341,20 @@ object ElasticRequest {
     )
 
   /**
+   * Constructs an instance of [[MultiSearchRequest]] used for executing multiple search and aggregation requests in a
+   * single request.
+   *
+   * @param request
+   *   the first [[SearchRequest]], [[SearchAndAggregateRequest]] or [[AggregateRequest]] to execute
+   * @param requests
+   *   the rest of the [[SearchRequest]]s, [[SearchAndAggregateRequest]]s or [[AggregateRequest]]s to execute
+   * @return
+   *   an instance of [[MultiSearchRequest]] that represents multi search operation to be performed.
+   */
+  final def multiSearch(request: MultiSearchableRequest[_], requests: MultiSearchableRequest[_]*): MultiSearchRequest =
+    MultiSearch(requests = Chunk.fromIterable(request +: requests), maxConcurrentSearches = None)
+
+  /**
    * Constructs an instance of [[RefreshRequest]] used for refreshing an index with the specified name.
    *
    * @param selectors
@@ -548,7 +565,7 @@ object ElasticRequest {
   final def upsert[A: Schema](id: DocumentId, doc: A): CreateOrUpdateRequest[NotExecutable] =
     CreateOrUpdate(index = None, id = id, document = Document.from(doc), refresh = None, routing = None)
 
-  sealed trait AggregateRequest extends ElasticRequest[AggregateResult, Executable]
+  sealed trait AggregateRequest extends MultiSearchableRequest[AggregateResult]
 
   private[elasticsearch] final case class Aggregate(
     selectors: String,
@@ -910,12 +927,45 @@ object ElasticRequest {
       }
   }
 
+  sealed trait MultiSearchRequest extends ElasticRequest[MultiSearchResult, Executable] {
+
+    /**
+     * Sets the maximum number of concurrent searches the [[zio.elasticsearch.ElasticRequest.MultiSearchRequest]] can
+     * execute.
+     *
+     * @param value
+     *   a positive number representing the maximum number of searches executed concurrently
+     * @return
+     *   an instance of the [[zio.elasticsearch.ElasticRequest.MultiSearchRequest]] enriched with the
+     *   `max_concurrent_searches` parameter.
+     */
+    def maxConcurrentSearches(value: Int): MultiSearchRequest
+  }
+
+  private[elasticsearch] final case class MultiSearch(
+    requests: Chunk[MultiSearchableRequest[_]],
+    maxConcurrentSearches: Option[Int]
+  ) extends MultiSearchRequest { self =>
+
+    def maxConcurrentSearches(value: Int): MultiSearchRequest =
+      self.copy(maxConcurrentSearches = Some(value))
+
+    private[elasticsearch] lazy val body: String = requests.flatMap {
+      case r: Aggregate =>
+        Chunk(getMultiSearchHeader(selectors = r.selectors, routing = None), r.toJson)
+      case r: Search =>
+        Chunk(getMultiSearchHeader(selectors = r.selectors, routing = r.routing), r.toJson)
+      case r: SearchAndAggregate =>
+        Chunk(getMultiSearchHeader(selectors = r.selectors, routing = r.routing), r.toJson)
+    }.mkString(start = "", sep = "\n", end = "\n")
+  }
+
   sealed trait RefreshRequest extends ElasticRequest[Boolean, Executable]
 
   private[elasticsearch] final case class Refresh(selectors: String) extends RefreshRequest
 
   sealed trait SearchRequest
-      extends ElasticRequest[SearchResult, Executable]
+      extends MultiSearchableRequest[SearchResult]
       with HasFrom[SearchRequest]
       with HasHighlights[SearchRequest]
       with HasRouting[SearchRequest]
@@ -1029,7 +1079,7 @@ object ElasticRequest {
   }
 
   sealed trait SearchAndAggregateRequest
-      extends ElasticRequest[SearchAndAggregateResult, Executable]
+      extends MultiSearchableRequest[SearchAndAggregateResult]
       with HasFrom[SearchAndAggregateRequest]
       with HasHighlights[SearchAndAggregateRequest]
       with HasRouting[SearchAndAggregateRequest]
@@ -1213,6 +1263,9 @@ object ElasticRequest {
         scriptJson merge Obj("query" -> q.toJson(fieldPath = None))
       )
   }
+
+  private def getMultiSearchHeader(selectors: String, routing: Option[Routing]): Json =
+    Obj("index" -> selectors.toJson) merge routing.fold(Obj())(r => Obj("routing" -> Routing.unwrap(r).toJson))
 
   private def getActionAndMeta(requestType: String, parameters: Chunk[(String, Any)]): String =
     parameters.collect { case (name, Some(value)) =>

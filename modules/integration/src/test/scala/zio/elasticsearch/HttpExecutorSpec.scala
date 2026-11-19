@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation._
 import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticIntervalRule.intervalMatch
@@ -43,6 +42,7 @@ import zio.elasticsearch.result.{
   Item,
   MaxAggregationResult,
   MultiGetItem,
+  MultiSearchItem,
   RangeAggregationBucketResult,
   RangeAggregationResult,
   SamplerAggregationResult,
@@ -59,6 +59,7 @@ import zio.stream.{Sink, ZSink}
 import zio.test.Assertion._
 import zio.test.TestAspect._
 import zio.test._
+import zio.{Chunk, ZIO}
 
 import java.time.LocalDate
 import scala.util.Random
@@ -1594,6 +1595,100 @@ object HttpExecutorSpec extends IntegrationSpec {
               fails(isSubtype[Exception](assertException("Could not parse all documents successfully")))
             )
           }
+        }
+      ),
+      suite("multi search")(
+        test("execute searches and aggregations across indices") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+              val firstDocumentUpdated  = firstDocument.copy(intField = 1)
+              val secondDocumentUpdated = secondDocument.copy(intField = 2)
+              val thirdDocumentUpdated  = thirdDocument.copy(intField = 3)
+              for {
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocumentUpdated)
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocumentUpdated)
+                         .refreshTrue
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](secondSearchIndex, thirdDocumentId, thirdDocumentUpdated)
+                         .refreshTrue
+                     )
+                res <- Executor.execute(
+                         ElasticRequest
+                           .multiSearch(
+                             ElasticRequest
+                               .search(firstSearchIndex, matchAll)
+                               .sort(sortBy(TestDocument.intField).order(Desc)),
+                             ElasticRequest.search(
+                               secondSearchIndex,
+                               matchAll,
+                               maxAggregation(name = "aggregationInt", field = TestDocument.intField)
+                             ),
+                             ElasticRequest.aggregate(
+                               MultiIndex.names(firstSearchIndex, secondSearchIndex),
+                               maxAggregation(name = "aggregationInt", field = TestDocument.intField)
+                             )
+                           )
+                           .maxConcurrentSearches(1)
+                       )
+                items        <- res.items
+                results      <- res.results
+                firstSearch  <- results(0).documentAs[TestDocument]
+                secondSearch <- results(1).documentAs[TestDocument]
+                secondMax    <- results(1).asMaxAggregation("aggregationInt")
+                aggregateMax <- results(2).asMaxAggregation("aggregationInt")
+              } yield assert(items.map(_.status))(equalTo(Chunk(200, 200, 200))) &&
+                assert(firstSearch)(equalTo(Chunk(secondDocumentUpdated, firstDocumentUpdated))) &&
+                assert(secondSearch)(equalTo(Chunk(thirdDocumentUpdated))) &&
+                assert(secondMax.flatMap(_.value))(isSome(equalTo(3.0))) &&
+                assert(aggregateMax.flatMap(_.value))(isSome(equalTo(3.0)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)) *>
+            Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie *>
+            Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+        ),
+        test("report failed searches without failing the whole request") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            for {
+              _ <- Executor.execute(
+                     ElasticRequest.upsert[TestDocument](firstSearchIndex, documentId, document).refreshTrue
+                   )
+              res <- Executor.execute(
+                       ElasticRequest.multiSearch(
+                         ElasticRequest.search(firstSearchIndex, matchAll),
+                         ElasticRequest.search(refreshFailIndex, matchAll)
+                       )
+                     )
+              items    <- res.items
+              failures <- res.failures
+              found    <- ZIO.foreach(items.collect { case MultiSearchItem.Succeeded(_, result) => result })(
+                         _.documentAs[TestDocument]
+                       )
+              docs <- res.documentAs[TestDocument].exit
+            } yield assert(items.map(_.status))(equalTo(Chunk(200, 404))) &&
+              assert(found)(equalTo(Chunk(Chunk(document)))) &&
+              assert(failures.map(_.error.`type`))(equalTo(Chunk("index_not_found_exception"))) &&
+              assert(docs)(
+                fails(isSubtype[ElasticException](assertException("[1] index_not_found_exception")))
+              )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("fail on invalid max concurrent searches") {
+          assertZIO(
+            Executor
+              .execute(ElasticRequest.multiSearch(ElasticRequest.search(index, matchAll)).maxConcurrentSearches(0))
+              .exit
+          )(fails(isSubtype[ElasticException](assertException("maxConcurrentSearchRequests must be positive"))))
         }
       ),
       suite("refreshing")(

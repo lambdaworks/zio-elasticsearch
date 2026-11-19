@@ -16,7 +16,6 @@
 
 package zio.elasticsearch
 
-import zio.Chunk
 import zio.elasticsearch.ElasticAggregation.termsAggregation
 import zio.elasticsearch.ElasticQuery.{kNN, matchAll, term}
 import zio.elasticsearch.domain.TestDocument
@@ -31,6 +30,7 @@ import zio.elasticsearch.result.{
   ElasticException,
   MultiGetItem,
   MultiGetResult,
+  MultiSearchItem,
   TermsAggregationBucketResult,
   TermsAggregationResult,
   UpdateByQueryResult,
@@ -39,6 +39,7 @@ import zio.elasticsearch.result.{
 import zio.elasticsearch.script.Script
 import zio.test.Assertion._
 import zio.test.{Spec, TestEnvironment, TestResultZIOOps, assertZIO}
+import zio.{Chunk, ZIO}
 
 object HttpElasticExecutorSpec extends SttpBackendStubSpec {
   def spec: Spec[TestEnvironment, Any] =
@@ -298,6 +299,60 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
                 equalTo(
                   "Could not parse all documents successfully: Document [repositories/V4x8q4UB3agN0z75fv5r] was found, but its _source is not available"
                 )
+              )
+            )
+          )
+        )
+      },
+      test("multiSearch") {
+        val terms               = termsAggregation(name = "aggregation1", field = "name")
+        val executorMultiSearch =
+          Executor.execute(
+            ElasticRequest
+              .multiSearch(
+                ElasticRequest.search(selectors = index, query = matchAll, aggregation = terms),
+                ElasticRequest.search(selectors = IndexName("missing-index"), query = matchAll)
+              )
+              .maxConcurrentSearches(2)
+          )
+
+        val expectedFailure =
+          MultiSearchItem.Failed(
+            status = 404,
+            error = Error(
+              `type` = "index_not_found_exception",
+              reason = "no such index [missing-index]",
+              indexUuid = Some("_na_"),
+              shard = None,
+              index = Some("missing-index")
+            )
+          )
+
+        val expectedTermsAggregationResult =
+          TermsAggregationResult(
+            docErrorCount = 0,
+            sumOtherDocCount = 0,
+            buckets = Chunk(
+              TermsAggregationBucketResult(key = "name", keyAsString = None, docCount = 5, subAggregations = Map.empty)
+            )
+          )
+
+        assertZIO(executorMultiSearch.flatMap(_.items).map(_.map(_.status)))(equalTo(Chunk(200, 404))) &&
+        assertZIO(executorMultiSearch.flatMap(_.failures))(equalTo(Chunk(expectedFailure))) &&
+        assertZIO(
+          executorMultiSearch
+            .flatMap(_.items)
+            .flatMap(items =>
+              ZIO.foreach(items.collect { case MultiSearchItem.Succeeded(_, result) => result })(result =>
+                result.documentAs[TestDocument] <*> result.asTermsAggregation("aggregation1") <*> result.total
+              )
+            )
+        )(equalTo(Chunk((Chunk(doc), Some(expectedTermsAggregationResult), 1L)))) &&
+        assertZIO(executorMultiSearch.documentAs[TestDocument].exit)(
+          fails(
+            isSubtype[ElasticException](
+              hasMessage(
+                equalTo("Could not execute all searches: [1] index_not_found_exception: no such index [missing-index]")
               )
             )
           )

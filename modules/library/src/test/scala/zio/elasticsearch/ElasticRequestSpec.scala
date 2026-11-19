@@ -546,6 +546,31 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("multiSearch") {
+          val multiSearchRequest =
+            multiSearch(
+              search(selectors = Index, query = Query),
+              aggregate(selectors = Indices, aggregation = MaxAggregation)
+            )
+          val multiSearchRequestWithMaxConcurrentSearches =
+            multiSearch(search(selectors = Index, query = Query)).maxConcurrentSearches(2)
+
+          assert(multiSearchRequest)(
+            equalTo(
+              MultiSearch(
+                requests = Chunk(
+                  search(selectors = Index, query = Query),
+                  aggregate(selectors = Indices, aggregation = MaxAggregation)
+                ),
+                maxConcurrentSearches = None
+              )
+            )
+          ) && assert(multiSearchRequestWithMaxConcurrentSearches)(
+            equalTo(
+              MultiSearch(requests = Chunk(search(selectors = Index, query = Query)), maxConcurrentSearches = Some(2))
+            )
+          )
+        },
         test("refresh") {
           val refreshRequest        = refresh(Index)
           val refreshWithMultiIndex = refresh(Indices)
@@ -1581,6 +1606,26 @@ object ElasticRequestSpec extends ZIOSpecDefault {
 
           assert(jsonRequest)(equalTo(expected.toJson)) &&
           assert(jsonRequestAcrossIndices)(equalTo(expectedAcrossIndices.toJson))
+        },
+        test("multiSearch") {
+          val requestBody = multiSearch(
+            search(selectors = Index, query = Query).routing(RoutingValue).size(5),
+            search(selectors = Indices, query = Query, aggregation = TermsAggregation),
+            aggregate(selectors = Index, aggregation = MaxAggregation)
+          ) match {
+            case r: MultiSearch => r.body
+          }
+
+          val expected =
+            """|{"index":"index","routing":"routing"}
+               |{"query":{"range":{"intField":{"gte":10}}},"size":5}
+               |{"index":"index,index2"}
+               |{"query":{"range":{"intField":{"gte":10}}},"aggs":{"aggregation":{"terms":{"field":"intField"}}}}
+               |{"index":"index"}
+               |{"aggs":{"aggregation":{"max":{"field":"intField"}}}}
+               |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
         },
         test("search") {
           val jsonRequest = search(Index, Query) match {
