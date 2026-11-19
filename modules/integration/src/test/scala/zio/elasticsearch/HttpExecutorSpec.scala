@@ -1507,7 +1507,7 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
-        test("report failures for missing indices and fail on decoding") {
+        test("report failures for missing indices and fail on documentAs") {
           checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
             for {
               _        <- Executor.execute(ElasticRequest.upsert[TestDocument](index, documentId, document))
