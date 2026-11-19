@@ -32,4 +32,9 @@ If you want to add aggregation (on the same level), you can use `withAgg` method
 val multipleAggregations: MultipleAggregations = percentileRanksAggregation(field = Document.intField, name = "percentileRanksAggregation1", values = 500, 600).withAgg(percentileRanksAggregation(field = Document.doubleField, name = "percentileRanksAggregation2", values = 500, 600))
 ```
 
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: PercentileRanksAggregation = percentileRanksAggregation(name = "percentileRanksAggregation", field = Document.intField, value = 500).meta("color", "blue")
+```
+
 You can find more information about `Percentile ranks` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-rank-aggregation.html).

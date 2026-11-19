@@ -59,4 +59,9 @@ val aggregationWithSubAgg: RangeAggregation =
     .withSubAgg(maxAggregation(name = "maxAggregation", field = Document.intField))
 ```
 
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: RangeAggregation = rangeAggregation(name = "rangeAggregation", field = Document.intField, range = RangeBound().to(100)).meta("color", "blue")
+```
+
 You can find more information about `Range` aggregation [here](https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-range-aggregation).

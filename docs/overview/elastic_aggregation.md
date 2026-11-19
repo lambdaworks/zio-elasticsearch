@@ -80,6 +80,34 @@ ElasticAggregation.cardinality(name = "cardinalityAggregation", field = User.ema
 
 In case the suffix is `"keyword"` or `"raw"` you can use `keyword` and `raw` methods respectively.
 
+Aggregations are divided into three groups:
+
+- **metric** aggregations (e.g. `avg`, `max`, `stats`) compute metrics from field values,
+- **bucket** aggregations (e.g. `terms`, `range`, `filter`) group documents into buckets and accept sub-aggregations through `withSubAgg`,
+- **pipeline** aggregations (e.g. `bucketSelector`, `bucketSort`) work on the output of other aggregations.
+
+Metric and bucket aggregations can be combined on the same level with `withAgg`, which returns `MultipleAggregations`.
+Parent pipeline aggregations, such as `bucketSelector` and `bucketSort`, work on the buckets of their parent aggregation, so they can only be added as sub-aggregations.
+Using them on the top level of a request is rejected at compile time:
+
+```scala
+import zio.elasticsearch.ElasticAggregation._
+
+// compiles
+termsAggregation(name = "termsAggregation", field = "name.first_name.keyword")
+  .withSubAgg(maxAggregation(name = "maxAge", field = "age"))
+  .withSubAgg(bucketSortAggregation(name = "bucketSort").size(5))
+
+// does not compile
+maxAggregation(name = "maxAge", field = "age").withAgg(bucketSortAggregation(name = "bucketSort"))
+```
+
+Every aggregation also supports the `meta` method, which adds custom metadata that Elasticsearch returns together with the aggregation result:
+
+```scala
+maxAggregation(name = "maxAggregation", field = "age").meta("color", "blue")
+```
+
 Now, after describing an aggregation, you can pass it to the `aggregate`/`search` method to obtain the `ElasticRequest` corresponding to that aggregation:
 
 ```scala

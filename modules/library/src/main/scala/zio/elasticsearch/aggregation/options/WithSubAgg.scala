@@ -21,12 +21,12 @@ import zio.elasticsearch.aggregation.SingleElasticAggregation
 private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A]] {
 
   /**
-   * Adds a sub-aggregation to the aggregation.
+   * Adds a sub-aggregation to the aggregation. Sub-aggregations are kept in the order in which they are added.
    *
    * @param subAgg
-   *   the [[SingleElasticAggregation]] to add as sub-aggregation
+   *   the [[zio.elasticsearch.aggregation.SingleElasticAggregation]] to add as sub-aggregation
    * @return
-   *   a new instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] with the given sub-aggregation.
+   *   a new instance of the [[zio.elasticsearch.aggregation.BucketAggregation]] with the given sub-aggregation.
    */
   def withSubAgg(subAgg: SingleElasticAggregation): A
 }
