@@ -39,6 +39,7 @@ val users: RIO[Elasticsearch, Chunk[Chunk[User]]] = result.documentAs[User]
 val results: RIO[Elasticsearch, Chunk[SearchAndAggregateResult]] = result.flatMap(_.results)
 val items: RIO[Elasticsearch, Chunk[MultiSearchItem]] = result.flatMap(_.items)
 val failures: RIO[Elasticsearch, Chunk[MultiSearchItem.Failed]] = result.flatMap(_.failures)
+val undecodable: RIO[Elasticsearch, Chunk[MultiSearchItem.Undecodable]] = result.flatMap(_.undecodable)
 ```
 
 `results` returns one `SearchAndAggregateResult` per requested search, in the order the searches were requested, which gives you access to the documents, aggregations and total hits of each search. `documentAs` returns the documents found by each search, also in the order the searches were requested. Both fail with an `ElasticException` if any search failed (for example, because its index does not exist), and `documentAs` fails with a `DecodingException` listing, by search position, every document that cannot be decoded.
@@ -48,6 +49,6 @@ A failing search does not fail the whole request. To handle failed searches with
 - `Failed`, with its HTTP `status` and the `error` returned by Elasticsearch, or
 - `Undecodable`, with its HTTP `status`, the raw `response` and a `message` explaining why the response could not be parsed.
 
-`failures` returns only the `Failed` items.
+`failures` returns only the `Failed` items and `undecodable` returns only the `Undecodable` items.
 
 You can find more information about `MultiSearch` request [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-multi-search.html).

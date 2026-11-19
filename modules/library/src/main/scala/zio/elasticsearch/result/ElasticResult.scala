@@ -197,10 +197,21 @@ final class MultiSearchResult private[elasticsearch] (private val responses: Chu
       }
     }
 
+  /**
+   * Returns the searches that Elasticsearch reported as failed. It does not include searches whose response could not
+   * be parsed (see [[undecodable]]).
+   */
   lazy val failures: UIO[Chunk[MultiSearchItem.Failed]] =
     ZIO.succeed(responses.collect { case failed: MultiSearchItem.Failed => failed })
 
   lazy val items: UIO[Chunk[MultiSearchItem]] = ZIO.succeed(responses)
+
+  /**
+   * Returns the searches whose response could not be parsed. Together with [[failures]], it contains every search that
+   * makes [[results]] and [[documentAs]] fail.
+   */
+  lazy val undecodable: UIO[Chunk[MultiSearchItem.Undecodable]] =
+    ZIO.succeed(responses.collect { case undecodable: MultiSearchItem.Undecodable => undecodable })
 
   /**
    * Returns the result of each search, keeping the order in which the searches were requested.
@@ -208,10 +219,12 @@ final class MultiSearchResult private[elasticsearch] (private val responses: Chu
    * @return
    *   an effect that produces one [[SearchAndAggregateResult]] per requested search. It fails with an
    *   [[ElasticException]] if any search failed (see [[failures]]) or its response could not be parsed (see
-   *   [[MultiSearchItem.Undecodable]]).
+   *   [[undecodable]]).
    */
   lazy val results: IO[ElasticException, Chunk[SearchAndAggregateResult]] =
     responses.zipWithIndex.collect {
+      case (MultiSearchItem.Failed(_, error), position) if error.reason.isEmpty =>
+        s"[$position] ${error.`type`}"
       case (MultiSearchItem.Failed(_, error), position) =>
         s"[$position] ${error.`type`}: ${error.reason}"
       case (MultiSearchItem.Undecodable(_, _, message), position) =>

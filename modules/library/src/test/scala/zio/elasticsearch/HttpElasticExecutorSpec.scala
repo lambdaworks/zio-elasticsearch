@@ -363,8 +363,8 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(executorMultiSearch.flatMap(_.failures))(equalTo(expectedFailures)) &&
         assertZIO(
           executorMultiSearch
-            .flatMap(_.items)
-            .map(_.collect { case MultiSearchItem.Undecodable(status, response, _) => (status, response) })
+            .flatMap(_.undecodable)
+            .map(_.map(undecodable => (undecodable.status, undecodable.response)))
         )(equalTo(Chunk((200, Obj("took" -> Num(1), "status" -> Num(200)))))) &&
         assertZIO(
           executorMultiSearch
@@ -381,7 +381,7 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
               hasMessage(
                 startsWithString(
                   "Could not execute all searches: [1] index_not_found_exception: no such index [missing-index], " +
-                    "[2] null_pointer_exception: , [3] could not parse the response: "
+                    "[2] null_pointer_exception, [3] could not parse the response: "
                 )
               )
             )
