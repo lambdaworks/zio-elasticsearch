@@ -64,7 +64,7 @@ import zio.json.ast.{Json, JsonCursor}
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
-import zio.{Chunk, Ref, Task, UIO, ZIO}
+import zio.{Chunk, Duration, Ref, Task, UIO, ZIO, durationInt}
 
 import scala.collection.immutable.{Map => ScalaMap}
 
@@ -257,30 +257,22 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
   }
 
   private def executeClearScroll(scrollId: String): UIO[Unit] =
-    sendRequest(
+    executeReleaseSearchContext(
       baseRequest
         .delete(uri"${esConfig.uri}/$Search/$Scroll")
         .contentType(ApplicationJson)
-        .body(asJson(Obj(ScrollId -> scrollId.toJson)))
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk | HttpNotFound => ZIO.unit
-        case _                     => ZIO.fail(handleFailures(response))
-      }
-    }.catchAllCause(cause => ZIO.logWarningCause("Could not clear the scroll context.", cause))
+        .body(asJson(Obj(ScrollId -> scrollId.toJson))),
+      failureMessage = "Could not clear the scroll context."
+    )
 
   private def executeClosePointInTime(pitId: String): UIO[Unit] =
-    sendRequest(
+    executeReleaseSearchContext(
       baseRequest
         .delete(uri"${esConfig.uri}/$PointInTime")
         .contentType(ApplicationJson)
-        .body(asJson(Obj("id" -> pitId.toJson)))
-    ).flatMap { response =>
-      response.code match {
-        case HttpOk | HttpNotFound => ZIO.unit
-        case _                     => ZIO.fail(handleFailures(response))
-      }
-    }.catchAllCause(cause => ZIO.logWarningCause("Could not close the point in time.", cause))
+        .body(asJson(Obj("id" -> pitId.toJson))),
+      failureMessage = "Could not close the point in time."
+    )
 
   private def executeOpenPointInTime(r: Search, config: StreamConfig): Task[String] =
     sendRequestWithCustomResponse(
@@ -493,6 +485,20 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
+  /**
+   * Runs in the finalizer of a stream, which is uninterruptible, so the request is made interruptible and bounded by
+   * `ReleaseTimeout` to keep an unresponsive cluster from blocking the interruption of the stream.
+   */
+  private def executeReleaseSearchContext(req: Request[Either[String, String]], failureMessage: String): UIO[Unit] =
+    sendRequest(req).flatMap { response =>
+      response.code match {
+        case HttpOk | HttpNotFound => ZIO.unit
+        case _                     => ZIO.fail(handleFailures(response))
+      }
+    }.interruptible
+      .timeoutFail(new ElasticException(s"Request timed out after $ReleaseTimeout."))(ReleaseTimeout)
+      .catchAllCause(cause => ZIO.logWarningCause(failureMessage, cause))
+
   private def executeSearch(r: Search): Task[SearchResult] =
     sendRequestWithCustomResponse(
       baseRequest
@@ -631,7 +637,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(
           asJson(
             streamRequestBody(r, config) merge
-              (if (r.sortBy.isEmpty) Obj("sort" -> Arr(DocOrder.toJson)) else Obj())
+              (if (r.sortBy.isEmpty) Obj("sort" -> Arr(Doc.toJson)) else Obj())
           )
         )
     ).flatMap { response =>
@@ -776,51 +782,59 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
     } yield resp
 
-  /**
-   * Builds the body shared by every page of a stream from the search request. `from` and `search_after` are not allowed
-   * in a scroll context and are managed by the stream itself when using `search_after`, so they are left out. The page
-   * size from [[zio.elasticsearch.StreamConfig]] takes precedence over the size of the request.
-   */
   private def streamRequestBody(r: Search, config: StreamConfig): Json =
-    r.copy(from = None, searchAfter = None, size = config.pageSize.orElse(r.size)).toJson
+    r.copy(from = None, searchAfter = None, size = config.pageSize).toJson
 
   private def streamWithScroll(r: Search, config: StreamConfig): Stream[Throwable, Item] =
     ZStream
-      .acquireReleaseWith(Ref.make(Option.empty[String]))(
-        _.get.flatMap(ZIO.foreachDiscard(_)(executeClearScroll))
-      )
-      .flatMap { scrollIdRef =>
-        ZStream.paginateChunkZIO(Option.empty[String]) { scrollId =>
-          scrollId
-            .fold(executeSearchWithScroll(r, config))(executeGetByScroll(_, config))
-            .flatMap { case (items, newScrollId) =>
-              val currentScrollId = newScrollId.orElse(scrollId)
-
-              scrollIdRef
-                .set(currentScrollId)
-                .as((items, if (items.isEmpty) None else currentScrollId.map(Some(_))))
-            }
+      .acquireReleaseWith(
+        executeSearchWithScroll(r, config).flatMap { case (items, scrollId) =>
+          Ref.make(scrollId).map(scrollIdRef => (items, scrollId, scrollIdRef))
         }
+      ) { case (_, _, scrollIdRef) => scrollIdRef.get.flatMap(ZIO.foreachDiscard(_)(executeClearScroll)) }
+      .flatMap { case (firstItems, firstScrollId, scrollIdRef) =>
+        val nextPages = firstScrollId.filter(_ => firstItems.nonEmpty) match {
+          case Some(scrollId) =>
+            ZStream.paginateChunkZIO(scrollId) { currentScrollId =>
+              executeGetByScroll(currentScrollId, config).flatMap { case (items, newScrollId) =>
+                val nextScrollId = newScrollId.getOrElse(currentScrollId)
+
+                scrollIdRef.set(Some(nextScrollId)).as((items, if (items.isEmpty) None else Some(nextScrollId)))
+              }
+            }
+          case None =>
+            ZStream.empty
+        }
+
+        ZStream.fromChunk(firstItems) ++ nextPages
       }
 
   private def streamWithSearchAfter(r: Search, config: StreamConfig): Stream[Throwable, Item] =
-    ZStream
-      .acquireReleaseWith(executeOpenPointInTime(r, config).flatMap(Ref.make(_)))(
-        _.get.flatMap(executeClosePointInTime)
+    if (r.searchAfter.isDefined && r.sortBy.isEmpty) {
+      ZStream.fail(
+        new ElasticException(
+          "Streaming with search_after requires the request to be sorted when its searchAfter value is set."
+        )
       )
-      .flatMap { pitIdRef =>
-        ZStream.paginateChunkZIO(r.searchAfter) { searchAfter =>
-          pitIdRef.get
-            .flatMap(pitId =>
-              executeSearchAfterRequest(r = r, pitId = pitId, config = config, searchAfter = searchAfter)
-            )
-            .flatMap { page =>
-              pitIdRef
-                .set(page.pitId)
-                .as((page.items, if (page.items.isEmpty) None else page.searchAfter.map(Some(_))))
-            }
+    } else {
+      ZStream
+        .acquireReleaseWith(executeOpenPointInTime(r, config).flatMap(Ref.make(_)))(
+          _.get.flatMap(executeClosePointInTime)
+        )
+        .flatMap { pitIdRef =>
+          ZStream.paginateChunkZIO(r.searchAfter) { searchAfter =>
+            pitIdRef.get
+              .flatMap(pitId =>
+                executeSearchAfterRequest(r = r, pitId = pitId, config = config, searchAfter = searchAfter)
+              )
+              .flatMap { page =>
+                pitIdRef
+                  .set(page.pitId)
+                  .as((page.items, if (page.items.isEmpty) None else page.searchAfter.map(Some(_))))
+              }
+          }
         }
-      }
+    }
 }
 
 private[elasticsearch] object HttpExecutor {
@@ -830,7 +844,6 @@ private[elasticsearch] object HttpExecutor {
   private final val Create        = "_create"
   private final val DeleteByQuery = "_delete_by_query"
   private final val Doc           = "_doc"
-  private final val DocOrder      = "_doc"
   private final val KeepAlive     = "keep_alive"
   private final val Mget          = "_mget"
   private final val Msearch       = "_msearch"
@@ -846,6 +859,8 @@ private[elasticsearch] object HttpExecutor {
   private final val ApplicationNdJson = MediaType("application", "x-ndjson")
   private final val MultiSearchError  = JsonCursor.field("error")
   private final val MultiSearchStatus = JsonCursor.field("status")
+
+  private[elasticsearch] final val ReleaseTimeout: Duration = 10.seconds
 
   private final case class SearchAfterPage(items: Chunk[Item], pitId: String, searchAfter: Option[Json])
 

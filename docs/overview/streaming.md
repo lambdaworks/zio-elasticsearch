@@ -20,11 +20,12 @@ StreamConfig(searchAfter = false, keepAlive = "5m", pageSize = Some(100))
 ```
 
 Every page of the stream is fetched using the body of the provided `SearchRequest`, so its query, sorting, source filtering (`includes` / `excludes`) and highlights are respected in both modes.
-The page size is taken from `StreamConfig` and falls back to the `size` of the request.
-`from` is ignored, since paging is managed by the stream itself.
-When using `search_after`, the `searchAfter` value of the request (if any) is used as the starting point of the stream, while it is ignored when using `scroll`, which does not support it.
+The page size is taken only from `StreamConfig` (Elasticsearch default if not set), while `from` and `size` of the request are ignored, since paging is managed by the stream itself.
+When using `search_after`, the `searchAfter` value of the request (if any) is used as the starting point of the stream, which requires the request to be sorted, so that the value matches the sort values of the documents.
+It is ignored when using `scroll`, which does not support it.
 
 The scroll context or point in time is released as soon as the stream completes, fails or is interrupted (e.g. when using `take`), so it doesn't keep cluster resources open until `keep_alive` expires.
+If releasing it fails or takes longer than 10 seconds, a warning is logged and the context expires after `keep_alive`.
 
 When using the `streamAs[A]` method, results are parsed into the desired type `A`, relying on an implicit schema for `A`.
 
