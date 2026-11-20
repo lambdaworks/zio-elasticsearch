@@ -19,27 +19,38 @@ package zio.elasticsearch.benchmarks
 import com.sksamuel.elastic4s.ElasticDsl._
 import com.sksamuel.elastic4s.http.JavaClient
 import com.sksamuel.elastic4s.jackson.ElasticJackson.Implicits._
-import com.sksamuel.elastic4s.zio.instances._
 import com.sksamuel.elastic4s.{ElasticClient, ElasticProperties}
 import zio.elasticsearch.IndexName
-import zio.{Chunk, Task}
+import zio.{Chunk, Task, ZIO}
 
-private[benchmarks] final class Elastic4s private (client: ElasticClient) extends BenchmarkClient {
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+
+private[benchmarks] final class Elastic4s private (client: ElasticClient[Future]) extends BenchmarkClient {
   def upsert(index: IndexName, document: TestDocument): Task[Unit] =
-    client.execute(indexInto(IndexName.unwrap(index)).id(document.id).doc(document)).map(_.result).unit
+    ZIO
+      .fromFuture(_ => client.execute(indexInto(IndexName.unwrap(index)).id(document.id).doc(document)))
+      .map(_.result)
+      .unit
 
   def getById(index: IndexName, id: String): Task[Option[TestDocument]] =
-    client.execute(get(IndexName.unwrap(index), id)).map(_.result.toOpt[TestDocument])
+    ZIO.fromFuture(_ => client.execute(get(IndexName.unwrap(index), id))).map(_.result.toOpt[TestDocument])
 
   def search(index: IndexName, term: String): Task[Chunk[TestDocument]] =
-    client
-      .execute(com.sksamuel.elastic4s.ElasticDsl.search(IndexName.unwrap(index)).query(matchQuery("description", term)))
+    ZIO
+      .fromFuture(_ =>
+        client.execute(
+          com.sksamuel.elastic4s.ElasticDsl.search(IndexName.unwrap(index)).query(matchQuery("description", term))
+        )
+      )
       .map(response => Chunk.fromArray(response.result.to[TestDocument].toArray))
 
-  def tearDown(): Unit = client.close()
+  def tearDown(): Unit = Await.result(client.close(), Duration.Inf)
 }
 
 private[benchmarks] object Elastic4s {
-  def unsafeMake(): Elastic4s =
+  def unsafeMake(): Elastic4s = {
+    implicit val ec: ExecutionContext = ExecutionContext.global
     new Elastic4s(ElasticClient(JavaClient(ElasticProperties("http://localhost:9200"))))
+  }
 }

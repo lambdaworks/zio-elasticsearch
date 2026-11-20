@@ -76,7 +76,6 @@ lazy val benchmarks =
         "co.elastic.clients"            % "elasticsearch-java"                   % "9.5.6",
         "com.fasterxml.jackson.module" %% "jackson-module-scala"                 % "2.22.4",
         "nl.gn0s1s"                    %% "elastic4s-client-esjava"              % "9.5.1",
-        "nl.gn0s1s"                    %% "elastic4s-effect-zio"                 % "9.5.1",
         "nl.gn0s1s"                    %% "elastic4s-json-jackson"               % "9.5.1",
         "org.elasticsearch.client"      % "elasticsearch-rest-high-level-client" % "7.17.29"
       )
