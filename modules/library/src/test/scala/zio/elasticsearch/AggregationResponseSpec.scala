@@ -524,6 +524,37 @@ object AggregationResponseSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("terms for unsigned long fields") {
+          val aggregations =
+            """{
+              |  "ulterms#unsignedLongTermsAggregation": {
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [ { "key": 18446744073709551615, "doc_count": 1 } ]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "unsignedLongTermsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        key = "18446744073709551615",
+                        keyAsString = None,
+                        docCount = 1,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
         test("percentiles for tdigest and hdr algorithms") {
           val aggregations =
             """{
