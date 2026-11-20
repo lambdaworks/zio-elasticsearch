@@ -23,7 +23,7 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val aggregation: ExtendedStatsAggregation = extendedStatsAggregation(name = "extendedStatsAggregation", field = Document.intField)
 ```
 
-If you want to change the `missing` parameter, you can use `missing` method:
+If you want to change the `missing` parameter, you can use `missing` method. The value has to be a number.
 ```scala
 val aggregationWithMissing: ExtendedStatsAggregation = extendedStatsAggregation(name = "extendedStatsAggregation", field = Document.intField).missing(10.0)
 ```

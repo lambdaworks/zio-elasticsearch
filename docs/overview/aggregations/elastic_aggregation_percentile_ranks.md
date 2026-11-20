@@ -22,7 +22,7 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val aggregation: PercentileRanksAggregation = percentileRanksAggregation(field = Document.intField, name = "percentileRanksAggregation", values = 500, 600)
 ```
 
-If you want to change the `missing`, you can use `missing` method:
+If you want to change the `missing`, you can use `missing` method. The value has to be a number.
 ```scala
 val aggregationWithMissing: PercentileRanksAggregation = percentileRanksAggregation(field = Document.intField, name = "percentileRanksAggregation", values = 500, 600).missing(10.0)
 ```

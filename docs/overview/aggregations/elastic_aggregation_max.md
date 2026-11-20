@@ -22,7 +22,7 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val aggregation: MaxAggregation = maxAggregation(name = "maxAggregation", field = Document.intField)
 ```
 
-If you want to change the `missing`, you can use `missing` method:
+If you want to change the `missing`, you can use `missing` method. The value has to be a number or a date (e.g. `LocalDate` or `Instant`).
 ```scala
 val aggregationWithMissing: MaxAggregation = maxAggregation(name = "maxAggregation", field = Document.intField).missing(10.0)
 ```

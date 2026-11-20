@@ -16,17 +16,22 @@
 
 package zio.elasticsearch.aggregation.options
 
-import zio.elasticsearch.aggregation.SingleElasticAggregation
-
-private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A]] {
+private[elasticsearch] trait WithSubAgg[A <: WithSubAgg[A, S], S] {
 
   /**
-   * Adds a sub-aggregation to the aggregation. Sub-aggregations are kept in the order in which they are added.
+   * Adds a sub-aggregation to the aggregation. Sub-aggregations are kept in the order in which they are added and must
+   * have unique names.
+   *
+   * A [[zio.elasticsearch.aggregation.MultiBucketAggregation]] accepts any
+   * [[zio.elasticsearch.aggregation.SingleElasticAggregation]], while a
+   * [[zio.elasticsearch.aggregation.SingleBucketAggregation]] accepts any
+   * [[zio.elasticsearch.aggregation.ElasticAggregation]], since parent pipeline aggregations require a multi-bucket
+   * parent.
    *
    * @param subAgg
-   *   the [[zio.elasticsearch.aggregation.SingleElasticAggregation]] to add as sub-aggregation
+   *   the aggregation to add as sub-aggregation
    * @return
    *   a new instance of the [[zio.elasticsearch.aggregation.BucketAggregation]] with the given sub-aggregation.
    */
-  def withSubAgg(subAgg: SingleElasticAggregation): A
+  def withSubAgg(subAgg: S): A
 }

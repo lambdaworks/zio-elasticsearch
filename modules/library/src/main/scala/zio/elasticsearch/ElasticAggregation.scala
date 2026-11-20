@@ -442,17 +442,15 @@ object ElasticAggregation {
    *   the rest of the [[zio.elasticsearch.aggregation.RangeBound]]s of the aggregation
    * @tparam A
    *   expected number type
-   * @tparam B
-   *   the number type of the range bounds
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
    *   performed.
    */
-  final def rangeAggregation[A: Numeric, B: ElasticPrimitive: Numeric](
+  final def rangeAggregation[A: Numeric](
     name: String,
     field: Field[_, A],
-    range: RangeBound[B],
-    ranges: RangeBound[B]*
+    range: RangeBound,
+    ranges: RangeBound*
   ): RangeAggregation =
     Range(
       name = name,
@@ -474,17 +472,15 @@ object ElasticAggregation {
    *   the first [[zio.elasticsearch.aggregation.RangeBound]] of the aggregation
    * @param ranges
    *   the rest of the [[zio.elasticsearch.aggregation.RangeBound]]s of the aggregation
-   * @tparam B
-   *   the number type of the range bounds
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.RangeAggregation]] that represents range aggregation to be
    *   performed.
    */
-  final def rangeAggregation[B: ElasticPrimitive: Numeric](
+  final def rangeAggregation(
     name: String,
     field: String,
-    range: RangeBound[B],
-    ranges: RangeBound[B]*
+    range: RangeBound,
+    ranges: RangeBound*
   ): RangeAggregation =
     Range(
       name = name,
@@ -510,10 +506,15 @@ object ElasticAggregation {
    */
   final def samplerAggregation(
     name: String,
-    agg: SingleElasticAggregation,
-    aggs: SingleElasticAggregation*
+    agg: ElasticAggregation,
+    aggs: ElasticAggregation*
   ): SamplerAggregation =
-    Sampler(name = name, meta = Chunk.empty, shardSize = 100, subAggregations = agg +: Chunk.fromIterable(aggs))
+    Sampler(
+      name = name,
+      meta = Chunk.empty,
+      shardSize = 100,
+      subAggregations = (agg +: Chunk.fromIterable(aggs)).flatMap(_.singleAggregations)
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified

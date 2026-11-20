@@ -8,7 +8,7 @@ import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
 import zio.elasticsearch.query.sort.{SortByFieldOptions, SortOrder}
 import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
-import zio.json.ast.Json.{Num, Str}
+import zio.json.ast.Json.{Num, Obj, Str}
 import zio.test.Assertion.{equalTo, isLeft, isRight}
 import zio.test._
 import zio.{Chunk, NonEmptyChunk}
@@ -2664,6 +2664,15 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSubAggregation =
             rangeAggregation(name = "aggregation", field = TestDocument.intField, range = RangeBound().from(50))
               .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
+          val aggregationWithMixedTypes =
+            rangeAggregation(
+              name = "aggregation",
+              field = TestDocument.doubleField,
+              range = RangeBound().from(0).to(99.5),
+              ranges = RangeBound().from(99.5f).to(Long.MaxValue),
+              RangeBound().from(1.toShort).to(BigDecimal("1.25")),
+              RangeBound(key = Some("all"))
+            )
 
           val expected =
             """
@@ -2749,10 +2758,39 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithMixedTypes =
+            """
+              |{
+              |  "aggregation": {
+              |    "range": {
+              |      "field": "doubleField",
+              |      "ranges": [
+              |        {
+              |          "from": 0,
+              |          "to": 99.5
+              |        },
+              |        {
+              |          "from": 99.5,
+              |          "to": 9223372036854775807
+              |        },
+              |        {
+              |          "from": 1,
+              |          "to": 1.25
+              |        },
+              |        {
+              |          "key": "all"
+              |        }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithKeyed.toJson)(equalTo(expectedWithKeyed.toJson)) &&
-          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
+          assert(aggregationWithMixedTypes.toJson)(equalTo(expectedWithMixedTypes.toJson))
         },
         test("sampler") {
           val aggWithSubAgg = ElasticAggregation.samplerAggregation(
@@ -3207,10 +3245,74 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithValueMissing.toJson)(equalTo(expectedWithValueMissing.toJson)) &&
           assert(aggregationWithWeightMissing.toJson)(equalTo(expectedWithWeightMissing.toJson)) &&
           assert(aggregationWithValueAndWeightMissing.toJson)(equalTo(expectedWithValueAndWeightMissing.toJson))
+        },
+        test("single bucket aggregations with multiple aggregations as sub-aggregations") {
+          val aggregations = maxAggregation("max", "intField").withAgg(minAggregation("min", "intField"))
+          val filter       = filterAggregation("filter", term("stringField", "test")).withSubAgg(aggregations)
+          val missing      = missingAggregation("missing", "stringField").withSubAgg(aggregations)
+          val sampler      = samplerAggregation("sampler", aggregations, avgAggregation("avg", "intField"))
+
+          val expectedSubAggregations =
+            """
+              |{
+              |  "max": {
+              |    "max": {
+              |      "field": "intField"
+              |    }
+              |  },
+              |  "min": {
+              |    "min": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedSampler =
+            """
+              |{
+              |  "sampler": {
+              |    "sampler": {
+              |      "shard_size": 100
+              |    },
+              |    "aggs": {
+              |      "max": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      },
+              |      "min": {
+              |        "min": {
+              |          "field": "intField"
+              |        }
+              |      },
+              |      "avg": {
+              |        "avg": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(filter.subAggregations.map(_.name))(equalTo(Chunk("max", "min"))) &&
+          assert(missing.subAggregations.map(_.name))(equalTo(Chunk("max", "min"))) &&
+          assert(filter.toJson)(
+            equalTo(
+              Obj(
+                "filter" -> Obj(
+                  "filter" -> term("stringField", "test").toJson(None),
+                  "aggs"   -> expectedSubAggregations.toJson
+                )
+              )
+            )
+          ) &&
+          assert(sampler.toJson)(equalTo(expectedSampler.toJson))
         }
       ),
       suite("type checking")(
-        test("parent pipeline aggregations are accepted as sub-aggregations") {
+        test("parent pipeline aggregations are accepted as sub-aggregations of multi-bucket aggregations") {
           assertZIO(
             typeCheck(
               """termsAggregation("aggregation", "testField").withSubAgg(bucketSortAggregation("bucketSort"))"""
@@ -3218,9 +3320,41 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           )(isRight) &&
           assertZIO(
             typeCheck(
-              """samplerAggregation("aggregation", bucketSelectorAggregation("bucketSelector", Script("params.agg > 10"), Map("agg" -> "agg")))"""
+              """rangeAggregation("aggregation", "testField", RangeBound().to(1)).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """ipRangeAggregation("aggregation", "testField", IpRangeBound().to("10.0.0.5")).withSubAgg(bucketSortAggregation("bucketSort"))"""
             )
           )(isRight)
+        },
+        test("parent pipeline aggregations are rejected as sub-aggregations of single bucket aggregations") {
+          assertZIO(
+            typeCheck(
+              """filterAggregation("aggregation", term("testField", "a")).withSubAgg(maxAggregation("max", "testField"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """samplerAggregation("aggregation", bucketSelectorAggregation("bucketSelector", Script("params.agg > 10"), Map("agg" -> "agg")))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """samplerAggregation("aggregation", maxAggregation("max", "testField")).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """filterAggregation("aggregation", term("testField", "a")).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """missingAggregation("aggregation", "testField").withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft)
         },
         test("parent pipeline aggregations are rejected at the top level") {
           assertZIO(
@@ -3255,6 +3389,29 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assertZIO(
             typeCheck("""rangeAggregation("aggregation", "testField", RangeBound().to("a"))""")
           )(isLeft)
+        },
+        test("missing accepts values supported by the aggregation") {
+          assertZIO(typeCheck("""cardinalityAggregation("aggregation", "testField").missing(true)"""))(isRight) &&
+          assertZIO(typeCheck("""avgAggregation("aggregation", "testField").missing(1)"""))(isRight) &&
+          assertZIO(
+            typeCheck("""maxAggregation("aggregation", "testField").missing(java.time.Instant.EPOCH)""")
+          )(isRight) &&
+          assertZIO(
+            typeCheck("""statsAggregation("aggregation", "testField").missing(java.time.LocalDateTime.MIN)""")
+          )(isRight) &&
+          assertZIO(typeCheck("""percentilesAggregation("aggregation", "testField").missing(1.5)"""))(isRight)
+        },
+        test("missing rejects values not supported by the aggregation") {
+          assertZIO(typeCheck("""avgAggregation("aggregation", "testField").missing(true)"""))(isLeft) &&
+          assertZIO(typeCheck("""sumAggregation("aggregation", "testField").missing("a")"""))(isLeft) &&
+          assertZIO(
+            typeCheck("""percentilesAggregation("aggregation", "testField").missing(java.util.UUID.randomUUID())""")
+          )(isLeft) &&
+          assertZIO(typeCheck("""percentilesAggregation("aggregation", "testField").missing(true)"""))(isLeft) &&
+          assertZIO(
+            typeCheck("""percentileRanksAggregation("aggregation", "testField", 1.0).missing(LocalDate.MIN)""")
+          )(isLeft) &&
+          assertZIO(typeCheck("""extendedStatsAggregation("aggregation", "testField").missing("a")"""))(isLeft)
         }
       )
     )

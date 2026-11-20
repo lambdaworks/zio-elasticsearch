@@ -36,7 +36,7 @@ sealed trait ElasticAggregation { self =>
 
   /**
    * Adds an aggregation on the same level, combining both into [[zio.elasticsearch.aggregation.MultipleAggregations]].
-   * Aggregations are kept in the order in which they are added.
+   * Aggregations are kept in the order in which they are added. Aggregations on the same level must have unique names.
    *
    * @param agg
    *   the [[zio.elasticsearch.aggregation.ElasticAggregation]] to add
@@ -46,13 +46,19 @@ sealed trait ElasticAggregation { self =>
   final def withAgg(agg: ElasticAggregation): MultipleAggregations =
     multipleAggregations.aggregations(self, agg)
 
+  /**
+   * The single aggregations that this aggregation consists of.
+   */
+  private[elasticsearch] def singleAggregations: Chunk[SingleElasticAggregation]
+
   private[elasticsearch] def toJson: Json
 }
 
 /**
  * A single named aggregation. Any single aggregation can be used as a sub-aggregation of a
- * [[zio.elasticsearch.aggregation.BucketAggregation]], while only metric, bucket and sibling pipeline aggregations can
- * be used at the top level of a request.
+ * [[zio.elasticsearch.aggregation.MultiBucketAggregation]], while only metric, bucket and sibling pipeline aggregations
+ * can be used at the top level of a request or as a sub-aggregation of a
+ * [[zio.elasticsearch.aggregation.SingleBucketAggregation]].
  *
  * Each aggregation declares its name, type, parameters and optional sub-aggregations, from which the JSON is built.
  */
@@ -83,14 +89,31 @@ sealed trait SingleElasticAggregation {
 /**
  * An aggregation that computes metrics from the values of the aggregated documents.
  */
-sealed trait MetricAggregation extends SingleElasticAggregation with ElasticAggregation {
+sealed trait MetricAggregation extends SingleElasticAggregation with ElasticAggregation { self =>
+  private[elasticsearch] final def singleAggregations: Chunk[SingleElasticAggregation] = Chunk.single(self)
+
   private[elasticsearch] final def subAggregations: Chunk[SingleElasticAggregation] = Chunk.empty
 }
 
 /**
  * An aggregation that groups documents into buckets, and can have sub-aggregations that are computed for each bucket.
  */
-sealed trait BucketAggregation extends SingleElasticAggregation with ElasticAggregation
+sealed trait BucketAggregation extends SingleElasticAggregation with ElasticAggregation { self =>
+  private[elasticsearch] final def singleAggregations: Chunk[SingleElasticAggregation] = Chunk.single(self)
+}
+
+/**
+ * A bucket aggregation that creates multiple buckets (e.g. `terms` or `range`). Any single aggregation, including a
+ * [[zio.elasticsearch.aggregation.ParentPipelineAggregation]], can be used as its sub-aggregation.
+ */
+sealed trait MultiBucketAggregation extends BucketAggregation
+
+/**
+ * A bucket aggregation that creates a single bucket (e.g. `filter` or `missing`). Since a
+ * [[zio.elasticsearch.aggregation.ParentPipelineAggregation]] requires a multi-bucket parent, only aggregations that
+ * can be used at the top level can be used as its sub-aggregations.
+ */
+sealed trait SingleBucketAggregation extends BucketAggregation
 
 /**
  * An aggregation that works on the outputs of other aggregations instead of on documents.
@@ -101,7 +124,7 @@ sealed trait PipelineAggregation extends SingleElasticAggregation {
 
 /**
  * A pipeline aggregation that works on the buckets of its parent aggregation, so it can only be used as a
- * sub-aggregation of a [[zio.elasticsearch.aggregation.BucketAggregation]].
+ * sub-aggregation of a [[zio.elasticsearch.aggregation.MultiBucketAggregation]].
  */
 sealed trait ParentPipelineAggregation extends PipelineAggregation
 
@@ -109,13 +132,15 @@ sealed trait ParentPipelineAggregation extends PipelineAggregation
  * A pipeline aggregation that works on the output of a sibling aggregation, so it can be used on the same level as the
  * aggregation it refers to.
  */
-sealed trait SiblingPipelineAggregation extends PipelineAggregation with ElasticAggregation
+sealed trait SiblingPipelineAggregation extends PipelineAggregation with ElasticAggregation { self =>
+  private[elasticsearch] final def singleAggregations: Chunk[SingleElasticAggregation] = Chunk.single(self)
+}
 
 sealed trait AvgAggregation
     extends MetricAggregation
     with HasFormat[AvgAggregation]
     with HasMeta[AvgAggregation]
-    with HasMissing[AvgAggregation]
+    with HasNumericOrDateMissing[AvgAggregation]
     with HasScript[AvgAggregation]
 
 private[elasticsearch] final case class Avg(
@@ -133,7 +158,7 @@ private[elasticsearch] final case class Avg(
   def meta[B: ElasticPrimitive](key: String, value: B): AvgAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): AvgAggregation =
+  def missing[B: ElasticPrimitive: NumericOrDate](value: B): AvgAggregation =
     self.copy(missing = Some(value.toJson))
 
   def script(script: Script): AvgAggregation =
@@ -273,7 +298,7 @@ sealed trait ExtendedStatsAggregation
     extends MetricAggregation
     with HasFormat[ExtendedStatsAggregation]
     with HasMeta[ExtendedStatsAggregation]
-    with HasMissing[ExtendedStatsAggregation]
+    with HasNumericMissing[ExtendedStatsAggregation]
     with HasScript[ExtendedStatsAggregation] {
 
   /**
@@ -305,7 +330,7 @@ private[elasticsearch] final case class ExtendedStats(
   def meta[B: ElasticPrimitive](key: String, value: B): ExtendedStatsAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): ExtendedStatsAggregation =
+  def missing[B: ElasticPrimitive: Numeric](value: B): ExtendedStatsAggregation =
     self.copy(missing = Some(value.toJson))
 
   def script(script: Script): ExtendedStatsAggregation =
@@ -325,9 +350,9 @@ private[elasticsearch] final case class ExtendedStats(
 }
 
 sealed trait FilterAggregation
-    extends BucketAggregation
+    extends SingleBucketAggregation
     with HasMeta[FilterAggregation]
-    with WithSubAgg[FilterAggregation]
+    with WithSubAgg[FilterAggregation, ElasticAggregation]
 
 private[elasticsearch] final case class Filter(
   name: String,
@@ -339,8 +364,8 @@ private[elasticsearch] final case class Filter(
   def meta[B: ElasticPrimitive](key: String, value: B): FilterAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def withSubAgg(aggregation: SingleElasticAggregation): FilterAggregation =
-    self.copy(subAggregations = subAggregations :+ aggregation)
+  def withSubAgg(aggregation: ElasticAggregation): FilterAggregation =
+    self.copy(subAggregations = subAggregations ++ aggregation.singleAggregations)
 
   private[elasticsearch] def aggregationType: String = "filter"
 
@@ -349,10 +374,10 @@ private[elasticsearch] final case class Filter(
 }
 
 sealed trait IpRangeAggregation
-    extends BucketAggregation
+    extends MultiBucketAggregation
     with HasKeyed[IpRangeAggregation]
     with HasMeta[IpRangeAggregation]
-    with WithSubAgg[IpRangeAggregation]
+    with WithSubAgg[IpRangeAggregation, SingleElasticAggregation]
 
 private[elasticsearch] final case class IpRange(
   name: String,
@@ -414,7 +439,7 @@ sealed trait MaxAggregation
     extends MetricAggregation
     with HasFormat[MaxAggregation]
     with HasMeta[MaxAggregation]
-    with HasMissing[MaxAggregation]
+    with HasNumericOrDateMissing[MaxAggregation]
     with HasScript[MaxAggregation]
 
 private[elasticsearch] final case class Max(
@@ -432,7 +457,7 @@ private[elasticsearch] final case class Max(
   def meta[B: ElasticPrimitive](key: String, value: B): MaxAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): MaxAggregation =
+  def missing[B: ElasticPrimitive: NumericOrDate](value: B): MaxAggregation =
     self.copy(missing = Some(value.toJson))
 
   def script(script: Script): MaxAggregation =
@@ -448,7 +473,7 @@ sealed trait MinAggregation
     extends MetricAggregation
     with HasFormat[MinAggregation]
     with HasMeta[MinAggregation]
-    with HasMissing[MinAggregation]
+    with HasNumericOrDateMissing[MinAggregation]
     with HasScript[MinAggregation]
 
 private[elasticsearch] final case class Min(
@@ -466,7 +491,7 @@ private[elasticsearch] final case class Min(
   def meta[B: ElasticPrimitive](key: String, value: B): MinAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): MinAggregation =
+  def missing[B: ElasticPrimitive: NumericOrDate](value: B): MinAggregation =
     self.copy(missing = Some(value.toJson))
 
   def script(script: Script): MinAggregation =
@@ -479,9 +504,9 @@ private[elasticsearch] final case class Min(
 }
 
 sealed trait MissingAggregation
-    extends BucketAggregation
+    extends SingleBucketAggregation
     with HasMeta[MissingAggregation]
-    with WithSubAgg[MissingAggregation]
+    with WithSubAgg[MissingAggregation, ElasticAggregation]
 
 private[elasticsearch] final case class Missing(
   name: String,
@@ -493,8 +518,8 @@ private[elasticsearch] final case class Missing(
   def meta[B: ElasticPrimitive](key: String, value: B): MissingAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def withSubAgg(aggregation: SingleElasticAggregation): MissingAggregation =
-    self.copy(subAggregations = subAggregations :+ aggregation)
+  def withSubAgg(aggregation: ElasticAggregation): MissingAggregation =
+    self.copy(subAggregations = subAggregations ++ aggregation.singleAggregations)
 
   private[elasticsearch] def aggregationType: String = "missing"
 
@@ -525,6 +550,9 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[ElasticAggr
       case agg            => Chunk.single(agg)
     })
 
+  private[elasticsearch] def singleAggregations: Chunk[SingleElasticAggregation] =
+    aggregations.flatMap(_.singleAggregations)
+
   private[elasticsearch] def toJson: Json =
     aggregations.map(_.toJson).foldLeft[Json](Obj())(_.merge(_))
 }
@@ -532,7 +560,7 @@ private[elasticsearch] final case class Multiple(aggregations: Chunk[ElasticAggr
 sealed trait PercentileRanksAggregation
     extends MetricAggregation
     with HasMeta[PercentileRanksAggregation]
-    with HasMissing[PercentileRanksAggregation]
+    with HasNumericMissing[PercentileRanksAggregation]
 
 private[elasticsearch] final case class PercentileRanks(
   name: String,
@@ -545,7 +573,7 @@ private[elasticsearch] final case class PercentileRanks(
   def meta[B: ElasticPrimitive](key: String, value: B): PercentileRanksAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): PercentileRanksAggregation =
+  def missing[B: ElasticPrimitive: Numeric](value: B): PercentileRanksAggregation =
     self.copy(missing = Some(value.toJson))
 
   private[elasticsearch] def aggregationType: String = "percentile_ranks"
@@ -561,7 +589,7 @@ private[elasticsearch] final case class PercentileRanks(
 sealed trait PercentilesAggregation
     extends MetricAggregation
     with HasMeta[PercentilesAggregation]
-    with HasMissing[PercentilesAggregation] {
+    with HasNumericMissing[PercentilesAggregation] {
 
   /**
    * Sets the `percents` parameter for the [[zio.elasticsearch.aggregation.PercentilesAggregation]].
@@ -586,7 +614,7 @@ private[elasticsearch] final case class Percentiles(
   def meta[B: ElasticPrimitive](key: String, value: B): PercentilesAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): PercentilesAggregation =
+  def missing[B: ElasticPrimitive: Numeric](value: B): PercentilesAggregation =
     self.copy(missing = Some(value.toJson))
 
   def percents(percent: Double, percents: Double*): PercentilesAggregation =
@@ -603,69 +631,84 @@ private[elasticsearch] final case class Percentiles(
 }
 
 sealed trait RangeAggregation
-    extends BucketAggregation
+    extends MultiBucketAggregation
     with HasKeyed[RangeAggregation]
     with HasMeta[RangeAggregation]
-    with WithSubAgg[RangeAggregation]
+    with WithSubAgg[RangeAggregation, SingleElasticAggregation]
 
-private[elasticsearch] final case class Range[A](
+private[elasticsearch] final case class Range(
   name: String,
   field: String,
   isKeyed: Boolean,
   meta: Chunk[(String, Json)],
-  ranges: NonEmptyChunk[RangeBound[A]],
+  ranges: NonEmptyChunk[RangeBound],
   subAggregations: Chunk[SingleElasticAggregation]
-)(implicit EP: ElasticPrimitive[A])
-    extends RangeAggregation { self =>
+) extends RangeAggregation { self =>
 
   def keyed: RangeAggregation =
-    self.copy[A](isKeyed = true)
+    self.copy(isKeyed = true)
 
   def meta[B: ElasticPrimitive](key: String, value: B): RangeAggregation =
-    self.copy[A](meta = Params.addMeta(self.meta, key, value.toJson))
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
   def withSubAgg(aggregation: SingleElasticAggregation): RangeAggregation =
-    self.copy[A](subAggregations = subAggregations :+ aggregation)
+    self.copy(subAggregations = subAggregations :+ aggregation)
 
   private[elasticsearch] def aggregationType: String = "range"
 
   private[elasticsearch] def params: Json =
-    Params.ranges(field = field, ranges = ranges.map(_.toJson[A]), isKeyed = isKeyed)
+    Params.ranges(field = field, ranges = ranges.map(_.toJson), isKeyed = isKeyed)
 }
 
 /**
- * A range of a range aggregation. Each range includes the `from` value and excludes the `to` value.
- *
- * @tparam A
- *   the type of the `from` and `to` values (e.g. a number for the `range` aggregation)
+ * A range of a range aggregation. Each range includes the `from` value and excludes the `to` value. The bounds can be
+ * of any numeric type, and the two bounds of a range can be of different numeric types (e.g.
+ * `RangeBound().from(0).to(99.5)`).
  */
-final case class RangeBound[+A](
-  from: Option[A] = None,
+final case class RangeBound(
+  from: Option[BigDecimal] = None,
   key: Option[String] = None,
-  to: Option[A] = None
+  to: Option[BigDecimal] = None
 ) { self =>
 
-  def from[B >: A](value: B): RangeBound[B] =
-    self.copy(from = Some(value))
+  def from[A: Numeric](value: A): RangeBound =
+    self.copy(from = Some(RangeBound.toBigDecimal(value)))
 
-  def key(value: String): RangeBound[A] =
+  def key(value: String): RangeBound =
     self.copy(key = Some(value))
 
-  def to[B >: A](value: B): RangeBound[B] =
-    self.copy(to = Some(value))
+  def to[A: Numeric](value: A): RangeBound =
+    self.copy(to = Some(RangeBound.toBigDecimal(value)))
 
-  private[elasticsearch] def toJson[B >: A](implicit EP: ElasticPrimitive[B]): Json =
+  private[elasticsearch] def toJson: Json =
     Params(
-      from.map(value => "from" -> EP.toJson(value)),
+      from.map("from" -> _.toJson),
       key.map("key" -> _.toJson),
-      to.map(value => "to" -> EP.toJson(value))
+      to.map("to" -> _.toJson)
     )
 }
 
+object RangeBound {
+
+  /**
+   * Converts a numeric value to `BigDecimal` without losing precision, so that integral values are encoded as integers
+   * and large `Long` values are kept exact.
+   */
+  private def toBigDecimal[A](value: A)(implicit N: Numeric[A]): BigDecimal =
+    value match {
+      case v: BigDecimal                                   => v
+      case v: BigInt                                       => BigDecimal(v)
+      case v: Double                                       => BigDecimal(v)
+      case v: Float                                        => BigDecimal.decimal(v)
+      case _: Byte | _: Short | _: Int | _: Long | _: Char => BigDecimal(N.toLong(value))
+      case _                                               => BigDecimal(N.toDouble(value))
+    }
+}
+
 sealed trait SamplerAggregation
-    extends BucketAggregation
+    extends SingleBucketAggregation
     with HasMeta[SamplerAggregation]
-    with WithSubAgg[SamplerAggregation] {
+    with WithSubAgg[SamplerAggregation, ElasticAggregation] {
 
   /**
    * Sets the `shard_size` parameter for the [[zio.elasticsearch.aggregation.SamplerAggregation]]. This parameter
@@ -692,8 +735,8 @@ private[elasticsearch] final case class Sampler(
   def meta[B: ElasticPrimitive](key: String, value: B): SamplerAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def withSubAgg(aggregation: SingleElasticAggregation): SamplerAggregation =
-    self.copy(subAggregations = subAggregations :+ aggregation)
+  def withSubAgg(aggregation: ElasticAggregation): SamplerAggregation =
+    self.copy(subAggregations = subAggregations ++ aggregation.singleAggregations)
 
   private[elasticsearch] def aggregationType: String = "sampler"
 
@@ -705,7 +748,7 @@ sealed trait StatsAggregation
     extends MetricAggregation
     with HasFormat[StatsAggregation]
     with HasMeta[StatsAggregation]
-    with HasMissing[StatsAggregation]
+    with HasNumericOrDateMissing[StatsAggregation]
     with HasScript[StatsAggregation]
 
 private[elasticsearch] final case class Stats(
@@ -723,7 +766,7 @@ private[elasticsearch] final case class Stats(
   def meta[B: ElasticPrimitive](key: String, value: B): StatsAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): StatsAggregation =
+  def missing[B: ElasticPrimitive: NumericOrDate](value: B): StatsAggregation =
     self.copy(missing = Some(value.toJson))
 
   def script(script: Script): StatsAggregation =
@@ -739,7 +782,7 @@ sealed trait SumAggregation
     extends MetricAggregation
     with HasFormat[SumAggregation]
     with HasMeta[SumAggregation]
-    with HasMissing[SumAggregation]
+    with HasNumericOrDateMissing[SumAggregation]
     with HasScript[SumAggregation]
 
 private[elasticsearch] final case class Sum(
@@ -757,7 +800,7 @@ private[elasticsearch] final case class Sum(
   def meta[B: ElasticPrimitive](key: String, value: B): SumAggregation =
     self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
 
-  def missing[B: ElasticPrimitive](value: B): SumAggregation =
+  def missing[B: ElasticPrimitive: NumericOrDate](value: B): SumAggregation =
     self.copy(missing = Some(value.toJson))
 
   def script(script: Script): SumAggregation =
@@ -770,12 +813,12 @@ private[elasticsearch] final case class Sum(
 }
 
 sealed trait TermsAggregation
-    extends BucketAggregation
+    extends MultiBucketAggregation
     with HasMeta[TermsAggregation]
     with HasMinDocCount[TermsAggregation]
     with HasOrder[TermsAggregation]
     with HasSize[TermsAggregation]
-    with WithSubAgg[TermsAggregation]
+    with WithSubAgg[TermsAggregation, SingleElasticAggregation]
 
 private[elasticsearch] final case class Terms(
   name: String,

@@ -30,7 +30,7 @@ If you want to transform the field values before they are aggregated, you can us
 ```scala
 import zio.elasticsearch.script.Script
 
-val aggregationWithScript: ValueCountAggregation = valueCountAggregation(name = "valueCountAggregation", field = Document.stringField).script(Script("_value * 2"))
+val aggregationWithScript: ValueCountAggregation = valueCountAggregation(name = "valueCountAggregation", field = Document.intField).script(Script("_value * 2"))
 ```
 
 If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:

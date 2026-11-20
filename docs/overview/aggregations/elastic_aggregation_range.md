@@ -34,6 +34,17 @@ val aggregation: RangeAggregation =
   )
 ```
 
+Range bounds can be of any numeric type, and the `from` and `to` values of a range don't have to be of the same type:
+```scala
+val aggregationWithDecimals: RangeAggregation =
+  rangeAggregation(
+    name = "rangeAggregation",
+    field = Document.doubleField,
+    range = RangeBound().from(0).to(99.5),
+    ranges = RangeBound().from(99.5)
+  )
+```
+
 If you want to associate each bucket with a unique string key, you can use the `keyed` method together with the `key` of each range:
 ```scala
 val aggregationWithKeyed: RangeAggregation =

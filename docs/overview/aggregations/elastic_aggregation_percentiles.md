@@ -27,7 +27,7 @@ If you want to specify the percentiles you want to calculate, you can use `perce
 val aggregationWithPercents: PercentilesAggregation = percentilesAggregation(name = "percentilesAggregation", field = Document.intField).percents(15, 50, 70)
 ```
 
-If you want to change the `missing`, you can use `missing` method:
+If you want to change the `missing`, you can use `missing` method. The value has to be a number.
 ```scala
 val aggregationWithMissing: PercentilesAggregation = percentilesAggregation(name = "percentilesAggregation", field = Document.intField).missing(10.0)
 ```
