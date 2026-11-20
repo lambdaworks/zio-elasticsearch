@@ -770,18 +770,18 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def sendRequest(req: Request[Either[String, String]]): Task[Response[Either[String, String]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true)}")
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
     req: Request[Either[ResponseException[String], A]]
   ): Task[Response[Either[ResponseException[String], A]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true)}")
     } yield resp
 }
 
