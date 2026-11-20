@@ -16,17 +16,20 @@
 
 package zio.elasticsearch.aggregation.options
 
-import zio.elasticsearch.aggregation.{MultipleAggregations, SingleElasticAggregation}
+import zio.elasticsearch.script.Script
 
-private[elasticsearch] trait WithAgg {
+private[elasticsearch] trait HasScript[A <: HasScript[A]] {
 
   /**
-   * Adds a new aggregation to the list of aggregations represented as [[MultipleAggregations]].
+   * Sets the `script` parameter for the [[zio.elasticsearch.aggregation.SingleElasticAggregation]]. Together with the
+   * field of the aggregation, the script is used as a value script, which transforms each field value (available as
+   * `_value`) before it is aggregated.
    *
-   * @param agg
-   *   the [[SingleElasticAggregation]] to add
+   * @param script
+   *   the [[zio.elasticsearch.script.Script]] to apply to the field values
    * @return
-   *   a new instance of [[MultipleAggregations]] with the specified aggregation added to its list of aggregations.
+   *   an instance of the [[zio.elasticsearch.aggregation.SingleElasticAggregation]] enriched with the `script`
+   *   parameter.
    */
-  def withAgg(agg: SingleElasticAggregation): MultipleAggregations
+  def script(script: Script): A
 }

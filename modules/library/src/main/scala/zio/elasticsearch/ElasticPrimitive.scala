@@ -19,7 +19,8 @@ package zio.elasticsearch
 import zio.json.ast.Json
 import zio.json.ast.Json.{Num, Str}
 
-import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.{Instant, LocalDate, LocalDateTime, OffsetDateTime, ZonedDateTime}
 import java.util.UUID
 
 object ElasticPrimitive {
@@ -43,6 +44,10 @@ object ElasticPrimitive {
     def toJson(value: Float): Json = Num(value)
   }
 
+  implicit object ElasticInstant extends ElasticPrimitive[Instant] {
+    def toJson(value: Instant): Json = Str(DateTimeFormatter.ISO_INSTANT.format(value))
+  }
+
   implicit object ElasticInt extends ElasticPrimitive[Int] {
     def toJson(value: Int): Json = Num(value)
   }
@@ -51,8 +56,16 @@ object ElasticPrimitive {
     def toJson(value: LocalDate): Json = Str(value.toString)
   }
 
+  implicit object ElasticLocalDateTime extends ElasticPrimitive[LocalDateTime] {
+    def toJson(value: LocalDateTime): Json = Str(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(value))
+  }
+
   implicit object ElasticLong extends ElasticPrimitive[Long] {
     def toJson(value: Long): Json = Num(value)
+  }
+
+  implicit object ElasticOffsetDateTime extends ElasticPrimitive[OffsetDateTime] {
+    def toJson(value: OffsetDateTime): Json = Str(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(value))
   }
 
   implicit object ElasticString extends ElasticPrimitive[String] {
@@ -61,6 +74,10 @@ object ElasticPrimitive {
 
   implicit object ElasticUUID extends ElasticPrimitive[UUID] {
     def toJson(value: UUID): Json = Str(value.toString)
+  }
+
+  implicit object ElasticZonedDateTime extends ElasticPrimitive[ZonedDateTime] {
+    def toJson(value: ZonedDateTime): Json = Str(DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(value))
   }
 
   final implicit class ElasticPrimitiveOps[A](private val value: A) extends AnyVal {

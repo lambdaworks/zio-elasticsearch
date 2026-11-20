@@ -41,4 +41,9 @@ If you want to change the `weightMissing` and `valueMissing`, you can use `weigh
 val aggregationWithValueAndWeightMissing: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", field = Document.intField).valueMissing(5.0).weightMissing(10.0)
 ```
 
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: WeightedAvgAggregation = weightedAvgAggregation(name = "weightedAvgAggregation", valueField = Document.intField, weightField = Document.doubleField).meta("color", "blue")
+```
+
 You can find more information about `Weighted Avg` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-weight-avg-aggregation.html).
