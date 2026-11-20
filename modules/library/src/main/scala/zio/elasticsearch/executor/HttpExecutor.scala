@@ -59,9 +59,9 @@ import zio.elasticsearch.executor.response.{
 }
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome, Executable, UpdateOutcome}
 import zio.elasticsearch.result._
-import zio.json.ast.Json.{Arr, Obj}
+import zio.json.ast.Json.{Arr, Obj, Str}
 import zio.json.ast.{Json, JsonCursor}
-import zio.json.{DeriveJsonDecoder, JsonDecoder}
+import zio.json.{DecoderOps, DeriveJsonDecoder, JsonDecoder}
 import zio.schema.Schema
 import zio.stream.{Stream, ZStream}
 import zio.{Chunk, Duration, Ref, Task, UIO, ZIO, durationInt}
@@ -644,7 +644,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       response.code match {
         case HttpOk =>
           response.body.fold(
-            e => ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
+            e =>
+              ZIO.foreachDiscard(scrollIdOf(e))(executeClearScroll) *>
+                ZIO.fail(new ElasticException(s"Exception occurred: ${e.getMessage}")),
             value =>
               ZIO.succeed(
                 (itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort), value.scrollId)
@@ -766,6 +768,18 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     item.fold(error => MultiSearchItem.Undecodable(status = status, response = json, message = error), identity)
   }
 
+  /**
+   * Reads the scroll ID from a response that could not be decoded, so that the scroll context created by Elasticsearch
+   * can still be cleared.
+   */
+  private def scrollIdOf(e: ResponseException[String]): Option[String] =
+    e match {
+      case e: ResponseException.DeserializationException =>
+        e.body.fromJson[Json].flatMap(_.get(ResponseScrollId)).toOption.collect { case Str(scrollId) => scrollId }
+      case _ =>
+        None
+    }
+
   private def sendRequest(req: Request[Either[String, String]]): Task[Response[Either[String, String]]] =
     for {
       _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
@@ -859,6 +873,7 @@ private[elasticsearch] object HttpExecutor {
   private final val ApplicationNdJson = MediaType("application", "x-ndjson")
   private final val MultiSearchError  = JsonCursor.field("error")
   private final val MultiSearchStatus = JsonCursor.field("status")
+  private final val ResponseScrollId  = JsonCursor.field("_scroll_id")
 
   private[elasticsearch] final val ReleaseTimeout: Duration = 10.seconds
 

@@ -129,6 +129,15 @@ object HttpExecutorStreamSpec extends ZIOSpecDefault {
             assert(requests.last.method)(equalTo(Method.DELETE)) &&
             assert(requests.last.body)(isSome(equalTo(Obj("scroll_id" -> Str("scroll-1")))))
         },
+        test("clears the scroll context when the first response can't be decoded") {
+          for {
+            backend  <- RecordingBackend.make(pages = 5, undecodablePage = Some(1))
+            result   <- runStream(backend, ElasticRequest.search(index, matchAll), StreamConfig.Scroll).exit
+            requests <- backend.requests
+          } yield assert(result)(fails(isSubtype[ElasticException](anything))) &&
+            assert(requests.map(_.method))(equalTo(Chunk(Method.POST, Method.DELETE))) &&
+            assert(requests.last.body)(isSome(equalTo(Obj("scroll_id" -> Str("scroll-1")))))
+        },
         test("stops waiting for the scroll context to be cleared after a timeout") {
           for {
             backend  <- RecordingBackend.make(pages = 5, hangOnRelease = true)
@@ -274,13 +283,14 @@ object HttpExecutorStreamSpec extends ZIOSpecDefault {
 
   /**
    * Stub of Elasticsearch which serves `pages` pages with a single hit each (followed by an empty page) for both
-   * streaming modes and records every request it receives. It fails when serving `failingPage`, leaves out `pit_id`
-   * from search responses when `omitPitId` is set, never responds to release requests when `hangOnRelease` is set, and
-   * delays the first page by `firstPageDelay`.
+   * streaming modes and records every request it receives. It fails when serving `failingPage`, serves a response that
+   * can't be decoded for `undecodablePage`, leaves out `pit_id` from search responses when `omitPitId` is set, never
+   * responds to release requests when `hangOnRelease` is set, and delays the first page by `firstPageDelay`.
    */
   private final class RecordingBackend(
     pages: Int,
     failingPage: Option[Int],
+    undecodablePage: Option[Int],
     omitPitId: Boolean,
     hangOnRelease: Boolean,
     firstPageDelay: Option[Duration]
@@ -311,6 +321,8 @@ object HttpExecutorStreamSpec extends ZIOSpecDefault {
           val response =
             if (failingPage.contains(page)) {
               ResponseStub.adjust("""{"error":"failure"}""", StatusCode.InternalServerError)
+            } else if (undecodablePage.contains(page)) {
+              ResponseStub.adjust(Obj("_scroll_id" -> Str(s"scroll-$page"), "hits" -> Str("undecodable")).toString)
             } else if (request.uri.path.contains("repositories") || request.uri.path.lastOption.contains("scroll")) {
               ResponseStub.adjust(searchResponse(page, Some("_scroll_id" -> s"scroll-$page")))
             } else {
@@ -357,11 +369,12 @@ object HttpExecutorStreamSpec extends ZIOSpecDefault {
     def make(
       pages: Int,
       failingPage: Option[Int] = None,
+      undecodablePage: Option[Int] = None,
       omitPitId: Boolean = false,
       hangOnRelease: Boolean = false,
       firstPageDelay: Option[Duration] = None
     ): UIO[RecordingBackend] =
-      ZIO.succeed(new RecordingBackend(pages, failingPage, omitPitId, hangOnRelease, firstPageDelay))
+      ZIO.succeed(new RecordingBackend(pages, failingPage, undecodablePage, omitPitId, hangOnRelease, firstPageDelay))
   }
 
   private val index: IndexName = IndexName("repositories")
