@@ -1,3 +1,5 @@
+<!-- This file is generated from modules/docs/readme/README.md by running `sbt docs/generateReadme`. Edit the template, not README.md. -->
+
 ![scala-version][scala-version-badge]
 [![CI](https://github.com/lambdaworks/zio-elasticsearch/actions/workflows/ci.yml/badge.svg)](https://github.com/lambdaworks/zio-elasticsearch/actions/workflows/ci.yml)
 [![Release Version](https://img.shields.io/maven-central/v/io.lambdaworks/zio-elasticsearch_2.13.svg?label=Release)](https://central.sonatype.com/artifact/io.lambdaworks/zio-elasticsearch_2.13)

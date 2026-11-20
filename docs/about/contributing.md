@@ -35,3 +35,9 @@ We welcome contributions from anybody wishing to participate. All code or docume
     ```shell
     sbt prepare
     ```
+
+- `README.md` is generated from `modules/docs/readme/README.md`. Edit the template and regenerate the README with the following command:
+
+    ```shell
+    sbt docs/generateReadme
+    ```
