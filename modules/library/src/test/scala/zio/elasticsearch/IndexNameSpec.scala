@@ -49,6 +49,20 @@ object IndexNameSpec extends ZIOSpecDefault {
             assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
           }
         },
+        test("fail for string containing character '\\'") {
+          check(genString(0, 127), genString(0, 127)) { (part1, part2) =>
+            val invalidName = s"$part1\\$part2"
+
+            assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+          }
+        },
+        test("fail for string containing character '/'") {
+          check(genString(0, 127), genString(0, 127)) { (part1, part2) =>
+            val invalidName = s"$part1/$part2"
+
+            assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+          }
+        },
         test("fail for string containing upper letter") {
           check(genString(0, 127), genString(0, 128)) { (part1, part2) =>
             val invalidName = s"${part1}A$part2"
@@ -62,6 +76,16 @@ object IndexNameSpec extends ZIOSpecDefault {
               equalTo(Validation.fail(indexNameFailureMessage(invalidName)))
             )
           }
+        },
+        test("fail for multi-byte string longer than 255 bytes in UTF-8") {
+          val invalidName = "\u0107" * 128
+
+          assert(IndexName.make(invalidName))(equalTo(Validation.fail(indexNameFailureMessage(invalidName))))
+        },
+        test("succeed for multi-byte string of at most 255 bytes in UTF-8") {
+          val name = "\u0107" * 127
+
+          assert(IndexName.make(name))(equalTo(Validation.succeed(unsafeWrap(name)(IndexName))))
         },
         test("fail for string starting with character '-'") {
           check(genString(1, 255)) { name =>

@@ -21,6 +21,8 @@ import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
 import zio.Chunk
 import zio.prelude.{AssertionError, Validator}
 
+import java.nio.charset.StandardCharsets
+
 object IndexPatternValidator
     extends Validator[String](pattern => {
       def containsAny(string: String, params: Chunk[String]): Boolean =
@@ -30,9 +32,9 @@ object IndexPatternValidator
         pattern.toLowerCase == pattern &&
           !startsWithAny(pattern, "+") &&
           pattern.nonEmpty &&
-          !containsAny(string = pattern, params = Chunk("?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+          !containsAny(string = pattern, params = Chunk("\\", "/", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
           !equalsAny(pattern, ".", "..") &&
-          pattern.getBytes().length <= 255
+          pattern.getBytes(StandardCharsets.UTF_8).length <= 255
 
       if (isValid(pattern)) {
         Right(())
