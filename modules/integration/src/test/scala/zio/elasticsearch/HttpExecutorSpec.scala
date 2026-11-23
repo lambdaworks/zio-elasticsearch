@@ -1394,6 +1394,18 @@ object HttpExecutorSpec extends IntegrationSpec {
             res2 <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
           } yield assert(res1)(equalTo(CreationOutcome.Created)) &&
             assert(res2)(equalTo(CreationOutcome.AlreadyExists))
+        },
+        test("fail to create index with invalid mapping") {
+          assertZIO(
+            Executor
+              .execute(
+                ElasticRequest.createIndex(
+                  createIndexTestName,
+                  """{ "mappings": { "properties": { "id": { "type": "not_a_type" } } } }"""
+                )
+              )
+              .exit
+          )(fails(isSubtype[ElasticException](assertException("mapper_parsing_exception"))))
         }
       ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
       suite("upserting document")(
@@ -1470,7 +1482,26 @@ object HttpExecutorSpec extends IntegrationSpec {
               fails(isSubtype[Exception](assertException("Could not parse the document: .nestedField(missing)")))
             )
           }
-        }
+        },
+        test("fail when the found document has no _source") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            val result = for {
+              _ <- Executor.execute(
+                     ElasticRequest.upsert[TestDocument](firstSearchIndex, documentId, document).refreshTrue
+                   )
+              res <- Executor.execute(ElasticRequest.getById(firstSearchIndex, documentId))
+            } yield res
+
+            assertZIO(result.exit)(
+              fails(isSubtype[DecodingException](assertException("Could not parse the document")))
+            )
+          }
+        } @@ around(
+          Executor.execute(
+            ElasticRequest.createIndex(firstSearchIndex, """{ "mappings": { "_source": { "enabled": false } } }""")
+          ),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        )
       ),
       suite("multi get")(
         test("return found documents and report missing ones from a single index") {
