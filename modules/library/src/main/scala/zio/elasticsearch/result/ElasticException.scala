@@ -20,6 +20,8 @@ class ElasticException(message: String) extends RuntimeException(message)
 
 final case class DecodingException(message: String) extends ElasticException(message)
 
+case object ForbiddenException extends ElasticException("Insufficient privileges to perform the request.")
+
 case object UnauthorizedException extends ElasticException("Wrong credentials provided.")
 
 final case class VersionConflictException(succeeded: Long, failed: Long)
