@@ -579,7 +579,7 @@ object ElasticRequest {
   ) extends AggregateRequest {
     private[elasticsearch] def routing: Option[Routing] = None
 
-    private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
+    private[elasticsearch] def toJson: Json = Obj("size" -> 0.toJson, "aggs" -> aggregation.toJson)
   }
 
   sealed trait BulkRequest
@@ -1015,7 +1015,7 @@ object ElasticRequest {
         from = from,
         highlights = highlights,
         routing = routing,
-        searchAfter = None,
+        searchAfter = searchAfter,
         size = size
       )
 
