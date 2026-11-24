@@ -32,7 +32,7 @@ jobs:
       - name: Generate README
         run: ./sbt docs/generateReadme
       - name: Open pull request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: docs/update-readme
           base: main
