@@ -16,16 +16,22 @@
 
 package zio.elasticsearch.aggregation.options
 
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
+
 private[elasticsearch] trait HasMissing[A <: HasMissing[A]] {
 
   /**
-   * Sets the `missing` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]]. The`missing` parameter
-   * provides a value to use when a document is missing the field that the aggregation is running on.
+   * Sets the `missing` parameter for the [[zio.elasticsearch.aggregation.ElasticAggregation]]. The `missing` parameter
+   * provides a value to use when a document is missing the field that the aggregation is running on. The value should
+   * match the type of the field (e.g. a number for numeric fields, a string for `keyword` fields or a date for `date`
+   * fields).
    *
    * @param value
    *   the value to use for missing documents
+   * @tparam B
+   *   the type of the value, for which an implicit [[zio.elasticsearch.ElasticPrimitive.ElasticPrimitive]] is in scope
    * @return
    *   an instance of the [[zio.elasticsearch.aggregation.ElasticAggregation]] enriched with the `missing` parameter.
    */
-  def missing(value: Double): A
+  def missing[B: ElasticPrimitive](value: B): A
 }

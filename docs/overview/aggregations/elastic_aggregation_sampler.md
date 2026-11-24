@@ -37,4 +37,9 @@ val aggregationWithShardSize: SamplerAggregation = samplerAggregation(
   subAgg = avgAggregation(name = "avgRating", field = Document.intField)
 ).maxDocumentsPerShard(500)
 ```
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: SamplerAggregation = samplerAggregation(name = "samplerAggregation", agg = avgAggregation(name = "avgRating", field = Document.intField)).meta("color", "blue")
+```
+
 You can find more detailed information about the `Sampler` aggregation in the official Elasticsearch documentation [here](https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-sampler-aggregation).

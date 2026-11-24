@@ -22,7 +22,7 @@ You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/ove
 val aggregation: PercentileRanksAggregation = percentileRanksAggregation(field = Document.intField, name = "percentileRanksAggregation", values = 500, 600)
 ```
 
-If you want to change the `missing`, you can use `missing` method:
+If you want to change the `missing`, you can use `missing` method. The value has to be a number.
 ```scala
 val aggregationWithMissing: PercentileRanksAggregation = percentileRanksAggregation(field = Document.intField, name = "percentileRanksAggregation", values = 500, 600).missing(10.0)
 ```
@@ -30,6 +30,11 @@ val aggregationWithMissing: PercentileRanksAggregation = percentileRanksAggregat
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
 val multipleAggregations: MultipleAggregations = percentileRanksAggregation(field = Document.intField, name = "percentileRanksAggregation1", values = 500, 600).withAgg(percentileRanksAggregation(field = Document.doubleField, name = "percentileRanksAggregation2", values = 500, 600))
+```
+
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: PercentileRanksAggregation = percentileRanksAggregation(name = "percentileRanksAggregation", field = Document.intField, value = 500).meta("color", "blue")
 ```
 
 You can find more information about `Percentile ranks` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-metrics-percentile-rank-aggregation.html).

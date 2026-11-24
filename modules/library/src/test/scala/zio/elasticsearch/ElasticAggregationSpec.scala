@@ -8,24 +8,115 @@ import zio.elasticsearch.query.sort.SortOrder.{Asc, Desc}
 import zio.elasticsearch.query.sort.{SortByFieldOptions, SortOrder}
 import zio.elasticsearch.script.Script
 import zio.elasticsearch.utils._
-import zio.test.Assertion.equalTo
+import zio.json.ast.Json.{Num, Obj, Str}
+import zio.test.Assertion.{equalTo, isLeft, isRight}
 import zio.test._
 import zio.{Chunk, NonEmptyChunk}
+
+import java.time.LocalDate
 
 object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
     suite("ElasticAggregation")(
       suite("constructing")(
         test("avg") {
-          val aggregation            = avgAggregation("aggregation", "testField")
-          val aggregationTs          = avgAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = avgAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = avgAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregation              = avgAggregation("aggregation", "testField")
+          val aggregationTs            = avgAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw         = avgAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing   = avgAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationTsDate        = avgAggregation("aggregation", TestDocument.dateField)
+          val aggregationWithAllParams = avgAggregation("aggregation", TestDocument.intField)
+            .format("0.00")
+            .meta("unit", "ms")
+            .missing(20)
+            .script(Script("_value * 2"))
+          val aggregationWithReplacedMeta =
+            avgAggregation("aggregation", TestDocument.intField).meta("a", 1).meta("b", "two").meta("a", 3)
 
-          assert(aggregation)(equalTo(Avg(name = "aggregation", field = "testField", missing = None))) &&
-          assert(aggregationTs)(equalTo(Avg(name = "aggregation", field = "intField", missing = None))) &&
-          assert(aggregationTsRaw)(equalTo(Avg(name = "aggregation", field = "intField.raw", missing = None))) &&
-          assert(aggregationWithMissing)(equalTo(Avg(name = "aggregation", field = "intField", missing = Some(20.0))))
+          assert(aggregation)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "testField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "intField.raw",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithMissing)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsDate)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "dateField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "intField",
+                format = Some("0.00"),
+                meta = Chunk("unit" -> Str("ms")),
+                missing = Some(Num(20)),
+                script = Some(Script("_value * 2"))
+              )
+            )
+          ) &&
+          assert(aggregationWithReplacedMeta)(
+            equalTo(
+              Avg(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk("b" -> Str("two"), "a" -> Num(3)),
+                missing = None,
+                script = None
+              )
+            )
+          )
         },
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
@@ -38,13 +129,20 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             script = Script("params.agg1 + params.agg2 > 10"),
             bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
           )
+          val aggregationWithAllParams = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("params.agg1 > 10"),
+            bucketsPath = Map("agg1" -> "aggregation1")
+          ).gapPolicy(GapPolicy.InsertZeros).meta("unit", "ms")
 
           assert(aggregation1)(
             equalTo(
               BucketSelector(
                 name = "aggregation",
                 script = Script(source = "params.agg1 > 10", params = Map.empty, lang = None),
-                bucketsPath = Map("agg1" -> "aggregation1")
+                bucketsPath = Map("agg1" -> "aggregation1"),
+                gapPolicy = None,
+                meta = Chunk.empty
               )
             )
           ) &&
@@ -53,7 +151,20 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               BucketSelector(
                 name = "aggregation",
                 script = Script(source = "params.agg1 + params.agg2 > 10", params = Map.empty, lang = None),
-                bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2")
+                bucketsPath = Map("agg1" -> "aggregation1", "agg2" -> "aggregation2"),
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              BucketSelector(
+                name = "aggregation",
+                script = Script("params.agg1 > 10"),
+                bucketsPath = Map("agg1" -> "aggregation1"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms"))
               )
             )
           )
@@ -64,17 +175,41 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSort      = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
           val aggregationWithAllParams =
             bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2")).from(5).size(7)
+          val aggregationWithGapPolicyAndMeta =
+            bucketSortAggregation("aggregation").gapPolicy(GapPolicy.Skip).meta("unit", "ms")
 
           assert(aggregationWithFrom)(
-            equalTo(BucketSort(name = "aggregation", sortBy = Chunk.empty, from = Some(5), size = None))
+            equalTo(
+              BucketSort(
+                name = "aggregation",
+                from = Some(5),
+                gapPolicy = None,
+                meta = Chunk.empty,
+                size = None,
+                sortBy = Chunk.empty
+              )
+            )
           ) &&
           assert(aggregationWithSize)(
-            equalTo(BucketSort(name = "aggregation", sortBy = Chunk.empty, from = None, size = Some(5)))
+            equalTo(
+              BucketSort(
+                name = "aggregation",
+                from = None,
+                gapPolicy = None,
+                meta = Chunk.empty,
+                size = Some(5),
+                sortBy = Chunk.empty
+              )
+            )
           ) &&
           assert(aggregationWithSort)(
             equalTo(
               BucketSort(
                 name = "aggregation",
+                from = None,
+                gapPolicy = None,
+                meta = Chunk.empty,
+                size = None,
                 sortBy = Chunk(
                   SortByFieldOptions(
                     field = "aggregation2",
@@ -85,9 +220,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                     order = None,
                     unmappedType = None
                   )
-                ),
-                from = None,
-                size = None
+                )
               )
             )
           ) &&
@@ -95,6 +228,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               BucketSort(
                 name = "aggregation",
+                from = Some(5),
+                gapPolicy = None,
+                meta = Chunk.empty,
+                size = Some(7),
                 sortBy = Chunk(
                   SortByFieldOptions(
                     field = "aggregation2",
@@ -105,26 +242,75 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                     order = None,
                     unmappedType = None
                   )
-                ),
-                from = Some(5),
-                size = Some(7)
+                )
+              )
+            )
+          ) &&
+          assert(aggregationWithGapPolicyAndMeta)(
+            equalTo(
+              BucketSort(
+                name = "aggregation",
+                from = None,
+                gapPolicy = Some(GapPolicy.Skip),
+                meta = Chunk("unit" -> Str("ms")),
+                size = None,
+                sortBy = Chunk.empty
               )
             )
           )
         },
         test("cardinality") {
-          val aggregation            = cardinalityAggregation("aggregation", "testField")
-          val aggregationTs          = cardinalityAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = cardinalityAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = cardinalityAggregation("aggregation", TestSubDocument.intField).missing(20)
+          val aggregation              = cardinalityAggregation("aggregation", "testField")
+          val aggregationTs            = cardinalityAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw         = cardinalityAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing   = cardinalityAggregation("aggregation", TestSubDocument.intField).missing(20)
+          val aggregationWithAllParams = cardinalityAggregation("aggregation", TestDocument.stringField)
+            .meta("unit", "users")
+            .missing("N/A")
+            .script(Script("_value.toLowerCase()"))
 
-          assert(aggregation)(equalTo(Cardinality(name = "aggregation", field = "testField", missing = None))) &&
-          assert(aggregationTs)(equalTo(Cardinality(name = "aggregation", field = "intField", missing = None))) &&
+          assert(aggregation)(
+            equalTo(
+              Cardinality(name = "aggregation", field = "testField", meta = Chunk.empty, missing = None, script = None)
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Cardinality(name = "aggregation", field = "intField", meta = Chunk.empty, missing = None, script = None)
+            )
+          ) &&
           assert(aggregationTsRaw)(
-            equalTo(Cardinality(name = "aggregation", field = "intField.raw", missing = None))
+            equalTo(
+              Cardinality(
+                name = "aggregation",
+                field = "intField.raw",
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
           ) &&
           assert(aggregationWithMissing)(
-            equalTo(Cardinality(name = "aggregation", field = "intField", missing = Some(20)))
+            equalTo(
+              Cardinality(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = Some(Num(20)),
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Cardinality(
+                name = "aggregation",
+                field = "stringField",
+                meta = Chunk("unit" -> Str("users")),
+                missing = Some(Str("N/A")),
+                script = Some(Script("_value.toLowerCase()"))
+              )
+            )
           )
         },
         test("extendedStats") {
@@ -135,19 +321,98 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSigma           = extendedStatsAggregation("aggregation", TestSubDocument.intField).sigma(3.0)
           val aggregationWithMissingAndSigma =
             extendedStatsAggregation("aggregation", TestSubDocument.intField).missing(20.0).sigma(3.0)
+          val aggregationWithAllParams = extendedStatsAggregation("aggregation", TestDocument.intField)
+            .format("0.00")
+            .meta("unit", "ms")
+            .missing(20)
+            .script(Script("_value * 2"))
+            .sigma(3.0)
 
           assert(aggregation)(
-            equalTo(ExtendedStats(name = "aggregation", field = "testField", missing = None, sigma = None))
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "testField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None,
+                sigma = None
+              )
+            )
           ) && assert(aggregationTs)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = None))
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None,
+                sigma = None
+              )
+            )
           ) && assert(aggregationTsRaw)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField.raw", missing = None, sigma = None))
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "intField.raw",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None,
+                sigma = None
+              )
+            )
           ) && assert(aggregationWithMissing)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = None))
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None,
+                sigma = None
+              )
+            )
           ) && assert(aggregationWithSigma)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = None, sigma = Some(3.0)))
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None,
+                sigma = Some(3.0)
+              )
+            )
           ) && assert(aggregationWithMissingAndSigma)(
-            equalTo(ExtendedStats(name = "aggregation", field = "intField", missing = Some(20.0), sigma = Some(3.0)))
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None,
+                sigma = Some(3.0)
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              ExtendedStats(
+                name = "aggregation",
+                field = "intField",
+                format = Some("0.00"),
+                meta = Chunk("unit" -> Str("ms")),
+                missing = Some(Num(20)),
+                script = Some(Script("_value * 2")),
+                sigma = Some(3.0)
+              )
+            )
           )
         },
         test("filter") {
@@ -158,14 +423,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithMultipleSubAggregations = filterAggregation("aggregation", query)
             .withSubAgg(maxAggregation("maxSubAggregation", TestDocument.intField))
             .withSubAgg(minAggregation("minSubAggregation", TestDocument.doubleField))
+          val aggregationWithMeta = filterAggregation("aggregation", query).meta("unit", "ms")
 
           assert(aggregation)(
             equalTo(
-              Filter(
-                name = "aggregation",
-                query = query,
-                subAggregations = Chunk.empty
-              )
+              Filter(name = "aggregation", query = query, meta = Chunk.empty, subAggregations = Chunk.empty)
             )
           ) &&
           assert(aggregationWithSubAggregation)(
@@ -173,6 +435,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Filter(
                 name = "aggregation",
                 query = query,
+                meta = Chunk.empty,
                 subAggregations = Chunk(minAggregation("subAggregation", TestDocument.intField))
               )
             )
@@ -182,10 +445,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Filter(
                 name = "aggregation",
                 query = query,
+                meta = Chunk.empty,
                 subAggregations = Chunk(
-                  minAggregation("minSubAggregation", TestDocument.doubleField),
-                  maxAggregation("maxSubAggregation", TestDocument.intField)
+                  maxAggregation("maxSubAggregation", TestDocument.intField),
+                  minAggregation("minSubAggregation", TestDocument.doubleField)
                 )
+              )
+            )
+          ) &&
+          assert(aggregationWithMeta)(
+            equalTo(
+              Filter(
+                name = "aggregation",
+                query = query,
+                meta = Chunk("unit" -> Str("ms")),
+                subAggregations = Chunk.empty
               )
             )
           )
@@ -217,14 +491,18 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               field = "ipField",
               range = IpRangeBound().mask("10.0.0.0/25")
             ).withSubAgg(maxAggregation("subAggregation", "intField"))
+          val aggregationWithMeta =
+            ipRangeAggregation(name = "aggregation", field = "ipField", range = IpRangeBound().mask("10.0.0.0/25"))
+              .meta("unit", "ip")
 
           assert(aggregation)(
             equalTo(
               IpRange(
                 name = "aggregation",
                 field = "ipField",
-                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
                 isKeyed = false,
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
                 subAggregations = Chunk.empty
               )
             )
@@ -234,8 +512,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "stringField",
-                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
                 isKeyed = false,
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(IpRangeBound().to("10.0.0.5"), IpRangeBound().from("10.0.0.5")),
                 subAggregations = Chunk.empty
               )
             )
@@ -245,8 +524,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "ipField",
-                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25").key("low")),
                 isKeyed = true,
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25").key("low")),
                 subAggregations = Chunk.empty
               )
             )
@@ -256,47 +536,251 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               IpRange(
                 name = "aggregation",
                 field = "ipField",
-                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25")),
                 isKeyed = false,
-                subAggregations = Chunk(Max(name = "subAggregation", field = "intField", missing = None))
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(IpRangeBound().mask("10.0.0.0/25")),
+                subAggregations = Chunk(
+                  Max(
+                    name = "subAggregation",
+                    field = "intField",
+                    format = None,
+                    meta = Chunk.empty,
+                    missing = None,
+                    script = None
+                  )
+                )
+              )
+            )
+          ) &&
+          assert(aggregationWithMeta)(
+            equalTo(
+              IpRange(
+                name = "aggregation",
+                field = "ipField",
+                isKeyed = false,
+                meta = Chunk("unit" -> Str("ip")),
+                ranges = NonEmptyChunk(IpRangeBound(mask = Some("10.0.0.0/25"))),
+                subAggregations = Chunk.empty
               )
             )
           )
         },
         test("max") {
-          val aggregation            = maxAggregation("aggregation", "testField")
-          val aggregationTs          = maxAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = maxAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = maxAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregation              = maxAggregation("aggregation", "testField")
+          val aggregationTs            = maxAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw         = maxAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing   = maxAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationTsDate        = maxAggregation("aggregation", TestDocument.dateField)
+          val aggregationWithAllParams = maxAggregation("aggregation", TestDocument.dateField)
+            .format("yyyy-MM-dd")
+            .meta("unit", "day")
+            .missing(LocalDate.of(2024, 1, 1))
+            .script(Script("_value"))
 
-          assert(aggregation)(equalTo(Max(name = "aggregation", field = "testField", missing = None))) &&
-          assert(aggregationTs)(equalTo(Max(name = "aggregation", field = "intField", missing = None))) &&
-          assert(aggregationTsRaw)(equalTo(Max(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregation)(
+            equalTo(
+              Max(
+                name = "aggregation",
+                field = "testField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Max(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Max(
+                name = "aggregation",
+                field = "intField.raw",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
           assert(aggregationWithMissing)(
-            equalTo(Max(name = "aggregation", field = "intField", missing = Some(20.0)))
+            equalTo(
+              Max(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsDate)(
+            equalTo(
+              Max(
+                name = "aggregation",
+                field = "dateField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Max(
+                name = "aggregation",
+                field = "dateField",
+                format = Some("yyyy-MM-dd"),
+                meta = Chunk("unit" -> Str("day")),
+                missing = Some(Str("2024-01-01")),
+                script = Some(Script("_value"))
+              )
+            )
           )
         },
         test("min") {
-          val aggregation            = minAggregation("aggregation", "testField")
-          val aggregationTs          = minAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = minAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = minAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregation              = minAggregation("aggregation", "testField")
+          val aggregationTs            = minAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw         = minAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing   = minAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationTsDate        = minAggregation("aggregation", TestDocument.dateField)
+          val aggregationWithAllParams = minAggregation("aggregation", TestDocument.dateField)
+            .format("yyyy-MM-dd")
+            .meta("unit", "day")
+            .missing(LocalDate.of(2024, 1, 1))
+            .script(Script("_value"))
 
-          assert(aggregation)(equalTo(Min(name = "aggregation", field = "testField", missing = None))) &&
-          assert(aggregationTs)(equalTo(Min(name = "aggregation", field = "intField", missing = None))) &&
-          assert(aggregationTsRaw)(equalTo(Min(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregation)(
+            equalTo(
+              Min(
+                name = "aggregation",
+                field = "testField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Min(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Min(
+                name = "aggregation",
+                field = "intField.raw",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
           assert(aggregationWithMissing)(
-            equalTo(Min(name = "aggregation", field = "intField", missing = Some(20.0)))
+            equalTo(
+              Min(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsDate)(
+            equalTo(
+              Min(
+                name = "aggregation",
+                field = "dateField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Min(
+                name = "aggregation",
+                field = "dateField",
+                format = Some("yyyy-MM-dd"),
+                meta = Chunk("unit" -> Str("day")),
+                missing = Some(Str("2024-01-01")),
+                script = Some(Script("_value"))
+              )
+            )
           )
         },
         test("missing") {
-          val aggregation      = missingAggregation("aggregation", "testField")
-          val aggregationTs    = missingAggregation("aggregation", TestSubDocument.stringField)
-          val aggregationTsRaw = missingAggregation("aggregation", TestSubDocument.stringField.raw)
+          val aggregation              = missingAggregation("aggregation", "testField")
+          val aggregationTs            = missingAggregation("aggregation", TestSubDocument.stringField)
+          val aggregationTsRaw         = missingAggregation("aggregation", TestSubDocument.stringField.raw)
+          val aggregationTsInt         = missingAggregation("aggregation", TestDocument.intField)
+          val aggregationWithAllParams = missingAggregation("aggregation", "testField")
+            .meta("unit", "docs")
+            .withSubAgg(maxAggregation("maxAggregation", "intField"))
+            .withSubAgg(minAggregation("minAggregation", "intField"))
 
-          assert(aggregation)(equalTo(Missing(name = "aggregation", field = "testField"))) &&
-          assert(aggregationTs)(equalTo(Missing(name = "aggregation", field = "stringField"))) &&
-          assert(aggregationTsRaw)(equalTo(Missing(name = "aggregation", field = "stringField.raw")))
+          assert(aggregation)(
+            equalTo(
+              Missing(name = "aggregation", field = "testField", meta = Chunk.empty, subAggregations = Chunk.empty)
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Missing(name = "aggregation", field = "stringField", meta = Chunk.empty, subAggregations = Chunk.empty)
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Missing(
+                name = "aggregation",
+                field = "stringField.raw",
+                meta = Chunk.empty,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationTsInt)(
+            equalTo(
+              Missing(name = "aggregation", field = "intField", meta = Chunk.empty, subAggregations = Chunk.empty)
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Missing(
+                name = "aggregation",
+                field = "testField",
+                meta = Chunk("unit" -> Str("docs")),
+                subAggregations =
+                  Chunk(maxAggregation("maxAggregation", "intField"), minAggregation("minAggregation", "intField"))
+              )
+            )
+          )
         },
         test("multiple") {
           val aggregation =
@@ -309,6 +793,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             termsAggregation("first", "testField")
               .withSubAgg(maxAggregation("second", TestSubDocument.intField.raw))
               .withAgg(termsAggregation("third", TestDocument.stringField))
+          val aggregationWithNestedMultiple =
+            maxAggregation("first", "testField")
+              .withAgg(minAggregation("second", "testField").withAgg(avgAggregation("third", "testField")))
+              .withAgg(sumAggregation("fourth", "testField"))
 
           assert(aggregation)(
             equalTo(
@@ -317,12 +805,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "first",
                     field = "stringField",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk(AggregationOrder(value = "_key", order = Desc)),
-                    subAggregations = Chunk.empty,
-                    size = None
+                    size = None,
+                    subAggregations = Chunk.empty
                   ),
-                  Max(name = "second", field = "testField", missing = Some(20)),
-                  Cardinality(name = "third", field = "intField", missing = None)
+                  Max(
+                    name = "second",
+                    field = "testField",
+                    format = None,
+                    meta = Chunk.empty,
+                    missing = Some(Num(20)),
+                    script = None
+                  ),
+                  Cardinality(name = "third", field = "intField", meta = Chunk.empty, missing = None, script = None)
                 )
               )
             )
@@ -334,23 +831,42 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "first",
                     field = "testField",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
+                    size = None,
                     subAggregations = Chunk(
                       Max(
                         name = "second",
                         field = "intField.raw",
-                        missing = None
+                        format = None,
+                        meta = Chunk.empty,
+                        missing = None,
+                        script = None
                       )
-                    ),
-                    size = None
+                    )
                   ),
                   Terms(
                     name = "third",
                     field = "stringField",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
-                    subAggregations = Chunk.empty,
-                    size = None
+                    size = None,
+                    subAggregations = Chunk.empty
                   )
+                )
+              )
+            )
+          ) &&
+          assert(aggregationWithNestedMultiple)(
+            equalTo(
+              Multiple(
+                Chunk(
+                  maxAggregation("first", "testField"),
+                  minAggregation("second", "testField"),
+                  avgAggregation("third", "testField"),
+                  sumAggregation("fourth", "testField")
                 )
               )
             )
@@ -362,23 +878,62 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationTsRaw       = percentileRanksAggregation("aggregation", TestSubDocument.intField.raw, 5, 6)
           val aggregationWithMissing =
             percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).missing(20.0)
+          val aggregationWithMeta =
+            percentileRanksAggregation("aggregation", TestSubDocument.intField, 5, 6).meta("unit", "ms")
 
           assert(aggregation)(
             equalTo(
-              PercentileRanks(name = "aggregation", field = "testField", values = Chunk(5.0, 6.0), missing = None)
+              PercentileRanks(
+                name = "aggregation",
+                field = "testField",
+                meta = Chunk.empty,
+                missing = None,
+                values = Chunk(5.0, 6.0)
+              )
             )
           ) &&
           assert(aggregationTs)(
-            equalTo(PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5.0, 6.0), missing = None))
+            equalTo(
+              PercentileRanks(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = None,
+                values = Chunk(5.0, 6.0)
+              )
+            )
           ) &&
           assert(aggregationTsRaw)(
             equalTo(
-              PercentileRanks(name = "aggregation", field = "intField.raw", values = Chunk(5.0, 6.0), missing = None)
+              PercentileRanks(
+                name = "aggregation",
+                field = "intField.raw",
+                meta = Chunk.empty,
+                missing = None,
+                values = Chunk(5.0, 6.0)
+              )
             )
           ) &&
           assert(aggregationWithMissing)(
             equalTo(
-              PercentileRanks(name = "aggregation", field = "intField", values = Chunk(5.0, 6.0), missing = Some(20.0))
+              PercentileRanks(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                values = Chunk(5.0, 6.0)
+              )
+            )
+          ) &&
+          assert(aggregationWithMeta)(
+            equalTo(
+              PercentileRanks(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk("unit" -> Str("ms")),
+                missing = None,
+                values = Chunk(5.0, 6.0)
+              )
             )
           )
         },
@@ -391,25 +946,83 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             percentilesAggregation("aggregation", TestSubDocument.intField).percents(75, 90, 99)
           val aggregationWithAllParams =
             percentilesAggregation("aggregation", TestDocument.intField).percents(75, 90, 99).missing(20.0)
+          val aggregationWithMeta = percentilesAggregation("aggregation", TestSubDocument.intField).meta("unit", "ms")
 
           assert(aggregation)(
-            equalTo(Percentiles(name = "aggregation", field = "testField", percents = Chunk.empty, missing = None))
+            equalTo(
+              Percentiles(
+                name = "aggregation",
+                field = "testField",
+                meta = Chunk.empty,
+                missing = None,
+                percents = Chunk.empty
+              )
+            )
           ) &&
           assert(aggregationTs)(
-            equalTo(Percentiles(name = "aggregation", field = "intField", percents = Chunk.empty, missing = None))
+            equalTo(
+              Percentiles(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = None,
+                percents = Chunk.empty
+              )
+            )
           ) &&
           assert(aggregationTsRaw)(
-            equalTo(Percentiles(name = "aggregation", field = "intField.raw", percents = Chunk.empty, missing = None))
+            equalTo(
+              Percentiles(
+                name = "aggregation",
+                field = "intField.raw",
+                meta = Chunk.empty,
+                missing = None,
+                percents = Chunk.empty
+              )
+            )
           ) &&
           assert(aggregationWithMissing)(
-            equalTo(Percentiles(name = "aggregation", field = "intField", percents = Chunk.empty, missing = Some(20.0)))
+            equalTo(
+              Percentiles(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                percents = Chunk.empty
+              )
+            )
           ) &&
           assert(aggregationWithPercents)(
-            equalTo(Percentiles(name = "aggregation", field = "intField", percents = Chunk(75, 90, 99), missing = None))
+            equalTo(
+              Percentiles(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = None,
+                percents = Chunk(75, 90, 99)
+              )
+            )
           ) &&
           assert(aggregationWithAllParams)(
             equalTo(
-              Percentiles(name = "aggregation", field = "intField", percents = Chunk(75, 90, 99), missing = Some(20.0))
+              Percentiles(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                percents = Chunk(75, 90, 99)
+              )
+            )
+          ) &&
+          assert(aggregationWithMeta)(
+            equalTo(
+              Percentiles(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk("unit" -> Str("ms")),
+                missing = None,
+                percents = Chunk.empty
+              )
             )
           )
         },
@@ -441,18 +1054,25 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSubAggregation =
             rangeAggregation(name = "aggregation", field = TestDocument.intField, range = RangeBound().to(50))
               .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
+          val aggregationWithMeta = rangeAggregation(
+            name = "aggregation",
+            field = TestDocument.doubleField,
+            range = RangeBound().to(23.9),
+            ranges = RangeBound().from(23.9)
+          ).meta("unit", "ms")
 
           assert(aggregation)(
             equalTo(
               Range(
                 name = "aggregation",
                 field = "testField",
+                isKeyed = false,
+                meta = Chunk.empty,
                 ranges = NonEmptyChunk(
                   RangeBound(to = Some(50.0)),
                   RangeBound(from = Some(50.0), to = Some(100.0)),
                   RangeBound(from = Some(100.0))
                 ),
-                isKeyed = false,
                 subAggregations = Chunk.empty
               )
             )
@@ -462,8 +1082,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 name = "aggregation",
                 field = "intField",
-                ranges = NonEmptyChunk(RangeBound(to = Some(50.0)), RangeBound(from = Some(50.0))),
                 isKeyed = false,
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(RangeBound(to = Some(50.0)), RangeBound(from = Some(50.0))),
                 subAggregations = Chunk.empty
               )
             )
@@ -473,8 +1094,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 name = "aggregation",
                 field = "intField.raw",
-                ranges = NonEmptyChunk(RangeBound(to = Some(50.0))),
                 isKeyed = false,
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(RangeBound(to = Some(50.0))),
                 subAggregations = Chunk.empty
               )
             )
@@ -484,11 +1106,12 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 name = "aggregation",
                 field = "doubleField",
+                isKeyed = true,
+                meta = Chunk.empty,
                 ranges = NonEmptyChunk(
                   RangeBound(key = Some("low"), to = Some(50.0)),
                   RangeBound(from = Some(50.0), key = Some("high"))
                 ),
-                isKeyed = true,
                 subAggregations = Chunk.empty
               )
             )
@@ -498,9 +1121,31 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Range(
                 name = "aggregation",
                 field = "intField",
-                ranges = NonEmptyChunk(RangeBound(to = Some(50.0))),
                 isKeyed = false,
-                subAggregations = Chunk(Max(name = "subAggregation", field = "intField", missing = None))
+                meta = Chunk.empty,
+                ranges = NonEmptyChunk(RangeBound(to = Some(50.0))),
+                subAggregations = Chunk(
+                  Max(
+                    name = "subAggregation",
+                    field = "intField",
+                    format = None,
+                    meta = Chunk.empty,
+                    missing = None,
+                    script = None
+                  )
+                )
+              )
+            )
+          ) &&
+          assert(aggregationWithMeta)(
+            equalTo(
+              Range(
+                name = "aggregation",
+                field = "doubleField",
+                isKeyed = false,
+                meta = Chunk("unit" -> Str("ms")),
+                ranges = NonEmptyChunk(RangeBound(to = Some(23.9)), RangeBound(from = Some(23.9))),
+                subAggregations = Chunk.empty
               )
             )
           )
@@ -512,19 +1157,27 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             samplerAggregation("aggregation2", ElasticAggregation.termsAggregation("keywords", "text"))
               .maxDocumentsPerShard(50)
               .withSubAgg(ElasticAggregation.avgAggregation("avg_length", "length"))
+          val aggWithMeta =
+            samplerAggregation("aggregation", maxAggregation("maxAggregation", "intField")).meta("unit", "ms")
+          val aggWithAgg = samplerAggregation("aggregation", maxAggregation("maxAggregation", "intField")).withAgg(
+            minAggregation("minAggregation", "intField")
+          )
 
           assert(aggWithSubAgg)(
             equalTo(
               Sampler(
                 name = "aggregation2",
-                shardSizeValue = 100,
-                subAggregations = Seq(
+                meta = Chunk.empty,
+                shardSize = 100,
+                subAggregations = Chunk(
                   Terms(
                     name = "keywords",
                     field = "text",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
-                    subAggregations = Chunk.empty,
-                    size = None
+                    size = None,
+                    subAggregations = Chunk.empty
                   )
                 )
               )
@@ -534,32 +1187,134 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             equalTo(
               Sampler(
                 name = "aggregation2",
-                shardSizeValue = 50,
-                subAggregations = Seq(
-                  Avg(name = "avg_length", field = "length", missing = None),
+                meta = Chunk.empty,
+                shardSize = 50,
+                subAggregations = Chunk(
                   Terms(
                     name = "keywords",
                     field = "text",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
-                    subAggregations = Chunk.empty,
-                    size = None
+                    size = None,
+                    subAggregations = Chunk.empty
+                  ),
+                  Avg(
+                    name = "avg_length",
+                    field = "length",
+                    format = None,
+                    meta = Chunk.empty,
+                    missing = None,
+                    script = None
                   )
+                )
+              )
+            )
+          ) &&
+          assert(aggWithMeta)(
+            equalTo(
+              Sampler(
+                name = "aggregation",
+                meta = Chunk("unit" -> Str("ms")),
+                shardSize = 100,
+                subAggregations = Chunk(maxAggregation("maxAggregation", "intField"))
+              )
+            )
+          ) &&
+          assert(aggWithAgg)(
+            equalTo(
+              Multiple(
+                Chunk(
+                  samplerAggregation("aggregation", maxAggregation("maxAggregation", "intField")),
+                  minAggregation("minAggregation", "intField")
                 )
               )
             )
           )
         },
         test("stats") {
-          val aggregation            = statsAggregation("aggregation", "testField")
-          val aggregationTs          = statsAggregation("aggregation", TestDocument.intField)
-          val aggregationTsRaw       = statsAggregation("aggregation", TestDocument.intField.raw)
-          val aggregationWithMissing = statsAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregation              = statsAggregation("aggregation", "testField")
+          val aggregationTs            = statsAggregation("aggregation", TestDocument.intField)
+          val aggregationTsRaw         = statsAggregation("aggregation", TestDocument.intField.raw)
+          val aggregationWithMissing   = statsAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregationTsDate        = statsAggregation("aggregation", TestDocument.dateField)
+          val aggregationWithAllParams = statsAggregation("aggregation", TestDocument.dateField)
+            .format("yyyy-MM-dd")
+            .meta("unit", "day")
+            .missing(LocalDate.of(2024, 1, 1))
+            .script(Script("_value"))
 
-          assert(aggregation)(equalTo(Stats(name = "aggregation", field = "testField", missing = None))) &&
-          assert(aggregationTs)(equalTo(Stats(name = "aggregation", field = "intField", missing = None))) &&
-          assert(aggregationTsRaw)(equalTo(Stats(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregation)(
+            equalTo(
+              Stats(
+                name = "aggregation",
+                field = "testField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Stats(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Stats(
+                name = "aggregation",
+                field = "intField.raw",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
           assert(aggregationWithMissing)(
-            equalTo(Stats(name = "aggregation", field = "intField", missing = Some(20.0)))
+            equalTo(
+              Stats(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsDate)(
+            equalTo(
+              Stats(
+                name = "aggregation",
+                field = "dateField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Stats(
+                name = "aggregation",
+                field = "dateField",
+                format = Some("yyyy-MM-dd"),
+                meta = Chunk("unit" -> Str("day")),
+                missing = Some(Str("2024-01-01")),
+                script = Some(Script("_value"))
+              )
+            )
           )
         },
         test("subAggregation") {
@@ -580,17 +1335,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "first",
                 field = "stringField",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk.empty,
+                size = None,
                 subAggregations = Chunk(
                   Terms(
                     name = "second",
                     field = "stringField.raw",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
-                    subAggregations = Chunk.empty,
-                    size = None
+                    size = None,
+                    subAggregations = Chunk.empty
                   )
-                ),
-                size = None
+                )
               )
             )
           ) && assert(aggregation2)(
@@ -600,22 +1359,29 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                   Terms(
                     name = "first",
                     field = "stringField",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
-                    subAggregations = Chunk.empty,
-                    size = None
+                    size = None,
+                    subAggregations = Chunk.empty
                   ),
                   Terms(
                     name = "second",
                     field = "testField",
+                    meta = Chunk.empty,
+                    minDocCount = None,
                     order = Chunk.empty,
+                    size = None,
                     subAggregations = Chunk(
                       Max(
                         name = "third",
                         field = "anotherTestField",
-                        missing = None
+                        format = None,
+                        meta = Chunk.empty,
+                        missing = None,
+                        script = None
                       )
-                    ),
-                    size = None
+                    )
                   )
                 )
               )
@@ -626,31 +1392,106 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "first",
                 field = "stringField",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk.empty,
+                size = None,
                 subAggregations = Chunk(
                   Percentiles(
                     name = "second",
                     field = "intField",
-                    percents = Chunk(75, 90, 99),
-                    missing = None
+                    meta = Chunk.empty,
+                    missing = None,
+                    percents = Chunk(75, 90, 99)
                   )
-                ),
-                size = None
+                )
               )
             )
           )
         },
         test("sum") {
-          val aggregation            = sumAggregation("aggregation", "testField")
-          val aggregationTs          = sumAggregation("aggregation", TestSubDocument.intField)
-          val aggregationTsRaw       = sumAggregation("aggregation", TestSubDocument.intField.raw)
-          val aggregationWithMissing = sumAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregation              = sumAggregation("aggregation", "testField")
+          val aggregationTs            = sumAggregation("aggregation", TestSubDocument.intField)
+          val aggregationTsRaw         = sumAggregation("aggregation", TestSubDocument.intField.raw)
+          val aggregationWithMissing   = sumAggregation("aggregation", TestSubDocument.intField).missing(20.0)
+          val aggregationTsDate        = sumAggregation("aggregation", TestDocument.dateField)
+          val aggregationWithAllParams = sumAggregation("aggregation", TestDocument.dateField)
+            .format("yyyy-MM-dd")
+            .meta("unit", "day")
+            .missing(LocalDate.of(2024, 1, 1))
+            .script(Script("_value"))
 
-          assert(aggregation)(equalTo(Sum(name = "aggregation", field = "testField", missing = None))) &&
-          assert(aggregationTs)(equalTo(Sum(name = "aggregation", field = "intField", missing = None))) &&
-          assert(aggregationTsRaw)(equalTo(Sum(name = "aggregation", field = "intField.raw", missing = None))) &&
+          assert(aggregation)(
+            equalTo(
+              Sum(
+                name = "aggregation",
+                field = "testField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Sum(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(
+              Sum(
+                name = "aggregation",
+                field = "intField.raw",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
           assert(aggregationWithMissing)(
-            equalTo(Sum(name = "aggregation", field = "intField", missing = Some(20.0)))
+            equalTo(
+              Sum(
+                name = "aggregation",
+                field = "intField",
+                format = None,
+                meta = Chunk.empty,
+                missing = Some(Num(20.0)),
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationTsDate)(
+            equalTo(
+              Sum(
+                name = "aggregation",
+                field = "dateField",
+                format = None,
+                meta = Chunk.empty,
+                missing = None,
+                script = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Sum(
+                name = "aggregation",
+                field = "dateField",
+                format = Some("yyyy-MM-dd"),
+                meta = Chunk("unit" -> Str("day")),
+                missing = Some(Str("2024-01-01")),
+                script = Some(Script("_value"))
+              )
+            )
           )
         },
         test("terms") {
@@ -665,15 +1506,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithAllParams =
             termsAggregation("aggregation", TestSubDocument.stringField.suffix("test")).orderByCountDesc.orderByKeyAsc
               .size(5)
+          val aggregationTsInt                  = termsAggregation("aggregation", TestDocument.intField)
+          val aggregationTsBoolean              = termsAggregation("aggregation", TestDocument.booleanField)
+          val aggregationWithMinDocCountAndMeta =
+            termsAggregation("aggregation", TestDocument.stringField).minDocCount(2).meta("unit", "docs")
 
           assert(aggregation)(
             equalTo(
               Terms(
                 name = "aggregation",
                 field = "testField",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk.empty,
-                subAggregations = Chunk.empty,
-                size = None
+                size = None,
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -682,9 +1529,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk.empty,
-                subAggregations = Chunk.empty,
-                size = None
+                size = None,
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -693,9 +1542,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField.raw",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk.empty,
-                subAggregations = Chunk.empty,
-                size = None
+                size = None,
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -704,13 +1555,15 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk(
                   AggregationOrder("_key", Desc),
                   AggregationOrder("test", Desc),
                   AggregationOrder("_count", Asc)
                 ),
-                subAggregations = Chunk.empty,
-                size = None
+                size = None,
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -719,9 +1572,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk.empty,
-                subAggregations = Chunk.empty,
-                size = Some(10)
+                size = Some(10),
+                subAggregations = Chunk.empty
               )
             )
           ) &&
@@ -730,21 +1585,80 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               Terms(
                 name = "aggregation",
                 field = "stringField.test",
+                meta = Chunk.empty,
+                minDocCount = None,
                 order = Chunk(AggregationOrder("_count", Desc), AggregationOrder("_key", Asc)),
-                subAggregations = Chunk.empty,
-                size = Some(5)
+                size = Some(5),
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationTsInt)(
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "intField",
+                meta = Chunk.empty,
+                minDocCount = None,
+                order = Chunk.empty,
+                size = None,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationTsBoolean)(
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "booleanField",
+                meta = Chunk.empty,
+                minDocCount = None,
+                order = Chunk.empty,
+                size = None,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithMinDocCountAndMeta)(
+            equalTo(
+              Terms(
+                name = "aggregation",
+                field = "stringField",
+                meta = Chunk("unit" -> Str("docs")),
+                minDocCount = Some(2),
+                order = Chunk.empty,
+                size = None,
+                subAggregations = Chunk.empty
               )
             )
           )
         },
         test("valueCount") {
-          val aggregation      = valueCountAggregation("aggregation", "testField")
-          val aggregationTs    = valueCountAggregation("aggregation", TestDocument.stringField)
-          val aggregationTsRaw = valueCountAggregation("aggregation", TestDocument.stringField.raw)
+          val aggregation              = valueCountAggregation("aggregation", "testField")
+          val aggregationTs            = valueCountAggregation("aggregation", TestDocument.stringField)
+          val aggregationTsRaw         = valueCountAggregation("aggregation", TestDocument.stringField.raw)
+          val aggregationWithAllParams =
+            valueCountAggregation("aggregation", TestDocument.stringField).meta("unit", "docs").script(Script("_value"))
 
-          assert(aggregation)(equalTo(ValueCount(name = "aggregation", field = "testField"))) &&
-          assert(aggregationTs)(equalTo(ValueCount(name = "aggregation", field = "stringField"))) &&
-          assert(aggregationTsRaw)(equalTo(ValueCount(name = "aggregation", field = "stringField.raw")))
+          assert(aggregation)(
+            equalTo(ValueCount(name = "aggregation", field = "testField", meta = Chunk.empty, script = None))
+          ) &&
+          assert(aggregationTs)(
+            equalTo(ValueCount(name = "aggregation", field = "stringField", meta = Chunk.empty, script = None))
+          ) &&
+          assert(aggregationTsRaw)(
+            equalTo(ValueCount(name = "aggregation", field = "stringField.raw", meta = Chunk.empty, script = None))
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              ValueCount(
+                name = "aggregation",
+                field = "stringField",
+                meta = Chunk("unit" -> Str("docs")),
+                script = Some(Script("_value"))
+              )
+            )
+          )
         },
         test("weightedAvg") {
           val aggregation      = weightedAvgAggregation("aggregation", "valueField", "weightField")
@@ -760,14 +1674,18 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             TestDocument.stringField,
             TestDocument.intField
           ).valueMissing(4.0).weightMissing(5.0)
+          val aggregationWithMeta =
+            weightedAvgAggregation(name = "aggregation", valueField = "valueField", weightField = "weightField")
+              .meta("unit", "ms")
 
           assert(aggregation)(
             equalTo(
               WeightedAvg(
                 name = "aggregation",
                 valueField = "valueField",
-                valueMissing = None,
                 weightField = "weightField",
+                meta = Chunk.empty,
+                valueMissing = None,
                 weightMissing = None
               )
             )
@@ -777,8 +1695,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               WeightedAvg(
                 name = "aggregation",
                 valueField = "stringField",
-                valueMissing = None,
                 weightField = "intField",
+                meta = Chunk.empty,
+                valueMissing = None,
                 weightMissing = None
               )
             )
@@ -788,8 +1707,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               WeightedAvg(
                 name = "aggregation",
                 valueField = "stringField.raw",
-                valueMissing = None,
                 weightField = "intField.raw",
+                meta = Chunk.empty,
+                valueMissing = None,
                 weightMissing = None
               )
             )
@@ -799,8 +1719,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               WeightedAvg(
                 name = "aggregation",
                 valueField = "stringField",
-                valueMissing = Some(2.0),
                 weightField = "intField",
+                meta = Chunk.empty,
+                valueMissing = Some(2.0),
                 weightMissing = None
               )
             )
@@ -810,8 +1731,9 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               WeightedAvg(
                 name = "aggregation",
                 valueField = "stringField",
-                valueMissing = None,
                 weightField = "intField",
+                meta = Chunk.empty,
+                valueMissing = None,
                 weightMissing = Some(3.0)
               )
             )
@@ -821,9 +1743,22 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               WeightedAvg(
                 name = "aggregation",
                 valueField = "stringField",
-                valueMissing = Some(4.0),
                 weightField = "intField",
+                meta = Chunk.empty,
+                valueMissing = Some(4.0),
                 weightMissing = Some(5.0)
+              )
+            )
+          ) &&
+          assert(aggregationWithMeta)(
+            equalTo(
+              WeightedAvg(
+                name = "aggregation",
+                valueField = "valueField",
+                weightField = "weightField",
+                meta = Chunk("unit" -> Str("ms")),
+                valueMissing = None,
+                weightMissing = None
               )
             )
           )
@@ -831,9 +1766,14 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
       ),
       suite("encoding as JSON")(
         test("avg") {
-          val aggregation            = avgAggregation("aggregation", "testField")
-          val aggregationTs          = avgAggregation("aggregation", TestDocument.intField)
-          val aggregationWithMissing = avgAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregation              = avgAggregation("aggregation", "testField")
+          val aggregationTs            = avgAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing   = avgAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregationWithAllParams = avgAggregation("aggregation", TestDocument.intField)
+            .format("0.00")
+            .meta("unit", "ms")
+            .missing(20)
+            .script(Script("_value * 2"))
 
           val expected =
             """
@@ -869,9 +1809,28 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "avg": {
+              |      "field": "intField",
+              |      "format": "0.00",
+              |      "missing": 20,
+              |      "script": {
+              |        "source": "_value * 2"
+              |      }
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
-          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedAggregationWithAllParams.toJson))
         },
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
@@ -889,6 +1848,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             script = Script("1 > 0"),
             bucketsPath = Map.empty
           )
+          val aggregationWithAllParams = bucketSelectorAggregation(
+            name = "aggregation",
+            script = Script("params.agg1 > 10"),
+            bucketsPath = Map("agg1" -> "aggregation1")
+          ).gapPolicy(GapPolicy.InsertZeros).meta("unit", "ms")
 
           val expected1 =
             """
@@ -937,9 +1901,29 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_selector": {
+              |      "buckets_path": {
+              |        "agg1": "aggregation1"
+              |      },
+              |      "gap_policy": "insert_zeros",
+              |      "script": {
+              |        "source": "params.agg1 > 10"
+              |      }
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation1.toJson)(equalTo(expected1.toJson)) &&
           assert(aggregation2.toJson)(equalTo(expected2.toJson)) &&
-          assert(aggregationWithEmptyBucketsPath.toJson)(equalTo(expectedWithEmptyBucketsPath.toJson))
+          assert(aggregationWithEmptyBucketsPath.toJson)(equalTo(expectedWithEmptyBucketsPath.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedAggregationWithAllParams.toJson))
         },
         test("bucketSort") {
           val aggregationWithFrom      = bucketSortAggregation("aggregation").from(5)
@@ -947,6 +1931,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSort      = bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2"))
           val aggregationWithAllParams =
             bucketSortAggregation("aggregation").sort(ElasticSort.sortBy("aggregation2")).from(5).size(7)
+          val aggregationWithGapPolicy = bucketSortAggregation("aggregation").gapPolicy(GapPolicy.KeepValues)
 
           val expectedWithFrom =
             """
@@ -998,15 +1983,30 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithGapPolicy =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_sort": {
+              |      "gap_policy": "keep_values"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregationWithFrom.toJson)(equalTo(expectedWithFrom.toJson)) &&
           assert(aggregationWithSize.toJson)(equalTo(expectedWithSize.toJson)) &&
           assert(aggregationWithSort.toJson)(equalTo(expectedWithSort.toJson)) &&
-          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson)) &&
+          assert(aggregationWithGapPolicy.toJson)(equalTo(expectedAggregationWithGapPolicy.toJson))
         },
         test("cardinality") {
-          val aggregation            = cardinalityAggregation("aggregation", "testField")
-          val aggregationTs          = cardinalityAggregation("aggregation", TestDocument.intField)
-          val aggregationWithMissing = cardinalityAggregation("aggregation", TestDocument.intField).missing(20)
+          val aggregation              = cardinalityAggregation("aggregation", "testField")
+          val aggregationTs            = cardinalityAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing   = cardinalityAggregation("aggregation", TestDocument.intField).missing(20)
+          val aggregationWithAllParams = cardinalityAggregation("aggregation", TestDocument.stringField)
+            .meta("unit", "users")
+            .missing("N/A")
+            .script(Script("_value.toLowerCase()"))
 
           val expected =
             """
@@ -1036,15 +2036,33 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |  "aggregation": {
               |    "cardinality": {
               |      "field": "intField",
-              |      "missing": 20.0
+              |      "missing": 20
               |    }
               |  }
               |}
               |""".stripMargin
 
+          val expectedAggregationWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "cardinality": {
+              |      "field": "stringField",
+              |      "missing": "N/A",
+              |      "script": {
+              |        "source": "_value.toLowerCase()"
+              |      }
+              |    },
+              |    "meta": {
+              |      "unit": "users"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
-          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedAggregationWithAllParams.toJson))
         },
         test("extendedStats") {
           val aggregation                    = extendedStatsAggregation("aggregation", "testField")
@@ -1287,9 +2305,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
         },
         test("max") {
-          val aggregation            = maxAggregation("aggregation", "testField")
-          val aggregationTs          = maxAggregation("aggregation", TestDocument.intField)
-          val aggregationWithMissing = maxAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregation                = maxAggregation("aggregation", "testField")
+          val aggregationTs              = maxAggregation("aggregation", TestDocument.intField)
+          val aggregationWithMissing     = maxAggregation("aggregation", TestDocument.intField).missing(20.0)
+          val aggregationWithDateMissing =
+            maxAggregation("aggregation", TestDocument.dateField).format("yyyy-MM-dd").missing(LocalDate.of(2024, 1, 1))
 
           val expected =
             """
@@ -1325,9 +2345,22 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithDateMissing =
+            """
+              |{
+              |  "aggregation": {
+              |    "max": {
+              |      "field": "dateField",
+              |      "format": "yyyy-MM-dd",
+              |      "missing": "2024-01-01"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
-          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+          assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
+          assert(aggregationWithDateMissing.toJson)(equalTo(expectedAggregationWithDateMissing.toJson))
         },
         test("min") {
           val aggregation            = minAggregation("aggregation", "testField")
@@ -1373,8 +2406,11 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
         test("missing") {
-          val aggregation   = missingAggregation("aggregation", "testField")
-          val aggregationTs = missingAggregation("aggregation", TestDocument.stringField)
+          val aggregation              = missingAggregation("aggregation", "testField")
+          val aggregationTs            = missingAggregation("aggregation", TestDocument.stringField)
+          val aggregationWithAllParams = missingAggregation("aggregation", "testField")
+            .meta("unit", "docs")
+            .withSubAgg(maxAggregation("maxAggregation", "intField"))
 
           val expected =
             """
@@ -1398,8 +2434,29 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "missing": {
+              |      "field": "testField"
+              |    },
+              |    "meta": {
+              |      "unit": "docs"
+              |    },
+              |    "aggs": {
+              |      "maxAggregation": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
-          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson))
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedAggregationWithAllParams.toJson))
         },
         test("multiple") {
           val aggregation =
@@ -1607,6 +2664,15 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithSubAggregation =
             rangeAggregation(name = "aggregation", field = TestDocument.intField, range = RangeBound().from(50))
               .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
+          val aggregationWithMixedTypes =
+            rangeAggregation(
+              name = "aggregation",
+              field = TestDocument.doubleField,
+              range = RangeBound().from(0).to(99.5),
+              ranges = RangeBound().from(99.5f).to(Long.MaxValue),
+              RangeBound().from(1.toShort).to(BigDecimal("1.25")),
+              RangeBound(key = Some("all"))
+            )
 
           val expected =
             """
@@ -1616,14 +2682,14 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |      "field": "testField",
               |      "ranges": [
               |        {
-              |          "to": 50.0
+              |          "to": 50
               |        },
               |        {
-              |          "from": 50.0,
-              |          "to": 100.0
+              |          "from": 50,
+              |          "to": 100
               |        },
               |        {
-              |          "from": 100.0
+              |          "from": 100
               |        }
               |      ]
               |    }
@@ -1656,10 +2722,10 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |      "ranges": [
               |        {
               |          "key": "low",
-              |          "to": 50.0
+              |          "to": 50
               |        },
               |        {
-              |          "from": 50.0,
+              |          "from": 50,
               |          "key": "high"
               |        }
               |      ],
@@ -1677,7 +2743,7 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |      "field": "intField",
               |      "ranges": [
               |        {
-              |          "from": 50.0
+              |          "from": 50
               |        }
               |      ]
               |    },
@@ -1692,10 +2758,39 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedWithMixedTypes =
+            """
+              |{
+              |  "aggregation": {
+              |    "range": {
+              |      "field": "doubleField",
+              |      "ranges": [
+              |        {
+              |          "from": 0,
+              |          "to": 99.5
+              |        },
+              |        {
+              |          "from": 99.5,
+              |          "to": 9223372036854775807
+              |        },
+              |        {
+              |          "from": 1,
+              |          "to": 1.25
+              |        },
+              |        {
+              |          "key": "all"
+              |        }
+              |      ]
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithKeyed.toJson)(equalTo(expectedWithKeyed.toJson)) &&
-          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson))
+          assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
+          assert(aggregationWithMixedTypes.toJson)(equalTo(expectedWithMixedTypes.toJson))
         },
         test("sampler") {
           val aggWithSubAgg = ElasticAggregation.samplerAggregation(
@@ -1706,6 +2801,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             .samplerAggregation("sample_with_multiple_aggs", ElasticAggregation.avgAggregation("avg_length", "length"))
             .maxDocumentsPerShard(50)
             .withSubAgg(ElasticAggregation.termsAggregation("keywords", "text"))
+          val aggregationWithMeta =
+            samplerAggregation("aggregation", maxAggregation("maxAggregation", "intField")).meta("unit", "ms")
 
           val expectedWithSubAgg =
             """
@@ -1748,8 +2845,29 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithMeta =
+            """
+              |{
+              |  "aggregation": {
+              |    "sampler": {
+              |      "shard_size": 100
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    },
+              |    "aggs": {
+              |      "maxAggregation": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggWithSubAgg.toJson)(equalTo(expectedWithSubAgg.toJson)) &&
-          assert(aggWithSubAggsAndMaxDocumentsPerShardParam.toJson)(equalTo(expectedWithMultipleSubAggs.toJson))
+          assert(aggWithSubAggsAndMaxDocumentsPerShardParam.toJson)(equalTo(expectedWithMultipleSubAggs.toJson)) &&
+          assert(aggregationWithMeta.toJson)(equalTo(expectedAggregationWithMeta.toJson))
         },
         test("stats") {
           val aggregation            = statsAggregation("aggregation", "testField")
@@ -1893,6 +3011,8 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           val aggregationWithAllParams = termsAggregation("aggregation", TestDocument.stringField)
             .orderBy(AggregationOrder("test", SortOrder.Asc))
             .size(20)
+          val aggregationWithMinDocCountAndMeta =
+            termsAggregation("aggregation", TestDocument.intField).minDocCount(2).meta("unit", "docs")
 
           val expected =
             """
@@ -1957,15 +3077,32 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithMinDocCountAndMeta =
+            """
+              |{
+              |  "aggregation": {
+              |    "terms": {
+              |      "field": "intField",
+              |      "min_doc_count": 2
+              |    },
+              |    "meta": {
+              |      "unit": "docs"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithOrder.toJson)(equalTo(expectedWithOrder.toJson)) &&
           assert(aggregationWithSize.toJson)(equalTo(expectedWithSize.toJson)) &&
-          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson)) &&
+          assert(aggregationWithMinDocCountAndMeta.toJson)(equalTo(expectedAggregationWithMinDocCountAndMeta.toJson))
         },
         test("valueCount") {
-          val aggregation   = valueCountAggregation("aggregation", "testField")
-          val aggregationTs = valueCountAggregation("aggregation", TestDocument.stringField)
+          val aggregation           = valueCountAggregation("aggregation", "testField")
+          val aggregationTs         = valueCountAggregation("aggregation", TestDocument.stringField)
+          val aggregationWithScript =
+            valueCountAggregation("aggregation", TestDocument.stringField).script(Script("_value"))
 
           val expected =
             """
@@ -1989,8 +3126,22 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
               |}
               |""".stripMargin
 
+          val expectedAggregationWithScript =
+            """
+              |{
+              |  "aggregation": {
+              |    "value_count": {
+              |      "field": "stringField",
+              |      "script": {
+              |        "source": "_value"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
-          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson))
+          assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
+          assert(aggregationWithScript.toJson)(equalTo(expectedAggregationWithScript.toJson))
         },
         test("weightedAvg") {
           val aggregation                 = weightedAvgAggregation("aggregation", "valueField", "weightField")
@@ -2094,6 +3245,173 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithValueMissing.toJson)(equalTo(expectedWithValueMissing.toJson)) &&
           assert(aggregationWithWeightMissing.toJson)(equalTo(expectedWithWeightMissing.toJson)) &&
           assert(aggregationWithValueAndWeightMissing.toJson)(equalTo(expectedWithValueAndWeightMissing.toJson))
+        },
+        test("single bucket aggregations with multiple aggregations as sub-aggregations") {
+          val aggregations = maxAggregation("max", "intField").withAgg(minAggregation("min", "intField"))
+          val filter       = filterAggregation("filter", term("stringField", "test")).withSubAgg(aggregations)
+          val missing      = missingAggregation("missing", "stringField").withSubAgg(aggregations)
+          val sampler      = samplerAggregation("sampler", aggregations, avgAggregation("avg", "intField"))
+
+          val expectedSubAggregations =
+            """
+              |{
+              |  "max": {
+              |    "max": {
+              |      "field": "intField"
+              |    }
+              |  },
+              |  "min": {
+              |    "min": {
+              |      "field": "intField"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedSampler =
+            """
+              |{
+              |  "sampler": {
+              |    "sampler": {
+              |      "shard_size": 100
+              |    },
+              |    "aggs": {
+              |      "max": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      },
+              |      "min": {
+              |        "min": {
+              |          "field": "intField"
+              |        }
+              |      },
+              |      "avg": {
+              |        "avg": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(filter.subAggregations.map(_.name))(equalTo(Chunk("max", "min"))) &&
+          assert(missing.subAggregations.map(_.name))(equalTo(Chunk("max", "min"))) &&
+          assert(filter.toJson)(
+            equalTo(
+              Obj(
+                "filter" -> Obj(
+                  "filter" -> term("stringField", "test").toJson(None),
+                  "aggs"   -> expectedSubAggregations.toJson
+                )
+              )
+            )
+          ) &&
+          assert(sampler.toJson)(equalTo(expectedSampler.toJson))
+        }
+      ),
+      suite("type checking")(
+        test("parent pipeline aggregations are accepted as sub-aggregations of multi-bucket aggregations") {
+          assertZIO(
+            typeCheck(
+              """termsAggregation("aggregation", "testField").withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """rangeAggregation("aggregation", "testField", RangeBound().to(1)).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """ipRangeAggregation("aggregation", "testField", IpRangeBound().to("10.0.0.5")).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isRight)
+        },
+        test("parent pipeline aggregations are rejected as sub-aggregations of single bucket aggregations") {
+          assertZIO(
+            typeCheck(
+              """filterAggregation("aggregation", term("testField", "a")).withSubAgg(maxAggregation("max", "testField"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """samplerAggregation("aggregation", bucketSelectorAggregation("bucketSelector", Script("params.agg > 10"), Map("agg" -> "agg")))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """samplerAggregation("aggregation", maxAggregation("max", "testField")).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """filterAggregation("aggregation", term("testField", "a")).withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """missingAggregation("aggregation", "testField").withSubAgg(bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft)
+        },
+        test("parent pipeline aggregations are rejected at the top level") {
+          assertZIO(
+            typeCheck(
+              """maxAggregation("aggregation", "testField").withAgg(minAggregation("aggregation2", "testField"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck("""ElasticRequest.aggregate(IndexName("index"), maxAggregation("aggregation", "testField"))""")
+          )(isRight) &&
+          assertZIO(
+            typeCheck("""maxAggregation("aggregation", "testField").withAgg(bucketSortAggregation("bucketSort"))""")
+          )(isLeft) &&
+          assertZIO(
+            typeCheck("""bucketSortAggregation("bucketSort").withAgg(maxAggregation("aggregation", "testField"))""")
+          )(isLeft) &&
+          assertZIO(typeCheck("""multipleAggregations.aggregations(bucketSortAggregation("bucketSort"))"""))(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """ElasticRequest.aggregate(IndexName("index"), bucketSortAggregation("bucketSort"))"""
+            )
+          )(isLeft)
+        },
+        test("type-safe constructors accept supported field types") {
+          assertZIO(typeCheck("""avgAggregation("aggregation", TestDocument.dateField)"""))(isRight) &&
+          assertZIO(typeCheck("""termsAggregation("aggregation", TestDocument.intField)"""))(isRight) &&
+          assertZIO(typeCheck("""rangeAggregation("aggregation", "testField", RangeBound().to(1))"""))(isRight)
+        },
+        test("type-safe constructors reject unsupported field types") {
+          assertZIO(typeCheck("""avgAggregation("aggregation", TestDocument.stringField)"""))(isLeft) &&
+          assertZIO(typeCheck("""termsAggregation("aggregation", TestDocument.geoPointField)"""))(isLeft) &&
+          assertZIO(
+            typeCheck("""rangeAggregation("aggregation", "testField", RangeBound().to("a"))""")
+          )(isLeft)
+        },
+        test("missing accepts values supported by the aggregation") {
+          assertZIO(typeCheck("""cardinalityAggregation("aggregation", "testField").missing(true)"""))(isRight) &&
+          assertZIO(typeCheck("""avgAggregation("aggregation", "testField").missing(1)"""))(isRight) &&
+          assertZIO(
+            typeCheck("""maxAggregation("aggregation", "testField").missing(java.time.Instant.EPOCH)""")
+          )(isRight) &&
+          assertZIO(
+            typeCheck("""statsAggregation("aggregation", "testField").missing(java.time.LocalDateTime.MIN)""")
+          )(isRight) &&
+          assertZIO(typeCheck("""percentilesAggregation("aggregation", "testField").missing(1.5)"""))(isRight)
+        },
+        test("missing rejects values not supported by the aggregation") {
+          assertZIO(typeCheck("""avgAggregation("aggregation", "testField").missing(true)"""))(isLeft) &&
+          assertZIO(typeCheck("""sumAggregation("aggregation", "testField").missing("a")"""))(isLeft) &&
+          assertZIO(
+            typeCheck("""percentilesAggregation("aggregation", "testField").missing(java.util.UUID.randomUUID())""")
+          )(isLeft) &&
+          assertZIO(typeCheck("""percentilesAggregation("aggregation", "testField").missing(true)"""))(isLeft) &&
+          assertZIO(
+            typeCheck("""percentileRanksAggregation("aggregation", "testField", 1.0).missing(LocalDate.MIN)""")
+          )(isLeft) &&
+          assertZIO(typeCheck("""extendedStatsAggregation("aggregation", "testField").missing("a")"""))(isLeft)
         }
       )
     )
