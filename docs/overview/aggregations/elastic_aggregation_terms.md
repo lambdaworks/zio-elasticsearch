@@ -18,7 +18,7 @@ val aggregation: TermsAggregation = termsAggregation(name = "termsAggregation", 
 
 You can create a [type-safe](https://lambdaworks.github.io/zio-elasticsearch/overview/overview_zio_prelude_schema) `Terms` aggregation using the `termsAggregation` method this way:
 ```scala
-// Document.stringField must be string value, because of Terms aggregation
+// Document.stringField can be of any type that has an ElasticPrimitive instance (e.g. String, Int, Boolean or LocalDate)
 val aggregation: TermsAggregation = termsAggregation(name = "termsAggregation", field = Document.stringField.keyword)
 ```
 
@@ -47,6 +47,16 @@ val multipleAggregations: MultipleAggregations = termsAggregation(name = "termsA
 If you want to add another sub-aggregation, you can use `withSubAgg` method:
 ```scala
 val aggregationWithSubAgg: TermsAggregation = termsAggregation(name = "termsAggregation", field = Document.stringField).withSubAgg(maxAggregation(name = "maxAggregation", field = Document.intField))
+```
+
+If you want to return only buckets with a minimum number of documents, you can use `minDocCount` method:
+```scala
+val aggregationWithMinDocCount: TermsAggregation = termsAggregation(name = "termsAggregation", field = Document.stringField).minDocCount(2)
+```
+
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: TermsAggregation = termsAggregation(name = "termsAggregation", field = Document.stringField).meta("color", "blue")
 ```
 
 You can find more information about `Terms` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-aggregations-bucket-terms-aggregation.html#search-aggregations-bucket-terms-aggregation).

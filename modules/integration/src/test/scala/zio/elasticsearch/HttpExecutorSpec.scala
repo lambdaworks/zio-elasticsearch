@@ -3725,6 +3725,29 @@ object HttpExecutorSpec extends IntegrationSpec {
                 assert(doc1)(isSome(equalTo(firstDocument))) &&
                 assert(doc2)(isSome(equalTo(secondDocument)))
           }
+        },
+        test("execute bulk request with special characters in document id and routing") {
+          checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>
+            val firstDocumentId  = DocumentId("id-with-\"quote\"-and-\\backslash")
+            val secondDocumentId = DocumentId("id\",\"_index\":\"other")
+            val routing          = Routing("routing-with-\"quote\"-and-\\backslash")
+            for {
+              res <- Executor.execute(
+                       ElasticRequest
+                         .bulk(
+                           ElasticRequest.create[TestDocument](index, firstDocumentId, firstDocument).routing(routing),
+                           ElasticRequest.upsert[TestDocument](index, secondDocumentId, secondDocument)
+                         )
+                         .refreshTrue
+                     )
+              doc1 <- Executor
+                        .execute(ElasticRequest.getById(index, firstDocumentId).routing(routing))
+                        .documentAs[TestDocument]
+              doc2 <- Executor.execute(ElasticRequest.getById(index, secondDocumentId)).documentAs[TestDocument]
+            } yield assert(res.items.map(_.error.isDefined))(equalTo(Chunk(false, false))) &&
+              assert(doc1)(isSome(equalTo(firstDocument))) &&
+              assert(doc2)(isSome(equalTo(secondDocument)))
+          }
         }
       ),
       suite("updating document")(
