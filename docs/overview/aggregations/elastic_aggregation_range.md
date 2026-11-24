@@ -34,6 +34,17 @@ val aggregation: RangeAggregation =
   )
 ```
 
+Range bounds can be of any numeric type, and the `from` and `to` values of a range don't have to be of the same type:
+```scala
+val aggregationWithDecimals: RangeAggregation =
+  rangeAggregation(
+    name = "rangeAggregation",
+    field = Document.doubleField,
+    range = RangeBound().from(0).to(99.5),
+    ranges = RangeBound().from(99.5)
+  )
+```
+
 If you want to associate each bucket with a unique string key, you can use the `keyed` method together with the `key` of each range:
 ```scala
 val aggregationWithKeyed: RangeAggregation =
@@ -57,6 +68,11 @@ If you want to add another sub-aggregation, you can use `withSubAgg` method:
 val aggregationWithSubAgg: RangeAggregation =
   rangeAggregation(name = "rangeAggregation", field = Document.intField, range = RangeBound().to(100))
     .withSubAgg(maxAggregation(name = "maxAggregation", field = Document.intField))
+```
+
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: RangeAggregation = rangeAggregation(name = "rangeAggregation", field = Document.intField, range = RangeBound().to(100)).meta("color", "blue")
 ```
 
 You can find more information about `Range` aggregation [here](https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-range-aggregation).

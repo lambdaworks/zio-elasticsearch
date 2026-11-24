@@ -723,8 +723,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def handleFailures(response: Response[Either[String, String]]): ElasticException =
     response.code match {
-      case HttpUnauthorized | HttpForbidden =>
+      case HttpUnauthorized =>
         UnauthorizedException
+      case HttpForbidden =>
+        ForbiddenException
       case _ =>
         new ElasticException(
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
@@ -735,8 +737,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     response: Response[Either[ResponseException[String], A]]
   ): ElasticException =
     response.code match {
-      case HttpUnauthorized | HttpForbidden =>
+      case HttpUnauthorized =>
         UnauthorizedException
+      case HttpForbidden =>
+        ForbiddenException
       case _ =>
         new ElasticException(
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"

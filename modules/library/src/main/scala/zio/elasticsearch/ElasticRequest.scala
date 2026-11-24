@@ -579,7 +579,7 @@ object ElasticRequest {
   ) extends AggregateRequest {
     private[elasticsearch] def routing: Option[Routing] = None
 
-    private[elasticsearch] def toJson: Json = Obj("aggs" -> aggregation.toJson)
+    private[elasticsearch] def toJson: Json = Obj("size" -> 0.toJson, "aggs" -> aggregation.toJson)
   }
 
   sealed trait BulkRequest
@@ -605,7 +605,9 @@ object ElasticRequest {
         Chunk(
           getActionAndMeta(
             requestType = "create",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("routing", routing))
+            index = index.orElse(this.index),
+            id = None,
+            routing = routing
           ),
           document.raw
         )
@@ -613,7 +615,9 @@ object ElasticRequest {
         Chunk(
           getActionAndMeta(
             requestType = "create",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            index = index.orElse(this.index),
+            id = Some(id),
+            routing = routing
           ),
           document.raw
         )
@@ -621,7 +625,9 @@ object ElasticRequest {
         Chunk(
           getActionAndMeta(
             requestType = "index",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            index = index.orElse(this.index),
+            id = Some(id),
+            routing = routing
           ),
           document.raw
         )
@@ -629,7 +635,9 @@ object ElasticRequest {
         Chunk(
           getActionAndMeta(
             requestType = "delete",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            index = index.orElse(this.index),
+            id = Some(id),
+            routing = routing
           )
         )
       case Update(_, _, None, _, _, None, _) =>
@@ -638,7 +646,9 @@ object ElasticRequest {
         Chunk(
           getActionAndMeta(
             requestType = "update",
-            parameters = Chunk(("_index", index.orElse(this.index)), ("_id", Some(id)), ("routing", routing))
+            index = index.orElse(this.index),
+            id = Some(id),
+            routing = routing
           ),
           update.body
         )
@@ -1015,7 +1025,7 @@ object ElasticRequest {
         from = from,
         highlights = highlights,
         routing = routing,
-        searchAfter = None,
+        searchAfter = searchAfter,
         size = size
       )
 
@@ -1271,13 +1281,19 @@ object ElasticRequest {
   private def getMultiSearchHeader(selectors: String, routing: Option[Routing]): Json =
     Obj("index" -> selectors.toJson) merge routing.fold(Obj())(r => Obj("routing" -> Routing.unwrap(r).toJson))
 
-  private def getActionAndMeta(requestType: String, parameters: Chunk[(String, Any)]): String =
-    parameters.collect { case (name, Some(value)) =>
-      val serializedValue = value match {
-        case indexName: IndexName => IndexName.unwrap(indexName)
-        case other                => other.toString
-      }
-      s""""$name" : "$serializedValue""""
-    }
-      .mkString(s"""{ "$requestType" : { """, ", ", " } }")
+  private def getActionAndMeta(
+    requestType: String,
+    index: Option[IndexName],
+    id: Option[DocumentId],
+    routing: Option[Routing]
+  ): String =
+    Obj(
+      requestType -> Obj(
+        Chunk(
+          index.map(i => "_index" -> IndexName.unwrap(i).toJson),
+          id.map(i => "_id" -> DocumentId.unwrap(i).toJson),
+          routing.map(r => "routing" -> Routing.unwrap(r).toJson)
+        ).flatten
+      )
+    ).toString
 }

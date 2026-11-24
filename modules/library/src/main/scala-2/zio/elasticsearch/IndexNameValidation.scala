@@ -20,6 +20,8 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
 import zio.Chunk
 
+import java.nio.charset.StandardCharsets
+
 object IndexNameValidation {
   def isValid(name: String): Boolean = {
     def containsAny(string: String, params: Chunk[String]): Boolean =
@@ -28,8 +30,8 @@ object IndexNameValidation {
     name.toLowerCase == name &&
     name.nonEmpty &&
     !startsWithAny(name, "+", "-", "_") &&
-    !containsAny(string = name, params = Chunk("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+    !containsAny(string = name, params = Chunk("\\", "/", "*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
     !equalsAny(name, ".", "..") &&
-    name.getBytes().length <= 255
+    name.getBytes(StandardCharsets.UTF_8).length <= 255
   }
 }
