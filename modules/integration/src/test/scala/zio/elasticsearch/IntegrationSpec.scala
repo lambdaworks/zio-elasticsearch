@@ -17,12 +17,16 @@
 package zio.elasticsearch
 
 import sttp.client4.httpclient.zio.HttpClientZioBackend
+import sttp.client4.{UriContext, asStringAlways, basicRequest}
 import zio._
 import zio.elasticsearch.ElasticQuery.matchAll
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
 import zio.elasticsearch.executor.Executor
 import zio.elasticsearch.utils.unsafeWrap
+import zio.json.DecoderOps
+import zio.json.ast.Json.Num
+import zio.json.ast.{Json, JsonCursor}
 import zio.test.Assertion.{containsString, hasMessage}
 import zio.test.CheckVariants.CheckN
 import zio.test.TestAspect.beforeAll
@@ -119,5 +123,34 @@ trait IntegrationSpec extends ZIOSpecDefault {
 
   def checkOnce: CheckN = checkN(1)
 
+  /**
+   * Returns the number of search contexts (scroll contexts and point in times) currently open in the cluster.
+   */
+  def openSearchContexts: Task[Long] =
+    ZIO.scoped {
+      HttpClientZioBackend.scoped().flatMap { backend =>
+        basicRequest
+          .get(uri"http://localhost:9200/_nodes/stats/indices/search")
+          .response(asStringAlways)
+          .send(backend)
+          .flatMap { response =>
+            val openContexts = for {
+              json  <- response.body.fromJson[Json]
+              nodes <- json.get(JsonCursor.field("nodes").isObject)
+            } yield nodes.fields.map { case (_, node) =>
+              node.get(OpenContexts) match {
+                case Right(Num(value)) => value.longValue
+                case _                 => 0L
+              }
+            }.sum
+
+            ZIO.fromEither(openContexts).mapError(error => new RuntimeException(s"Could not read node stats: $error"))
+          }
+      }
+    }
+
   def assertException(substring: String): Assertion[Throwable] = hasMessage(containsString(substring))
+
+  private val OpenContexts =
+    JsonCursor.field("indices").isObject.field("search").isObject.field("open_contexts")
 }

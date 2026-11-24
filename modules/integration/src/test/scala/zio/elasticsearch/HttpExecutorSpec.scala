@@ -3430,6 +3430,56 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
         ),
+        test("scroll stream respects source filtering and highlights") {
+          checkOnce(genTestDocument) { document =>
+            for {
+              _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+              reqs = (0 to 24).map { _ =>
+                       ElasticRequest.create[TestDocument](secondSearchIndex, document.copy(stringField = "streaming"))
+                     }
+              _   <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+              res <- Executor
+                       .stream(
+                         ElasticRequest
+                           .search(secondSearchIndex, matches(TestDocument.stringField, "streaming"))
+                           .includes(TestDocument.stringField)
+                           .highlights(highlight(TestDocument.stringField)),
+                         StreamConfig.Scroll.withPageSize(7)
+                       )
+                       .runCollect
+            } yield assert(res)(hasSize(equalTo(25))) &&
+              assert(res.map(_.raw).distinct)(equalTo(Chunk(Obj("stringField" -> Str("streaming"))))) &&
+              assert(res.map(_.highlight(TestDocument.stringField)).distinct)(
+                equalTo(Chunk(Some(Chunk("<em>streaming</em>"))))
+              )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+        ),
+        test("scroll stream releases the scroll context once completed or terminated early") {
+          checkOnce(genTestDocument) { document =>
+            val request = ElasticRequest.search(secondSearchIndex, matchAll)
+            val config  = StreamConfig.Scroll.withPageSize(10)
+
+            for {
+              _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+              reqs              = (0 to 24).map(_ => ElasticRequest.create[TestDocument](secondSearchIndex, document))
+              _                <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+              before           <- openSearchContexts
+              all              <- Executor.stream(request, config).runCollect
+              afterCompletion  <- openSearchContexts
+              first            <- Executor.stream(request, config).take(1).runCollect
+              afterTermination <- openSearchContexts
+            } yield assert(all)(hasSize(equalTo(25))) &&
+              assert(first)(hasSize(equalTo(1))) &&
+              assert(afterCompletion)(isLessThanEqualTo(before)) &&
+              assert(afterTermination)(isLessThanEqualTo(before))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+        ),
         test("empty stream") {
           val sink: Sink[Throwable, Item, Nothing, Chunk[Item]] = ZSink.collectAll[Item]
 
@@ -3517,6 +3567,56 @@ object HttpExecutorSpec extends IntegrationSpec {
                        )
                        .run(sink)
             } yield assert(res)(hasSize(equalTo(201)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+        ),
+        test("PIT stream respects source filtering and highlights") {
+          checkOnce(genTestDocument) { document =>
+            for {
+              _   <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+              reqs = (0 to 24).map { _ =>
+                       ElasticRequest.create[TestDocument](secondSearchIndex, document.copy(stringField = "streaming"))
+                     }
+              _   <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+              res <- Executor
+                       .stream(
+                         ElasticRequest
+                           .search(secondSearchIndex, matches(TestDocument.stringField, "streaming"))
+                           .includes(TestDocument.stringField)
+                           .highlights(highlight(TestDocument.stringField)),
+                         StreamConfig.SearchAfter.withPageSize(7)
+                       )
+                       .runCollect
+            } yield assert(res)(hasSize(equalTo(25))) &&
+              assert(res.map(_.raw).distinct)(equalTo(Chunk(Obj("stringField" -> Str("streaming"))))) &&
+              assert(res.map(_.highlight(TestDocument.stringField)).distinct)(
+                equalTo(Chunk(Some(Chunk("<em>streaming</em>"))))
+              )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(secondSearchIndex)).orDie
+        ),
+        test("PIT stream releases the point in time once completed or terminated early") {
+          checkOnce(genTestDocument) { document =>
+            val request = ElasticRequest.search(secondSearchIndex, matchAll)
+            val config  = StreamConfig.SearchAfter.withPageSize(10)
+
+            for {
+              _                <- Executor.execute(ElasticRequest.deleteByQuery(secondSearchIndex, matchAll))
+              reqs              = (0 to 24).map(_ => ElasticRequest.create[TestDocument](secondSearchIndex, document))
+              _                <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+              before           <- openSearchContexts
+              all              <- Executor.stream(request, config).runCollect
+              afterCompletion  <- openSearchContexts
+              first            <- Executor.stream(request, config).take(1).runCollect
+              afterTermination <- openSearchContexts
+            } yield assert(all)(hasSize(equalTo(25))) &&
+              assert(first)(hasSize(equalTo(1))) &&
+              assert(afterCompletion)(isLessThanEqualTo(before)) &&
+              assert(afterTermination)(isLessThanEqualTo(before))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(secondSearchIndex)),
