@@ -121,5 +121,12 @@ lazy val docs =
       ScalaUnidoc / unidoc / target              := (LocalRootProject / baseDirectory).value / "website" / "static" / "api",
       cleanFiles += (ScalaUnidoc / unidoc / target).value,
       docusaurusCreateSite     := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
-      docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value
+      docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value,
+      generateReadme           := Def.taskDyn {
+        val root     = (LocalRootProject / baseDirectory).value
+        val template = IO.relativize(root, baseDirectory.value / "readme" / "README.md").get
+        mdoc.toTask(s" --in $template --out README.md")
+      }.value
     )
+
+lazy val generateReadme = taskKey[Unit]("Generates README.md from its mdoc template")

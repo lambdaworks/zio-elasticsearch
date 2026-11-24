@@ -28,6 +28,10 @@ jobs:
         uses: coursier/cache-action@v9
       - name: Check code formatting
         run: ./sbt check
+      - name: Check README is up to date
+        run: |
+          ./sbt docs/generateReadme
+          git diff --exit-code -I '^libraryDependencies \+= "io\.lambdaworks"' README.md
 
   test:
     runs-on: ubuntu-26.04

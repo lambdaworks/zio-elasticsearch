@@ -35,3 +35,12 @@ We welcome contributions from anybody wishing to participate. All code or docume
     ```shell
     sbt prepare
     ```
+
+- `README.md` is generated from `modules/docs/readme/README.md`. Edit the template, never `README.md` directly, and regenerate the README with the following commands:
+
+    ```shell
+    git fetch upstream --tags
+    sbt docs/generateReadme
+    ```
+
+    The version in the README comes from the latest Git tag, so fetch the tags from the upstream repository first. Forks don't sync new tags, and a stale clone would downgrade the version in the README.
