@@ -959,6 +959,48 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("search + aggregate from search request") {
+          val searchAndAggRequestWithAllParams = search(selectors = Index, query = Query)
+            .sort(sortBy("intField"))
+            .includes("stringField", "doubleField")
+            .excludes("booleanField")
+            .from(5)
+            .highlights(highlight("intField"))
+            .routing(RoutingValue)
+            .searchAfter(Arr(Str("12345")))
+            .size(5)
+            .aggregate(MaxAggregation)
+
+          assert(searchAndAggRequestWithAllParams)(
+            equalTo(
+              SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "doubleField"),
+                selectors = Index.toSelector,
+                query = Query,
+                sortBy = Chunk(
+                  SortByFieldOptions(
+                    field = "intField",
+                    format = None,
+                    missing = None,
+                    mode = None,
+                    numericType = None,
+                    order = None,
+                    unmappedType = None
+                  )
+                ),
+                from = Some(5),
+                highlights = Some(
+                  Highlights(fields = Chunk(HighlightField(field = "intField", config = Map.empty)), config = Map.empty)
+                ),
+                routing = Some(RoutingValue),
+                searchAfter = Some(Arr(Str("12345"))),
+                size = Some(5)
+              )
+            )
+          )
+        },
         test("update") {
           val updateRequest              = update(Index, DocId, Doc1)
           val updateRequestWithRefresh   = update(Index, DocId, Doc1).refreshTrue
@@ -1293,6 +1335,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
+              |  "size": 0,
               |  "aggs": {
               |    "aggregation" : {
               |      "max" : {
@@ -1314,9 +1357,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           }
 
           val expected =
-            """|{ "create" : { "_index" : "index", "routing" : "routing" } }
+            """|{"create":{"_index":"index","routing":"routing"}}
                |{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}
-               |{ "index" : { "_index" : "index", "_id" : "documentid" } }
+               |{"index":{"_index":"index","_id":"documentid"}}
                |{"stringField":"stringField2","subDocumentList":[],"dateField":"2022-10-10","intField":10,"doubleField":17.0,"booleanField":false,"geoPointField":{"lat":10.0,"lon":11.0},"vectorField":[]}
                |""".stripMargin
 
@@ -1332,9 +1375,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             case r: Bulk => r.body
           }
           val expectedGlobalIndexOnly =
-            s"""|{ "create" : { "_index" : "index" } }
+            s"""|{"create":{"_index":"index"}}
                 |$doc1Json
-                |{ "index" : { "_index" : "index", "_id" : "documentid" } }
+                |{"index":{"_index":"index","_id":"documentid"}}
                 |$doc2Json
                 |""".stripMargin
 
@@ -1342,9 +1385,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             case r: Bulk => r.body
           }
           val expectedMixedIndices =
-            s"""|{ "create" : { "_index" : "index" } }
+            s"""|{"create":{"_index":"index"}}
                 |$doc1Json
-                |{ "index" : { "_index" : "index2", "_id" : "documentid" } }
+                |{"index":{"_index":"index2","_id":"documentid"}}
                 |$doc2Json
                 |""".stripMargin
 
@@ -1353,9 +1396,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
               case r: Bulk => r.body
             }
           val expectedAllIndividualIndices =
-            s"""|{ "create" : { "_index" : "index2" } }
+            s"""|{"create":{"_index":"index2"}}
                 |$doc1Json
-                |{ "index" : { "_index" : "index2", "_id" : "documentid" } }
+                |{"index":{"_index":"index2","_id":"documentid"}}
                 |$doc2Json
                 |""".stripMargin
 
@@ -1363,9 +1406,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             bulk(Index, create(doc = Doc1).routing(RoutingValue2), upsert(id = DocId, doc = Doc2))
               .routing(RoutingValue) match { case r: Bulk => r.body }
           val expectedIndividualRoutingOverridesGlobal =
-            s"""|{ "create" : { "_index" : "index", "routing" : "routing2" } }
+            s"""|{"create":{"_index":"index","routing":"routing2"}}
                 |$doc1Json
-                |{ "index" : { "_index" : "index", "_id" : "documentid" } }
+                |{"index":{"_index":"index","_id":"documentid"}}
                 |$doc2Json
                 |""".stripMargin
 
@@ -1373,6 +1416,27 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(bodyMixedIndices)(equalTo(expectedMixedIndices)) &&
           assert(bodyAllIndividualIndices)(equalTo(expectedAllIndividualIndices)) &&
           assert(bodyIndividualRoutingOverridesGlobal)(equalTo(expectedIndividualRoutingOverridesGlobal))
+        },
+        test("bulk with special characters in action metadata") {
+          val doc1Json =
+            """{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}"""
+
+          val requestBody =
+            bulk(
+              Index,
+              create(id = DocumentId("a\"b\\c"), doc = Doc1).routing(Routing("r\"\\")),
+              deleteById(DocumentId("x\",\"_index\":\"other"))
+            ) match {
+              case r: Bulk => r.body
+            }
+
+          val expected =
+            s"""|{"create":{"_index":"index","_id":"a\\"b\\\\c","routing":"r\\"\\\\"}}
+                |$doc1Json
+                |{"delete":{"_index":"index","_id":"x\\",\\"_index\\":\\"other"}}
+                |""".stripMargin
+
+          assert(requestBody)(equalTo(expected))
         },
         test("bulk with update and delete") {
           val requestBody =
@@ -1386,11 +1450,11 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             }
 
           val expected =
-            """|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+            """|{"update":{"_index":"index","_id":"documentid"}}
                |{"doc":{"stringField":"stringField1","subDocumentList":[],"dateField":"2020-10-10","intField":5,"doubleField":7.0,"booleanField":true,"geoPointField":{"lat":20.0,"lon":21.0},"vectorField":[]}}
-               |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+               |{"update":{"_index":"index","_id":"documentid"}}
                |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}}}
-               |{ "delete" : { "_index" : "index", "_id" : "documentid" } }
+               |{"delete":{"_index":"index","_id":"documentid"}}
                |""".stripMargin
 
           assert(requestBody)(equalTo(expected))
@@ -1411,9 +1475,9 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             }
 
           val expected =
-            s"""|{ "update" : { "_index" : "index", "_id" : "documentid" } }
+            s"""|{"update":{"_index":"index","_id":"documentid"}}
                 |{"doc":$doc1Json,"upsert":$doc2Json}
-                |{ "update" : { "_index" : "index", "_id" : "documentid" } }
+                |{"update":{"_index":"index","_id":"documentid"}}
                 |{"script":{"source":"doc['intField'].value * params['factor']","params":{"factor":2}},"upsert":$doc2Json}
                 |""".stripMargin
 
@@ -1622,7 +1686,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                |{"index":"index,index2"}
                |{"query":{"range":{"intField":{"gte":10}}},"aggs":{"aggregation":{"terms":{"field":"intField"}}}}
                |{"index":"index"}
-               |{"aggs":{"aggregation":{"max":{"field":"intField"}}}}
+               |{"size":0,"aggs":{"aggregation":{"max":{"field":"intField"}}}}
                |""".stripMargin
 
           assert(requestBody)(equalTo(expected))
@@ -1962,6 +2026,42 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequestWithFrom)(equalTo(expectedWithFrom.toJson)) &&
           assert(jsonRequestWithSortAndHighlights)(equalTo(expectedWithSortAndHighlights.toJson)) &&
           assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("search + aggregate from search request with search after") {
+          val jsonRequest = search(selectors = Index, query = Query)
+            .sort(sortBy(TestDocument.intField))
+            .searchAfter(Arr(Str("12345")))
+            .aggregate(TermsAggregation) match {
+            case r: SearchAndAggregate => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "sort": [
+              |    "intField"
+              |  ],
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |        "gte" : 10
+              |      }
+              |    }
+              |  },
+              |  "aggs": {
+              |    "aggregation" : {
+              |      "terms" : {
+              |        "field" : "intField"
+              |      }
+              |    }
+              |  },
+              |  "search_after" : [
+              |    "12345"
+              |  ]
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {

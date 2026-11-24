@@ -238,9 +238,9 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .body(r.toJson)
     ).flatMap { response =>
       response.code match {
-        case HttpOk         => ZIO.succeed(CreationOutcome.Created)
-        case HttpBadRequest => ZIO.succeed(CreationOutcome.AlreadyExists)
-        case _              => ZIO.fail(handleFailures(response))
+        case HttpOk                                      => ZIO.succeed(CreationOutcome.Created)
+        case HttpBadRequest if isAlreadyExists(response) => ZIO.succeed(CreationOutcome.AlreadyExists)
+        case _                                           => ZIO.fail(handleFailures(response))
       }
     }
 
@@ -361,7 +361,11 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
         .response(asJson[GetResponse])
     ).flatMap { response =>
       response.code match {
-        case HttpOk       => ZIO.attempt(new GetResult(doc = response.body.toOption.map(r => Item(r.source))))
+        case HttpOk =>
+          response.body.fold(
+            e => ZIO.fail(DecodingException(s"Could not parse the document: ${e.getMessage}")),
+            value => ZIO.succeed(new GetResult(doc = Some(Item(value.source))))
+          )
         case HttpNotFound => ZIO.succeed(new GetResult(doc = None))
         case _            => ZIO.fail(handleFailuresFromCustomResponse(response))
       }
@@ -708,13 +712,21 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
       }
     }
 
+  private def isAlreadyExists(response: Response[Either[String, String]]): Boolean =
+    response.body.swap.toOption
+      .flatMap(_.fromJson[Json].toOption)
+      .flatMap(_.get(ErrorType).toOption)
+      .exists(_.value == AlreadyExistsError)
+
   private def getQueryParams(parameters: Chunk[(String, Any)]): ScalaMap[String, String] =
     parameters.collect { case (name, Some(value)) => (name, value.toString) }.toMap
 
   private def handleFailures(response: Response[Either[String, String]]): ElasticException =
     response.code match {
-      case HttpUnauthorized | HttpForbidden =>
+      case HttpUnauthorized =>
         UnauthorizedException
+      case HttpForbidden =>
+        ForbiddenException
       case _ =>
         new ElasticException(
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
@@ -725,8 +737,10 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
     response: Response[Either[ResponseException[String], A]]
   ): ElasticException =
     response.code match {
-      case HttpUnauthorized | HttpForbidden =>
+      case HttpUnauthorized =>
         UnauthorizedException
+      case HttpForbidden =>
+        ForbiddenException
       case _ =>
         new ElasticException(
           s"Unexpected response from Elasticsearch. Response body: ${response.body.fold(body => body, _ => "")}"
@@ -782,18 +796,18 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
 
   private def sendRequest(req: Request[Either[String, String]]): Task[Response[Either[String, String]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true)}")
     } yield resp
 
   private def sendRequestWithCustomResponse[A](
     req: Request[Either[ResponseException[String], A]]
   ): Task[Response[Either[ResponseException[String], A]]] =
     for {
-      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-req]: ${req.show(includeBody = true, includeHeaders = true)}")
       resp <- req.send(client)
-      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true, sensitiveHeaders = Set.empty)}")
+      _    <- logDebug(s"[es-res]: ${resp.show(includeBody = true, includeHeaders = true)}")
     } yield resp
 
   private def streamRequestBody(r: Search, config: StreamConfig): Json =
@@ -870,10 +884,12 @@ private[elasticsearch] object HttpExecutor {
   private final val Update        = "_update"
   private final val UpdateByQuery = "_update_by_query"
 
-  private final val ApplicationNdJson = MediaType("application", "x-ndjson")
-  private final val MultiSearchError  = JsonCursor.field("error")
-  private final val MultiSearchStatus = JsonCursor.field("status")
-  private final val ResponseScrollId  = JsonCursor.field("_scroll_id")
+  private final val AlreadyExistsError = "resource_already_exists_exception"
+  private final val ApplicationNdJson  = MediaType("application", "x-ndjson")
+  private final val ErrorType          = JsonCursor.field("error").isObject.field("type").isString
+  private final val MultiSearchError   = JsonCursor.field("error")
+  private final val MultiSearchStatus  = JsonCursor.field("status")
+  private final val ResponseScrollId   = JsonCursor.field("_scroll_id")
 
   private[elasticsearch] final val ReleaseTimeout: Duration = 10.seconds
 

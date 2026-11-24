@@ -6,7 +6,7 @@ import sttp.client4.{GenericRequest, Response, StringBody}
 import sttp.model.{Method, StatusCode}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain._
-import zio.elasticsearch.executor.Executor
+import zio.elasticsearch.executor.{ElasticCredentials, Executor}
 import zio.test.ZIOSpecDefault
 import zio.{Task, TaskLayer, ULayer, ZLayer}
 
@@ -190,6 +190,56 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     response = ResponseStub.exact("Ok")
   )
 
+  private val createIndexAlreadyExistsRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.PUT && r.uri.toString == s"$url/existing-index",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "error": {
+        |    "root_cause": [
+        |      {
+        |        "type": "resource_already_exists_exception",
+        |        "reason": "index [existing-index/8mXGZ0lbQe6Ckn1j1Y1lDw] already exists",
+        |        "index_uuid": "8mXGZ0lbQe6Ckn1j1Y1lDw",
+        |        "index": "existing-index"
+        |      }
+        |    ],
+        |    "type": "resource_already_exists_exception",
+        |    "reason": "index [existing-index/8mXGZ0lbQe6Ckn1j1Y1lDw] already exists",
+        |    "index_uuid": "8mXGZ0lbQe6Ckn1j1Y1lDw",
+        |    "index": "existing-index"
+        |  },
+        |  "status": 400
+        |}""".stripMargin,
+      StatusCode.BadRequest
+    )
+  )
+
+  private val createIndexInvalidMappingRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.PUT && r.uri.toString == s"$url/invalid-mapping-index",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "error": {
+        |    "root_cause": [
+        |      {
+        |        "type": "mapper_parsing_exception",
+        |        "reason": "No handler for type [not_a_type] declared on field [id]"
+        |      }
+        |    ],
+        |    "type": "mapper_parsing_exception",
+        |    "reason": "Failed to parse mapping: No handler for type [not_a_type] declared on field [id]",
+        |    "caused_by": {
+        |      "type": "mapper_parsing_exception",
+        |      "reason": "No handler for type [not_a_type] declared on field [id]"
+        |    }
+        |  },
+        |  "status": 400
+        |}""".stripMargin,
+      StatusCode.BadRequest
+    )
+  )
+
   private val createOrUpdateRequestStub: StubMapping = StubMapping(
     request = r =>
       r.method == Method.PUT && r.uri.toString == s"$url/repositories/_doc/V4x8q4UB3agN0z75fv5r?refresh=true&routing=routing",
@@ -257,6 +307,18 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |      -20
         |    ]
         |  }
+        |}""".stripMargin
+    )
+  )
+
+  private val getByIdUndecodableRequestStub: StubMapping = StubMapping(
+    request = r => r.method == Method.GET && r.uri.toString == s"$url/repositories/_doc/undecodable-id",
+    response = ResponseStub.adjust(
+      """
+        |{
+        |  "_index": "repositories",
+        |  "_id": "undecodable-id",
+        |  "found": true
         |}""".stripMargin
     )
   )
@@ -410,7 +472,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |        ]
         |      },
         |      "aggregations": {
-        |        "terms#aggregation1": {
+        |        "sterms#aggregation1": {
         |          "doc_count_error_upper_bound": 0,
         |          "sum_other_doc_count": 0,
         |          "buckets": [
@@ -584,7 +646,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
         |    ]
         |  },
         |  "aggregations": {
-        |    "terms#aggregation1": {
+        |    "sterms#aggregation1": {
         |      "doc_count_error_upper_bound": 0,
         |      "sum_other_doc_count": 0,
         |      "buckets": [
@@ -658,6 +720,8 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     countRequestStub,
     countLargeCountsRequestStub,
     createDocumentRequestStub,
+    createIndexAlreadyExistsRequestStub,
+    createIndexInvalidMappingRequestStub,
     createIndexRequestWithMappingStub,
     createIndexRequestWithoutMappingStub,
     createOrUpdateRequestStub,
@@ -667,6 +731,7 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
     deleteIndexRequestStub,
     existsRequestStub,
     getByIdRequestStub,
+    getByIdUndecodableRequestStub,
     multiGetRequestStub,
     multiGetAcrossIndicesRequestStub,
     multiSearchRequestStub,
@@ -684,5 +749,11 @@ trait SttpBackendStubSpec extends ZIOSpecDefault {
 
   val elasticsearchSttpLayer: TaskLayer[Executor] =
     (sttpBackendStubLayer ++ ZLayer.succeed(ElasticConfig.Default)) >>> ElasticExecutor.live
+
+  val credentials: ElasticCredentials = ElasticCredentials(username = "elastic", password = "secret-password")
+
+  val elasticsearchSttpLayerWithCredentials: TaskLayer[Executor] =
+    (sttpBackendStubLayer ++ ZLayer.succeed(ElasticConfig.Default.copy(credentials = Some(credentials)))) >>>
+      ElasticExecutor.live
 
 }

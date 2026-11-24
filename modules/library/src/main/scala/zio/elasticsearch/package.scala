@@ -20,6 +20,8 @@ import zio.elasticsearch.result._
 import zio.prelude.Newtype
 import zio.schema.Schema
 
+import scala.reflect.ClassTag
+
 package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype with RoutingNewtype {
   object DocumentId extends Newtype[String]
   type DocumentId = DocumentId.Type
@@ -47,7 +49,7 @@ package object elasticsearch extends IndexNameNewtype with IndexPatternNewtype w
      * @return
      *   a [[RIO]] effect that, when executed, will produce the aggregation as instance of parameter A.
      */
-    def aggregationAs[A <: AggregationResult](name: String): RIO[R, Option[A]] =
+    def aggregationAs[A <: AggregationResult: ClassTag](name: String): RIO[R, Option[A]] =
       zio.flatMap(_.aggregationAs[A](name))
 
     /**

@@ -27,7 +27,7 @@ If you want to specify the percentiles you want to calculate, you can use `perce
 val aggregationWithPercents: PercentilesAggregation = percentilesAggregation(name = "percentilesAggregation", field = Document.intField).percents(15, 50, 70)
 ```
 
-If you want to change the `missing`, you can use `missing` method:
+If you want to change the `missing`, you can use `missing` method. The value has to be a number.
 ```scala
 val aggregationWithMissing: PercentilesAggregation = percentilesAggregation(name = "percentilesAggregation", field = Document.intField).missing(10.0)
 ```
@@ -35,6 +35,11 @@ val aggregationWithMissing: PercentilesAggregation = percentilesAggregation(name
 If you want to add aggregation (on the same level), you can use `withAgg` method:
 ```scala
 val multipleAggregations: MultipleAggregations = percentilesAggregation(name = "percentilesAggregation1", field = Document.intField).withAgg(percentilesAggregation(name = "percentilesAggregation2", field = Document.doubleField))
+```
+
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: PercentilesAggregation = percentilesAggregation(name = "percentilesAggregation", field = Document.intField).meta("color", "blue")
 ```
 
 You can find more information about `Percentiles` aggregation [here](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/search-aggregations-metrics-percentile-aggregation.html).

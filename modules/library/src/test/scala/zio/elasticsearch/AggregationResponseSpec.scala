@@ -5,7 +5,7 @@ import zio.elasticsearch.executor.response.AggregationResponse.toResult
 import zio.elasticsearch.executor.response.SearchWithAggregationsResponse
 import zio.elasticsearch.result._
 import zio.test.Assertion.{containsString, equalTo, isLeft, isRight}
-import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert}
+import zio.test.{Gen, Spec, TestEnvironment, ZIOSpecDefault, assert, check}
 
 object AggregationResponseSpec extends ZIOSpecDefault {
 
@@ -498,6 +498,138 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           )
         }
       ),
+      suite("decoding typed key variants")(
+        test("terms for string, long, double and unmapped fields") {
+          val emptyTerms   = """{ "doc_count_error_upper_bound": 0, "sum_other_doc_count": 0, "buckets": [] }"""
+          val aggregations =
+            s"""{
+               |  "sterms#stringTermsAggregation": $emptyTerms,
+               |  "lterms#longTermsAggregation": $emptyTerms,
+               |  "dterms#doubleTermsAggregation": $emptyTerms,
+               |  "umterms#unmappedTermsAggregation": $emptyTerms
+               |}""".stripMargin
+
+          val emptyTermsResult = TermsAggregationResult(docErrorCount = 0, sumOtherDocCount = 0, buckets = Chunk.empty)
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "stringTermsAggregation"   -> emptyTermsResult,
+                  "longTermsAggregation"     -> emptyTermsResult,
+                  "doubleTermsAggregation"   -> emptyTermsResult,
+                  "unmappedTermsAggregation" -> emptyTermsResult
+                )
+              )
+            )
+          )
+        },
+        test("terms for unsigned long fields") {
+          val aggregations =
+            """{
+              |  "ulterms#unsignedLongTermsAggregation": {
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [ { "key": 18446744073709551615, "doc_count": 1 } ]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "unsignedLongTermsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        key = "18446744073709551615",
+                        keyAsString = None,
+                        docCount = 1,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("percentiles for tdigest and hdr algorithms") {
+          val aggregations =
+            """{
+              |  "tdigest_percentiles#tdigestPercentilesAggregation": { "values": { "50.0": 1.0 } },
+              |  "hdr_percentiles#hdrPercentilesAggregation": { "values": { "50.0": 2.0 } }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "tdigestPercentilesAggregation" -> PercentilesAggregationResult(values = Map("50.0" -> Some(1.0))),
+                  "hdrPercentilesAggregation"     -> PercentilesAggregationResult(values = Map("50.0" -> Some(2.0)))
+                )
+              )
+            )
+          )
+        },
+        test("percentile ranks for tdigest and hdr algorithms") {
+          val aggregations =
+            """{
+              |  "tdigest_percentile_ranks#tdigestPercentileRanksAggregation": { "values": { "500.0": 10.0 } },
+              |  "hdr_percentile_ranks#hdrPercentileRanksAggregation": { "values": { "500.0": 20.0 } }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "tdigestPercentileRanksAggregation" -> PercentileRanksAggregationResult(values =
+                    Map("500.0" -> Some(10.0))
+                  ),
+                  "hdrPercentileRanksAggregation" -> PercentileRanksAggregationResult(values =
+                    Map("500.0" -> Some(20.0))
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("typed key variants of sub aggregations inside a bucket") {
+          val aggregations =
+            """{
+              |  "filter#filterAggregation": {
+              |    "doc_count": 1,
+              |    "umterms#termsAggregation": { "doc_count_error_upper_bound": 0, "sum_other_doc_count": 0, "buckets": [] },
+              |    "hdr_percentiles#percentilesAggregation": { "values": { "50.0": 1.0 } },
+              |    "hdr_percentile_ranks#percentileRanksAggregation": { "values": { "500.0": 10.0 } }
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "filterAggregation" -> FilterAggregationResult(
+                    docCount = 1,
+                    subAggregations = Map(
+                      "termsAggregation" -> TermsAggregationResult(
+                        docErrorCount = 0,
+                        sumOtherDocCount = 0,
+                        buckets = Chunk.empty
+                      ),
+                      "percentilesAggregation"     -> PercentilesAggregationResult(values = Map("50.0" -> Some(1.0))),
+                      "percentileRanksAggregation" -> PercentileRanksAggregationResult(values =
+                        Map("500.0" -> Some(10.0))
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        }
+      ),
       suite("decoding failures")(
         test("return an error for an invalid aggregation") {
           val aggregations = """{ "avg#avgAggregation": { "value": "invalid" } }"""
@@ -521,6 +653,30 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           assert(results(aggregations))(
             isLeft(equalTo("Unsupported aggregation: geo_bounds#geoBoundsAggregation"))
           )
+        },
+        test("return an error for unsupported aggregations whose type ends with terms or percentiles") {
+          val emptyTerms = """{ "doc_count_error_upper_bound": 0, "sum_other_doc_count": 0, "buckets": [] }"""
+
+          check(
+            Gen.fromIterable(
+              List(
+                "significant_terms",
+                "sigsterms",
+                "siglterms",
+                "rare_terms",
+                "srareterms",
+                "lrareterms",
+                "multi_terms",
+                "percentiles",
+                "percentile_ranks",
+                "percentiles_bucket"
+              )
+            )
+          ) { tpe =>
+            val aggregations = s"""{ "$tpe#aggregation": $emptyTerms }"""
+
+            assert(results(aggregations))(isLeft(equalTo(s"Unsupported aggregation: $tpe#aggregation")))
+          }
         }
       )
     )

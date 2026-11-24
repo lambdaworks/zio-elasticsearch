@@ -44,8 +44,8 @@ lazy val library =
       libraryDependencies ++= List(
         "com.softwaremill.sttp.client4" %% "zio"             % "4.1.3",
         "com.softwaremill.sttp.client4" %% "zio-json"        % "4.1.3",
-        "dev.zio"                       %% "zio-json"        % "1.1.2",
-        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC48",
+        "dev.zio"                       %% "zio-json"        % "1.1.3",
+        "dev.zio"                       %% "zio-prelude"     % "1.0.0-RC49",
         "dev.zio"                       %% "zio-schema"      % "1.9.2",
         "dev.zio"                       %% "zio-schema-json" % "1.9.2",
         "org.apache.commons"             % "commons-lang3"   % "3.22.0",
@@ -74,10 +74,9 @@ lazy val benchmarks =
       publish / skip     := true,
       libraryDependencies ++= List(
         "co.elastic.clients"            % "elasticsearch-java"                   % "9.5.6",
-        "com.fasterxml.jackson.module" %% "jackson-module-scala"                 % "2.22.4",
-        "nl.gn0s1s"                    %% "elastic4s-client-esjava"              % "8.19.3",
-        "nl.gn0s1s"                    %% "elastic4s-effect-zio"                 % "8.19.3",
-        "nl.gn0s1s"                    %% "elastic4s-json-jackson"               % "8.19.3",
+        "com.fasterxml.jackson.module" %% "jackson-module-scala"                 % "2.23.0",
+        "nl.gn0s1s"                    %% "elastic4s-client-esjava"              % "9.5.1",
+        "nl.gn0s1s"                    %% "elastic4s-json-jackson"               % "9.5.1",
         "org.elasticsearch.client"      % "elasticsearch-rest-high-level-client" % "7.17.29"
       )
     )
@@ -97,7 +96,7 @@ lazy val example =
         "dev.zio" %% "zio-config-magnolia" % "4.1.2",
         "dev.zio" %% "zio-config-typesafe" % "4.1.2",
         "dev.zio" %% "zio-http"            % "3.11.6",
-        "dev.zio" %% "zio-json"            % "1.1.2",
+        "dev.zio" %% "zio-json"            % "1.1.3",
         "dev.zio" %% "zio-schema"          % "1.9.2",
         "dev.zio" %% "zio-schema-json"     % "1.9.2"
       )

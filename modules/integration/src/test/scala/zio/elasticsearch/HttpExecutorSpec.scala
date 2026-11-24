@@ -1394,6 +1394,18 @@ object HttpExecutorSpec extends IntegrationSpec {
             res2 <- Executor.execute(ElasticRequest.createIndex(createIndexTestName))
           } yield assert(res1)(equalTo(CreationOutcome.Created)) &&
             assert(res2)(equalTo(CreationOutcome.AlreadyExists))
+        },
+        test("fail to create index with invalid mapping") {
+          assertZIO(
+            Executor
+              .execute(
+                ElasticRequest.createIndex(
+                  createIndexTestName,
+                  """{ "mappings": { "properties": { "id": { "type": "not_a_type" } } } }"""
+                )
+              )
+              .exit
+          )(fails(isSubtype[ElasticException](assertException("mapper_parsing_exception"))))
         }
       ) @@ after(Executor.execute(ElasticRequest.deleteIndex(createIndexTestName)).orDie),
       suite("upserting document")(
@@ -1470,7 +1482,26 @@ object HttpExecutorSpec extends IntegrationSpec {
               fails(isSubtype[Exception](assertException("Could not parse the document: .nestedField(missing)")))
             )
           }
-        }
+        },
+        test("fail when the found document has no _source") {
+          checkOnce(genDocumentId, genTestDocument) { (documentId, document) =>
+            val result = for {
+              _ <- Executor.execute(
+                     ElasticRequest.upsert[TestDocument](firstSearchIndex, documentId, document).refreshTrue
+                   )
+              res <- Executor.execute(ElasticRequest.getById(firstSearchIndex, documentId))
+            } yield res
+
+            assertZIO(result.exit)(
+              fails(isSubtype[DecodingException](assertException("Could not parse the document")))
+            )
+          }
+        } @@ around(
+          Executor.execute(
+            ElasticRequest.createIndex(firstSearchIndex, """{ "mappings": { "_source": { "enabled": false } } }""")
+          ),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        )
       ),
       suite("multi get")(
         test("return found documents and report missing ones from a single index") {
@@ -3658,6 +3689,50 @@ object HttpExecutorSpec extends IntegrationSpec {
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ) @@ shrinks(0),
+        test("search after is kept when aggregation is added to search request") {
+          checkOnce(genTestDocument) { firstDocument =>
+            for {
+              _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+              reqs = (0 to 100).map { i =>
+                       ElasticRequest.create[TestDocument](
+                         firstSearchIndex,
+                         firstDocument.copy(stringField = Random.alphanumeric.take(5).mkString, intField = i)
+                       )
+                     }
+              _          <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+              query       = range(TestDocument.intField).gte(10)
+              aggregation = maxAggregation(name = "aggregationInt", field = TestDocument.intField)
+              res        <- Executor
+                       .execute(
+                         ElasticRequest
+                           .search(firstSearchIndex, query)
+                           .size(10)
+                           .sort(
+                             sortBy(TestDocument.intField).order(Asc)
+                           )
+                       )
+              sa   <- res.lastSortValue
+              res2 <- Executor
+                        .execute(
+                          ElasticRequest
+                            .search(firstSearchIndex, query)
+                            .searchAfter(sa.get)
+                            .size(10)
+                            .sort(
+                              sortBy(TestDocument.intField).order(Asc)
+                            )
+                            .aggregate(aggregation)
+                        )
+              docs <- res2.documentAs[TestDocument]
+              max  <- res2.asMaxAggregation("aggregationInt")
+            } yield assert(docs.map(_.intField))(
+              equalTo(Chunk.fromIterable(20 to 29))
+            ) && assert(max.flatMap(_.value))(isSome(equalTo(100.0)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ) @@ shrinks(0)
       ),
       suite("deleting by query")(
@@ -3780,6 +3855,29 @@ object HttpExecutorSpec extends IntegrationSpec {
               } yield assert(res.items.map(_.error.isDefined))(equalTo(Chunk(false, false))) &&
                 assert(doc1)(isSome(equalTo(firstDocument))) &&
                 assert(doc2)(isSome(equalTo(secondDocument)))
+          }
+        },
+        test("execute bulk request with special characters in document id and routing") {
+          checkOnce(genTestDocument, genTestDocument) { (firstDocument, secondDocument) =>
+            val firstDocumentId  = DocumentId("id-with-\"quote\"-and-\\backslash")
+            val secondDocumentId = DocumentId("id\",\"_index\":\"other")
+            val routing          = Routing("routing-with-\"quote\"-and-\\backslash")
+            for {
+              res <- Executor.execute(
+                       ElasticRequest
+                         .bulk(
+                           ElasticRequest.create[TestDocument](index, firstDocumentId, firstDocument).routing(routing),
+                           ElasticRequest.upsert[TestDocument](index, secondDocumentId, secondDocument)
+                         )
+                         .refreshTrue
+                     )
+              doc1 <- Executor
+                        .execute(ElasticRequest.getById(index, firstDocumentId).routing(routing))
+                        .documentAs[TestDocument]
+              doc2 <- Executor.execute(ElasticRequest.getById(index, secondDocumentId)).documentAs[TestDocument]
+            } yield assert(res.items.map(_.error.isDefined))(equalTo(Chunk(false, false))) &&
+              assert(doc1)(isSome(equalTo(firstDocument))) &&
+              assert(doc2)(isSome(equalTo(secondDocument)))
           }
         }
       ),

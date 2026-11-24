@@ -29,7 +29,7 @@ import zio.elasticsearch.executor.response.{
   Shards,
   UpdateBulkResponse
 }
-import zio.elasticsearch.request.CreationOutcome.Created
+import zio.elasticsearch.request.CreationOutcome.{AlreadyExists, Created}
 import zio.elasticsearch.request.DeletionOutcome.Deleted
 import zio.elasticsearch.request.UpdateConflicts.{Abort, Proceed}
 import zio.elasticsearch.request.UpdateOutcome
@@ -195,6 +195,24 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
         assertZIO(executorCreateIndex)(equalTo(Created)) &&
         assertZIO(executorCreateIndexMapping)(equalTo(Created))
       },
+      test("createIndex returns AlreadyExists when the index already exists") {
+        val executorCreateIndex = Executor.execute(ElasticRequest.createIndex(index = IndexName("existing-index")))
+
+        assertZIO(executorCreateIndex)(equalTo(AlreadyExists))
+      },
+      test("createIndex fails on other bad requests") {
+        val executorCreateIndex =
+          Executor.execute(
+            ElasticRequest.createIndex(
+              index = IndexName("invalid-mapping-index"),
+              definition = """{"mappings":{"properties":{"id":{"type":"not_a_type"}}}}"""
+            )
+          )
+
+        assertZIO(executorCreateIndex.exit)(
+          fails(isSubtype[ElasticException](hasMessage(containsString("mapper_parsing_exception"))))
+        )
+      },
       test("deleteById") {
         val executorDeleteById =
           Executor.execute(
@@ -240,6 +258,14 @@ object HttpElasticExecutorSpec extends SttpBackendStubSpec {
             .documentAs[TestDocument]
 
         assertZIO(executorGetById)(isSome(equalTo(doc)))
+      },
+      test("getById fails when the response cannot be decoded") {
+        val executorGetById =
+          Executor.execute(ElasticRequest.getById(index = index, id = DocumentId("undecodable-id")))
+
+        assertZIO(executorGetById.exit)(
+          fails(isSubtype[DecodingException](hasMessage(startsWithString("Could not parse the document"))))
+        )
       },
       test("knnSearch") {
         val executorSearch =

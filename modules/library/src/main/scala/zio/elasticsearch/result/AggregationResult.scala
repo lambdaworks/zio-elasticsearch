@@ -18,6 +18,8 @@ package zio.elasticsearch.result
 
 import zio.Chunk
 
+import scala.reflect.ClassTag
+
 sealed trait AggregationResult
 
 final case class AvgAggregationResult private[elasticsearch] (value: Option[Double]) extends AggregationResult
@@ -45,7 +47,7 @@ final case class FilterAggregationResult private[elasticsearch] (
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
-  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+  def subAggregationAs[A <: AggregationResult: ClassTag](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
       case Some(agg: A) => Right(Some(agg))
       case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
@@ -65,7 +67,7 @@ final case class IpRangeAggregationBucketResult private[elasticsearch] (
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
-  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+  def subAggregationAs[A <: AggregationResult: ClassTag](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
       case Some(agg: A) => Right(Some(agg))
       case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
@@ -97,7 +99,7 @@ final case class RangeAggregationBucketResult private[elasticsearch] (
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
-  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+  def subAggregationAs[A <: AggregationResult: ClassTag](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
       case Some(agg: A) => Right(Some(agg))
       case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
@@ -110,7 +112,7 @@ final case class SamplerAggregationResult private[elasticsearch] (
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
-  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+  def subAggregationAs[A <: AggregationResult: ClassTag](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
       case Some(agg: A) => Right(Some(agg))
       case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))
@@ -150,7 +152,7 @@ final case class TermsAggregationBucketResult private[elasticsearch] (
   subAggregations: Map[String, AggregationResult]
 ) extends AggregationResult {
 
-  def subAggregationAs[A <: AggregationResult](aggName: String): Either[DecodingException, Option[A]] =
+  def subAggregationAs[A <: AggregationResult: ClassTag](aggName: String): Either[DecodingException, Option[A]] =
     subAggregations.get(aggName) match {
       case Some(agg: A) => Right(Some(agg))
       case Some(_)      => Left(DecodingException(s"Aggregation with name $aggName was not of type you provided."))

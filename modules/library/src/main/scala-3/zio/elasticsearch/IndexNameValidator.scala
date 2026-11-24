@@ -21,6 +21,8 @@ import org.apache.commons.lang3.StringUtils.{equalsAny, startsWithAny}
 import zio.Chunk
 import zio.prelude.{AssertionError, Validator}
 
+import java.nio.charset.StandardCharsets
+
 object IndexNameValidator
     extends Validator[String](name => {
       def containsAny(string: String, params: Chunk[String]): Boolean =
@@ -30,9 +32,9 @@ object IndexNameValidator
         name.toLowerCase == name &&
           !startsWithAny(name, "+", "-", "_") &&
           name.nonEmpty &&
-          !containsAny(string = name, params = Chunk("*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
+          !containsAny(string = name, params = Chunk("\\", "/", "*", "?", "\"", "<", ">", "|", " ", ",", "#", ":")) &&
           !equalsAny(name, ".", "..") &&
-          name.getBytes().length <= 255
+          name.getBytes(StandardCharsets.UTF_8).length <= 255
 
       if (isValid(name)) {
         Right(())
