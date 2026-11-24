@@ -123,9 +123,9 @@ lazy val docs =
       docusaurusCreateSite     := docusaurusCreateSite.dependsOn(Compile / unidoc).value,
       docusaurusPublishGhpages := docusaurusPublishGhpages.dependsOn(Compile / unidoc).value,
       generateReadme           := Def.taskDyn {
-        val template = baseDirectory.value / "readme" / "README.md"
-        val readme   = (LocalRootProject / baseDirectory).value / "README.md"
-        mdoc.toTask(s" --in $template --out $readme")
+        val root     = (LocalRootProject / baseDirectory).value
+        val template = IO.relativize(root, baseDirectory.value / "readme" / "README.md").get
+        mdoc.toTask(s" --in $template --out README.md")
       }.value
     )
 
