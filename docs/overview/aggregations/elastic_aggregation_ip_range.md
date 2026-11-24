@@ -70,4 +70,9 @@ val aggregationWithSubAgg: IpRangeAggregation =
     .withSubAgg(maxAggregation(name = "maxAggregation", field = "intField"))
 ```
 
+If you want to add custom metadata, which Elasticsearch returns together with the aggregation result, you can use `meta` method:
+```scala
+val aggregationWithMeta: IpRangeAggregation = ipRangeAggregation(name = "ipRangeAggregation", field = Document.stringField, range = IpRangeBound().to("10.0.0.5")).meta("color", "blue")
+```
+
 You can find more information about `IP Range` aggregation [here](https://www.elastic.co/docs/reference/aggregations/search-aggregations-bucket-iprange-aggregation).

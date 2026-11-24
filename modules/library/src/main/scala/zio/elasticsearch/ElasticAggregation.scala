@@ -16,6 +16,7 @@
 
 package zio.elasticsearch
 
+import zio.elasticsearch.ElasticPrimitive.ElasticPrimitive
 import zio.elasticsearch.aggregation._
 import zio.elasticsearch.query.ElasticQuery
 import zio.elasticsearch.script.Script
@@ -31,12 +32,12 @@ object ElasticAggregation {
    * @param field
    *   the type-safe field for which avg aggregation will be executed
    * @tparam A
-   *   expected number type
+   *   expected number or date type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.AvgAggregation]] that represents avg aggregation to be performed.
    */
-  final def avgAggregation[A: Numeric](name: String, field: Field[_, A]): AvgAggregation =
-    Avg(name = name, field = field.toString, missing = None)
+  final def avgAggregation[A: NumericOrDate](name: String, field: Field[_, A]): AvgAggregation =
+    Avg(name = name, field = field.toString, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.AvgAggregation]] using the specified parameters.
@@ -49,7 +50,7 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.AvgAggregation]] that represents avg aggregation to be performed.
    */
   final def avgAggregation(name: String, field: String): AvgAggregation =
-    Avg(name = name, field = field, missing = None)
+    Avg(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSelectorAggregation]] using the specified
@@ -70,7 +71,7 @@ object ElasticAggregation {
     script: Script,
     bucketsPath: Map[String, String]
   ): BucketSelectorAggregation =
-    BucketSelector(name = name, script = script, bucketsPath = bucketsPath)
+    BucketSelector(name = name, script = script, bucketsPath = bucketsPath, gapPolicy = None, meta = Chunk.empty)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSortAggregation]] using the specified parameters.
@@ -82,7 +83,7 @@ object ElasticAggregation {
    *   be performed.
    */
   final def bucketSortAggregation(name: String): BucketSortAggregation =
-    BucketSort(name = name, sortBy = Chunk.empty, from = None, size = None)
+    BucketSort(name = name, from = None, gapPolicy = None, meta = Chunk.empty, size = None, sortBy = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified
@@ -97,7 +98,7 @@ object ElasticAggregation {
    *   to be performed.
    */
   final def cardinalityAggregation(name: String, field: Field[_, Any]): CardinalityAggregation =
-    Cardinality(name = name, field = field.toString, missing = None)
+    Cardinality(name = name, field = field.toString, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.CardinalityAggregation]] using the specified parameters.
@@ -112,7 +113,7 @@ object ElasticAggregation {
    *   to be performed.
    */
   final def cardinalityAggregation(name: String, field: String): CardinalityAggregation =
-    Cardinality(name = name, field = field, missing = None)
+    Cardinality(name = name, field = field, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified
@@ -129,7 +130,15 @@ object ElasticAggregation {
    *   aggregation to be performed.
    */
   final def extendedStatsAggregation[A: Numeric](name: String, field: Field[_, A]): ExtendedStatsAggregation =
-    ExtendedStats(name = name, field = field.toString, missing = None, sigma = None)
+    ExtendedStats(
+      name = name,
+      field = field.toString,
+      format = None,
+      meta = Chunk.empty,
+      missing = None,
+      script = None,
+      sigma = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified
@@ -144,7 +153,15 @@ object ElasticAggregation {
    *   aggregation to be performed.
    */
   final def extendedStatsAggregation(name: String, field: String): ExtendedStatsAggregation =
-    ExtendedStats(name = name, field = field, missing = None, sigma = None)
+    ExtendedStats(
+      name = name,
+      field = field,
+      format = None,
+      meta = Chunk.empty,
+      missing = None,
+      script = None,
+      sigma = None
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.FilterAggregation]] using the specified parameters.
@@ -158,7 +175,7 @@ object ElasticAggregation {
    *   performed.
    */
   final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
-    Filter(name = name, query = query, subAggregations = Chunk.empty)
+    Filter(name = name, query = query, meta = Chunk.empty, subAggregations = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.IpRangeAggregation]] using the specified
@@ -185,8 +202,9 @@ object ElasticAggregation {
     IpRange(
       name = name,
       field = field.toString,
-      ranges = NonEmptyChunk(range, ranges: _*),
       isKeyed = false,
+      meta = Chunk.empty,
+      ranges = NonEmptyChunk(range, ranges: _*),
       subAggregations = Chunk.empty
     )
 
@@ -214,8 +232,9 @@ object ElasticAggregation {
     IpRange(
       name = name,
       field = field,
-      ranges = NonEmptyChunk(range, ranges: _*),
       isKeyed = false,
+      meta = Chunk.empty,
+      ranges = NonEmptyChunk(range, ranges: _*),
       subAggregations = Chunk.empty
     )
 
@@ -227,12 +246,12 @@ object ElasticAggregation {
    * @param field
    *   the type-safe field for which max aggregation will be executed
    * @tparam A
-   *   expected number type
+   *   expected number or date type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
    */
-  final def maxAggregation[A: Numeric](name: String, field: Field[_, A]): MaxAggregation =
-    Max(name = name, field = field.toString, missing = None)
+  final def maxAggregation[A: NumericOrDate](name: String, field: Field[_, A]): MaxAggregation =
+    Max(name = name, field = field.toString, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] using the specified parameters.
@@ -245,7 +264,7 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.MaxAggregation]] that represents max aggregation to be performed.
    */
   final def maxAggregation(name: String, field: String): MaxAggregation =
-    Max(name = name, field = field, missing = None)
+    Max(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MinAggregation]] using the specified parameters.
@@ -255,12 +274,12 @@ object ElasticAggregation {
    * @param field
    *   the type-safe field for which min aggregation will be executed
    * @tparam A
-   *   expected number type
+   *   expected number or date type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.MinAggregation]] that represents min aggregation to be performed.
    */
-  final def minAggregation[A: Numeric](name: String, field: Field[_, A]): MinAggregation =
-    Min(name = name, field = field.toString, missing = None)
+  final def minAggregation[A: NumericOrDate](name: String, field: Field[_, A]): MinAggregation =
+    Min(name = name, field = field.toString, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.MinAggregation]] using the specified parameters.
@@ -273,7 +292,7 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.MinAggregation]] that represents min aggregation to be performed.
    */
   final def minAggregation(name: String, field: String): MinAggregation =
-    Min(name = name, field = field, missing = None)
+    Min(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified
@@ -283,12 +302,15 @@ object ElasticAggregation {
    *   aggregation name
    * @param field
    *   the type-safe field for which missing aggregation will be executed
+   * @tparam A
+   *   expected type of the field values, for which an implicit [[zio.elasticsearch.ElasticPrimitive.ElasticPrimitive]]
+   *   is in scope
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.MissingAggregation]] that represents missing aggregation to be
    *   performed.
    */
-  final def missingAggregation(name: String, field: Field[_, String]): MissingAggregation =
-    Missing(name = name, field = field.toString)
+  final def missingAggregation[A: ElasticPrimitive](name: String, field: Field[_, A]): MissingAggregation =
+    Missing(name = name, field = field.toString, meta = Chunk.empty, subAggregations = Chunk.empty)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified parameters.
@@ -302,7 +324,7 @@ object ElasticAggregation {
    *   performed.
    */
   final def missingAggregation(name: String, field: String): MissingAggregation =
-    Missing(name = name, field = field)
+    Missing(name = name, field = field, meta = Chunk.empty, subAggregations = Chunk.empty)
 
   /**
    * Constructs an empty instance of the [[zio.elasticsearch.aggregation.MultipleAggregations]].
@@ -340,8 +362,9 @@ object ElasticAggregation {
     PercentileRanks(
       name = name,
       field = field.toString,
-      values = value +: Chunk.fromIterable(values),
-      missing = None
+      meta = Chunk.empty,
+      missing = None,
+      values = value +: Chunk.fromIterable(values)
     )
 
   /**
@@ -369,8 +392,9 @@ object ElasticAggregation {
     PercentileRanks(
       name = name,
       field = field,
-      values = value +: Chunk.fromIterable(values),
-      missing = None
+      meta = Chunk.empty,
+      missing = None,
+      values = value +: Chunk.fromIterable(values)
     )
 
   /**
@@ -388,7 +412,7 @@ object ElasticAggregation {
    *   to be performed.
    */
   final def percentilesAggregation[A: Numeric](name: String, field: Field[_, A]): PercentilesAggregation =
-    Percentiles(name = name, field = field.toString, percents = Chunk.empty, missing = None)
+    Percentiles(name = name, field = field.toString, meta = Chunk.empty, missing = None, percents = Chunk.empty)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.PercentilesAggregation]] using the specified parameters.
@@ -402,7 +426,7 @@ object ElasticAggregation {
    *   to be performed.
    */
   final def percentilesAggregation(name: String, field: String): PercentilesAggregation =
-    Percentiles(name = name, field = field, percents = Chunk.empty, missing = None)
+    Percentiles(name = name, field = field, meta = Chunk.empty, missing = None, percents = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.RangeAggregation]] using the specified
@@ -431,8 +455,9 @@ object ElasticAggregation {
     Range(
       name = name,
       field = field.toString,
-      ranges = NonEmptyChunk(range, ranges: _*),
       isKeyed = false,
+      meta = Chunk.empty,
+      ranges = NonEmptyChunk(range, ranges: _*),
       subAggregations = Chunk.empty
     )
 
@@ -460,8 +485,9 @@ object ElasticAggregation {
     Range(
       name = name,
       field = field,
-      ranges = NonEmptyChunk(range, ranges: _*),
       isKeyed = false,
+      meta = Chunk.empty,
+      ranges = NonEmptyChunk(range, ranges: _*),
       subAggregations = Chunk.empty
     )
 
@@ -480,10 +506,15 @@ object ElasticAggregation {
    */
   final def samplerAggregation(
     name: String,
-    agg: SingleElasticAggregation,
-    aggs: SingleElasticAggregation*
+    agg: ElasticAggregation,
+    aggs: ElasticAggregation*
   ): SamplerAggregation =
-    Sampler(name = name, shardSizeValue = 100, subAggregations = agg +: aggs)
+    Sampler(
+      name = name,
+      meta = Chunk.empty,
+      shardSize = 100,
+      subAggregations = (agg +: Chunk.fromIterable(aggs)).flatMap(_.singleAggregations)
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified
@@ -494,13 +525,13 @@ object ElasticAggregation {
    * @param field
    *   the type-safe field for which stats aggregation will be executed
    * @tparam A
-   *   expected number type
+   *   expected number or date type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.StatsAggregation]] that represents stats aggregation to be
    *   performed.
    */
-  final def statsAggregation[A: Numeric](name: String, field: Field[_, A]): StatsAggregation =
-    Stats(name = name, field = field.toString, missing = None)
+  final def statsAggregation[A: NumericOrDate](name: String, field: Field[_, A]): StatsAggregation =
+    Stats(name = name, field = field.toString, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.StatsAggregation]] using the specified parameters.
@@ -514,7 +545,7 @@ object ElasticAggregation {
    *   performed.
    */
   final def statsAggregation(name: String, field: String): StatsAggregation =
-    Stats(name = name, field = field, missing = None)
+    Stats(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
@@ -524,12 +555,12 @@ object ElasticAggregation {
    * @param field
    *   the type-safe field for which sum aggregation will be executed
    * @tparam A
-   *   expected number type
+   *   expected number or date type
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents sum aggregation to be performed.
    */
-  final def sumAggregation[A: Numeric](name: String, field: Field[_, A]): SumAggregation =
-    Sum(name = name, field = field.toString, missing = None)
+  final def sumAggregation[A: NumericOrDate](name: String, field: Field[_, A]): SumAggregation =
+    Sum(name = name, field = field.toString, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
@@ -542,7 +573,7 @@ object ElasticAggregation {
    *   an instance of [[zio.elasticsearch.aggregation.SumAggregation]] that represents sum aggregation to be performed.
    */
   final def sumAggregation(name: String, field: String): SumAggregation =
-    Sum(name = name, field = field, missing = None)
+    Sum(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified
@@ -552,12 +583,23 @@ object ElasticAggregation {
    *   the name of the aggregation
    * @param field
    *   the type-safe field for which the aggregation will be executed
+   * @tparam A
+   *   expected type of the field values, for which an implicit [[zio.elasticsearch.ElasticPrimitive.ElasticPrimitive]]
+   *   is in scope
    * @return
    *   an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] that represents terms aggregation to be
    *   performed.
    */
-  final def termsAggregation(name: String, field: Field[_, String]): TermsAggregation =
-    Terms(name = name, field = field.toString, order = Chunk.empty, subAggregations = Chunk.empty, size = None)
+  final def termsAggregation[A: ElasticPrimitive](name: String, field: Field[_, A]): TermsAggregation =
+    Terms(
+      name = name,
+      field = field.toString,
+      meta = Chunk.empty,
+      minDocCount = None,
+      order = Chunk.empty,
+      size = None,
+      subAggregations = Chunk.empty
+    )
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified parameters.
@@ -571,7 +613,15 @@ object ElasticAggregation {
    *   performed.
    */
   final def termsAggregation(name: String, field: String): TermsAggregation =
-    Terms(name = name, field = field, order = Chunk.empty, subAggregations = Chunk.empty, size = None)
+    Terms(
+      name = name,
+      field = field,
+      meta = Chunk.empty,
+      minDocCount = None,
+      order = Chunk.empty,
+      size = None,
+      subAggregations = Chunk.empty
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] using the specified
@@ -586,7 +636,7 @@ object ElasticAggregation {
    *   be performed.
    */
   final def valueCountAggregation(name: String, field: Field[_, Any]): ValueCountAggregation =
-    ValueCount(name = name, field = field.toString)
+    ValueCount(name = name, field = field.toString, meta = Chunk.empty, script = None)
 
   /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.ValueCountAggregation]] using the specified parameters.
@@ -600,7 +650,7 @@ object ElasticAggregation {
    *   be performed.
    */
   final def valueCountAggregation(name: String, field: String): ValueCountAggregation =
-    ValueCount(name = name, field = field)
+    ValueCount(name = name, field = field, meta = Chunk.empty, script = None)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.WeightedAvgAggregation]] using the specified
@@ -625,6 +675,7 @@ object ElasticAggregation {
       name = name,
       valueField = valueField.toString,
       weightField = weightField.toString,
+      meta = Chunk.empty,
       valueMissing = None,
       weightMissing = None
     )
@@ -647,6 +698,7 @@ object ElasticAggregation {
       name = name,
       valueField = valueField,
       weightField = weightField,
+      meta = Chunk.empty,
       valueMissing = None,
       weightMissing = None
     )
