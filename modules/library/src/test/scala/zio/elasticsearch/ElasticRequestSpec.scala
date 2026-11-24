@@ -959,6 +959,48 @@ object ElasticRequestSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("search + aggregate from search request") {
+          val searchAndAggRequestWithAllParams = search(selectors = Index, query = Query)
+            .sort(sortBy("intField"))
+            .includes("stringField", "doubleField")
+            .excludes("booleanField")
+            .from(5)
+            .highlights(highlight("intField"))
+            .routing(RoutingValue)
+            .searchAfter(Arr(Str("12345")))
+            .size(5)
+            .aggregate(MaxAggregation)
+
+          assert(searchAndAggRequestWithAllParams)(
+            equalTo(
+              SearchAndAggregate(
+                aggregation = MaxAggregation,
+                excluded = Chunk("booleanField"),
+                included = Chunk("stringField", "doubleField"),
+                selectors = Index.toSelector,
+                query = Query,
+                sortBy = Chunk(
+                  SortByFieldOptions(
+                    field = "intField",
+                    format = None,
+                    missing = None,
+                    mode = None,
+                    numericType = None,
+                    order = None,
+                    unmappedType = None
+                  )
+                ),
+                from = Some(5),
+                highlights = Some(
+                  Highlights(fields = Chunk(HighlightField(field = "intField", config = Map.empty)), config = Map.empty)
+                ),
+                routing = Some(RoutingValue),
+                searchAfter = Some(Arr(Str("12345"))),
+                size = Some(5)
+              )
+            )
+          )
+        },
         test("update") {
           val updateRequest              = update(Index, DocId, Doc1)
           val updateRequestWithRefresh   = update(Index, DocId, Doc1).refreshTrue
@@ -1293,6 +1335,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           val expected =
             """
               |{
+              |  "size": 0,
               |  "aggs": {
               |    "aggregation" : {
               |      "max" : {
@@ -1643,7 +1686,7 @@ object ElasticRequestSpec extends ZIOSpecDefault {
                |{"index":"index,index2"}
                |{"query":{"range":{"intField":{"gte":10}}},"aggs":{"aggregation":{"terms":{"field":"intField"}}}}
                |{"index":"index"}
-               |{"aggs":{"aggregation":{"max":{"field":"intField"}}}}
+               |{"size":0,"aggs":{"aggregation":{"max":{"field":"intField"}}}}
                |""".stripMargin
 
           assert(requestBody)(equalTo(expected))
@@ -1983,6 +2026,42 @@ object ElasticRequestSpec extends ZIOSpecDefault {
           assert(jsonRequestWithFrom)(equalTo(expectedWithFrom.toJson)) &&
           assert(jsonRequestWithSortAndHighlights)(equalTo(expectedWithSortAndHighlights.toJson)) &&
           assert(jsonRequestWithAllParams)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("search + aggregate from search request with search after") {
+          val jsonRequest = search(selectors = Index, query = Query)
+            .sort(sortBy(TestDocument.intField))
+            .searchAfter(Arr(Str("12345")))
+            .aggregate(TermsAggregation) match {
+            case r: SearchAndAggregate => r.toJson
+          }
+
+          val expected =
+            """
+              |{
+              |  "sort": [
+              |    "intField"
+              |  ],
+              |  "query" : {
+              |    "range" : {
+              |      "intField" : {
+              |        "gte" : 10
+              |      }
+              |    }
+              |  },
+              |  "aggs": {
+              |    "aggregation" : {
+              |      "terms" : {
+              |        "field" : "intField"
+              |      }
+              |    }
+              |  },
+              |  "search_after" : [
+              |    "12345"
+              |  ]
+              |}
+              |""".stripMargin
+
+          assert(jsonRequest)(equalTo(expected.toJson))
         },
         test("update") {
           val jsonRequest = update(index = Index, id = DocId, doc = Doc1) match {

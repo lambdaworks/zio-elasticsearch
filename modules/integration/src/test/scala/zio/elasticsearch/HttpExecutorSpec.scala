@@ -3558,6 +3558,50 @@ object HttpExecutorSpec extends IntegrationSpec {
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ) @@ shrinks(0),
+        test("search after is kept when aggregation is added to search request") {
+          checkOnce(genTestDocument) { firstDocument =>
+            for {
+              _   <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+              reqs = (0 to 100).map { i =>
+                       ElasticRequest.create[TestDocument](
+                         firstSearchIndex,
+                         firstDocument.copy(stringField = Random.alphanumeric.take(5).mkString, intField = i)
+                       )
+                     }
+              _          <- Executor.execute(ElasticRequest.bulk(reqs: _*).refreshTrue)
+              query       = range(TestDocument.intField).gte(10)
+              aggregation = maxAggregation(name = "aggregationInt", field = TestDocument.intField)
+              res        <- Executor
+                       .execute(
+                         ElasticRequest
+                           .search(firstSearchIndex, query)
+                           .size(10)
+                           .sort(
+                             sortBy(TestDocument.intField).order(Asc)
+                           )
+                       )
+              sa   <- res.lastSortValue
+              res2 <- Executor
+                        .execute(
+                          ElasticRequest
+                            .search(firstSearchIndex, query)
+                            .searchAfter(sa.get)
+                            .size(10)
+                            .sort(
+                              sortBy(TestDocument.intField).order(Asc)
+                            )
+                            .aggregate(aggregation)
+                        )
+              docs <- res2.documentAs[TestDocument]
+              max  <- res2.asMaxAggregation("aggregationInt")
+            } yield assert(docs.map(_.intField))(
+              equalTo(Chunk.fromIterable(20 to 29))
+            ) && assert(max.flatMap(_.value))(isSome(equalTo(100.0)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ) @@ shrinks(0)
       ),
       suite("deleting by query")(
