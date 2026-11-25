@@ -73,7 +73,7 @@ lazy val benchmarks =
       crossScalaVersions := List(Scala213),
       publish / skip     := true,
       libraryDependencies ++= List(
-        "co.elastic.clients"            % "elasticsearch-java"                   % "9.5.6",
+        "co.elastic.clients"            % "elasticsearch-java"                   % "9.5.7",
         "com.fasterxml.jackson.module" %% "jackson-module-scala"                 % "2.23.0",
         "nl.gn0s1s"                    %% "elastic4s-client-esjava"              % "9.5.1",
         "nl.gn0s1s"                    %% "elastic4s-json-jackson"               % "9.5.1",
