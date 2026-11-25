@@ -785,6 +785,222 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           )
         }
       ),
+      suite("decoding histogram, pipeline and filters aggregations")(
+        test("histogram with numeric keys, keyed or not") {
+          val buckets =
+            """[
+              |  { "key": 0.0, "doc_count": 1, "max#maxAggregation": { "value": 10.0 } },
+              |  { "key": 20.0, "doc_count": 0, "max#maxAggregation": { "value": null } }
+              |]""".stripMargin
+          val keyedBuckets =
+            """{
+              |  "0.0": { "key": 0.0, "doc_count": 1, "max#maxAggregation": { "value": 10.0 } },
+              |  "20.0": { "key": 20.0, "doc_count": 0, "max#maxAggregation": { "value": null } }
+              |}""".stripMargin
+          val aggregations =
+            s"""{
+               |  "histogram#histogramAggregation": { "buckets": $buckets },
+               |  "histogram#keyedHistogramAggregation": { "buckets": $keyedBuckets }
+               |}""".stripMargin
+
+          val expected = HistogramAggregationResult(
+            buckets = Chunk(
+              HistogramAggregationBucketResult(
+                key = 0.0,
+                keyAsString = None,
+                docCount = 1,
+                subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = Some(10.0)))
+              ),
+              HistogramAggregationBucketResult(
+                key = 20.0,
+                keyAsString = None,
+                docCount = 0,
+                subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = None))
+              )
+            )
+          )
+
+          assert(results(aggregations))(
+            isRight(equalTo(Map("histogramAggregation" -> expected, "keyedHistogramAggregation" -> expected)))
+          )
+        },
+        test("date histogram with epoch millis keys and parent pipeline sub aggregations") {
+          val aggregations =
+            """{
+              |  "date_histogram#dateHistogramAggregation": {
+              |    "buckets": [
+              |      {
+              |        "key_as_string": "2024-01-01T00:00:00.000Z",
+              |        "key": 1704067200000,
+              |        "doc_count": 2,
+              |        "sum#sumAggregation": { "value": 35.0 },
+              |        "simple_value#cumulativeSumAggregation": { "value": 35.0, "value_as_string": "35.0" }
+              |      },
+              |      {
+              |        "key_as_string": "2024-02-01T00:00:00.000Z",
+              |        "key": 1706745600000,
+              |        "doc_count": 1,
+              |        "sum#sumAggregation": { "value": 40.0 },
+              |        "simple_value#cumulativeSumAggregation": { "value": 75.0, "value_as_string": "75.0" },
+              |        "derivative#derivativeAggregation": { "value": 5.0, "normalized_value": 0.16129032258064516 }
+              |      }
+              |    ]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "dateHistogramAggregation" -> DateHistogramAggregationResult(
+                    buckets = Chunk(
+                      DateHistogramAggregationBucketResult(
+                        key = 1704067200000L,
+                        keyAsString = Some("2024-01-01T00:00:00.000Z"),
+                        docCount = 2,
+                        subAggregations = Map(
+                          "sumAggregation"           -> SumAggregationResult(value = 35.0),
+                          "cumulativeSumAggregation" -> SimpleValueAggregationResult(
+                            value = Some(35.0),
+                            valueAsString = Some("35.0")
+                          )
+                        )
+                      ),
+                      DateHistogramAggregationBucketResult(
+                        key = 1706745600000L,
+                        keyAsString = Some("2024-02-01T00:00:00.000Z"),
+                        docCount = 1,
+                        subAggregations = Map(
+                          "sumAggregation"           -> SumAggregationResult(value = 40.0),
+                          "cumulativeSumAggregation" -> SimpleValueAggregationResult(
+                            value = Some(75.0),
+                            valueAsString = Some("75.0")
+                          ),
+                          "derivativeAggregation" -> DerivativeAggregationResult(
+                            value = Some(5.0),
+                            valueAsString = None,
+                            normalizedValue = Some(0.16129032258064516)
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("derivative without a value") {
+          val aggregations =
+            """{
+              |  "derivative#derivativeAggregation": { "value": null, "normalized_value": null }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "derivativeAggregation" -> DerivativeAggregationResult(
+                    value = None,
+                    valueAsString = None,
+                    normalizedValue = None
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("sibling pipeline aggregations") {
+          val aggregations =
+            """{
+              |  "simple_value#avgBucketAggregation": { "value": null },
+              |  "simple_value#sumBucketAggregation": { "value": 75.0, "value_as_string": "75.00" },
+              |  "bucket_metric_value#minBucketAggregation": { "value": 35.0, "keys": ["2024-01-01T00:00:00.000Z"] },
+              |  "bucket_metric_value#maxBucketAggregation": { "value": 40.0, "keys": ["a", "b"] },
+              |  "stats_bucket#statsBucketAggregation": { "count": 2, "min": 35.0, "max": 40.0, "avg": 37.5, "sum": 75.0 }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "avgBucketAggregation" -> SimpleValueAggregationResult(value = None, valueAsString = None),
+                  "sumBucketAggregation" -> SimpleValueAggregationResult(
+                    value = Some(75.0),
+                    valueAsString = Some("75.00")
+                  ),
+                  "minBucketAggregation" -> BucketMetricValueAggregationResult(
+                    value = Some(35.0),
+                    valueAsString = None,
+                    keys = Chunk("2024-01-01T00:00:00.000Z")
+                  ),
+                  "maxBucketAggregation" -> BucketMetricValueAggregationResult(
+                    value = Some(40.0),
+                    valueAsString = None,
+                    keys = Chunk("a", "b")
+                  ),
+                  "statsBucketAggregation" -> StatsAggregationResult(
+                    count = 2,
+                    min = Some(35.0),
+                    max = Some(40.0),
+                    avg = Some(37.5),
+                    sum = 75.0
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("named and anonymous filters") {
+          val aggregations =
+            """{
+              |  "filters#namedFiltersAggregation": {
+              |    "buckets": {
+              |      "errors": { "doc_count": 2, "max#maxAggregation": { "value": 3.0 } },
+              |      "warnings": { "doc_count": 1, "max#maxAggregation": { "value": 1.0 } },
+              |      "_other_": { "doc_count": 0, "max#maxAggregation": { "value": null } }
+              |    }
+              |  },
+              |  "filters#anonymousFiltersAggregation": {
+              |    "buckets": [{ "doc_count": 2 }, { "doc_count": 1 }]
+              |  }
+              |}""".stripMargin
+
+          val named = FiltersAggregationResult(
+            buckets = Chunk(
+              FiltersAggregationBucketResult(
+                key = Some("errors"),
+                docCount = 2,
+                subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = Some(3.0)))
+              ),
+              FiltersAggregationBucketResult(
+                key = Some("warnings"),
+                docCount = 1,
+                subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = Some(1.0)))
+              ),
+              FiltersAggregationBucketResult(
+                key = Some("_other_"),
+                docCount = 0,
+                subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = None))
+              )
+            )
+          )
+          val anonymous = FiltersAggregationResult(
+            buckets = Chunk(
+              FiltersAggregationBucketResult(key = None, docCount = 2, subAggregations = Map.empty),
+              FiltersAggregationBucketResult(key = None, docCount = 1, subAggregations = Map.empty)
+            )
+          )
+
+          assert(results(aggregations))(
+            isRight(equalTo(Map("namedFiltersAggregation" -> named, "anonymousFiltersAggregation" -> anonymous)))
+          ) &&
+          assert(named.bucketsByKey.map { case (key, bucket) => key -> bucket.docCount })(
+            equalTo(Map("errors" -> 2L, "warnings" -> 1L, "_other_" -> 0L))
+          ) &&
+          assert(anonymous.bucketsByKey)(equalTo(Map.empty[String, FiltersAggregationBucketResult]))
+        }
+      ),
       suite("decoding failures")(
         test("return an error for a bucket that cannot be decoded") {
           val aggregations =
