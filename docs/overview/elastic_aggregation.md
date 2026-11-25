@@ -83,12 +83,24 @@ In case the suffix is `"keyword"` or `"raw"` you can use `keyword` and `raw` met
 Aggregations are divided into three groups:
 
 - **metric** aggregations (e.g. `avg`, `max`, `stats`) compute metrics from field values,
-- **bucket** aggregations group documents into buckets and accept sub-aggregations through `withSubAgg`. They are either multi-bucket (`terms`, `range`, `ipRange`) or single-bucket (`filter`, `missing`, `sampler`),
-- **pipeline** aggregations (e.g. `bucketSelector`, `bucketSort`) work on the output of other aggregations.
+- **bucket** aggregations group documents into buckets and accept sub-aggregations through `withSubAgg`. They are either multi-bucket (`terms`, `histogram`, `dateHistogram`, `range`, `ipRange`, `filters`) or single-bucket (`filter`, `missing`, `sampler`),
+- **pipeline** aggregations work on the output of other aggregations. They are either sibling pipeline aggregations (`avgBucket`, `sumBucket`, `minBucket`, `maxBucket`, `statsBucket`), which work on the buckets of an aggregation on the same level, or parent pipeline aggregations (`bucketScript`, `bucketSelector`, `bucketSort`, `cumulativeSum`, `derivative`), which work on the buckets of their parent aggregation.
 
-Metric and bucket aggregations can be combined on the same level with `withAgg`, which returns `MultipleAggregations`.
+Metric, bucket and sibling pipeline aggregations can be combined on the same level with `withAgg`, which returns `MultipleAggregations`.
 Aggregations on the same level, and sub-aggregations of the same aggregation, must have unique names.
-Parent pipeline aggregations, such as `bucketSelector` and `bucketSort`, work on the buckets of their parent aggregation, so they can only be added as sub-aggregations of a multi-bucket aggregation.
+Pipeline aggregations refer to the metrics they work on with a buckets path, in which `>` separates the names of the aggregations (e.g. `"salesPerMonth>sales"`), and `_count` refers to the document count of a bucket:
+
+```scala
+import zio.elasticsearch.ElasticAggregation._
+import zio.elasticsearch.aggregation.CalendarInterval
+
+dateHistogramAggregation(name = "salesPerMonth", field = "date", interval = CalendarInterval.Month)
+  .withSubAgg(sumAggregation(name = "sales", field = "price"))
+  .withSubAgg(cumulativeSumAggregation(name = "cumulativeSales", bucketsPath = "sales"))
+  .withAgg(avgBucketAggregation(name = "averageMonthlySales", bucketsPath = "salesPerMonth>sales"))
+```
+
+Parent pipeline aggregations work on the buckets of their parent aggregation, so they can only be added as sub-aggregations of a multi-bucket aggregation.
 Using them on the top level of a request, or as a sub-aggregation of a single-bucket aggregation, is rejected at compile time:
 
 ```scala
@@ -145,7 +157,7 @@ val terms: RIO[Elasticsearch, Option[TermsAggregationResult]] =
 
 An accessor returns `None` if there is no aggregation with the given name, and fails with a `DecodingException` if the aggregation is of another type.
 
-Results of multi-bucket aggregations (`terms`, `range`, `ip_range`) contain `buckets`, each with its `key` and `docCount`. Results of single-bucket aggregations (`filter`, `missing`, `sampler`) contain their `docCount`. Buckets and single-bucket results give access to the results of their sub-aggregations with `subAggregationAs`:
+Results of multi-bucket aggregations (`terms`, `histogram`, `date_histogram`, `range`, `ip_range`, `filters`) contain `buckets`, each with its `key` and `docCount`. The type of the key depends on the aggregation: a `String` for `terms`, `range` and `ip_range`, a `Double` for `histogram`, a `Long` (milliseconds since the epoch, together with the formatted `keyAsString`) for `date_histogram`, and an `Option[String]` for `filters` (`None` for anonymous filters). Results of single-bucket aggregations (`filter`, `missing`, `sampler`) contain their `docCount`. Buckets and single-bucket results give access to the results of their sub-aggregations with `subAggregationAs`:
 
 ```scala
 val maxAges: RIO[Elasticsearch, Chunk[Option[MaxAggregationResult]]] =
@@ -155,5 +167,7 @@ val maxAges: RIO[Elasticsearch, Chunk[Option[MaxAggregationResult]]] =
     }
   }
 ```
+
+Elasticsearch returns the same result for several pipeline aggregations, so they share a result type: `avgBucket`, `sumBucket`, `cumulativeSum` and `bucketScript` return a `SimpleValueAggregationResult`, `minBucket` and `maxBucket` return a `BucketMetricValueAggregationResult` (with the `keys` of the matching buckets), `statsBucket` returns a `StatsAggregationResult` and `derivative` returns a `DerivativeAggregationResult`. Results of parent pipeline aggregations are in the buckets of their parent aggregation, so they are retrieved with `subAggregationAs`.
 
 Every result also contains the `meta` that was set on its aggregation (an empty map if none was set).

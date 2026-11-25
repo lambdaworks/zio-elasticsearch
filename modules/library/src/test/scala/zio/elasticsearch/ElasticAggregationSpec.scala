@@ -13,7 +13,7 @@ import zio.test.Assertion.{equalTo, isLeft, isRight}
 import zio.test._
 import zio.{Chunk, NonEmptyChunk}
 
-import java.time.LocalDate
+import java.time.{Duration, LocalDate, ZoneId, ZoneOffset}
 
 object ElasticAggregationSpec extends ZIOSpecDefault {
   def spec: Spec[TestEnvironment, Any] =
@@ -114,6 +114,74 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                 meta = Chunk("b" -> Str("two"), "a" -> Num(3)),
                 missing = None,
                 script = None
+              )
+            )
+          )
+        },
+        test("avgBucket") {
+          val aggregation              = avgBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            avgBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              AvgBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              AvgBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms"))
+              )
+            )
+          )
+        },
+        test("bucketScript") {
+          val aggregation = bucketScriptAggregation(
+            name = "aggregation",
+            script = Script("params.a / params.b"),
+            bucketsPath = Map("a" -> "sumA", "b" -> "sumB")
+          )
+          val aggregationWithAllParams = bucketScriptAggregation(
+            name = "aggregation",
+            script = Script("params.a / params.b"),
+            bucketsPath = Map("a" -> "sumA", "b" -> "sumB")
+          ).format("0.00").gapPolicy(GapPolicy.KeepValues).meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              BucketScript(
+                name = "aggregation",
+                script = Script("params.a / params.b"),
+                bucketsPath = Map("a" -> "sumA", "b" -> "sumB"),
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              BucketScript(
+                name = "aggregation",
+                script = Script("params.a / params.b"),
+                bucketsPath = Map("a" -> "sumA", "b" -> "sumB"),
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.KeepValues),
+                meta = Chunk("unit" -> Str("ms"))
               )
             )
           )
@@ -313,6 +381,140 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("cumulativeSum") {
+          val aggregation              = cumulativeSumAggregation("aggregation", "sumAggregation")
+          val aggregationWithAllParams =
+            cumulativeSumAggregation("aggregation", "sumAggregation").format("0.00").meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              CumulativeSum(name = "aggregation", bucketsPath = "sumAggregation", format = None, meta = Chunk.empty)
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              CumulativeSum(
+                name = "aggregation",
+                bucketsPath = "sumAggregation",
+                format = Some("0.00"),
+                meta = Chunk("unit" -> Str("ms"))
+              )
+            )
+          )
+        },
+        test("dateHistogram") {
+          val aggregation              = dateHistogramAggregation("aggregation", "testField", CalendarInterval.Month)
+          val aggregationTs            = dateHistogramAggregation("aggregation", TestDocument.dateField, FixedInterval.days(30))
+          val aggregationWithAllParams =
+            dateHistogramAggregation("aggregation", TestDocument.dateField, CalendarInterval.Day)
+              .extendedBounds(DateHistogramBounds().min(LocalDate.of(2024, 1, 1)).max(LocalDate.of(2024, 1, 31)))
+              .format("yyyy-MM-dd")
+              .hardBounds(DateHistogramBounds().min(0L))
+              .keyed
+              .meta("unit", "ms")
+              .minDocCount(0)
+              .missing(LocalDate.of(2000, 1, 1))
+              .offset(Duration.ofHours(6))
+              .orderByKeyDesc
+              .timeZone(ZoneId.of("Europe/Belgrade"))
+              .withSubAgg(maxAggregation("maxAggregation", TestDocument.intField))
+
+          assert(aggregation)(
+            equalTo(
+              DateHistogram(
+                name = "aggregation",
+                field = "testField",
+                interval = CalendarInterval.Month,
+                extendedBounds = None,
+                format = None,
+                hardBounds = None,
+                isKeyed = false,
+                meta = Chunk.empty,
+                minDocCount = None,
+                missing = None,
+                offset = None,
+                order = Chunk.empty,
+                subAggregations = Chunk.empty,
+                timeZone = None
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              DateHistogram(
+                name = "aggregation",
+                field = "dateField",
+                interval = FixedInterval.days(30),
+                extendedBounds = None,
+                format = None,
+                hardBounds = None,
+                isKeyed = false,
+                meta = Chunk.empty,
+                minDocCount = None,
+                missing = None,
+                offset = None,
+                order = Chunk.empty,
+                subAggregations = Chunk.empty,
+                timeZone = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              DateHistogram(
+                name = "aggregation",
+                field = "dateField",
+                interval = CalendarInterval.Day,
+                extendedBounds =
+                  Some(DateHistogramBounds(min = Some(Str("2024-01-01")), max = Some(Str("2024-01-31")))),
+                format = Some("yyyy-MM-dd"),
+                hardBounds = Some(DateHistogramBounds(min = Some(Num(0)))),
+                isKeyed = true,
+                meta = Chunk("unit" -> Str("ms")),
+                minDocCount = Some(0),
+                missing = Some(Str("2000-01-01")),
+                offset = Some(Duration.ofHours(6)),
+                order = Chunk(AggregationOrder("_key", Desc)),
+                subAggregations = Chunk(maxAggregation("maxAggregation", TestDocument.intField)),
+                timeZone = Some(ZoneId.of("Europe/Belgrade"))
+              )
+            )
+          )
+        },
+        test("derivative") {
+          val aggregation              = derivativeAggregation("aggregation", "sumAggregation")
+          val aggregationWithAllParams =
+            derivativeAggregation("aggregation", "sumAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+              .unit(CalendarInterval.Day)
+
+          assert(aggregation)(
+            equalTo(
+              Derivative(
+                name = "aggregation",
+                bucketsPath = "sumAggregation",
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty,
+                unit = None
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Derivative(
+                name = "aggregation",
+                bucketsPath = "sumAggregation",
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms")),
+                unit = Some(CalendarInterval.Day)
+              )
+            )
+          )
+        },
         test("extendedStats") {
           val aggregation                    = extendedStatsAggregation("aggregation", "testField")
           val aggregationTs                  = extendedStatsAggregation("aggregation", TestSubDocument.intField)
@@ -460,6 +662,126 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                 query = query,
                 meta = Chunk("unit" -> Str("ms")),
                 subAggregations = Chunk.empty
+              )
+            )
+          )
+        },
+        test("filters") {
+          val aggregationNamed =
+            filtersAggregation("aggregation", "a" -> term("stringField", "a"), "b" -> term("stringField", "b"))
+          val aggregationAnonymous =
+            filtersAggregation("aggregation", term("stringField", "a"), term("stringField", "b"))
+          val aggregationWithAllParams =
+            filtersAggregation("aggregation", "a" -> term(TestDocument.stringField, "a"))
+              .meta("unit", "ms")
+              .otherBucket
+              .otherBucketKey("other")
+              .withSubAgg(maxAggregation("maxAggregation", TestDocument.intField))
+
+          assert(aggregationNamed)(
+            equalTo(
+              Filters(
+                name = "aggregation",
+                filters =
+                  Filters.Named(NonEmptyChunk("a" -> term("stringField", "a"), "b" -> term("stringField", "b"))),
+                hasOtherBucket = false,
+                meta = Chunk.empty,
+                otherBucketKey = None,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationAnonymous)(
+            equalTo(
+              Filters(
+                name = "aggregation",
+                filters = Filters.Anonymous(NonEmptyChunk(term("stringField", "a"), term("stringField", "b"))),
+                hasOtherBucket = false,
+                meta = Chunk.empty,
+                otherBucketKey = None,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Filters(
+                name = "aggregation",
+                filters = Filters.Named(NonEmptyChunk("a" -> term(TestDocument.stringField, "a"))),
+                hasOtherBucket = true,
+                meta = Chunk("unit" -> Str("ms")),
+                otherBucketKey = Some("other"),
+                subAggregations = Chunk(maxAggregation("maxAggregation", TestDocument.intField))
+              )
+            )
+          )
+        },
+        test("histogram") {
+          val aggregation              = histogramAggregation("aggregation", "testField", 10)
+          val aggregationTs            = histogramAggregation("aggregation", TestDocument.doubleField, 2.5)
+          val aggregationWithAllParams =
+            histogramAggregation("aggregation", TestDocument.intField, 10)
+              .extendedBounds(HistogramBounds().min(0).max(100))
+              .hardBounds(HistogramBounds().max(50))
+              .keyed
+              .meta("unit", "ms")
+              .minDocCount(1)
+              .missing(0)
+              .offset(5)
+              .orderByCountDesc
+              .withSubAgg(maxAggregation("maxAggregation", TestDocument.intField))
+
+          assert(aggregation)(
+            equalTo(
+              Histogram(
+                name = "aggregation",
+                field = "testField",
+                interval = 10,
+                extendedBounds = None,
+                hardBounds = None,
+                isKeyed = false,
+                meta = Chunk.empty,
+                minDocCount = None,
+                missing = None,
+                offset = None,
+                order = Chunk.empty,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationTs)(
+            equalTo(
+              Histogram(
+                name = "aggregation",
+                field = "doubleField",
+                interval = 2.5,
+                extendedBounds = None,
+                hardBounds = None,
+                isKeyed = false,
+                meta = Chunk.empty,
+                minDocCount = None,
+                missing = None,
+                offset = None,
+                order = Chunk.empty,
+                subAggregations = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              Histogram(
+                name = "aggregation",
+                field = "intField",
+                interval = 10,
+                extendedBounds = Some(HistogramBounds(min = Some(0), max = Some(100))),
+                hardBounds = Some(HistogramBounds(max = Some(50))),
+                isKeyed = true,
+                meta = Chunk("unit" -> Str("ms")),
+                minDocCount = Some(1),
+                missing = Some(Num(0)),
+                offset = Some(5),
+                order = Chunk(AggregationOrder("_count", Desc)),
+                subAggregations = Chunk(maxAggregation("maxAggregation", TestDocument.intField))
               )
             )
           )
@@ -650,6 +972,37 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("maxBucket") {
+          val aggregation              = maxBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            maxBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              MaxBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              MaxBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms"))
+              )
+            )
+          )
+        },
         test("min") {
           val aggregation              = minAggregation("aggregation", "testField")
           val aggregationTs            = minAggregation("aggregation", TestSubDocument.intField)
@@ -731,6 +1084,37 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                 meta = Chunk("unit" -> Str("day")),
                 missing = Some(Str("2024-01-01")),
                 script = Some(Script("_value"))
+              )
+            )
+          )
+        },
+        test("minBucket") {
+          val aggregation              = minBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            minBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              MinBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              MinBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms"))
               )
             )
           )
@@ -1317,6 +1701,37 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             )
           )
         },
+        test("statsBucket") {
+          val aggregation              = statsBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            statsBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              StatsBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              StatsBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms"))
+              )
+            )
+          )
+        },
         test("subAggregation") {
           val aggregation1 = termsAggregation(name = "first", field = TestDocument.stringField).withSubAgg(
             termsAggregation(name = "second", field = TestSubDocument.stringField.raw)
@@ -1490,6 +1905,37 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
                 meta = Chunk("unit" -> Str("day")),
                 missing = Some(Str("2024-01-01")),
                 script = Some(Script("_value"))
+              )
+            )
+          )
+        },
+        test("sumBucket") {
+          val aggregation              = sumBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            sumBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+
+          assert(aggregation)(
+            equalTo(
+              SumBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = None,
+                gapPolicy = None,
+                meta = Chunk.empty
+              )
+            )
+          ) &&
+          assert(aggregationWithAllParams)(
+            equalTo(
+              SumBucket(
+                name = "aggregation",
+                bucketsPath = "termsAggregation>maxAggregation",
+                format = Some("0.00"),
+                gapPolicy = Some(GapPolicy.InsertZeros),
+                meta = Chunk("unit" -> Str("ms"))
               )
             )
           )
@@ -1832,6 +2278,97 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
           assert(aggregationWithAllParams.toJson)(equalTo(expectedAggregationWithAllParams.toJson))
         },
+        test("avgBucket") {
+          val aggregation              = avgBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            avgBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.Skip)
+              .meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "avg_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "avg_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation",
+              |      "format": "0.00",
+              |      "gap_policy": "skip"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("bucketScript") {
+          val aggregation = bucketScriptAggregation(
+            name = "aggregation",
+            script = Script("params.a / params.b"),
+            bucketsPath = Map("a" -> "sumA", "b" -> "sumB")
+          )
+          val aggregationWithAllParams = bucketScriptAggregation(
+            name = "aggregation",
+            script = Script("params.a / params.b"),
+            bucketsPath = Map("a" -> "sumA")
+          ).format("0.00").gapPolicy(GapPolicy.KeepValues).meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_script": {
+              |      "buckets_path": {
+              |        "a": "sumA",
+              |        "b": "sumB"
+              |      },
+              |      "script": {
+              |        "source": "params.a / params.b"
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "bucket_script": {
+              |      "buckets_path": {
+              |        "a": "sumA"
+              |      },
+              |      "format": "0.00",
+              |      "gap_policy": "keep_values",
+              |      "script": {
+              |        "source": "params.a / params.b"
+              |      }
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("bucketSelector") {
           val aggregation1 = bucketSelectorAggregation(
             name = "aggregation",
@@ -2064,6 +2601,168 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
           assert(aggregationWithAllParams.toJson)(equalTo(expectedAggregationWithAllParams.toJson))
         },
+        test("cumulativeSum") {
+          val aggregation              = cumulativeSumAggregation("aggregation", "sumAggregation")
+          val aggregationWithAllParams =
+            cumulativeSumAggregation("aggregation", "sumAggregation").format("0.00").meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "cumulative_sum": {
+              |      "buckets_path": "sumAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "cumulative_sum": {
+              |      "buckets_path": "sumAggregation",
+              |      "format": "0.00"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("dateHistogram") {
+          val aggregationCalendar = dateHistogramAggregation("aggregation", "testField", CalendarInterval.Quarter)
+          val aggregationFixed    =
+            Chunk(
+              FixedInterval.milliseconds(500) -> "500ms",
+              FixedInterval.seconds(30)       -> "30s",
+              FixedInterval.minutes(15)       -> "15m",
+              FixedInterval.hours(12)         -> "12h",
+              FixedInterval.days(7)           -> "7d"
+            )
+          val aggregationWithAllParams =
+            dateHistogramAggregation("aggregation", TestDocument.dateField, CalendarInterval.Day)
+              .extendedBounds(DateHistogramBounds().min(LocalDate.of(2024, 1, 1)).max(LocalDate.of(2024, 1, 31)))
+              .format("yyyy-MM-dd")
+              .hardBounds(DateHistogramBounds().min(0L))
+              .keyed
+              .meta("unit", "ms")
+              .minDocCount(0)
+              .missing(LocalDate.of(2000, 1, 1))
+              .offset(Duration.ofHours(-6))
+              .orderByKeyDesc
+              .timeZone(ZoneOffset.ofHours(1))
+              .withSubAgg(maxAggregation("maxAggregation", TestDocument.intField))
+
+          val expectedCalendar =
+            """
+              |{
+              |  "aggregation": {
+              |    "date_histogram": {
+              |      "field": "testField",
+              |      "calendar_interval": "quarter"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "date_histogram": {
+              |      "field": "dateField",
+              |      "calendar_interval": "day",
+              |      "extended_bounds": {
+              |        "min": "2024-01-01",
+              |        "max": "2024-01-31"
+              |      },
+              |      "format": "yyyy-MM-dd",
+              |      "hard_bounds": {
+              |        "min": 0
+              |      },
+              |      "keyed": true,
+              |      "min_doc_count": 0,
+              |      "missing": "2000-01-01",
+              |      "offset": "-21600000ms",
+              |      "order": {
+              |        "_key": "desc"
+              |      },
+              |      "time_zone": "+01:00"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    },
+              |    "aggs": {
+              |      "maxAggregation": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregationCalendar.toJson)(equalTo(expectedCalendar.toJson)) &&
+          assert(aggregationFixed.map { case (interval, _) =>
+            dateHistogramAggregation("aggregation", "testField", interval).toJson
+          })(
+            equalTo(aggregationFixed.map { case (_, value) =>
+              Obj(
+                "aggregation" -> Obj(
+                  "date_histogram" -> Obj("field" -> Str("testField"), "fixed_interval" -> Str(value))
+                )
+              )
+            })
+          ) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("derivative") {
+          val aggregation              = derivativeAggregation("aggregation", "sumAggregation")
+          val aggregationWithAllParams =
+            derivativeAggregation("aggregation", "sumAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.InsertZeros)
+              .meta("unit", "ms")
+              .unit(FixedInterval.days(1))
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "derivative": {
+              |      "buckets_path": "sumAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "derivative": {
+              |      "buckets_path": "sumAggregation",
+              |      "format": "0.00",
+              |      "gap_policy": "insert_zeros",
+              |      "unit": "1d"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("extendedStats") {
           val aggregation                    = extendedStatsAggregation("aggregation", "testField")
           val aggregationTs                  = extendedStatsAggregation("aggregation", TestSubDocument.intField)
@@ -2214,6 +2913,174 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithSubAggregation.toJson)(equalTo(expectedWithSubAggregation.toJson)) &&
           assert(aggregationWithMultipleSubAggregations.toJson)(equalTo(expectedWithMultipleSubAggregations.toJson))
         },
+        test("filters") {
+          val aggregationNamed =
+            filtersAggregation("aggregation", "a" -> term("stringField", "a"), "b" -> term("stringField", "b"))
+          val aggregationAnonymous =
+            filtersAggregation("aggregation", term("stringField", "a"), term("stringField", "b")).otherBucket
+          val aggregationWithAllParams =
+            filtersAggregation("aggregation", "a" -> term(TestDocument.stringField, "a"))
+              .meta("unit", "ms")
+              .otherBucketKey("other")
+              .withSubAgg(maxAggregation("maxAggregation", TestDocument.intField))
+
+          val expectedNamed =
+            """
+              |{
+              |  "aggregation": {
+              |    "filters": {
+              |      "filters": {
+              |        "a": {
+              |          "term": {
+              |            "stringField": {
+              |              "value": "a"
+              |            }
+              |          }
+              |        },
+              |        "b": {
+              |          "term": {
+              |            "stringField": {
+              |              "value": "b"
+              |            }
+              |          }
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedAnonymous =
+            """
+              |{
+              |  "aggregation": {
+              |    "filters": {
+              |      "filters": [
+              |        {
+              |          "term": {
+              |            "stringField": {
+              |              "value": "a"
+              |            }
+              |          }
+              |        },
+              |        {
+              |          "term": {
+              |            "stringField": {
+              |              "value": "b"
+              |            }
+              |          }
+              |        }
+              |      ],
+              |      "other_bucket": true
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "filters": {
+              |      "filters": {
+              |        "a": {
+              |          "term": {
+              |            "stringField": {
+              |              "value": "a"
+              |            }
+              |          }
+              |        }
+              |      },
+              |      "other_bucket_key": "other"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    },
+              |    "aggs": {
+              |      "maxAggregation": {
+              |        "max": {
+              |          "field": "intField"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregationNamed.toJson)(equalTo(expectedNamed.toJson)) &&
+          assert(aggregationAnonymous.toJson)(equalTo(expectedAnonymous.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
+        test("histogram") {
+          val aggregation              = histogramAggregation("aggregation", "testField", 10)
+          val aggregationWithAllParams =
+            histogramAggregation("aggregation", TestDocument.doubleField, 2.5)
+              .extendedBounds(HistogramBounds().min(0).max(100))
+              .hardBounds(HistogramBounds().max(50))
+              .keyed
+              .meta("unit", "ms")
+              .minDocCount(1)
+              .missing(0)
+              .offset(0.5)
+              .orderBy(AggregationOrder("_count", Desc), AggregationOrder("_key", Asc))
+              .withSubAgg(cumulativeSumAggregation("cumulativeSum", "_count"))
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "histogram": {
+              |      "field": "testField",
+              |      "interval": 10.0
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "histogram": {
+              |      "field": "doubleField",
+              |      "interval": 2.5,
+              |      "extended_bounds": {
+              |        "min": 0.0,
+              |        "max": 100.0
+              |      },
+              |      "hard_bounds": {
+              |        "max": 50.0
+              |      },
+              |      "keyed": true,
+              |      "min_doc_count": 1,
+              |      "missing": 0,
+              |      "offset": 0.5,
+              |      "order": [
+              |        {
+              |          "_count": "desc"
+              |        },
+              |        {
+              |          "_key": "asc"
+              |        }
+              |      ]
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    },
+              |    "aggs": {
+              |      "cumulativeSum": {
+              |        "cumulative_sum": {
+              |          "buckets_path": "_count"
+              |        }
+              |      }
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("ipRange") {
           val aggregation =
             ipRangeAggregation(
@@ -2362,6 +3229,44 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson)) &&
           assert(aggregationWithDateMissing.toJson)(equalTo(expectedAggregationWithDateMissing.toJson))
         },
+        test("maxBucket") {
+          val aggregation              = maxBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            maxBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.Skip)
+              .meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "max_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "max_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation",
+              |      "format": "0.00",
+              |      "gap_policy": "skip"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("min") {
           val aggregation            = minAggregation("aggregation", "testField")
           val aggregationTs          = minAggregation("aggregation", TestDocument.intField)
@@ -2404,6 +3309,44 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
+        test("minBucket") {
+          val aggregation              = minBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            minBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.Skip)
+              .meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "min_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "min_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation",
+              |      "format": "0.00",
+              |      "gap_policy": "skip"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("missing") {
           val aggregation              = missingAggregation("aggregation", "testField")
@@ -2912,6 +3855,44 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
         },
+        test("statsBucket") {
+          val aggregation              = statsBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            statsBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.Skip)
+              .meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "stats_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "stats_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation",
+              |      "format": "0.00",
+              |      "gap_policy": "skip"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
+        },
         test("subAggregation") {
           val aggregation =
             termsAggregation("first", TestDocument.stringField)
@@ -3002,6 +3983,44 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assert(aggregation.toJson)(equalTo(expected.toJson)) &&
           assert(aggregationTs.toJson)(equalTo(expectedTs.toJson)) &&
           assert(aggregationWithMissing.toJson)(equalTo(expectedWithMissing.toJson))
+        },
+        test("sumBucket") {
+          val aggregation              = sumBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+          val aggregationWithAllParams =
+            sumBucketAggregation("aggregation", "termsAggregation>maxAggregation")
+              .format("0.00")
+              .gapPolicy(GapPolicy.Skip)
+              .meta("unit", "ms")
+
+          val expected =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          val expectedWithAllParams =
+            """
+              |{
+              |  "aggregation": {
+              |    "sum_bucket": {
+              |      "buckets_path": "termsAggregation>maxAggregation",
+              |      "format": "0.00",
+              |      "gap_policy": "skip"
+              |    },
+              |    "meta": {
+              |      "unit": "ms"
+              |    }
+              |  }
+              |}
+              |""".stripMargin
+
+          assert(aggregation.toJson)(equalTo(expected.toJson)) &&
+          assert(aggregationWithAllParams.toJson)(equalTo(expectedWithAllParams.toJson))
         },
         test("terms") {
           val aggregation              = termsAggregation("aggregation", "testField")
@@ -3327,6 +4346,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             typeCheck(
               """ipRangeAggregation("aggregation", "testField", IpRangeBound().to("10.0.0.5")).withSubAgg(bucketSortAggregation("bucketSort"))"""
             )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """histogramAggregation("aggregation", "testField", 10).withSubAgg(cumulativeSumAggregation("cumulativeSum", "_count"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """dateHistogramAggregation("aggregation", "testField", CalendarInterval.Month).withSubAgg(derivativeAggregation("derivative", "_count"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """filtersAggregation("aggregation", term("testField", "a")).withSubAgg(bucketScriptAggregation("bucketScript", Script("params.a"), Map("a" -> "_count")))"""
+            )
           )(isRight)
         },
         test("parent pipeline aggregations are rejected as sub-aggregations of single bucket aggregations") {
@@ -3354,6 +4388,21 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             typeCheck(
               """missingAggregation("aggregation", "testField").withSubAgg(bucketSortAggregation("bucketSort"))"""
             )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """filterAggregation("aggregation", term("testField", "a")).withSubAgg(cumulativeSumAggregation("cumulativeSum", "_count"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """missingAggregation("aggregation", "testField").withSubAgg(derivativeAggregation("derivative", "_count"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """samplerAggregation("aggregation", bucketScriptAggregation("bucketScript", Script("params.a"), Map("a" -> "_count")))"""
+            )
           )(isLeft)
         },
         test("parent pipeline aggregations are rejected at the top level") {
@@ -3376,19 +4425,75 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
             typeCheck(
               """ElasticRequest.aggregate(IndexName("index"), bucketSortAggregation("bucketSort"))"""
             )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """ElasticRequest.aggregate(IndexName("index"), cumulativeSumAggregation("cumulativeSum", "_count"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """maxAggregation("aggregation", "testField").withAgg(derivativeAggregation("derivative", "_count"))"""
+            )
+          )(isLeft) &&
+          assertZIO(
+            typeCheck(
+              """multipleAggregations.aggregations(bucketScriptAggregation("bucketScript", Script("params.a"), Map("a" -> "_count")))"""
+            )
           )(isLeft)
+        },
+        test("sibling pipeline aggregations are accepted at the top level and as sub-aggregations") {
+          assertZIO(
+            typeCheck(
+              """dateHistogramAggregation("histogram", "testField", CalendarInterval.Month).withAgg(avgBucketAggregation("avgBucket", "histogram>_count"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """ElasticRequest.aggregate(IndexName("index"), statsBucketAggregation("statsBucket", "histogram>_count"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """multipleAggregations.aggregations(maxBucketAggregation("maxBucket", "histogram>_count"), minBucketAggregation("minBucket", "histogram>_count"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """filterAggregation("aggregation", term("testField", "a")).withSubAgg(sumBucketAggregation("sumBucket", "histogram>_count"))"""
+            )
+          )(isRight) &&
+          assertZIO(
+            typeCheck(
+              """termsAggregation("aggregation", "testField").withSubAgg(sumBucketAggregation("sumBucket", "histogram>_count"))"""
+            )
+          )(isRight)
         },
         test("type-safe constructors accept supported field types") {
           assertZIO(typeCheck("""avgAggregation("aggregation", TestDocument.dateField)"""))(isRight) &&
           assertZIO(typeCheck("""termsAggregation("aggregation", TestDocument.intField)"""))(isRight) &&
-          assertZIO(typeCheck("""rangeAggregation("aggregation", "testField", RangeBound().to(1))"""))(isRight)
+          assertZIO(typeCheck("""rangeAggregation("aggregation", "testField", RangeBound().to(1))"""))(isRight) &&
+          assertZIO(typeCheck("""histogramAggregation("aggregation", TestDocument.intField, 10)"""))(isRight) &&
+          assertZIO(
+            typeCheck("""dateHistogramAggregation("aggregation", TestDocument.dateField, CalendarInterval.Day)""")
+          )(isRight)
         },
         test("type-safe constructors reject unsupported field types") {
           assertZIO(typeCheck("""avgAggregation("aggregation", TestDocument.stringField)"""))(isLeft) &&
           assertZIO(typeCheck("""termsAggregation("aggregation", TestDocument.geoPointField)"""))(isLeft) &&
           assertZIO(
             typeCheck("""rangeAggregation("aggregation", "testField", RangeBound().to("a"))""")
+          )(isLeft) &&
+          assertZIO(typeCheck("""histogramAggregation("aggregation", TestDocument.dateField, 10)"""))(isLeft) &&
+          assertZIO(
+            typeCheck("""dateHistogramAggregation("aggregation", TestDocument.stringField, CalendarInterval.Day)""")
           )(isLeft)
+        },
+        test("date histogram intervals and bounds are typed") {
+          assertZIO(typeCheck("""dateHistogramAggregation("aggregation", "testField", "1d")"""))(isLeft) &&
+          assertZIO(typeCheck("""derivativeAggregation("derivative", "_count").unit("1d")"""))(isLeft) &&
+          assertZIO(typeCheck("""DateHistogramBounds().min(java.time.Instant.EPOCH).max(1L)"""))(isRight) &&
+          assertZIO(typeCheck("""DateHistogramBounds().min("2024-01-01")"""))(isLeft)
         },
         test("missing accepts values supported by the aggregation") {
           assertZIO(typeCheck("""cardinalityAggregation("aggregation", "testField").missing(true)"""))(isRight) &&
@@ -3399,7 +4504,13 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assertZIO(
             typeCheck("""statsAggregation("aggregation", "testField").missing(java.time.LocalDateTime.MIN)""")
           )(isRight) &&
-          assertZIO(typeCheck("""percentilesAggregation("aggregation", "testField").missing(1.5)"""))(isRight)
+          assertZIO(typeCheck("""percentilesAggregation("aggregation", "testField").missing(1.5)"""))(isRight) &&
+          assertZIO(typeCheck("""histogramAggregation("aggregation", "testField", 10).missing(0)"""))(isRight) &&
+          assertZIO(
+            typeCheck(
+              """dateHistogramAggregation("aggregation", "testField", CalendarInterval.Day).missing(LocalDate.MIN)"""
+            )
+          )(isRight)
         },
         test("missing rejects values not supported by the aggregation") {
           assertZIO(typeCheck("""avgAggregation("aggregation", "testField").missing(true)"""))(isLeft) &&
@@ -3411,7 +4522,13 @@ object ElasticAggregationSpec extends ZIOSpecDefault {
           assertZIO(
             typeCheck("""percentileRanksAggregation("aggregation", "testField", 1.0).missing(LocalDate.MIN)""")
           )(isLeft) &&
-          assertZIO(typeCheck("""extendedStatsAggregation("aggregation", "testField").missing("a")"""))(isLeft)
+          assertZIO(typeCheck("""extendedStatsAggregation("aggregation", "testField").missing("a")"""))(isLeft) &&
+          assertZIO(typeCheck("""histogramAggregation("aggregation", "testField", 10).missing(LocalDate.MIN)"""))(
+            isLeft
+          ) &&
+          assertZIO(
+            typeCheck("""dateHistogramAggregation("aggregation", "testField", CalendarInterval.Day).missing("a")""")
+          )(isLeft)
         }
       )
     )

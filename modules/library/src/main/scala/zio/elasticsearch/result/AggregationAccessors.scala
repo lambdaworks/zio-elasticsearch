@@ -57,6 +57,18 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
     aggregationAs[AvgAggregationResult](name)
 
   /**
+   * Retrieves the `avg_bucket` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[SimpleValueAggregationResult]], or `None` if there is
+   *   no aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of another type.
+   */
+  final def asAvgBucketAggregation(name: String): ZIO[R, E, Option[SimpleValueAggregationResult]] =
+    aggregationAs[SimpleValueAggregationResult](name)
+
+  /**
    * Retrieves the `cardinality` aggregation with the given name.
    *
    * @param name
@@ -67,6 +79,19 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
    */
   final def asCardinalityAggregation(name: String): ZIO[R, E, Option[CardinalityAggregationResult]] =
     aggregationAs[CardinalityAggregationResult](name)
+
+  /**
+   * Retrieves the `date_histogram` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[DateHistogramAggregationResult]], or `None` if there
+   *   is no aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of another
+   *   type.
+   */
+  final def asDateHistogramAggregation(name: String): ZIO[R, E, Option[DateHistogramAggregationResult]] =
+    aggregationAs[DateHistogramAggregationResult](name)
 
   /**
    * Retrieves the `extended_stats` aggregation with the given name.
@@ -94,6 +119,30 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
     aggregationAs[FilterAggregationResult](name)
 
   /**
+   * Retrieves the `filters` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[FiltersAggregationResult]], or `None` if there is no
+   *   aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of another type.
+   */
+  final def asFiltersAggregation(name: String): ZIO[R, E, Option[FiltersAggregationResult]] =
+    aggregationAs[FiltersAggregationResult](name)
+
+  /**
+   * Retrieves the `histogram` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[HistogramAggregationResult]], or `None` if there is
+   *   no aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of another type.
+   */
+  final def asHistogramAggregation(name: String): ZIO[R, E, Option[HistogramAggregationResult]] =
+    aggregationAs[HistogramAggregationResult](name)
+
+  /**
    * Retrieves the `ip_range` aggregation with the given name.
    *
    * @param name
@@ -118,6 +167,19 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
     aggregationAs[MaxAggregationResult](name)
 
   /**
+   * Retrieves the `max_bucket` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[BucketMetricValueAggregationResult]], or `None` if
+   *   there is no aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of
+   *   another type.
+   */
+  final def asMaxBucketAggregation(name: String): ZIO[R, E, Option[BucketMetricValueAggregationResult]] =
+    aggregationAs[BucketMetricValueAggregationResult](name)
+
+  /**
    * Retrieves the `min` aggregation with the given name.
    *
    * @param name
@@ -128,6 +190,19 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
    */
   final def asMinAggregation(name: String): ZIO[R, E, Option[MinAggregationResult]] =
     aggregationAs[MinAggregationResult](name)
+
+  /**
+   * Retrieves the `min_bucket` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[BucketMetricValueAggregationResult]], or `None` if
+   *   there is no aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of
+   *   another type.
+   */
+  final def asMinBucketAggregation(name: String): ZIO[R, E, Option[BucketMetricValueAggregationResult]] =
+    aggregationAs[BucketMetricValueAggregationResult](name)
 
   /**
    * Retrieves the `missing` aggregation with the given name.
@@ -203,6 +278,18 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
     aggregationAs[StatsAggregationResult](name)
 
   /**
+   * Retrieves the `stats_bucket` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[StatsAggregationResult]], or `None` if there is no
+   *   aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of another type.
+   */
+  final def asStatsBucketAggregation(name: String): ZIO[R, E, Option[StatsAggregationResult]] =
+    aggregationAs[StatsAggregationResult](name)
+
+  /**
    * Retrieves the `sum` aggregation with the given name.
    *
    * @param name
@@ -213,6 +300,18 @@ private[elasticsearch] trait AggregationAccessors[R, E] {
    */
   final def asSumAggregation(name: String): ZIO[R, E, Option[SumAggregationResult]] =
     aggregationAs[SumAggregationResult](name)
+
+  /**
+   * Retrieves the `sum_bucket` aggregation with the given name.
+   *
+   * @param name
+   *   the name of the aggregation to retrieve
+   * @return
+   *   an effect that produces the aggregation as an instance of [[SimpleValueAggregationResult]], or `None` if there is
+   *   no aggregation with the given name. It fails with a [[DecodingException]] if the aggregation is of another type.
+   */
+  final def asSumBucketAggregation(name: String): ZIO[R, E, Option[SimpleValueAggregationResult]] =
+    aggregationAs[SimpleValueAggregationResult](name)
 
   /**
    * Retrieves the `terms` aggregation with the given name.

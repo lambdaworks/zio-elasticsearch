@@ -26,6 +26,8 @@ import zio.json.ast.Json
 import zio.json.ast.Json.{Arr, Obj}
 import zio.{Chunk, NonEmptyChunk}
 
+import java.time.{Duration, ZoneId}
+
 /**
  * An aggregation that can be used at the top level of a request: either a
  * [[zio.elasticsearch.aggregation.MultipleAggregations]] or a single
@@ -170,6 +172,67 @@ private[elasticsearch] final case class Avg(
     Params.field(field = field, format = format, missing = missing, script = script)
 }
 
+sealed trait AvgBucketAggregation
+    extends SiblingPipelineAggregation
+    with HasFormat[AvgBucketAggregation]
+    with HasGapPolicy[AvgBucketAggregation]
+    with HasMeta[AvgBucketAggregation]
+
+private[elasticsearch] final case class AvgBucket(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)]
+) extends AvgBucketAggregation { self =>
+
+  def format(value: String): AvgBucketAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): AvgBucketAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): AvgBucketAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "avg_bucket"
+
+  private[elasticsearch] def params: Json =
+    Params.pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = gapPolicy)
+}
+
+sealed trait BucketScriptAggregation
+    extends ParentPipelineAggregation
+    with HasFormat[BucketScriptAggregation]
+    with HasGapPolicy[BucketScriptAggregation]
+    with HasMeta[BucketScriptAggregation]
+
+private[elasticsearch] final case class BucketScript(
+  name: String,
+  script: Script,
+  bucketsPath: Map[String, String],
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)]
+) extends BucketScriptAggregation { self =>
+
+  def format(value: String): BucketScriptAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): BucketScriptAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): BucketScriptAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "bucket_script"
+
+  private[elasticsearch] def params: Json =
+    Params
+      .pipeline(bucketsPath = Params.bucketsPath(bucketsPath), format = format, gapPolicy = gapPolicy)
+      .merge(Obj("script" -> script.toJson))
+}
+
 sealed trait BucketSelectorAggregation
     extends ParentPipelineAggregation
     with HasGapPolicy[BucketSelectorAggregation]
@@ -193,9 +256,7 @@ private[elasticsearch] final case class BucketSelector(
 
   private[elasticsearch] def params: Json =
     Params(
-      Some("buckets_path" -> Obj(Chunk.fromIterable(bucketsPath).map { case (variable, path) =>
-        variable -> path.toJson
-      })),
+      Some("buckets_path" -> Params.bucketsPath(bucketsPath)),
       gapPolicy.map(policy => "gap_policy" -> policy.toString.toJson),
       Some("script" -> script.toJson)
     )
@@ -294,6 +355,224 @@ private[elasticsearch] final case class Cardinality(
     Params.field(field = field, format = None, missing = missing, script = script)
 }
 
+sealed trait CumulativeSumAggregation
+    extends ParentPipelineAggregation
+    with HasFormat[CumulativeSumAggregation]
+    with HasMeta[CumulativeSumAggregation]
+
+private[elasticsearch] final case class CumulativeSum(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  meta: Chunk[(String, Json)]
+) extends CumulativeSumAggregation { self =>
+
+  def format(value: String): CumulativeSumAggregation =
+    self.copy(format = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): CumulativeSumAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "cumulative_sum"
+
+  private[elasticsearch] def params: Json =
+    Params.pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = None)
+}
+
+sealed trait DateHistogramAggregation
+    extends MultiBucketAggregation
+    with HasFormat[DateHistogramAggregation]
+    with HasKeyed[DateHistogramAggregation]
+    with HasMeta[DateHistogramAggregation]
+    with HasMinDocCount[DateHistogramAggregation]
+    with HasNumericOrDateMissing[DateHistogramAggregation]
+    with HasOrder[DateHistogramAggregation]
+    with WithSubAgg[DateHistogramAggregation, SingleElasticAggregation] {
+
+  /**
+   * Sets the `extended_bounds` parameter for the [[zio.elasticsearch.aggregation.DateHistogramAggregation]]. Buckets
+   * are created for the whole range of the bounds, even if they contain no documents, which requires `min_doc_count` to
+   * be `0` (the default).
+   *
+   * @param bounds
+   *   the [[zio.elasticsearch.aggregation.DateHistogramBounds]] to extend the buckets to
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.DateHistogramAggregation]] enriched with the `extended_bounds`
+   *   parameter.
+   */
+  def extendedBounds(bounds: DateHistogramBounds): DateHistogramAggregation
+
+  /**
+   * Sets the `hard_bounds` parameter for the [[zio.elasticsearch.aggregation.DateHistogramAggregation]]. Buckets
+   * outside of the bounds are not returned, even if they contain documents.
+   *
+   * @param bounds
+   *   the [[zio.elasticsearch.aggregation.DateHistogramBounds]] to limit the buckets to
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.DateHistogramAggregation]] enriched with the `hard_bounds`
+   *   parameter.
+   */
+  def hardBounds(bounds: DateHistogramBounds): DateHistogramAggregation
+
+  /**
+   * Sets the `offset` parameter for the [[zio.elasticsearch.aggregation.DateHistogramAggregation]], which shifts the
+   * start of each bucket by the given duration (e.g. to start daily buckets at 6 AM). The offset is sent in
+   * milliseconds and can be negative.
+   *
+   * @param value
+   *   the duration by which to shift the buckets
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.DateHistogramAggregation]] enriched with the `offset`
+   *   parameter.
+   */
+  def offset(value: Duration): DateHistogramAggregation
+
+  /**
+   * Sets the `time_zone` parameter for the [[zio.elasticsearch.aggregation.DateHistogramAggregation]]. Dates are stored
+   * in UTC, and the time zone is used to compute the bucket boundaries and keys.
+   *
+   * @param value
+   *   the time zone, either a region (e.g. `ZoneId.of("Europe/Belgrade")`) or an offset (e.g. `ZoneOffset.ofHours(1)`)
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.DateHistogramAggregation]] enriched with the `time_zone`
+   *   parameter.
+   */
+  def timeZone(value: ZoneId): DateHistogramAggregation
+}
+
+private[elasticsearch] final case class DateHistogram(
+  name: String,
+  field: String,
+  interval: DateHistogramInterval,
+  extendedBounds: Option[DateHistogramBounds],
+  format: Option[String],
+  hardBounds: Option[DateHistogramBounds],
+  isKeyed: Boolean,
+  meta: Chunk[(String, Json)],
+  minDocCount: Option[Int],
+  missing: Option[Json],
+  offset: Option[Duration],
+  order: Chunk[AggregationOrder],
+  subAggregations: Chunk[SingleElasticAggregation],
+  timeZone: Option[ZoneId]
+) extends DateHistogramAggregation { self =>
+
+  def extendedBounds(bounds: DateHistogramBounds): DateHistogramAggregation =
+    self.copy(extendedBounds = Some(bounds))
+
+  def format(value: String): DateHistogramAggregation =
+    self.copy(format = Some(value))
+
+  def hardBounds(bounds: DateHistogramBounds): DateHistogramAggregation =
+    self.copy(hardBounds = Some(bounds))
+
+  def keyed: DateHistogramAggregation =
+    self.copy(isKeyed = true)
+
+  def meta[B: ElasticPrimitive](key: String, value: B): DateHistogramAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  def minDocCount(value: Int): DateHistogramAggregation =
+    self.copy(minDocCount = Some(value))
+
+  def missing[B: ElasticPrimitive: NumericOrDate](value: B): DateHistogramAggregation =
+    self.copy(missing = Some(value.toJson))
+
+  def offset(value: Duration): DateHistogramAggregation =
+    self.copy(offset = Some(value))
+
+  def orderBy(order: AggregationOrder, orders: AggregationOrder*): DateHistogramAggregation =
+    self.copy(order = self.order ++ (order +: Chunk.fromIterable(orders)))
+
+  def timeZone(value: ZoneId): DateHistogramAggregation =
+    self.copy(timeZone = Some(value))
+
+  def withSubAgg(aggregation: SingleElasticAggregation): DateHistogramAggregation =
+    self.copy(subAggregations = subAggregations :+ aggregation)
+
+  private[elasticsearch] def aggregationType: String = "date_histogram"
+
+  private[elasticsearch] def params: Json =
+    Params(
+      Some("field"            -> field.toJson),
+      Some(interval.paramName -> interval.value.toJson),
+      extendedBounds.map("extended_bounds" -> _.toJson),
+      format.map("format" -> _.toJson),
+      hardBounds.map("hard_bounds" -> _.toJson),
+      if (isKeyed) Some("keyed" -> Json.Bool(true)) else None,
+      minDocCount.map("min_doc_count" -> _.toJson),
+      missing.map("missing" -> _),
+      offset.map(value => "offset" -> s"${value.toMillis}ms".toJson),
+      Params.order(order),
+      timeZone.map("time_zone" -> _.getId.toJson)
+    )
+}
+
+/**
+ * The bounds of a [[zio.elasticsearch.aggregation.DateHistogramAggregation]], used for its `extended_bounds` and
+ * `hard_bounds`. Each bound is either a date or a number of milliseconds since the epoch, and either of them can be
+ * omitted. Dates are sent as strings, so they have to match the `format` of the aggregation, if one is set.
+ */
+final case class DateHistogramBounds(min: Option[Json] = None, max: Option[Json] = None) { self =>
+
+  def max[A: ElasticPrimitive: NumericOrDate](value: A): DateHistogramBounds =
+    self.copy(max = Some(value.toJson))
+
+  def min[A: ElasticPrimitive: NumericOrDate](value: A): DateHistogramBounds =
+    self.copy(min = Some(value.toJson))
+
+  private[elasticsearch] def toJson: Json =
+    Params(min.map("min" -> _), max.map("max" -> _))
+}
+
+sealed trait DerivativeAggregation
+    extends ParentPipelineAggregation
+    with HasFormat[DerivativeAggregation]
+    with HasGapPolicy[DerivativeAggregation]
+    with HasMeta[DerivativeAggregation] {
+
+  /**
+   * Sets the `unit` parameter for the [[zio.elasticsearch.aggregation.DerivativeAggregation]]. When the parent is a
+   * [[zio.elasticsearch.aggregation.DateHistogramAggregation]], the derivative is then also returned per the given unit
+   * of time as `normalizedValue` (e.g. per day for monthly buckets).
+   *
+   * @param value
+   *   the [[zio.elasticsearch.aggregation.DateHistogramInterval]] to normalize the derivative to
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.DerivativeAggregation]] enriched with the `unit` parameter.
+   */
+  def unit(value: DateHistogramInterval): DerivativeAggregation
+}
+
+private[elasticsearch] final case class Derivative(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)],
+  unit: Option[DateHistogramInterval]
+) extends DerivativeAggregation { self =>
+
+  def format(value: String): DerivativeAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): DerivativeAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): DerivativeAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  def unit(value: DateHistogramInterval): DerivativeAggregation =
+    self.copy(unit = Some(value))
+
+  private[elasticsearch] def aggregationType: String = "derivative"
+
+  private[elasticsearch] def params: Json =
+    Params
+      .pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = gapPolicy)
+      .merge(Params(unit.map("unit" -> _.value.toJson)))
+}
+
 sealed trait ExtendedStatsAggregation
     extends MetricAggregation
     with HasFormat[ExtendedStatsAggregation]
@@ -371,6 +650,208 @@ private[elasticsearch] final case class Filter(
 
   private[elasticsearch] def params: Json =
     query.toJson(fieldPath = None)
+}
+
+sealed trait FiltersAggregation
+    extends MultiBucketAggregation
+    with HasMeta[FiltersAggregation]
+    with WithSubAgg[FiltersAggregation, SingleElasticAggregation] {
+
+  /**
+   * Sets the `other_bucket` parameter to `true` for the [[zio.elasticsearch.aggregation.FiltersAggregation]]. An
+   * additional bucket is then returned for the documents that do not match any of the filters. For named filters, the
+   * key of the bucket is `_other_`, unless it is changed with `otherBucketKey`.
+   *
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.FiltersAggregation]] enriched with the `other_bucket`
+   *   parameter.
+   */
+  def otherBucket: FiltersAggregation
+
+  /**
+   * Sets the `other_bucket_key` parameter for the [[zio.elasticsearch.aggregation.FiltersAggregation]], which is the
+   * key of the bucket for the documents that do not match any of the named filters. Setting it also enables that
+   * bucket.
+   *
+   * @param value
+   *   the key of the bucket for the documents that do not match any of the filters
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.FiltersAggregation]] enriched with the `other_bucket_key`
+   *   parameter.
+   */
+  def otherBucketKey(value: String): FiltersAggregation
+}
+
+private[elasticsearch] final case class Filters(
+  name: String,
+  filters: Filters.Queries,
+  hasOtherBucket: Boolean,
+  meta: Chunk[(String, Json)],
+  otherBucketKey: Option[String],
+  subAggregations: Chunk[SingleElasticAggregation]
+) extends FiltersAggregation { self =>
+
+  def meta[B: ElasticPrimitive](key: String, value: B): FiltersAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  def otherBucket: FiltersAggregation =
+    self.copy(hasOtherBucket = true)
+
+  def otherBucketKey(value: String): FiltersAggregation =
+    self.copy(otherBucketKey = Some(value))
+
+  def withSubAgg(aggregation: SingleElasticAggregation): FiltersAggregation =
+    self.copy(subAggregations = subAggregations :+ aggregation)
+
+  private[elasticsearch] def aggregationType: String = "filters"
+
+  private[elasticsearch] def params: Json =
+    Params(
+      Some("filters" -> filters.toJson),
+      if (hasOtherBucket) Some("other_bucket" -> Json.Bool(true)) else None,
+      otherBucketKey.map("other_bucket_key" -> _.toJson)
+    )
+}
+
+private[elasticsearch] object Filters {
+
+  /**
+   * The filters of a [[zio.elasticsearch.aggregation.FiltersAggregation]], which are either all named or all anonymous.
+   */
+  sealed trait Queries {
+    private[elasticsearch] def toJson: Json
+  }
+
+  final case class Anonymous(queries: NonEmptyChunk[ElasticQuery[_]]) extends Queries {
+    private[elasticsearch] def toJson: Json =
+      Arr(queries.map(_.toJson(fieldPath = None)))
+  }
+
+  final case class Named(queries: NonEmptyChunk[(String, ElasticQuery[_])]) extends Queries {
+    private[elasticsearch] def toJson: Json =
+      Obj(queries.map { case (key, query) => key -> query.toJson(fieldPath = None) })
+  }
+}
+
+sealed trait HistogramAggregation
+    extends MultiBucketAggregation
+    with HasKeyed[HistogramAggregation]
+    with HasMeta[HistogramAggregation]
+    with HasMinDocCount[HistogramAggregation]
+    with HasNumericMissing[HistogramAggregation]
+    with HasOrder[HistogramAggregation]
+    with WithSubAgg[HistogramAggregation, SingleElasticAggregation] {
+
+  /**
+   * Sets the `extended_bounds` parameter for the [[zio.elasticsearch.aggregation.HistogramAggregation]]. Buckets are
+   * created for the whole range of the bounds, even if they contain no documents, which requires `min_doc_count` to be
+   * `0` (the default).
+   *
+   * @param bounds
+   *   the [[zio.elasticsearch.aggregation.HistogramBounds]] to extend the buckets to
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.HistogramAggregation]] enriched with the `extended_bounds`
+   *   parameter.
+   */
+  def extendedBounds(bounds: HistogramBounds): HistogramAggregation
+
+  /**
+   * Sets the `hard_bounds` parameter for the [[zio.elasticsearch.aggregation.HistogramAggregation]]. Buckets outside of
+   * the bounds are not returned, even if they contain documents.
+   *
+   * @param bounds
+   *   the [[zio.elasticsearch.aggregation.HistogramBounds]] to limit the buckets to
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.HistogramAggregation]] enriched with the `hard_bounds`
+   *   parameter.
+   */
+  def hardBounds(bounds: HistogramBounds): HistogramAggregation
+
+  /**
+   * Sets the `offset` parameter for the [[zio.elasticsearch.aggregation.HistogramAggregation]], which shifts the bucket
+   * boundaries by the given value (e.g. with an interval of `10` and an offset of `5`, buckets start at `5`, `15`,
+   * ...).
+   *
+   * @param value
+   *   the value by which to shift the buckets, between `0` (inclusive) and the interval (exclusive)
+   * @return
+   *   an instance of the [[zio.elasticsearch.aggregation.HistogramAggregation]] enriched with the `offset` parameter.
+   */
+  def offset(value: Double): HistogramAggregation
+}
+
+private[elasticsearch] final case class Histogram(
+  name: String,
+  field: String,
+  interval: Double,
+  extendedBounds: Option[HistogramBounds],
+  hardBounds: Option[HistogramBounds],
+  isKeyed: Boolean,
+  meta: Chunk[(String, Json)],
+  minDocCount: Option[Int],
+  missing: Option[Json],
+  offset: Option[Double],
+  order: Chunk[AggregationOrder],
+  subAggregations: Chunk[SingleElasticAggregation]
+) extends HistogramAggregation { self =>
+
+  def extendedBounds(bounds: HistogramBounds): HistogramAggregation =
+    self.copy(extendedBounds = Some(bounds))
+
+  def hardBounds(bounds: HistogramBounds): HistogramAggregation =
+    self.copy(hardBounds = Some(bounds))
+
+  def keyed: HistogramAggregation =
+    self.copy(isKeyed = true)
+
+  def meta[B: ElasticPrimitive](key: String, value: B): HistogramAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  def minDocCount(value: Int): HistogramAggregation =
+    self.copy(minDocCount = Some(value))
+
+  def missing[B: ElasticPrimitive: Numeric](value: B): HistogramAggregation =
+    self.copy(missing = Some(value.toJson))
+
+  def offset(value: Double): HistogramAggregation =
+    self.copy(offset = Some(value))
+
+  def orderBy(order: AggregationOrder, orders: AggregationOrder*): HistogramAggregation =
+    self.copy(order = self.order ++ (order +: Chunk.fromIterable(orders)))
+
+  def withSubAgg(aggregation: SingleElasticAggregation): HistogramAggregation =
+    self.copy(subAggregations = subAggregations :+ aggregation)
+
+  private[elasticsearch] def aggregationType: String = "histogram"
+
+  private[elasticsearch] def params: Json =
+    Params(
+      Some("field"    -> field.toJson),
+      Some("interval" -> interval.toJson),
+      extendedBounds.map("extended_bounds" -> _.toJson),
+      hardBounds.map("hard_bounds" -> _.toJson),
+      if (isKeyed) Some("keyed" -> Json.Bool(true)) else None,
+      minDocCount.map("min_doc_count" -> _.toJson),
+      missing.map("missing" -> _),
+      offset.map("offset" -> _.toJson),
+      Params.order(order)
+    )
+}
+
+/**
+ * The bounds of a [[zio.elasticsearch.aggregation.HistogramAggregation]], used for its `extended_bounds` and
+ * `hard_bounds`. Either of the bounds can be omitted.
+ */
+final case class HistogramBounds(min: Option[Double] = None, max: Option[Double] = None) { self =>
+
+  def max(value: Double): HistogramBounds =
+    self.copy(max = Some(value))
+
+  def min(value: Double): HistogramBounds =
+    self.copy(min = Some(value))
+
+  private[elasticsearch] def toJson: Json =
+    Params(min.map("min" -> _.toJson), max.map("max" -> _.toJson))
 }
 
 sealed trait IpRangeAggregation
@@ -469,6 +950,35 @@ private[elasticsearch] final case class Max(
     Params.field(field = field, format = format, missing = missing, script = script)
 }
 
+sealed trait MaxBucketAggregation
+    extends SiblingPipelineAggregation
+    with HasFormat[MaxBucketAggregation]
+    with HasGapPolicy[MaxBucketAggregation]
+    with HasMeta[MaxBucketAggregation]
+
+private[elasticsearch] final case class MaxBucket(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)]
+) extends MaxBucketAggregation { self =>
+
+  def format(value: String): MaxBucketAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): MaxBucketAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): MaxBucketAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "max_bucket"
+
+  private[elasticsearch] def params: Json =
+    Params.pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = gapPolicy)
+}
+
 sealed trait MinAggregation
     extends MetricAggregation
     with HasFormat[MinAggregation]
@@ -501,6 +1011,35 @@ private[elasticsearch] final case class Min(
 
   private[elasticsearch] def params: Json =
     Params.field(field = field, format = format, missing = missing, script = script)
+}
+
+sealed trait MinBucketAggregation
+    extends SiblingPipelineAggregation
+    with HasFormat[MinBucketAggregation]
+    with HasGapPolicy[MinBucketAggregation]
+    with HasMeta[MinBucketAggregation]
+
+private[elasticsearch] final case class MinBucket(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)]
+) extends MinBucketAggregation { self =>
+
+  def format(value: String): MinBucketAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): MinBucketAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): MinBucketAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "min_bucket"
+
+  private[elasticsearch] def params: Json =
+    Params.pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = gapPolicy)
 }
 
 sealed trait MissingAggregation
@@ -778,6 +1317,35 @@ private[elasticsearch] final case class Stats(
     Params.field(field = field, format = format, missing = missing, script = script)
 }
 
+sealed trait StatsBucketAggregation
+    extends SiblingPipelineAggregation
+    with HasFormat[StatsBucketAggregation]
+    with HasGapPolicy[StatsBucketAggregation]
+    with HasMeta[StatsBucketAggregation]
+
+private[elasticsearch] final case class StatsBucket(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)]
+) extends StatsBucketAggregation { self =>
+
+  def format(value: String): StatsBucketAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): StatsBucketAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): StatsBucketAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "stats_bucket"
+
+  private[elasticsearch] def params: Json =
+    Params.pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = gapPolicy)
+}
+
 sealed trait SumAggregation
     extends MetricAggregation
     with HasFormat[SumAggregation]
@@ -810,6 +1378,35 @@ private[elasticsearch] final case class Sum(
 
   private[elasticsearch] def params: Json =
     Params.field(field = field, format = format, missing = missing, script = script)
+}
+
+sealed trait SumBucketAggregation
+    extends SiblingPipelineAggregation
+    with HasFormat[SumBucketAggregation]
+    with HasGapPolicy[SumBucketAggregation]
+    with HasMeta[SumBucketAggregation]
+
+private[elasticsearch] final case class SumBucket(
+  name: String,
+  bucketsPath: String,
+  format: Option[String],
+  gapPolicy: Option[GapPolicy],
+  meta: Chunk[(String, Json)]
+) extends SumBucketAggregation { self =>
+
+  def format(value: String): SumBucketAggregation =
+    self.copy(format = Some(value))
+
+  def gapPolicy(value: GapPolicy): SumBucketAggregation =
+    self.copy(gapPolicy = Some(value))
+
+  def meta[B: ElasticPrimitive](key: String, value: B): SumBucketAggregation =
+    self.copy(meta = Params.addMeta(self.meta, key, value.toJson))
+
+  private[elasticsearch] def aggregationType: String = "sum_bucket"
+
+  private[elasticsearch] def params: Json =
+    Params.pipeline(bucketsPath = bucketsPath.toJson, format = format, gapPolicy = gapPolicy)
 }
 
 sealed trait TermsAggregation
@@ -847,22 +1444,13 @@ private[elasticsearch] final case class Terms(
 
   private[elasticsearch] def aggregationType: String = "terms"
 
-  private[elasticsearch] def params: Json = {
-    val orderJson: Option[(String, Json)] =
-      order.toList match {
-        case Nil      => None
-        case o :: Nil => Some("order" -> Obj(o.value -> o.order.toString.toJson))
-        case orders   =>
-          Some("order" -> Arr(Chunk.fromIterable(orders).map(o => Obj(o.value -> o.order.toString.toJson))))
-      }
-
+  private[elasticsearch] def params: Json =
     Params(
       Some("field" -> field.toJson),
       minDocCount.map("min_doc_count" -> _.toJson),
-      orderJson,
+      Params.order(order),
       size.map("size" -> _.toJson)
     )
-  }
 }
 
 sealed trait ValueCountAggregation
@@ -953,12 +1541,32 @@ private[aggregation] object Params {
   def addMeta(meta: Chunk[(String, Json)], key: String, value: Json): Chunk[(String, Json)] =
     meta.filterNot { case (k, _) => k == key } :+ (key -> value)
 
+  def bucketsPath(paths: Map[String, String]): Obj =
+    Obj(Chunk.fromIterable(paths).map { case (variable, path) => variable -> path.toJson })
+
   def field(field: String, format: Option[String], missing: Option[Json], script: Option[Script]): Obj =
     Params(
       Some("field" -> field.toJson),
       format.map("format" -> _.toJson),
       missing.map("missing" -> _),
       script.map("script" -> _.toJson)
+    )
+
+  def order(order: Chunk[AggregationOrder]): Option[(String, Json)] = {
+    def toJson(o: AggregationOrder): Json = Obj(o.value -> o.order.toString.toJson)
+
+    order.toList match {
+      case Nil      => None
+      case o :: Nil => Some("order" -> toJson(o))
+      case orders   => Some("order" -> Arr(Chunk.fromIterable(orders).map(toJson)))
+    }
+  }
+
+  def pipeline(bucketsPath: Json, format: Option[String], gapPolicy: Option[GapPolicy]): Obj =
+    Params(
+      Some("buckets_path" -> bucketsPath),
+      format.map("format" -> _.toJson),
+      gapPolicy.map(policy => "gap_policy" -> policy.toString.toJson)
     )
 
   def ranges(field: String, ranges: Chunk[Json], isKeyed: Boolean): Obj =

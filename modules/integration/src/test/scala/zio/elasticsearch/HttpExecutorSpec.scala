@@ -21,7 +21,16 @@ import zio.elasticsearch.ElasticHighlight.highlight
 import zio.elasticsearch.ElasticIntervalRule.intervalMatch
 import zio.elasticsearch.ElasticQuery.{contains => _, _}
 import zio.elasticsearch.ElasticSort.sortBy
-import zio.elasticsearch.aggregation.{AggregationOrder, IpRangeBound, RangeBound}
+import zio.elasticsearch.aggregation.{
+  AggregationOrder,
+  CalendarInterval,
+  DateHistogramBounds,
+  FixedInterval,
+  GapPolicy,
+  HistogramBounds,
+  IpRangeBound,
+  RangeBound
+}
 import zio.elasticsearch.data.GeoPoint
 import zio.elasticsearch.domain.{PartialTestDocument, TestDocument, TestSubDocument}
 import zio.elasticsearch.executor.Executor
@@ -34,9 +43,17 @@ import zio.elasticsearch.query.sort.SourceType.NumberType
 import zio.elasticsearch.query.{Distance, FunctionScoreBoostMode, FunctionScoreFunction, InnerHits, MinimumShouldMatch}
 import zio.elasticsearch.request.{CreationOutcome, DeletionOutcome}
 import zio.elasticsearch.result.{
+  BucketMetricValueAggregationResult,
+  DateHistogramAggregationBucketResult,
+  DateHistogramAggregationResult,
   DecodingException,
+  DerivativeAggregationResult,
   ElasticException,
   FilterAggregationResult,
+  FiltersAggregationBucketResult,
+  FiltersAggregationResult,
+  HistogramAggregationBucketResult,
+  HistogramAggregationResult,
   IpRangeAggregationBucketResult,
   IpRangeAggregationResult,
   Item,
@@ -47,6 +64,7 @@ import zio.elasticsearch.result.{
   RangeAggregationBucketResult,
   RangeAggregationResult,
   SamplerAggregationResult,
+  SimpleValueAggregationResult,
   StatsAggregationResult,
   SumAggregationResult,
   TermsAggregationBucketResult,
@@ -62,7 +80,7 @@ import zio.test.TestAspect._
 import zio.test._
 import zio.{Chunk, ZIO}
 
-import java.time.LocalDate
+import java.time.{Duration, LocalDate, ZoneOffset}
 import scala.util.Random
 
 object HttpExecutorSpec extends IntegrationSpec {
@@ -118,6 +136,210 @@ object HttpExecutorSpec extends IntegrationSpec {
 
                 cardinalityAgg <- aggsRes.asCardinalityAggregation("aggregationInt")
               } yield assert(cardinalityAgg.map(_.value))(isSome(equalTo(2L)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("date histogram aggregation with parent and sibling pipeline aggregations") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+              for {
+                _ <- indexHistogramDocuments(
+                       firstDocumentId  -> firstDocument,
+                       secondDocumentId -> secondDocument,
+                       thirdDocumentId  -> thirdDocument
+                     )
+                aggregation =
+                  dateHistogramAggregation("aggregation", TestDocument.dateField, CalendarInterval.Month)
+                    .withSubAgg(sumAggregation("sum", TestDocument.intField))
+                    .withSubAgg(cumulativeSumAggregation("cumulativeSum", "sum"))
+                    .withSubAgg(
+                      derivativeAggregation("derivative", "sum")
+                        .gapPolicy(GapPolicy.InsertZeros)
+                        .unit(CalendarInterval.Day)
+                    )
+                    .withSubAgg(bucketScriptAggregation("doubled", Script("params.sum * 2"), Map("sum" -> "sum")))
+                    .withAgg(avgBucketAggregation("avgBucket", "aggregation>sum"))
+                    .withAgg(sumBucketAggregation("sumBucket", "aggregation>sum").format("0.00"))
+                    .withAgg(minBucketAggregation("minBucket", "aggregation>sum"))
+                    .withAgg(maxBucketAggregation("maxBucket", "aggregation>sum"))
+                    .withAgg(statsBucketAggregation("statsBucket", "aggregation>sum"))
+                result <-
+                  Executor.execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                dateHistogram <- result.asDateHistogramAggregation("aggregation")
+                avgBucket     <- result.asAvgBucketAggregation("avgBucket")
+                sumBucket     <- result.asSumBucketAggregation("sumBucket")
+                minBucket     <- result.asMinBucketAggregation("minBucket")
+                maxBucket     <- result.asMaxBucketAggregation("maxBucket")
+                statsBucket   <- result.asStatsBucketAggregation("statsBucket")
+              } yield assert(dateHistogram)(
+                isSome(
+                  equalTo(
+                    DateHistogramAggregationResult(
+                      buckets = Chunk(
+                        DateHistogramAggregationBucketResult(
+                          key = 1704067200000L,
+                          keyAsString = Some("2024-01-01T00:00:00.000Z"),
+                          docCount = 2,
+                          subAggregations = Map(
+                            "sum"           -> SumAggregationResult(value = 35.0),
+                            "cumulativeSum" -> SimpleValueAggregationResult(value = Some(35.0), valueAsString = None),
+                            "doubled"       -> SimpleValueAggregationResult(value = Some(70.0), valueAsString = None)
+                          )
+                        ),
+                        DateHistogramAggregationBucketResult(
+                          key = 1706745600000L,
+                          keyAsString = Some("2024-02-01T00:00:00.000Z"),
+                          docCount = 0,
+                          subAggregations = Map(
+                            "sum"           -> SumAggregationResult(value = 0.0),
+                            "cumulativeSum" -> SimpleValueAggregationResult(value = Some(35.0), valueAsString = None),
+                            "derivative"    -> DerivativeAggregationResult(
+                              value = Some(-35.0),
+                              valueAsString = None,
+                              normalizedValue = Some(-35.0 / 31)
+                            )
+                          )
+                        ),
+                        DateHistogramAggregationBucketResult(
+                          key = 1709251200000L,
+                          keyAsString = Some("2024-03-01T00:00:00.000Z"),
+                          docCount = 1,
+                          subAggregations = Map(
+                            "sum"           -> SumAggregationResult(value = 40.0),
+                            "cumulativeSum" -> SimpleValueAggregationResult(value = Some(75.0), valueAsString = None),
+                            "derivative"    -> DerivativeAggregationResult(
+                              value = Some(40.0),
+                              valueAsString = None,
+                              normalizedValue = Some(40.0 / 29)
+                            ),
+                            "doubled" -> SimpleValueAggregationResult(value = Some(80.0), valueAsString = None)
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              ) &&
+                assert(avgBucket)(
+                  isSome(equalTo(SimpleValueAggregationResult(value = Some(37.5), valueAsString = None)))
+                ) &&
+                assert(sumBucket)(
+                  isSome(equalTo(SimpleValueAggregationResult(value = Some(75.0), valueAsString = Some("75.00"))))
+                ) &&
+                assert(minBucket)(
+                  isSome(
+                    equalTo(
+                      BucketMetricValueAggregationResult(
+                        value = Some(35.0),
+                        valueAsString = None,
+                        keys = Chunk("2024-01-01T00:00:00.000Z")
+                      )
+                    )
+                  )
+                ) &&
+                assert(maxBucket)(
+                  isSome(
+                    equalTo(
+                      BucketMetricValueAggregationResult(
+                        value = Some(40.0),
+                        valueAsString = None,
+                        keys = Chunk("2024-03-01T00:00:00.000Z")
+                      )
+                    )
+                  )
+                ) &&
+                assert(statsBucket)(
+                  isSome(
+                    equalTo(
+                      StatsAggregationResult(
+                        count = 2,
+                        min = Some(35.0),
+                        max = Some(40.0),
+                        avg = Some(37.5),
+                        sum = 75.0
+                      )
+                    )
+                  )
+                )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("date histogram aggregation with fixed interval, offset, time zone, format and bounds") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+              for {
+                _ <- indexHistogramDocuments(
+                       firstDocumentId  -> firstDocument,
+                       secondDocumentId -> secondDocument,
+                       thirdDocumentId  -> thirdDocument
+                     )
+                aggregation =
+                  dateHistogramAggregation("fixed", TestDocument.dateField, FixedInterval.days(1))
+                    .offset(Duration.ofHours(6))
+                    .minDocCount(1)
+                    .withAgg(
+                      dateHistogramAggregation("calendar", TestDocument.dateField, CalendarInterval.Month)
+                        .timeZone(ZoneOffset.ofHours(1))
+                        .format("yyyy-MM-dd")
+                        .hardBounds(DateHistogramBounds().max(LocalDate.of(2024, 2, 15)))
+                        .keyed
+                    )
+                    .withAgg(
+                      dateHistogramAggregation("extended", TestDocument.dateField, CalendarInterval.Month)
+                        .extendedBounds(
+                          DateHistogramBounds().min(LocalDate.of(2023, 12, 1)).max(LocalDate.of(2024, 4, 30))
+                        )
+                        .orderByKeyDesc
+                    )
+                result <-
+                  Executor.execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                fixed    <- result.asDateHistogramAggregation("fixed")
+                calendar <- result.asDateHistogramAggregation("calendar")
+                extended <- result.asDateHistogramAggregation("extended")
+              } yield assert(fixed.map(_.buckets.map(bucket => (bucket.keyAsString, bucket.docCount))))(
+                isSome(
+                  equalTo(
+                    Chunk(
+                      (Some("2024-01-04T06:00:00.000Z"), 1L),
+                      (Some("2024-01-19T06:00:00.000Z"), 1L),
+                      (Some("2024-03-01T06:00:00.000Z"), 1L)
+                    )
+                  )
+                )
+              ) &&
+                assert(calendar)(
+                  isSome(
+                    equalTo(
+                      DateHistogramAggregationResult(
+                        buckets = Chunk(
+                          DateHistogramAggregationBucketResult(
+                            key = 1704063600000L,
+                            keyAsString = Some("2024-01-01"),
+                            docCount = 2,
+                            subAggregations = Map.empty
+                          )
+                        )
+                      )
+                    )
+                  )
+                ) &&
+                assert(extended.map(_.buckets.map(bucket => (bucket.keyAsString, bucket.docCount))))(
+                  isSome(
+                    equalTo(
+                      Chunk(
+                        (Some("2024-04-01T00:00:00.000Z"), 0L),
+                        (Some("2024-03-01T00:00:00.000Z"), 1L),
+                        (Some("2024-02-01T00:00:00.000Z"), 0L),
+                        (Some("2024-01-01T00:00:00.000Z"), 2L),
+                        (Some("2023-12-01T00:00:00.000Z"), 0L)
+                      )
+                    )
+                  )
+                )
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -217,6 +439,132 @@ object HttpExecutorSpec extends IntegrationSpec {
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
                     .asFilterAggregation("aggregation")
               } yield assert(aggsRes)(isSome(equalTo(expectedResult)))
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("filters aggregation with named and anonymous filters") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+              for {
+                _ <- indexHistogramDocuments(
+                       firstDocumentId  -> firstDocument,
+                       secondDocumentId -> secondDocument,
+                       thirdDocumentId  -> thirdDocument
+                     )
+                aggregation =
+                  filtersAggregation(
+                    "named",
+                    "a" -> term(TestDocument.stringField.keyword, "a"),
+                    "b" -> term(TestDocument.stringField.keyword, "b")
+                  ).otherBucketKey("rest")
+                    .withSubAgg(maxAggregation("max", TestDocument.intField))
+                    .withAgg(
+                      filtersAggregation(
+                        "anonymous",
+                        term(TestDocument.stringField.keyword, "a"),
+                        range(TestDocument.intField).gte(30)
+                      ).otherBucket
+                    )
+                result <-
+                  Executor.execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                named     <- result.asFiltersAggregation("named")
+                anonymous <- result.asFiltersAggregation("anonymous")
+              } yield assert(named)(
+                isSome(
+                  equalTo(
+                    FiltersAggregationResult(
+                      buckets = Chunk(
+                        FiltersAggregationBucketResult(
+                          key = Some("a"),
+                          docCount = 2,
+                          subAggregations = Map("max" -> MaxAggregationResult(value = Some(40.0)))
+                        ),
+                        FiltersAggregationBucketResult(
+                          key = Some("b"),
+                          docCount = 1,
+                          subAggregations = Map("max" -> MaxAggregationResult(value = Some(25.0)))
+                        ),
+                        FiltersAggregationBucketResult(
+                          key = Some("rest"),
+                          docCount = 0,
+                          subAggregations = Map("max" -> MaxAggregationResult(value = None))
+                        )
+                      )
+                    )
+                  )
+                )
+              ) &&
+                assert(anonymous.map(_.buckets.map(bucket => (bucket.key, bucket.docCount))))(
+                  isSome(equalTo(Chunk((None, 2L), (None, 1L), (None, 1L))))
+                )
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("histogram aggregation with bounds, offset and keyed buckets") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
+              for {
+                _ <- indexHistogramDocuments(
+                       firstDocumentId  -> firstDocument,
+                       secondDocumentId -> secondDocument,
+                       thirdDocumentId  -> thirdDocument
+                     )
+                aggregation =
+                  histogramAggregation("histogram", TestDocument.intField, 20)
+                    .withSubAgg(maxAggregation("max", TestDocument.intField))
+                    .withAgg(
+                      histogramAggregation("extended", TestDocument.intField, 20)
+                        .offset(5)
+                        .extendedBounds(HistogramBounds().min(0).max(60))
+                    )
+                    .withAgg(
+                      histogramAggregation("hard", TestDocument.intField, 20)
+                        .hardBounds(HistogramBounds().max(30))
+                        .keyed
+                    )
+                result <-
+                  Executor.execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                histogram <- result.asHistogramAggregation("histogram")
+                extended  <- result.asHistogramAggregation("extended")
+                hard      <- result.asHistogramAggregation("hard")
+              } yield assert(histogram)(
+                isSome(
+                  equalTo(
+                    HistogramAggregationResult(
+                      buckets = Chunk(
+                        HistogramAggregationBucketResult(
+                          key = 0.0,
+                          keyAsString = None,
+                          docCount = 1,
+                          subAggregations = Map("max" -> MaxAggregationResult(value = Some(10.0)))
+                        ),
+                        HistogramAggregationBucketResult(
+                          key = 20.0,
+                          keyAsString = None,
+                          docCount = 1,
+                          subAggregations = Map("max" -> MaxAggregationResult(value = Some(25.0)))
+                        ),
+                        HistogramAggregationBucketResult(
+                          key = 40.0,
+                          keyAsString = None,
+                          docCount = 1,
+                          subAggregations = Map("max" -> MaxAggregationResult(value = Some(40.0)))
+                        )
+                      )
+                    )
+                  )
+                )
+              ) &&
+                assert(extended.map(_.buckets.map(bucket => (bucket.key, bucket.docCount))))(
+                  isSome(equalTo(Chunk((-15.0, 0L), (5.0, 1L), (25.0, 2L), (45.0, 0L))))
+                ) &&
+                assert(hard.map(_.buckets.map(bucket => (bucket.key, bucket.docCount))))(
+                  isSome(equalTo(Chunk((0.0, 1L), (20.0, 1L))))
+                )
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -4294,5 +4642,30 @@ object HttpExecutorSpec extends IntegrationSpec {
     )).provideShared(
       elasticsearchLayer
     )
+  }
+
+  /**
+   * Indexes the given documents for the histogram, pipeline and filters aggregation tests, as the documents
+   * `("a", 2024-01-05, 10)`, `("b", 2024-01-20, 25)` and `("a", 2024-03-02, 40)` (string field, date field and int
+   * field).
+   */
+  private def indexHistogramDocuments(
+    first: (DocumentId, TestDocument),
+    second: (DocumentId, TestDocument),
+    third: (DocumentId, TestDocument)
+  ): ZIO[Executor, Throwable, Unit] = {
+    val documents = Chunk(
+      first._1  -> first._2.copy(stringField = "a", dateField = LocalDate.of(2024, 1, 5), intField = 10),
+      second._1 -> second._2.copy(stringField = "b", dateField = LocalDate.of(2024, 1, 20), intField = 25),
+      third._1  -> third._2.copy(stringField = "a", dateField = LocalDate.of(2024, 3, 2), intField = 40)
+    )
+
+    for {
+      _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+      _ <- ZIO.foreachDiscard(documents) { case (id, document) =>
+             Executor.execute(ElasticRequest.upsert[TestDocument](firstSearchIndex, id, document))
+           }
+      _ <- Executor.execute(ElasticRequest.refresh(firstSearchIndex))
+    } yield ()
   }
 }

@@ -53,6 +53,50 @@ object ElasticAggregation {
     Avg(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.AvgBucketAggregation]] using the specified parameters. It
+   * calculates the average value of a metric across the buckets of a sibling multi-bucket aggregation.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to average (e.g. `"salesPerMonth>sales"`)
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.AvgBucketAggregation]] that represents avg bucket aggregation to
+   *   be performed.
+   */
+  final def avgBucketAggregation(name: String, bucketsPath: String): AvgBucketAggregation =
+    AvgBucket(name = name, bucketsPath = bucketsPath, format = None, gapPolicy = None, meta = Chunk.empty)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.BucketScriptAggregation]] using the specified parameters.
+   * It executes a script for each bucket of its parent multi-bucket aggregation, using metrics of the bucket as script
+   * variables, and returns the result as a new metric of the bucket.
+   *
+   * @param name
+   *   aggregation name
+   * @param script
+   *   the script to run for each bucket, which returns a number
+   * @param bucketsPath
+   *   a map of script variables and the paths to the metrics they refer to
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.BucketScriptAggregation]] that represents bucket script
+   *   aggregation to be performed.
+   */
+  final def bucketScriptAggregation(
+    name: String,
+    script: Script,
+    bucketsPath: Map[String, String]
+  ): BucketScriptAggregation =
+    BucketScript(
+      name = name,
+      script = script,
+      bucketsPath = bucketsPath,
+      format = None,
+      gapPolicy = None,
+      meta = Chunk.empty
+    )
+
+  /**
    * Constructs an instance of [[zio.elasticsearch.aggregation.BucketSelectorAggregation]] using the specified
    * parameters.
    *
@@ -116,6 +160,98 @@ object ElasticAggregation {
     Cardinality(name = name, field = field, meta = Chunk.empty, missing = None, script = None)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.CumulativeSumAggregation]] using the specified
+   * parameters. It calculates the cumulative sum of a metric in each bucket of its parent histogram or date histogram
+   * aggregation.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to sum
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.CumulativeSumAggregation]] that represents cumulative sum
+   *   aggregation to be performed.
+   */
+  final def cumulativeSumAggregation(name: String, bucketsPath: String): CumulativeSumAggregation =
+    CumulativeSum(name = name, bucketsPath = bucketsPath, format = None, meta = Chunk.empty)
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.DateHistogramAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which date histogram aggregation will be executed
+   * @param interval
+   *   the [[zio.elasticsearch.aggregation.DateHistogramInterval]] of the buckets, either a
+   *   [[zio.elasticsearch.aggregation.CalendarInterval]] or a [[zio.elasticsearch.aggregation.FixedInterval]]
+   * @tparam A
+   *   expected date or number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.DateHistogramAggregation]] that represents date histogram
+   *   aggregation to be performed.
+   */
+  final def dateHistogramAggregation[A: NumericOrDate](
+    name: String,
+    field: Field[_, A],
+    interval: DateHistogramInterval
+  ): DateHistogramAggregation =
+    dateHistogramAggregation(name = name, field = field.toString, interval = interval)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.DateHistogramAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which date histogram aggregation will be executed
+   * @param interval
+   *   the [[zio.elasticsearch.aggregation.DateHistogramInterval]] of the buckets, either a
+   *   [[zio.elasticsearch.aggregation.CalendarInterval]] or a [[zio.elasticsearch.aggregation.FixedInterval]]
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.DateHistogramAggregation]] that represents date histogram
+   *   aggregation to be performed.
+   */
+  final def dateHistogramAggregation(
+    name: String,
+    field: String,
+    interval: DateHistogramInterval
+  ): DateHistogramAggregation =
+    DateHistogram(
+      name = name,
+      field = field,
+      interval = interval,
+      extendedBounds = None,
+      format = None,
+      hardBounds = None,
+      isKeyed = false,
+      meta = Chunk.empty,
+      minDocCount = None,
+      missing = None,
+      offset = None,
+      order = Chunk.empty,
+      subAggregations = Chunk.empty,
+      timeZone = None
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.DerivativeAggregation]] using the specified parameters.
+   * It calculates the derivative of a metric in each bucket of its parent histogram or date histogram aggregation.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to calculate the derivative of
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.DerivativeAggregation]] that represents derivative aggregation to
+   *   be performed.
+   */
+  final def derivativeAggregation(name: String, bucketsPath: String): DerivativeAggregation =
+    Derivative(name = name, bucketsPath = bucketsPath, format = None, gapPolicy = None, meta = Chunk.empty, unit = None)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.ExtendedStatsAggregation]] using the specified
    * parameters.
    *
@@ -176,6 +312,109 @@ object ElasticAggregation {
    */
   final def filterAggregation(name: String, query: ElasticQuery[_]): FilterAggregation =
     Filter(name = name, query = query, meta = Chunk.empty, subAggregations = Chunk.empty)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.FiltersAggregation]] with named filters. It creates a
+   * bucket for each filter, with the documents that match its query, and the buckets of the result have the names of
+   * the filters as keys.
+   *
+   * @param name
+   *   aggregation name
+   * @param filter
+   *   the first filter, as the name of its bucket and the query which the documents of the bucket must match
+   * @param filters
+   *   the rest of the filters, as the names of their buckets and the queries which the documents of the buckets must
+   *   match
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.FiltersAggregation]] that represents filters aggregation to be
+   *   performed.
+   */
+  final def filtersAggregation(
+    name: String,
+    filter: (String, ElasticQuery[_]),
+    filters: (String, ElasticQuery[_])*
+  ): FiltersAggregation =
+    Filters(
+      name = name,
+      filters = Filters.Named(NonEmptyChunk(filter, filters: _*)),
+      hasOtherBucket = false,
+      meta = Chunk.empty,
+      otherBucketKey = None,
+      subAggregations = Chunk.empty
+    )
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.FiltersAggregation]] with anonymous filters. It creates a
+   * bucket for each filter, with the documents that match its query, and the buckets of the result are in the order of
+   * the filters and have no keys.
+   *
+   * @param name
+   *   aggregation name
+   * @param query
+   *   the query which the documents of the first bucket must match
+   * @param queries
+   *   the queries which the documents of the rest of the buckets must match
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.FiltersAggregation]] that represents filters aggregation to be
+   *   performed.
+   */
+  final def filtersAggregation(name: String, query: ElasticQuery[_], queries: ElasticQuery[_]*): FiltersAggregation =
+    Filters(
+      name = name,
+      filters = Filters.Anonymous(NonEmptyChunk(query, queries: _*)),
+      hasOtherBucket = false,
+      meta = Chunk.empty,
+      otherBucketKey = None,
+      subAggregations = Chunk.empty
+    )
+
+  /**
+   * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.HistogramAggregation]] using the specified
+   * parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the type-safe field for which histogram aggregation will be executed
+   * @param interval
+   *   the interval of the buckets, a positive number
+   * @tparam A
+   *   expected number type
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.HistogramAggregation]] that represents histogram aggregation to be
+   *   performed.
+   */
+  final def histogramAggregation[A: Numeric](name: String, field: Field[_, A], interval: Double): HistogramAggregation =
+    histogramAggregation(name = name, field = field.toString, interval = interval)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.HistogramAggregation]] using the specified parameters.
+   *
+   * @param name
+   *   aggregation name
+   * @param field
+   *   the field for which histogram aggregation will be executed
+   * @param interval
+   *   the interval of the buckets, a positive number
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.HistogramAggregation]] that represents histogram aggregation to be
+   *   performed.
+   */
+  final def histogramAggregation(name: String, field: String, interval: Double): HistogramAggregation =
+    Histogram(
+      name = name,
+      field = field,
+      interval = interval,
+      extendedBounds = None,
+      hardBounds = None,
+      isKeyed = false,
+      meta = Chunk.empty,
+      minDocCount = None,
+      missing = None,
+      offset = None,
+      order = Chunk.empty,
+      subAggregations = Chunk.empty
+    )
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.IpRangeAggregation]] using the specified
@@ -267,6 +506,21 @@ object ElasticAggregation {
     Max(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.MaxBucketAggregation]] using the specified parameters. It
+   * finds the buckets of a sibling multi-bucket aggregation with the maximum value of a metric.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to find the maximum of (e.g. `"salesPerMonth>sales"`)
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.MaxBucketAggregation]] that represents max bucket aggregation to
+   *   be performed.
+   */
+  final def maxBucketAggregation(name: String, bucketsPath: String): MaxBucketAggregation =
+    MaxBucket(name = name, bucketsPath = bucketsPath, format = None, gapPolicy = None, meta = Chunk.empty)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MinAggregation]] using the specified parameters.
    *
    * @param name
@@ -293,6 +547,21 @@ object ElasticAggregation {
    */
   final def minAggregation(name: String, field: String): MinAggregation =
     Min(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.MinBucketAggregation]] using the specified parameters. It
+   * finds the buckets of a sibling multi-bucket aggregation with the minimum value of a metric.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to find the minimum of (e.g. `"salesPerMonth>sales"`)
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.MinBucketAggregation]] that represents min bucket aggregation to
+   *   be performed.
+   */
+  final def minBucketAggregation(name: String, bucketsPath: String): MinBucketAggregation =
+    MinBucket(name = name, bucketsPath = bucketsPath, format = None, gapPolicy = None, meta = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.MissingAggregation]] using the specified
@@ -548,6 +817,22 @@ object ElasticAggregation {
     Stats(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
 
   /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.StatsBucketAggregation]] using the specified parameters.
+   * It calculates stats (`count`, `min`, `max`, `avg` and `sum`) of a metric across the buckets of a sibling
+   * multi-bucket aggregation.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to calculate the stats of (e.g. `"salesPerMonth>sales"`)
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.StatsBucketAggregation]] that represents stats bucket aggregation
+   *   to be performed.
+   */
+  final def statsBucketAggregation(name: String, bucketsPath: String): StatsBucketAggregation =
+    StatsBucket(name = name, bucketsPath = bucketsPath, format = None, gapPolicy = None, meta = Chunk.empty)
+
+  /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.SumAggregation]] using the specified parameters.
    *
    * @param name
@@ -574,6 +859,21 @@ object ElasticAggregation {
    */
   final def sumAggregation(name: String, field: String): SumAggregation =
     Sum(name = name, field = field, format = None, meta = Chunk.empty, missing = None, script = None)
+
+  /**
+   * Constructs an instance of [[zio.elasticsearch.aggregation.SumBucketAggregation]] using the specified parameters. It
+   * calculates the sum of a metric across the buckets of a sibling multi-bucket aggregation.
+   *
+   * @param name
+   *   aggregation name
+   * @param bucketsPath
+   *   the path to the metric to sum (e.g. `"salesPerMonth>sales"`)
+   * @return
+   *   an instance of [[zio.elasticsearch.aggregation.SumBucketAggregation]] that represents sum bucket aggregation to
+   *   be performed.
+   */
+  final def sumBucketAggregation(name: String, bucketsPath: String): SumBucketAggregation =
+    SumBucket(name = name, bucketsPath = bucketsPath, format = None, gapPolicy = None, meta = Chunk.empty)
 
   /**
    * Constructs a type-safe instance of [[zio.elasticsearch.aggregation.TermsAggregation]] using the specified

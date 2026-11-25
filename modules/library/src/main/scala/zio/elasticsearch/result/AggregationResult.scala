@@ -44,9 +44,14 @@ object AggregationResult {
   private lazy val decoders: Map[String, JsonDecoder[AggregationResult]] =
     Chunk[AggregationResultDecoder[_ <: AggregationResult]](
       AvgAggregationResult,
+      BucketMetricValueAggregationResult,
       CardinalityAggregationResult,
+      DateHistogramAggregationResult,
+      DerivativeAggregationResult,
       ExtendedStatsAggregationResult,
       FilterAggregationResult,
+      FiltersAggregationResult,
+      HistogramAggregationResult,
       IpRangeAggregationResult,
       MaxAggregationResult,
       MinAggregationResult,
@@ -55,6 +60,7 @@ object AggregationResult {
       PercentilesAggregationResult,
       RangeAggregationResult,
       SamplerAggregationResult,
+      SimpleValueAggregationResult,
       StatsAggregationResult,
       SumAggregationResult,
       TermsAggregationResult,
@@ -170,6 +176,41 @@ object AvgAggregationResult extends AggregationResultDecoder[AvgAggregationResul
     )
 }
 
+/**
+ * The result of a `min_bucket` or `max_bucket` aggregation.
+ *
+ * @param value
+ *   the minimum or maximum value of the metric, or `None` if there are no buckets with a value
+ * @param valueAsString
+ *   the formatted value, if a format was set
+ * @param keys
+ *   the keys of the buckets with that value
+ */
+final case class BucketMetricValueAggregationResult private[elasticsearch] (
+  value: Option[Double],
+  valueAsString: Option[String],
+  keys: Chunk[String],
+  meta: Map[String, Json] = Map.empty
+) extends AggregationResult
+
+object BucketMetricValueAggregationResult
+    extends AggregationResultDecoder[BucketMetricValueAggregationResult]("bucket_metric_value") {
+  private[elasticsearch] implicit val decoder: JsonDecoder[BucketMetricValueAggregationResult] =
+    ResultFields.decoder(fields =>
+      for {
+        value         <- fields.optional[Double]("value")
+        valueAsString <- fields.optional[String]("value_as_string")
+        keys          <- fields.optional[Chunk[String]]("keys")
+        meta          <- fields.meta
+      } yield BucketMetricValueAggregationResult(
+        value = value,
+        valueAsString = valueAsString,
+        keys = keys.getOrElse(Chunk.empty),
+        meta = meta
+      )
+    )
+}
+
 final case class CardinalityAggregationResult private[elasticsearch] (
   value: Long,
   meta: Map[String, Json] = Map.empty
@@ -182,6 +223,88 @@ object CardinalityAggregationResult extends AggregationResultDecoder[Cardinality
         value <- fields.required[Long]("value")
         meta  <- fields.meta
       } yield CardinalityAggregationResult(value = value, meta = meta)
+    )
+}
+
+final case class DateHistogramAggregationResult private[elasticsearch] (
+  buckets: Chunk[DateHistogramAggregationBucketResult],
+  meta: Map[String, Json] = Map.empty
+) extends MultiBucketAggregationResult[DateHistogramAggregationBucketResult]
+
+object DateHistogramAggregationResult
+    extends AggregationResultDecoder[DateHistogramAggregationResult]("date_histogram") {
+  private[elasticsearch] implicit val decoder: JsonDecoder[DateHistogramAggregationResult] =
+    ResultFields.decoder(fields =>
+      for {
+        buckets <- fields.buckets[DateHistogramAggregationBucketResult]
+        meta    <- fields.meta
+      } yield DateHistogramAggregationResult(buckets = buckets, meta = meta)
+    )
+}
+
+/**
+ * A bucket of a [[DateHistogramAggregationResult]].
+ *
+ * @param key
+ *   the start of the bucket, in milliseconds since the epoch
+ * @param keyAsString
+ *   the formatted start of the bucket (e.g. `"2024-01-01T00:00:00.000Z"`), which Elasticsearch returns for date fields
+ */
+final case class DateHistogramAggregationBucketResult private[elasticsearch] (
+  key: Long,
+  keyAsString: Option[String],
+  docCount: Long,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationBucketResult[Long]
+
+object DateHistogramAggregationBucketResult {
+  private[elasticsearch] implicit val decoder: JsonDecoder[DateHistogramAggregationBucketResult] =
+    ResultFields.decoder(fields =>
+      for {
+        key             <- fields.required[Long]("key")
+        keyAsString     <- fields.optional[String]("key_as_string")
+        docCount        <- fields.docCount
+        subAggregations <- fields.subAggregations
+      } yield DateHistogramAggregationBucketResult(
+        key = key,
+        keyAsString = keyAsString,
+        docCount = docCount,
+        subAggregations = subAggregations
+      )
+    )
+}
+
+/**
+ * The result of a `derivative` aggregation, in a bucket of its parent aggregation.
+ *
+ * @param value
+ *   the derivative, or `None` if it cannot be calculated for the bucket (e.g. for the first bucket)
+ * @param valueAsString
+ *   the formatted derivative, if a format was set
+ * @param normalizedValue
+ *   the derivative per the `unit` of the aggregation, if a unit was set
+ */
+final case class DerivativeAggregationResult private[elasticsearch] (
+  value: Option[Double],
+  valueAsString: Option[String],
+  normalizedValue: Option[Double],
+  meta: Map[String, Json] = Map.empty
+) extends AggregationResult
+
+object DerivativeAggregationResult extends AggregationResultDecoder[DerivativeAggregationResult]("derivative") {
+  private[elasticsearch] implicit val decoder: JsonDecoder[DerivativeAggregationResult] =
+    ResultFields.decoder(fields =>
+      for {
+        value           <- fields.optional[Double]("value")
+        valueAsString   <- fields.optional[String]("value_as_string")
+        normalizedValue <- fields.optional[Double]("normalized_value")
+        meta            <- fields.meta
+      } yield DerivativeAggregationResult(
+        value = value,
+        valueAsString = valueAsString,
+        normalizedValue = normalizedValue,
+        meta = meta
+      )
     )
 }
 
@@ -254,6 +377,105 @@ object FilterAggregationResult extends AggregationResultDecoder[FilterAggregatio
         subAggregations <- fields.subAggregations
         meta            <- fields.meta
       } yield FilterAggregationResult(docCount = docCount, subAggregations = subAggregations, meta = meta)
+    )
+}
+
+/**
+ * The result of a `filters` aggregation.
+ *
+ * @param buckets
+ *   a bucket for each filter, followed by the bucket for the documents that do not match any of the filters, if it was
+ *   enabled. For named filters, Elasticsearch returns the buckets ordered by key.
+ */
+final case class FiltersAggregationResult private[elasticsearch] (
+  buckets: Chunk[FiltersAggregationBucketResult],
+  meta: Map[String, Json] = Map.empty
+) extends MultiBucketAggregationResult[FiltersAggregationBucketResult] {
+
+  /**
+   * The buckets of named filters by key, or an empty map for anonymous filters.
+   */
+  def bucketsByKey: Map[String, FiltersAggregationBucketResult] =
+    buckets.flatMap(bucket => bucket.key.map(_ -> bucket)).toMap
+}
+
+object FiltersAggregationResult extends AggregationResultDecoder[FiltersAggregationResult]("filters") {
+  private[elasticsearch] implicit val decoder: JsonDecoder[FiltersAggregationResult] =
+    ResultFields.decoder(fields =>
+      for {
+        buckets <- fields.buckets[FiltersAggregationBucketResult]
+        meta    <- fields.meta
+      } yield FiltersAggregationResult(buckets = buckets, meta = meta)
+    )
+}
+
+/**
+ * A bucket of a [[FiltersAggregationResult]].
+ *
+ * @param key
+ *   the name of the filter of the bucket, or `None` for anonymous filters
+ */
+final case class FiltersAggregationBucketResult private[elasticsearch] (
+  key: Option[String],
+  docCount: Long,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationBucketResult[Option[String]]
+
+object FiltersAggregationBucketResult {
+  private[elasticsearch] implicit val decoder: JsonDecoder[FiltersAggregationBucketResult] =
+    ResultFields.decoder(fields =>
+      for {
+        key             <- fields.optional[String]("key")
+        docCount        <- fields.docCount
+        subAggregations <- fields.subAggregations
+      } yield FiltersAggregationBucketResult(key = key, docCount = docCount, subAggregations = subAggregations)
+    )
+}
+
+final case class HistogramAggregationResult private[elasticsearch] (
+  buckets: Chunk[HistogramAggregationBucketResult],
+  meta: Map[String, Json] = Map.empty
+) extends MultiBucketAggregationResult[HistogramAggregationBucketResult]
+
+object HistogramAggregationResult extends AggregationResultDecoder[HistogramAggregationResult]("histogram") {
+  private[elasticsearch] implicit val decoder: JsonDecoder[HistogramAggregationResult] =
+    ResultFields.decoder(fields =>
+      for {
+        buckets <- fields.buckets[HistogramAggregationBucketResult]
+        meta    <- fields.meta
+      } yield HistogramAggregationResult(buckets = buckets, meta = meta)
+    )
+}
+
+/**
+ * A bucket of a [[HistogramAggregationResult]].
+ *
+ * @param key
+ *   the start of the bucket
+ * @param keyAsString
+ *   the formatted start of the bucket, if Elasticsearch returned one
+ */
+final case class HistogramAggregationBucketResult private[elasticsearch] (
+  key: Double,
+  keyAsString: Option[String],
+  docCount: Long,
+  subAggregations: Map[String, AggregationResult]
+) extends AggregationBucketResult[Double]
+
+object HistogramAggregationBucketResult {
+  private[elasticsearch] implicit val decoder: JsonDecoder[HistogramAggregationBucketResult] =
+    ResultFields.decoder(fields =>
+      for {
+        key             <- fields.required[Double]("key")
+        keyAsString     <- fields.optional[String]("key_as_string")
+        docCount        <- fields.docCount
+        subAggregations <- fields.subAggregations
+      } yield HistogramAggregationBucketResult(
+        key = key,
+        keyAsString = keyAsString,
+        docCount = docCount,
+        subAggregations = subAggregations
+      )
     )
 }
 
@@ -452,6 +674,35 @@ object SamplerAggregationResult extends AggregationResultDecoder[SamplerAggregat
     )
 }
 
+/**
+ * The result of a pipeline aggregation that returns a single value: `avg_bucket`, `sum_bucket`, `cumulative_sum` or
+ * `bucket_script`.
+ *
+ * @param value
+ *   the value, or `None` if it cannot be calculated (e.g. the average of no buckets)
+ * @param valueAsString
+ *   the formatted value, if a format was set
+ */
+final case class SimpleValueAggregationResult private[elasticsearch] (
+  value: Option[Double],
+  valueAsString: Option[String],
+  meta: Map[String, Json] = Map.empty
+) extends AggregationResult
+
+object SimpleValueAggregationResult extends AggregationResultDecoder[SimpleValueAggregationResult]("simple_value") {
+  private[elasticsearch] implicit val decoder: JsonDecoder[SimpleValueAggregationResult] =
+    ResultFields.decoder(fields =>
+      for {
+        value         <- fields.optional[Double]("value")
+        valueAsString <- fields.optional[String]("value_as_string")
+        meta          <- fields.meta
+      } yield SimpleValueAggregationResult(value = value, valueAsString = valueAsString, meta = meta)
+    )
+}
+
+/**
+ * The result of a `stats` or `stats_bucket` aggregation.
+ */
 final case class StatsAggregationResult private[elasticsearch] (
   count: Long,
   min: Option[Double],
@@ -461,7 +712,7 @@ final case class StatsAggregationResult private[elasticsearch] (
   meta: Map[String, Json] = Map.empty
 ) extends AggregationResult
 
-object StatsAggregationResult extends AggregationResultDecoder[StatsAggregationResult]("stats") {
+object StatsAggregationResult extends AggregationResultDecoder[StatsAggregationResult]("stats", "stats_bucket") {
   private[elasticsearch] implicit val decoder: JsonDecoder[StatsAggregationResult] =
     ResultFields.decoder(fields =>
       for {
