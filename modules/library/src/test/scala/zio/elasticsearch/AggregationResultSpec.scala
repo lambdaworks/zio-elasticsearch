@@ -3,7 +3,7 @@ package zio.elasticsearch
 import zio.elasticsearch.result._
 import zio.test.Assertion.{equalTo, isLeft, isNone, isRight, isSome}
 import zio.test.{Spec, TestEnvironment, ZIOSpecDefault, assert, assertZIO}
-import zio.{Task, ZIO}
+import zio.{Chunk, Task, ZIO}
 
 object AggregationResultSpec extends ZIOSpecDefault {
 
@@ -26,6 +26,36 @@ object AggregationResultSpec extends ZIOSpecDefault {
         test("return an error from a typed accessor when the aggregation is not of the requested type") {
           assertZIO(aggregateResult.asTermsAggregation("avgAggregation").either)(isLeft(equalTo(typeMismatch)))
         },
+        test("return each aggregation from its typed accessor on a result and on an effect") {
+          val result: AggregateResult             = new AggregateResult(typedResults)
+          val effect: Task[ResultWithAggregation] = ZIO.succeed(result)
+
+          for {
+            filter     <- result.asFilterAggregation("filter")
+            filterZIO  <- effect.asFilterAggregation("filter")
+            ipRange    <- result.asIpRangeAggregation("ipRange")
+            ipRangeZIO <- effect.asIpRangeAggregation("ipRange")
+            missing    <- result.asMissingAggregation("missing")
+            missingZIO <- effect.asMissingAggregation("missing")
+            range      <- result.asRangeAggregation("range")
+            rangeZIO   <- effect.asRangeAggregation("range")
+            sampler    <- result.asSamplerAggregation("sampler")
+            samplerZIO <- effect.asSamplerAggregation("sampler")
+            stats      <- result.asStatsAggregation("stats")
+            statsZIO   <- effect.asStatsAggregation("stats")
+          } yield assert(filter)(isSome(equalTo(filterResult))) &&
+            assert(filterZIO)(isSome(equalTo(filterResult))) &&
+            assert(ipRange)(isSome(equalTo(ipRangeResult))) &&
+            assert(ipRangeZIO)(isSome(equalTo(ipRangeResult))) &&
+            assert(missing)(isSome(equalTo(missingResult))) &&
+            assert(missingZIO)(isSome(equalTo(missingResult))) &&
+            assert(range)(isSome(equalTo(rangeResult))) &&
+            assert(rangeZIO)(isSome(equalTo(rangeResult))) &&
+            assert(sampler)(isSome(equalTo(samplerResult))) &&
+            assert(samplerZIO)(isSome(equalTo(samplerResult))) &&
+            assert(stats)(isSome(equalTo(statsResult))) &&
+            assert(statsZIO)(isSome(equalTo(statsResult)))
+        },
         test("return an error from an effect when the aggregation is not of the requested type") {
           val effect: Task[ResultWithAggregation] = ZIO.succeed(aggregateResult)
 
@@ -37,6 +67,7 @@ object AggregationResultSpec extends ZIOSpecDefault {
           val expected = isRight(isSome(equalTo(avgResult)))
 
           assert(filterResult.subAggregationAs[AvgAggregationResult]("avgAggregation"))(expected) &&
+          assert(missingResult.subAggregationAs[AvgAggregationResult]("avgAggregation"))(expected) &&
           assert(ipRangeBucketResult.subAggregationAs[AvgAggregationResult]("avgAggregation"))(expected) &&
           assert(rangeBucketResult.subAggregationAs[AvgAggregationResult]("avgAggregation"))(expected) &&
           assert(samplerResult.subAggregationAs[AvgAggregationResult]("avgAggregation"))(expected) &&
@@ -46,6 +77,7 @@ object AggregationResultSpec extends ZIOSpecDefault {
           val expected = isRight(isNone)
 
           assert(filterResult.subAggregationAs[AvgAggregationResult]("missingAggregation"))(expected) &&
+          assert(missingResult.subAggregationAs[AvgAggregationResult]("missingAggregation"))(expected) &&
           assert(ipRangeBucketResult.subAggregationAs[AvgAggregationResult]("missingAggregation"))(expected) &&
           assert(rangeBucketResult.subAggregationAs[AvgAggregationResult]("missingAggregation"))(expected) &&
           assert(samplerResult.subAggregationAs[AvgAggregationResult]("missingAggregation"))(expected) &&
@@ -55,6 +87,7 @@ object AggregationResultSpec extends ZIOSpecDefault {
           val expected = isLeft(equalTo(typeMismatch))
 
           assert(filterResult.subAggregationAs[MaxAggregationResult]("avgAggregation"))(expected) &&
+          assert(missingResult.subAggregationAs[MaxAggregationResult]("avgAggregation"))(expected) &&
           assert(ipRangeBucketResult.subAggregationAs[MaxAggregationResult]("avgAggregation"))(expected) &&
           assert(rangeBucketResult.subAggregationAs[MaxAggregationResult]("avgAggregation"))(expected) &&
           assert(samplerResult.subAggregationAs[MaxAggregationResult]("avgAggregation"))(expected) &&
@@ -78,8 +111,28 @@ object AggregationResultSpec extends ZIOSpecDefault {
   private val ipRangeBucketResult: IpRangeAggregationBucketResult =
     IpRangeAggregationBucketResult(key = "key", from = None, to = None, docCount = 1, subAggregations = subAggregations)
 
+  private val missingResult: MissingAggregationResult =
+    MissingAggregationResult(docCount = 1, subAggregations = subAggregations)
+
   private val rangeBucketResult: RangeAggregationBucketResult =
     RangeAggregationBucketResult(key = "key", from = None, to = None, docCount = 1, subAggregations = subAggregations)
+
+  private val ipRangeResult: IpRangeAggregationResult = IpRangeAggregationResult(buckets = Chunk(ipRangeBucketResult))
+
+  private val rangeResult: RangeAggregationResult = RangeAggregationResult(buckets = Chunk(rangeBucketResult))
+
+  private val statsResult: StatsAggregationResult =
+    StatsAggregationResult(count = 1, min = Some(1.0), max = Some(1.0), avg = Some(1.0), sum = 1.0)
+
+  private lazy val typedResults: Map[String, AggregationResult] =
+    Map(
+      "filter"  -> filterResult,
+      "ipRange" -> ipRangeResult,
+      "missing" -> missingResult,
+      "range"   -> rangeResult,
+      "sampler" -> samplerResult,
+      "stats"   -> statsResult
+    )
 
   private val samplerResult: SamplerAggregationResult =
     SamplerAggregationResult(docCount = 1, subAggregations = subAggregations)

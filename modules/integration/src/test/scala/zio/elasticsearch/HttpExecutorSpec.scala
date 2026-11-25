@@ -41,6 +41,7 @@ import zio.elasticsearch.result.{
   IpRangeAggregationResult,
   Item,
   MaxAggregationResult,
+  MissingAggregationResult,
   MultiGetItem,
   MultiSearchItem,
   RangeAggregationBucketResult,
@@ -165,15 +166,14 @@ object HttpExecutorSpec extends IntegrationSpec {
           Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
         ),
         test("filter aggregation with max sub aggregation") {
-          val expectedResult = (
-            "aggregation",
+          val expectedResult =
             FilterAggregationResult(
               docCount = 2,
               subAggregations = Map(
                 "subAggregation" -> MaxAggregationResult(value = Some(5.0))
-              )
+              ),
+              meta = Map("color" -> Str("blue"))
             )
-          )
           checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
             (firstDocumentId, firstDocument, secondDocumentId, secondDocument, thirdDocumentId, thirdDocument) =>
               for {
@@ -209,15 +209,14 @@ object HttpExecutorSpec extends IntegrationSpec {
                      )
                 query       = term(field = TestDocument.stringField, value = secondDocumentUpdated.stringField.toLowerCase)
                 aggregation =
-                  filterAggregation(name = "aggregation", query = query).withSubAgg(
-                    maxAggregation("subAggregation", TestDocument.intField)
-                  )
+                  filterAggregation(name = "aggregation", query = query)
+                    .meta("color", "blue")
+                    .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
                 aggsRes <-
                   Executor
                     .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
-                    .aggregations
-
-              } yield assert(aggsRes.head)(equalTo(expectedResult))
+                    .asFilterAggregation("aggregation")
+              } yield assert(aggsRes)(isSome(equalTo(expectedResult)))
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
@@ -919,6 +918,43 @@ object HttpExecutorSpec extends IntegrationSpec {
                              )
                              .aggregations
               } yield assert(aggsRes)(isNonEmpty)
+          }
+        } @@ around(
+          Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),
+          Executor.execute(ElasticRequest.deleteIndex(firstSearchIndex)).orDie
+        ),
+        test("missing aggregation with max sub aggregation") {
+          checkOnce(genDocumentId, genTestDocument, genDocumentId, genTestDocument) {
+            (firstDocumentId, firstDocument, secondDocumentId, secondDocument) =>
+              for {
+                _ <- Executor.execute(ElasticRequest.deleteByQuery(firstSearchIndex, matchAll))
+                _ <- Executor.execute(
+                       ElasticRequest.upsert[TestDocument](firstSearchIndex, firstDocumentId, firstDocument)
+                     )
+                _ <- Executor.execute(
+                       ElasticRequest
+                         .upsert[TestDocument](firstSearchIndex, secondDocumentId, secondDocument)
+                         .refreshTrue
+                     )
+                aggregation = missingAggregation(name = "aggregation", field = "nonExistingField")
+                                .withSubAgg(maxAggregation("subAggregation", TestDocument.intField))
+                aggsRes <- Executor
+                             .execute(ElasticRequest.aggregate(selectors = firstSearchIndex, aggregation = aggregation))
+                             .asMissingAggregation("aggregation")
+              } yield assert(aggsRes)(
+                isSome(
+                  equalTo(
+                    MissingAggregationResult(
+                      docCount = 2,
+                      subAggregations = Map(
+                        "subAggregation" -> MaxAggregationResult(
+                          value = Some(math.max(firstDocument.intField, secondDocument.intField).toDouble)
+                        )
+                      )
+                    )
+                  )
+                )
+              )
           }
         } @@ around(
           Executor.execute(ElasticRequest.createIndex(firstSearchIndex)),

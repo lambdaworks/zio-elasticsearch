@@ -43,7 +43,6 @@ import zio.ZIO.logDebug
 import zio.elasticsearch.ElasticPrimitive.ElasticPrimitiveOps
 import zio.elasticsearch.ElasticRequest._
 import zio.elasticsearch._
-import zio.elasticsearch.executor.response.AggregationResponse.toResult
 import zio.elasticsearch.executor.response.{
   BulkResponse,
   CountResponse,
@@ -133,7 +132,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                 .fromEither(value.aggs)
                 .mapBoth(
                   error => DecodingException(s"Could not parse aggregations: $error"),
-                  aggs => new AggregateResult(aggs.map { case (key, response) => (key, toResult(response)) })
+                  aggs => new AggregateResult(aggs)
                 )
           )
         case _ =>
@@ -618,7 +617,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
                   aggs =>
                     new SearchAndAggregateResult(
                       itemsFromDocumentsWithHighlights(value.resultsWithHighlightsAndSort),
-                      aggs.map { case (key, response) => (key, toResult(response)) },
+                      aggs,
                       value
                     )
                 )
@@ -773,7 +772,7 @@ private[elasticsearch] final class HttpExecutor private (esConfig: ElasticConfig
           status = status,
           result = new SearchAndAggregateResult(
             itemsFromDocumentsWithHighlightsSortAndInnerHits(response.resultsWithHighlightsAndSort, innerHits),
-            aggs.map { case (key, response) => (key, toResult(response)) },
+            aggs,
             response
           )
         )
