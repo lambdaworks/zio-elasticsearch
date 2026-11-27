@@ -124,3 +124,36 @@ ElasticRequest.aggregate(selectors = IndexName("index"), aggregation = termsAggr
 ElasticRequest.search(selectors = IndexName("index"), query = matchAll, aggregation = termsAggregation(name = "termsAggregation", field = User.name / Name.firstName.keyword))
 
 ```
+
+## Aggregation results
+
+Executing an `aggregate` or `search` request with an aggregation gives access to the aggregation results by name, either on the effect or on the result itself. Each supported aggregation has a typed accessor (`asAvgAggregation`, `asFilterAggregation`, `asTermsAggregation`, ...), and `aggregationAs` works for any result type:
+
+```scala
+import zio.elasticsearch.result.{MaxAggregationResult, TermsAggregationResult}
+
+val aggregation =
+  termsAggregation(name = "termsAggregation", field = "name.first_name.keyword")
+    .withSubAgg(maxAggregation(name = "maxAge", field = "age"))
+    .meta("color", "blue")
+
+val terms: RIO[Elasticsearch, Option[TermsAggregationResult]] =
+  Elasticsearch
+    .execute(ElasticRequest.aggregate(selectors = IndexName("index"), aggregation = aggregation))
+    .asTermsAggregation("termsAggregation")
+```
+
+An accessor returns `None` if there is no aggregation with the given name, and fails with a `DecodingException` if the aggregation is of another type.
+
+Results of multi-bucket aggregations (`terms`, `range`, `ip_range`) contain `buckets`, each with its `key` and `docCount`. Results of single-bucket aggregations (`filter`, `missing`, `sampler`) contain their `docCount`. Buckets and single-bucket results give access to the results of their sub-aggregations with `subAggregationAs`:
+
+```scala
+val maxAges: RIO[Elasticsearch, Chunk[Option[MaxAggregationResult]]] =
+  terms.flatMap { result =>
+    ZIO.foreach(Chunk.fromIterable(result).flatMap(_.buckets)) { bucket =>
+      ZIO.fromEither(bucket.subAggregationAs[MaxAggregationResult]("maxAge"))
+    }
+  }
+```
+
+Every result also contains the `meta` that was set on its aggregation (an empty map if none was set).

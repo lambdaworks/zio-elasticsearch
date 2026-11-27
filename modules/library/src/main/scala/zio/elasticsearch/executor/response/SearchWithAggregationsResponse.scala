@@ -17,6 +17,7 @@
 package zio.elasticsearch.executor.response
 
 import zio.Chunk
+import zio.elasticsearch.result.AggregationResult
 import zio.json.ast.Json
 import zio.json.ast.Json.Obj
 import zio.json.{DeriveJsonDecoder, JsonDecoder, jsonField}
@@ -61,9 +62,9 @@ private[elasticsearch] final case class SearchWithAggregationsResponse(
 
   lazy val lastSortField: Option[Json] = hits.hits.lastOption.flatMap(_.sort)
 
-  lazy val aggs: Either[String, Map[String, AggregationResponse]] =
-    aggregations.fold[Either[String, Map[String, AggregationResponse]]](Right(Map.empty)) {
-      case Obj(fields) => AggregationResponse.decodeAll(fields)
+  lazy val aggs: Either[String, Map[String, AggregationResult]] =
+    aggregations.fold[Either[String, Map[String, AggregationResult]]](Right(Map.empty)) {
+      case Obj(fields) => AggregationResult.decodeAll(fields)
       case other       => Left(s"Expected an object, got: $other")
     }
 }

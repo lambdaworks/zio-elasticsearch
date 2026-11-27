@@ -24,7 +24,7 @@ import zio.{Chunk, IO, Task, UIO, ZIO}
 
 import scala.reflect.ClassTag
 
-private[elasticsearch] sealed trait ResultWithAggregation {
+private[elasticsearch] sealed trait ResultWithAggregation extends AggregationAccessors[Any, DecodingException] {
   def aggregation(name: String): Task[Option[AggregationResult]]
 
   def aggregationAs[A <: AggregationResult: ClassTag](name: String): IO[DecodingException, Option[A]] =
@@ -40,39 +40,6 @@ private[elasticsearch] sealed trait ResultWithAggregation {
       .absolve
 
   def aggregations: Task[Map[String, AggregationResult]]
-
-  def asAvgAggregation(name: String): IO[DecodingException, Option[AvgAggregationResult]] =
-    aggregationAs[AvgAggregationResult](name)
-
-  def asCardinalityAggregation(name: String): IO[DecodingException, Option[CardinalityAggregationResult]] =
-    aggregationAs[CardinalityAggregationResult](name)
-
-  def asExtendedStatsAggregation(name: String): IO[DecodingException, Option[ExtendedStatsAggregationResult]] =
-    aggregationAs[ExtendedStatsAggregationResult](name)
-
-  def asMaxAggregation(name: String): IO[DecodingException, Option[MaxAggregationResult]] =
-    aggregationAs[MaxAggregationResult](name)
-
-  def asMinAggregation(name: String): IO[DecodingException, Option[MinAggregationResult]] =
-    aggregationAs[MinAggregationResult](name)
-
-  def asPercentileRanksAggregation(name: String): IO[DecodingException, Option[PercentileRanksAggregationResult]] =
-    aggregationAs[PercentileRanksAggregationResult](name)
-
-  def asPercentilesAggregation(name: String): IO[DecodingException, Option[PercentilesAggregationResult]] =
-    aggregationAs[PercentilesAggregationResult](name)
-
-  def asSumAggregation(name: String): IO[DecodingException, Option[SumAggregationResult]] =
-    aggregationAs[SumAggregationResult](name)
-
-  def asTermsAggregation(name: String): IO[DecodingException, Option[TermsAggregationResult]] =
-    aggregationAs[TermsAggregationResult](name)
-
-  def asValueCountAggregation(name: String): IO[DecodingException, Option[ValueCountAggregationResult]] =
-    aggregationAs[ValueCountAggregationResult](name)
-
-  def asWeightedAvgAggregation(name: String): IO[DecodingException, Option[WeightedAvgAggregationResult]] =
-    aggregationAs[WeightedAvgAggregationResult](name)
 }
 
 private[elasticsearch] sealed trait DocumentResult[F[_]] {

@@ -1,9 +1,9 @@
 package zio.elasticsearch
 
 import zio.Chunk
-import zio.elasticsearch.executor.response.AggregationResponse.toResult
 import zio.elasticsearch.executor.response.SearchWithAggregationsResponse
 import zio.elasticsearch.result._
+import zio.json.ast.Json.{Bool, Num, Obj, Str}
 import zio.test.Assertion.{containsString, equalTo, isLeft, isRight}
 import zio.test.{Gen, Spec, TestEnvironment, ZIOSpecDefault, assert, check}
 
@@ -175,7 +175,7 @@ object AggregationResponseSpec extends ZIOSpecDefault {
               equalTo(
                 Map(
                   "filterAggregation"  -> FilterAggregationResult(docCount = largeCount, subAggregations = Map.empty),
-                  "missingAggregation" -> MissingAggregationResult(docCount = largeCount),
+                  "missingAggregation" -> MissingAggregationResult(docCount = largeCount, subAggregations = Map.empty),
                   "samplerAggregation" -> SamplerAggregationResult(docCount = largeCount, subAggregations = Map.empty)
                 )
               )
@@ -630,7 +630,172 @@ object AggregationResponseSpec extends ZIOSpecDefault {
           )
         }
       ),
+      suite("decoding keyed and non keyed values")(
+        test("percentiles and percentile ranks with keyed set to false") {
+          val aggregations =
+            """{
+              |  "tdigest_percentiles#percentilesAggregation": {
+              |    "values": [
+              |      { "key": 50.0, "value": 1.0 },
+              |      { "key": 99.9, "value": null }
+              |    ]
+              |  },
+              |  "hdr_percentile_ranks#percentileRanksAggregation": {
+              |    "values": [{ "key": 500.0, "value": 10.0, "value_as_string": "10.0" }]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "percentilesAggregation" -> PercentilesAggregationResult(values =
+                    Map("50.0" -> Some(1.0), "99.9" -> None)
+                  ),
+                  "percentileRanksAggregation" -> PercentileRanksAggregationResult(values = Map("500.0" -> Some(10.0)))
+                )
+              )
+            )
+          )
+        },
+        test("skip formatted percentile values") {
+          val aggregations =
+            """{
+              |  "tdigest_percentiles#percentilesAggregation": {
+              |    "values": { "50.0": 1.0, "50.0_as_string": "1.0", "99.0": null }
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "percentilesAggregation" -> PercentilesAggregationResult(values =
+                    Map("50.0" -> Some(1.0), "99.0" -> None)
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("use the bucket name as key for keyed ip range buckets") {
+          val aggregations =
+            """{
+              |  "ip_range#ipRangeAggregation": {
+              |    "buckets": {
+              |      "internal": { "from": "10.0.0.0", "to": "10.0.0.255", "doc_count": 2 },
+              |      "*-10.0.0.0": { "to": "10.0.0.0", "doc_count": 0 }
+              |    }
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "ipRangeAggregation" -> IpRangeAggregationResult(
+                    buckets = Chunk(
+                      IpRangeAggregationBucketResult(
+                        key = "internal",
+                        from = Some("10.0.0.0"),
+                        to = Some("10.0.0.255"),
+                        docCount = 2,
+                        subAggregations = Map.empty
+                      ),
+                      IpRangeAggregationBucketResult(
+                        key = "*-10.0.0.0",
+                        from = None,
+                        to = Some("10.0.0.0"),
+                        docCount = 0,
+                        subAggregations = Map.empty
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        }
+      ),
+      suite("decoding sub aggregations and meta")(
+        test("sub aggregations of a missing aggregation") {
+          val aggregations =
+            """{
+              |  "missing#missingAggregation": {
+              |    "doc_count": 2,
+              |    "max#maxAggregation": { "value": 3.0 }
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "missingAggregation" -> MissingAggregationResult(
+                    docCount = 2,
+                    subAggregations = Map("maxAggregation" -> MaxAggregationResult(value = Some(3.0)))
+                  )
+                )
+              )
+            )
+          )
+        },
+        test("meta of aggregations and sub aggregations") {
+          val aggregations =
+            """{
+              |  "sterms#termsAggregation": {
+              |    "meta": { "color": "blue", "weight": 2 },
+              |    "doc_count_error_upper_bound": 0,
+              |    "sum_other_doc_count": 0,
+              |    "buckets": [
+              |      {
+              |        "key": "name",
+              |        "doc_count": 1,
+              |        "avg#avgAggregation": { "meta": { "nested": { "flag": true } }, "value": 1.0 }
+              |      }
+              |    ]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(
+            isRight(
+              equalTo(
+                Map(
+                  "termsAggregation" -> TermsAggregationResult(
+                    docErrorCount = 0,
+                    sumOtherDocCount = 0,
+                    buckets = Chunk(
+                      TermsAggregationBucketResult(
+                        docCount = 1,
+                        key = "name",
+                        keyAsString = None,
+                        subAggregations = Map(
+                          "avgAggregation" -> AvgAggregationResult(
+                            value = Some(1.0),
+                            meta = Map("nested" -> Obj("flag" -> Bool(true)))
+                          )
+                        )
+                      )
+                    ),
+                    meta = Map("color" -> Str("blue"), "weight" -> Num(2))
+                  )
+                )
+              )
+            )
+          )
+        }
+      ),
       suite("decoding failures")(
+        test("return an error for a bucket that cannot be decoded") {
+          val aggregations =
+            """{
+              |  "range#rangeAggregation": {
+              |    "buckets": [{ "key": "*-50.0", "doc_count": 1 }, { "key": "50.0-*" }]
+              |  }
+              |}""".stripMargin
+
+          assert(results(aggregations))(isLeft(equalTo("range#rangeAggregation(.buckets[1](.doc_count(missing)))")))
+        },
         test("return an error for an invalid aggregation") {
           val aggregations = """{ "avg#avgAggregation": { "value": "invalid" } }"""
 
@@ -743,5 +908,4 @@ object AggregationResponseSpec extends ZIOSpecDefault {
            |}""".stripMargin
       )
       .flatMap(_.aggs)
-      .map(_.map { case (name, response) => (name, toResult(response)) })
 }
